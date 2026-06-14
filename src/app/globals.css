@@ -1,0 +1,49 @@
+@import "tailwindcss";
+
+:root {
+  --background: #05060f;
+  --foreground: #e7e9f5;
+  --neon-blue: #38bdf8;
+  --neon-purple: #a855f7;
+  --space-800: #0b0e21;
+  --space-700: #141a3d;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-neon-blue: var(--neon-blue);
+  --color-neon-purple: var(--neon-purple);
+  --color-space-800: var(--space-800);
+  --color-space-700: var(--space-700);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background-color: var(--background);
+  background-image:
+    radial-gradient(circle at 15% 20%, rgba(168, 85, 247, 0.25), transparent 40%),
+    radial-gradient(circle at 85% 15%, rgba(56, 189, 248, 0.2), transparent 45%),
+    radial-gradient(circle at 50% 100%, rgba(139, 92, 246, 0.15), transparent 50%);
+  background-attachment: fixed;
+  color: var(--foreground);
+}
+
+/* Frosted-glass card used by the sidebar, hero and KPI cards */
+.glass-card {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-radius: 1rem;
+}
+
+/* Soft neon glow accents */
+.glow-blue {
+  box-shadow: 0 0 24px rgba(56, 189, 248, 0.25);
+}
+
+.glow-purple {
+  box-shadow: 0 0 24px rgba(168, 85, 247, 0.25);
+}
