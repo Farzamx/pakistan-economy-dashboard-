@@ -9,8 +9,9 @@ export interface Kpi {
   glow: "blue" | "purple";
 }
 
-// Mock data for Phase 1 — will be replaced by live API data in a later phase.
-export const kpiData: Kpi[] = [
+// Fallback data, used by getKpiData() in src/lib/data/worldBank.ts if the
+// World Bank API is unreachable, so the dashboard never shows a broken state.
+export const fallbackKpiData: Kpi[] = [
   {
     title: "GDP Growth",
     value: "2.5",

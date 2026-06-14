@@ -1,27 +1,17 @@
 import type { TrendPoint } from "@/components/charts/TrendLineChart";
 
-// Mock monthly CPI inflation (YoY %) for Phase 1.5, ending at the same
-// 11.8% shown on the Inflation KPI card.
-//
-// Later: replace this static array with data fetched from the SBP/PBS
-// API — keep the same `{ month, value }[]` shape and TrendLineChart
-// needs no changes, e.g.:
-//
-//   export async function getInflationTrend(): Promise<TrendPoint[]> {
-//     const res = await fetch("https://api.sbp.org.pk/...");
-//     return res.json();
-//   }
-export const inflationTrend: TrendPoint[] = [
-  { month: "Jul", value: 28.3 },
-  { month: "Aug", value: 27.4 },
-  { month: "Sep", value: 24.5 },
-  { month: "Oct", value: 20.7 },
-  { month: "Nov", value: 17.0 },
-  { month: "Dec", value: 15.4 },
-  { month: "Jan", value: 14.5 },
-  { month: "Feb", value: 13.8 },
-  { month: "Mar", value: 13.2 },
-  { month: "Apr", value: 12.6 },
-  { month: "May", value: 13.0 },
-  { month: "Jun", value: 11.8 },
+// Fallback data, used by getInflationTrend() in src/lib/data/worldBank.ts if
+// the World Bank API is unreachable. Real annual CPI inflation (%) for
+// Pakistan, 2015-2024, from World Bank indicator FP.CPI.TOTL.ZG.
+export const fallbackInflationTrend: TrendPoint[] = [
+  { month: "2015", value: 2.5 },
+  { month: "2016", value: 3.8 },
+  { month: "2017", value: 4.1 },
+  { month: "2018", value: 5.1 },
+  { month: "2019", value: 10.6 },
+  { month: "2020", value: 9.7 },
+  { month: "2021", value: 9.5 },
+  { month: "2022", value: 19.9 },
+  { month: "2023", value: 30.8 },
+  { month: "2024", value: 12.6 },
 ];

@@ -5,11 +5,9 @@ import KpiGrid from "@/components/KpiGrid";
 import Sidebar from "@/components/Sidebar";
 import TrendLineChart from "@/components/charts/TrendLineChart";
 import { healthFactors, healthScoreExplanation } from "@/data/healthScoreData";
-import { inflationTrend } from "@/data/inflationTrendData";
-import { kpiData } from "@/data/kpiData";
-import { reservesTrend } from "@/data/reservesTrendData";
 import { sectionData } from "@/data/sectionData";
 import { calculateHealthScore } from "@/lib/economicHealth";
+import { getInflationTrend, getKpiData, getReservesTrend } from "@/lib/data/worldBank";
 
 function getSection(id: string) {
   const section = sectionData.find((item) => item.id === id);
@@ -19,7 +17,13 @@ function getSection(id: string) {
   return section;
 }
 
-export default function Home() {
+export default async function Home() {
+  const [kpiData, inflationTrend, reservesTrend] = await Promise.all([
+    getKpiData(),
+    getInflationTrend(),
+    getReservesTrend(),
+  ]);
+
   const healthScore = calculateHealthScore(healthFactors);
 
   return (
@@ -36,7 +40,9 @@ export default function Home() {
 
         <DashboardSection {...getSection("inflation")}>
           <div className="mt-6 rounded-xl border border-white/5 bg-white/[0.02] p-4">
-            <p className="mb-2 text-xs font-medium text-white/40">12-Month Trend</p>
+            <p className="mb-2 text-xs font-medium text-white/40">
+              10-Year Trend <span className="text-white/25">· World Bank, annual</span>
+            </p>
             <TrendLineChart
               data={inflationTrend}
               color="#a855f7"
@@ -48,7 +54,9 @@ export default function Home() {
 
         <DashboardSection {...getSection("reserves")}>
           <div className="mt-6 rounded-xl border border-white/5 bg-white/[0.02] p-4">
-            <p className="mb-2 text-xs font-medium text-white/40">12-Month Trend</p>
+            <p className="mb-2 text-xs font-medium text-white/40">
+              10-Year Trend <span className="text-white/25">· World Bank, annual</span>
+            </p>
             <TrendLineChart
               data={reservesTrend}
               color="#38bdf8"

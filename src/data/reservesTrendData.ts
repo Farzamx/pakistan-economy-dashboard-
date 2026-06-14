@@ -1,27 +1,17 @@
 import type { TrendPoint } from "@/components/charts/TrendLineChart";
 
-// Mock monthly foreign exchange reserves (B USD) for Phase 1.5, ending
-// at the same 9.4B shown on the Foreign Reserves KPI card.
-//
-// Later: replace this static array with data fetched from the SBP
-// weekly reserves API — keep the same `{ month, value }[]` shape and
-// TrendLineChart needs no changes, e.g.:
-//
-//   export async function getReservesTrend(): Promise<TrendPoint[]> {
-//     const res = await fetch("https://api.sbp.org.pk/...");
-//     return res.json();
-//   }
-export const reservesTrend: TrendPoint[] = [
-  { month: "Jul", value: 7.8 },
-  { month: "Aug", value: 8.0 },
-  { month: "Sep", value: 7.5 },
-  { month: "Oct", value: 7.2 },
-  { month: "Nov", value: 7.6 },
-  { month: "Dec", value: 8.0 },
-  { month: "Jan", value: 8.2 },
-  { month: "Feb", value: 8.4 },
-  { month: "Mar", value: 8.5 },
-  { month: "Apr", value: 8.6 },
-  { month: "May", value: 8.8 },
-  { month: "Jun", value: 9.4 },
+// Fallback data, used by getReservesTrend() in src/lib/data/worldBank.ts if
+// the World Bank API is unreachable. Real total reserves (includes gold, B
+// USD) for Pakistan, 2015-2024, from World Bank indicator FI.RES.TOTL.CD.
+export const fallbackReservesTrend: TrendPoint[] = [
+  { month: "2015", value: 20.0 },
+  { month: "2016", value: 22.0 },
+  { month: "2017", value: 18.5 },
+  { month: "2018", value: 11.8 },
+  { month: "2019", value: 16.6 },
+  { month: "2020", value: 18.5 },
+  { month: "2021", value: 22.8 },
+  { month: "2022", value: 9.9 },
+  { month: "2023", value: 13.7 },
+  { month: "2024", value: 18.4 },
 ];
