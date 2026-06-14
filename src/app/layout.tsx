@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import CreatorBadge from "@/components/CreatorBadge";
+import GalaxyBackground from "@/components/GalaxyBackground";
 import MotionProvider from "@/components/MotionProvider";
 
 const geistSans = Geist({
@@ -31,6 +32,7 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full scroll-smooth antialiased`}
     >
       <body className="min-h-full flex flex-col">
+        <GalaxyBackground />
         <MotionProvider>
           {children}
           <CreatorBadge />
