@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { motion, type Variants } from "framer-motion";
 import type { Kpi } from "@/data/kpiData";
 
 function TrendArrow({ trend }: { trend: Kpi["trend"] }) {
@@ -18,7 +18,7 @@ function TrendArrow({ trend }: { trend: Kpi["trend"] }) {
 }
 
 // Matches the parent KpiGrid's "hidden"/"visible" stagger.
-const cardVariants = {
+const cardVariants: Variants = {
   hidden: { opacity: 0, y: 24 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } },
 };

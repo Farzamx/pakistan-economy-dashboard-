@@ -7,7 +7,8 @@ import TrendLineChart from "@/components/charts/TrendLineChart";
 import { healthFactors, healthScoreExplanation } from "@/data/healthScoreData";
 import { sectionData } from "@/data/sectionData";
 import { calculateHealthScore } from "@/lib/economicHealth";
-import { getInflationTrend, getKpiData, getReservesTrend } from "@/lib/data/worldBank";
+import { getAllSbpIndicators } from "@/lib/data/sbp";
+import { getGdpKpi } from "@/lib/data/worldBank";
 
 function getSection(id: string) {
   const section = sectionData.find((item) => item.id === id);
@@ -18,11 +19,26 @@ function getSection(id: string) {
 }
 
 export default async function Home() {
-  const [kpiData, inflationTrend, reservesTrend] = await Promise.all([
-    getKpiData(),
-    getInflationTrend(),
-    getReservesTrend(),
-  ]);
+  const [gdpKpi, sbp] = await Promise.all([getGdpKpi(), getAllSbpIndicators()]);
+
+  const headlineKpis = [
+    gdpKpi,
+    sbp.cpiInflation.kpi,
+    sbp.foreignReserves.kpi,
+    sbp.usdPkr.kpi,
+    sbp.remittances.kpi,
+  ];
+
+  const secondaryKpis = [
+    sbp.policyRate.kpi,
+    sbp.coreInflation.kpi,
+    sbp.wpiInflation.kpi,
+    sbp.tbillYield3m.kpi,
+    sbp.pibYield3y.kpi,
+    sbp.currentAccount.kpi,
+    sbp.tradeBalance.kpi,
+    sbp.moneySupplyM2.kpi,
+  ];
 
   const healthScore = calculateHealthScore(healthFactors);
 
@@ -32,22 +48,59 @@ export default async function Home() {
       <main id="overview" className="flex-1 scroll-mt-8 px-6 py-8 sm:px-10 lg:px-16">
         <Hero />
 
-        <KpiGrid items={kpiData} />
+        <KpiGrid items={headlineKpis} />
 
         <HealthScoreCard score={healthScore} explanation={healthScoreExplanation} />
+
+        <h2 className="mt-12 text-xl font-semibold text-white sm:text-2xl">
+          Monetary &amp; External Indicators
+        </h2>
+        <p className="mt-2 max-w-2xl text-sm text-white/60">
+          Policy rate, money market yields, core and wholesale prices, and the
+          external accounts that shape Pakistan&apos;s financing needs.
+        </p>
+        <KpiGrid items={secondaryKpis} />
 
         <DashboardSection {...getSection("gdp")} />
 
         <DashboardSection {...getSection("inflation")}>
           <div className="mt-6 rounded-xl border border-white/5 bg-white/[0.02] p-4">
             <p className="mb-2 text-xs font-medium text-white/40">
-              10-Year Trend <span className="text-white/25">· World Bank, annual</span>
+              24-Month Trend <span className="text-white/25">· SBP EasyData, monthly</span>
             </p>
             <TrendLineChart
-              data={inflationTrend}
+              data={sbp.cpiInflation.trend}
               color="#a855f7"
               unit="%"
-              gradientId="inflationGradient"
+              gradientId="cpiInflationGradient"
+            />
+          </div>
+        </DashboardSection>
+
+        <DashboardSection {...getSection("price-indices")}>
+          <div className="mt-6 rounded-xl border border-white/5 bg-white/[0.02] p-4">
+            <p className="mb-2 text-xs font-medium text-white/40">
+              24-Month Trend <span className="text-white/25">· SBP EasyData, monthly</span>
+            </p>
+            <TrendLineChart
+              data={sbp.coreInflation.trend}
+              color="#2dd4bf"
+              unit="%"
+              gradientId="coreInflationGradient"
+            />
+          </div>
+        </DashboardSection>
+
+        <DashboardSection {...getSection("monetary-policy")}>
+          <div className="mt-6 rounded-xl border border-white/5 bg-white/[0.02] p-4">
+            <p className="mb-2 text-xs font-medium text-white/40">
+              Recent Trend <span className="text-white/25">· SBP EasyData, as-needed</span>
+            </p>
+            <TrendLineChart
+              data={sbp.policyRate.trend}
+              color="#fbbf24"
+              unit="%"
+              gradientId="policyRateGradient"
             />
           </div>
         </DashboardSection>
@@ -55,10 +108,10 @@ export default async function Home() {
         <DashboardSection {...getSection("reserves")}>
           <div className="mt-6 rounded-xl border border-white/5 bg-white/[0.02] p-4">
             <p className="mb-2 text-xs font-medium text-white/40">
-              10-Year Trend <span className="text-white/25">· World Bank, annual</span>
+              24-Month Trend <span className="text-white/25">· SBP EasyData, monthly</span>
             </p>
             <TrendLineChart
-              data={reservesTrend}
+              data={sbp.foreignReserves.trend}
               color="#38bdf8"
               unit="B"
               gradientId="reservesGradient"
@@ -66,8 +119,47 @@ export default async function Home() {
           </div>
         </DashboardSection>
 
-        <DashboardSection {...getSection("exchange-rate")} />
-        <DashboardSection {...getSection("remittances")} />
+        <DashboardSection {...getSection("exchange-rate")}>
+          <div className="mt-6 rounded-xl border border-white/5 bg-white/[0.02] p-4">
+            <p className="mb-2 text-xs font-medium text-white/40">
+              24-Month Trend <span className="text-white/25">· SBP EasyData, monthly</span>
+            </p>
+            <TrendLineChart
+              data={sbp.usdPkr.trend}
+              color="#f472b6"
+              unit=""
+              gradientId="usdPkrGradient"
+            />
+          </div>
+        </DashboardSection>
+
+        <DashboardSection {...getSection("remittances")}>
+          <div className="mt-6 rounded-xl border border-white/5 bg-white/[0.02] p-4">
+            <p className="mb-2 text-xs font-medium text-white/40">
+              24-Month Trend <span className="text-white/25">· SBP EasyData, monthly</span>
+            </p>
+            <TrendLineChart
+              data={sbp.remittances.trend}
+              color="#34d399"
+              unit="B"
+              gradientId="remittancesGradient"
+            />
+          </div>
+        </DashboardSection>
+
+        <DashboardSection {...getSection("external-sector")}>
+          <div className="mt-6 rounded-xl border border-white/5 bg-white/[0.02] p-4">
+            <p className="mb-2 text-xs font-medium text-white/40">
+              24-Month Trend <span className="text-white/25">· SBP EasyData, monthly</span>
+            </p>
+            <TrendLineChart
+              data={sbp.tradeBalance.trend}
+              color="#fb7185"
+              unit="B"
+              gradientId="tradeBalanceGradient"
+            />
+          </div>
+        </DashboardSection>
       </main>
     </div>
   );

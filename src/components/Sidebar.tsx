@@ -6,9 +6,12 @@ const navItems = [
   { label: "Overview", href: "#overview", active: true },
   { label: "GDP", href: "#gdp", active: false },
   { label: "Inflation", href: "#inflation", active: false },
+  { label: "Prices", href: "#price-indices", active: false },
+  { label: "Monetary Policy", href: "#monetary-policy", active: false },
   { label: "Reserves", href: "#reserves", active: false },
   { label: "Exchange Rate", href: "#exchange-rate", active: false },
   { label: "Remittances", href: "#remittances", active: false },
+  { label: "External Sector", href: "#external-sector", active: false },
   { label: "Settings", href: "#", active: false },
 ];
 
@@ -44,7 +47,7 @@ export default function Sidebar() {
       </nav>
 
       <div className="mt-auto rounded-xl border border-white/5 bg-white/[0.03] p-4 text-xs text-white/40">
-        Phase 1 &mdash; mock data only. Live data sources coming soon.
+        Live data from SBP EasyData &amp; World Bank.
       </div>
     </aside>
   );

@@ -1,7 +1,5 @@
 import type { TrendPoint } from "@/components/charts/TrendLineChart";
-import { fallbackKpiData, type Kpi } from "@/data/kpiData";
-import { fallbackInflationTrend } from "@/data/inflationTrendData";
-import { fallbackReservesTrend } from "@/data/reservesTrendData";
+import { fallbackGdpKpi, type Kpi } from "@/data/kpiData";
 
 // All indicators are read for Pakistan from the free, keyless World Bank API:
 // https://api.worldbank.org/v2/country/PAK/indicator/{code}?format=json&mrv=10
@@ -13,10 +11,6 @@ const REVALIDATE_SECONDS = 60 * 60 * 24;
 
 const INDICATORS = {
   gdpGrowth: "NY.GDP.MKTP.KD.ZG",
-  inflation: "FP.CPI.TOTL.ZG",
-  foreignReserves: "FI.RES.TOTL.CD",
-  exchangeRate: "PA.NUS.FCRF",
-  remittances: "BX.TRF.PWKR.CD.DT",
   population: "SP.POP.TOTL",
 } as const;
 
@@ -94,103 +88,16 @@ function buildGdpKpi(series: IndicatorSeries): Kpi {
   };
 }
 
-function buildInflationKpi(series: IndicatorSeries): Kpi {
-  const diff = series.previousValue !== null ? series.latestValue - series.previousValue : 0;
-  return {
-    title: "Inflation",
-    value: series.latestValue.toFixed(1),
-    unit: "%",
-    change: changeLabel(diff, series.previousYear, (d) => `${d.toFixed(1)} pp`),
-    trend: diff >= 0 ? "up" : "down",
-    glow: "purple",
-  };
-}
-
-function buildReservesKpi(series: IndicatorSeries): Kpi {
-  const latestBillions = series.latestValue / 1e9;
-  const diffBillions =
-    series.previousValue !== null ? (series.latestValue - series.previousValue) / 1e9 : 0;
-  return {
-    title: "Foreign Reserves",
-    value: latestBillions.toFixed(1),
-    unit: "B USD",
-    change: changeLabel(diffBillions, series.previousYear, (d) => `${d.toFixed(1)}B`),
-    trend: diffBillions >= 0 ? "up" : "down",
-    glow: "blue",
-  };
-}
-
-function buildExchangeRateKpi(series: IndicatorSeries): Kpi {
-  const diff = series.previousValue !== null ? series.latestValue - series.previousValue : 0;
-  return {
-    title: "USD / PKR",
-    value: series.latestValue.toFixed(2),
-    unit: "PKR",
-    change: changeLabel(diff, series.previousYear, (d) => d.toFixed(2)),
-    trend: diff >= 0 ? "up" : "down",
-    glow: "purple",
-  };
-}
-
-function buildRemittancesKpi(series: IndicatorSeries): Kpi {
-  const latestBillions = series.latestValue / 1e9;
-  const pctDiff =
-    series.previousValue && series.previousValue !== 0
-      ? ((series.latestValue - series.previousValue) / series.previousValue) * 100
-      : 0;
-  return {
-    title: "Remittances",
-    value: latestBillions.toFixed(1),
-    unit: "B USD",
-    change: changeLabel(pctDiff, series.previousYear, (d) => `${d.toFixed(1)}%`),
-    trend: pctDiff >= 0 ? "up" : "down",
-    glow: "blue",
-  };
-}
-
 /**
- * Fetches the 5 headline KPI values from the World Bank. Each indicator is
- * fetched independently — if one fails, only that card falls back to its
- * last-known value instead of breaking the whole dashboard.
+ * Fetches the GDP growth KPI (the only headline indicator still sourced from
+ * the World Bank — the rest come from SBP EasyData, see src/lib/data/sbp.ts).
  */
-export async function getKpiData(): Promise<Kpi[]> {
-  const [gdp, inflation, reserves, exchangeRate, remittances] = await Promise.allSettled([
-    fetchIndicator(INDICATORS.gdpGrowth),
-    fetchIndicator(INDICATORS.inflation),
-    fetchIndicator(INDICATORS.foreignReserves),
-    fetchIndicator(INDICATORS.exchangeRate),
-    fetchIndicator(INDICATORS.remittances),
-  ]);
-
-  return [
-    gdp.status === "fulfilled" ? buildGdpKpi(gdp.value) : fallbackKpiData[0],
-    inflation.status === "fulfilled" ? buildInflationKpi(inflation.value) : fallbackKpiData[1],
-    reserves.status === "fulfilled" ? buildReservesKpi(reserves.value) : fallbackKpiData[2],
-    exchangeRate.status === "fulfilled" ? buildExchangeRateKpi(exchangeRate.value) : fallbackKpiData[3],
-    remittances.status === "fulfilled" ? buildRemittancesKpi(remittances.value) : fallbackKpiData[4],
-  ];
-}
-
-/** 10-year inflation history for the Inflation section's trend chart. */
-export async function getInflationTrend(): Promise<TrendPoint[]> {
+export async function getGdpKpi(): Promise<Kpi> {
   try {
-    const series = await fetchIndicator(INDICATORS.inflation);
-    return series.history.map((point) => ({ month: point.month, value: Number(point.value.toFixed(1)) }));
+    const series = await fetchIndicator(INDICATORS.gdpGrowth);
+    return buildGdpKpi(series);
   } catch {
-    return fallbackInflationTrend;
-  }
-}
-
-/** 10-year foreign reserves history (in billions of USD) for the Reserves section's trend chart. */
-export async function getReservesTrend(): Promise<TrendPoint[]> {
-  try {
-    const series = await fetchIndicator(INDICATORS.foreignReserves);
-    return series.history.map((point) => ({
-      month: point.month,
-      value: Number((point.value / 1e9).toFixed(1)),
-    }));
-  } catch {
-    return fallbackReservesTrend;
+    return fallbackGdpKpi;
   }
 }
 
