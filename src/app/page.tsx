@@ -11,6 +11,7 @@ import { healthFactors, healthScoreExplanation } from "@/data/healthScoreData";
 import { fallbackPakEtfKpi } from "@/data/globalMarketsFallbackData";
 import { sectionData } from "@/data/sectionData";
 import { calculateHealthScore } from "@/lib/economicHealth";
+import { getFreshnessStatus } from "@/lib/dataFreshness";
 import { getAllSbpIndicators } from "@/lib/data/sbp";
 import { getGdpKpi } from "@/lib/data/worldBank";
 import {
@@ -104,6 +105,19 @@ export default async function Home() {
   ];
 
   const healthScore = calculateHealthScore(healthFactors);
+
+  // Build-time data freshness audit — printed to server/build console
+  console.log("\n=== Global Markets Freshness Audit ===");
+  console.log("Indicator            | Source          | latestDate   | status");
+  console.log("---------------------|-----------------|--------------|--------");
+  for (const kpi of globalMarketsKpis) {
+    const status = getFreshnessStatus(kpi.latestDate, kpi.frequency);
+    const indicator = kpi.title.padEnd(20);
+    const src = (kpi.source ?? "—").padEnd(15);
+    const date = (kpi.latestDate ?? "—").padEnd(12);
+    console.log(`${indicator} | ${src} | ${date} | ${status}`);
+  }
+  console.log("======================================\n");
 
   // All Kpi objects — passed to DataSourcesModal for the audit table
   const allKpis = [

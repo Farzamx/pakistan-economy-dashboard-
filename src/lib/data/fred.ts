@@ -138,31 +138,40 @@ function buildKpi(
   };
 }
 
-/** West Texas Intermediate crude oil spot price, in USD per barrel. */
+/** West Texas Intermediate crude oil futures (CL=F) — Yahoo Finance primary, FRED daily as fallback. */
 export async function getWtiKpi(): Promise<Kpi> {
+  const yfKpi = await getYfWtiKpi();
+  if (yfKpi) return yfKpi;
   try {
     const series = await fetchFredSeries(SERIES_IDS.wti);
     return buildKpi(series, "WTI Crude", "$/bbl", "blue", 2, SERIES_IDS.wti);
-  } catch { /* fall through to Yahoo Finance */ }
-  return (await getYfWtiKpi()) ?? fallbackWtiKpi;
+  } catch {
+    return fallbackWtiKpi;
+  }
 }
 
-/** Brent crude oil spot price, in USD per barrel. */
+/** Brent crude oil futures (BZ=F) — Yahoo Finance primary, FRED daily as fallback. */
 export async function getBrentKpi(): Promise<Kpi> {
+  const yfKpi = await getYfBrentKpi();
+  if (yfKpi) return yfKpi;
   try {
     const series = await fetchFredSeries(SERIES_IDS.brent);
     return buildKpi(series, "Brent Crude", "$/bbl", "purple", 2, SERIES_IDS.brent);
-  } catch { /* fall through to Yahoo Finance */ }
-  return (await getYfBrentKpi()) ?? fallbackBrentKpi;
+  } catch {
+    return fallbackBrentKpi;
+  }
 }
 
-/** Henry Hub natural gas spot price, in USD per MMBtu. */
+/** Henry Hub natural gas futures (NG=F) — Yahoo Finance primary, FRED daily as fallback. */
 export async function getNaturalGasKpi(): Promise<Kpi> {
+  const yfKpi = await getYfNaturalGasKpi();
+  if (yfKpi) return yfKpi;
   try {
     const series = await fetchFredSeries(SERIES_IDS.naturalGas);
     return buildKpi(series, "Natural Gas", "$/MMBtu", "blue", 2, SERIES_IDS.naturalGas);
-  } catch { /* fall through to Yahoo Finance */ }
-  return (await getYfNaturalGasKpi()) ?? fallbackNatGasKpi;
+  } catch {
+    return fallbackNatGasKpi;
+  }
 }
 
 /** US 10-Year Treasury constant maturity yield, in percent. */
