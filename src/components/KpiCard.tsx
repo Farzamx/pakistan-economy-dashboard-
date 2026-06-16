@@ -2,6 +2,7 @@
 
 import { motion, type Variants } from "framer-motion";
 import type { Kpi } from "@/data/kpiData";
+import AnimatedValue from "@/components/AnimatedValue";
 import InfoTooltip from "@/components/InfoTooltip";
 import {
   getFreshnessStatus,
@@ -60,7 +61,9 @@ export default function KpiCard({ title, value, unit, change, trend, glow, sourc
         <InfoTooltip termKey={title} />
       </div>
       <div className="flex items-baseline gap-2">
-        <span className="text-3xl font-semibold text-white">{value}</span>
+        <span className="text-3xl font-semibold text-white">
+          <AnimatedValue value={value} />
+        </span>
         <span className="text-sm text-white/50">{unit}</span>
       </div>
       <div className={`flex items-center gap-1.5 text-xs font-medium ${trendColor}`}>

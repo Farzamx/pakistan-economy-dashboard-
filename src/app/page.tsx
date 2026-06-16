@@ -6,6 +6,7 @@ import InfoTooltip from "@/components/InfoTooltip";
 import KpiGrid from "@/components/KpiGrid";
 import NewsIntelligenceSection from "@/components/NewsIntelligenceSection";
 import Sidebar from "@/components/Sidebar";
+import ViewportFadeIn from "@/components/ViewportFadeIn";
 import TrendLineChart from "@/components/charts/TrendLineChart";
 import { healthFactors, healthScoreExplanation } from "@/data/healthScoreData";
 import { fallbackPakEtfKpi } from "@/data/globalMarketsFallbackData";
@@ -140,34 +141,40 @@ export default async function Home() {
 
         <HealthScoreCard score={healthScore} explanation={healthScoreExplanation} />
 
-        <h2 className="mt-12 text-xl font-semibold text-white sm:text-2xl">
-          Monetary &amp; External Indicators
-        </h2>
-        <p className="mt-2 max-w-2xl text-sm text-white/60">
-          Policy rate, money market yields, core and wholesale prices, and the
-          external accounts that shape Pakistan&apos;s financing needs.
-        </p>
+        <ViewportFadeIn>
+          <h2 className="mt-12 text-xl font-semibold text-white sm:text-2xl">
+            Monetary &amp; External Indicators
+          </h2>
+          <p className="mt-2 max-w-2xl text-sm text-white/60">
+            Policy rate, money market yields, core and wholesale prices, and the
+            external accounts that shape Pakistan&apos;s financing needs.
+          </p>
+        </ViewportFadeIn>
         <KpiGrid items={secondaryKpis} />
 
         <div id="global-markets" className="scroll-mt-8">
-          <h2 className="mt-12 text-xl font-semibold text-white sm:text-2xl">
-            Global Markets
-          </h2>
-          <p className="mt-2 max-w-2xl text-sm text-white/60">
-            Precious metals, energy benchmarks, and US rates that drive
-            global risk appetite and Pakistan&apos;s import bill.
-          </p>
+          <ViewportFadeIn>
+            <h2 className="mt-12 text-xl font-semibold text-white sm:text-2xl">
+              Global Markets
+            </h2>
+            <p className="mt-2 max-w-2xl text-sm text-white/60">
+              Precious metals, energy benchmarks, and US rates that drive
+              global risk appetite and Pakistan&apos;s import bill.
+            </p>
+          </ViewportFadeIn>
           <KpiGrid items={globalMarketsKpis} />
         </div>
 
         <div id="financial-markets" className="scroll-mt-8">
-          <h2 className="mt-12 text-xl font-semibold text-white sm:text-2xl">
-            Financial Markets
-          </h2>
-          <p className="mt-2 max-w-2xl text-sm text-white/60">
-            Pakistan equity market proxy and bond market yields. Live data via
-            Yahoo Finance and SBP EasyData.
-          </p>
+          <ViewportFadeIn>
+            <h2 className="mt-12 text-xl font-semibold text-white sm:text-2xl">
+              Financial Markets
+            </h2>
+            <p className="mt-2 max-w-2xl text-sm text-white/60">
+              Pakistan equity market proxy and bond market yields. Live data via
+              Yahoo Finance and SBP EasyData.
+            </p>
+          </ViewportFadeIn>
 
           {/* PAK ETF — equity market proxy card (only if data is fresh) */}
           {pakEtfKpiRaw !== null && <KpiGrid items={[pakEtfKpiRaw]} />}
@@ -224,13 +231,15 @@ export default async function Home() {
         </div>
 
         <div id="real-economy" className="scroll-mt-8">
-          <h2 className="mt-12 text-xl font-semibold text-white sm:text-2xl">
-            Real Economy &amp; Fiscal
-          </h2>
-          <p className="mt-2 max-w-2xl text-sm text-white/60">
-            Trade flows, investment, competitiveness, industrial output, credit
-            expansion, and Pakistan&apos;s fiscal position.
-          </p>
+          <ViewportFadeIn>
+            <h2 className="mt-12 text-xl font-semibold text-white sm:text-2xl">
+              Real Economy &amp; Fiscal
+            </h2>
+            <p className="mt-2 max-w-2xl text-sm text-white/60">
+              Trade flows, investment, competitiveness, industrial output, credit
+              expansion, and Pakistan&apos;s fiscal position.
+            </p>
+          </ViewportFadeIn>
           <KpiGrid items={realEconomyKpis} />
         </div>
 
@@ -309,14 +318,16 @@ export default async function Home() {
         </DashboardSection>
 
         <div id="live-fx" className="scroll-mt-8">
-          <h2 className="mt-12 text-xl font-semibold text-white sm:text-2xl">
-            Live Exchange Rates
-          </h2>
-          <p className="mt-2 max-w-2xl text-sm text-white/60">
-            Current interbank market rates for PKR cross-pairs, updated hourly
-            from ExchangeRate-API. Distinct from the SBP monthly-average series
-            shown in the historical trend below.
-          </p>
+          <ViewportFadeIn>
+            <h2 className="mt-12 text-xl font-semibold text-white sm:text-2xl">
+              Live Exchange Rates
+            </h2>
+            <p className="mt-2 max-w-2xl text-sm text-white/60">
+              Current interbank market rates for PKR cross-pairs, updated hourly
+              from ExchangeRate-API. Distinct from the SBP monthly-average series
+              shown in the historical trend below.
+            </p>
+          </ViewportFadeIn>
           <KpiGrid items={liveFxKpis} />
         </div>
 
