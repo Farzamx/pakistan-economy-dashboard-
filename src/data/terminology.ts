@@ -334,6 +334,16 @@ export const TERMINOLOGY: Record<string, TermEntry> = {
 
   // ── Financial Markets ────────────────────────────────────────────────────────
 
+  "Bank Reserves": {
+    title: "Commercial Bank FX Reserves",
+    definition:
+      "Net foreign exchange reserves held by Pakistan's commercial banks — the liquid foreign currency assets on commercial banks' balance sheets, net of their short-term FX liabilities. Measured by SBP as series Z00050 (Net Reserves With Banks) in the Gold and Foreign Exchange Reserves dataset.",
+    whyItMatters:
+      "Commercial bank reserves supplement SBP reserves as a secondary buffer for import payments and external obligations. While less directly controllable than SBP reserves, they represent genuine available foreign exchange in the system.",
+    interpretation:
+      "Higher is better. Add to SBP reserves for Total Liquid Foreign Reserves — the figure most comparable to IMF import-cover benchmarks and Google/Bloomberg 'Pakistan FX Reserves' data. Note that SBP's monthly EasyData series lags the weekly SBP press-release figures by 4–6 weeks.",
+  },
+
   "Pakistan ETF (NYSE: PAK)": {
     title: "Pakistan ETF (NYSE: PAK)",
     definition:

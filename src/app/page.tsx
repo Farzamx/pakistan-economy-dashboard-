@@ -252,7 +252,23 @@ export default async function Home() {
           </div>
         </DashboardSection>
 
-        <DashboardSection {...getSection("reserves")}>
+        <DashboardSection
+          {...getSection("reserves")}
+          stats={(() => {
+            const sbpB = parseFloat(sbp.foreignReserves.kpi.value);
+            const bankB = parseFloat(sbp.netBankReserves.kpi.value);
+            const totalB = sbpB + bankB;
+            const monthlyImportsB = parseFloat(sbp.imports.kpi.value);
+            const importCoverMonths = monthlyImportsB > 0 ? totalB / monthlyImportsB : 0;
+            const obsDate = sbp.foreignReserves.meta.observationDate.slice(0, 7);
+            return [
+              { label: "SBP Reserves", value: `$${sbpB.toFixed(1)}B` },
+              { label: "Commercial Banks", value: `$${bankB.toFixed(1)}B` },
+              { label: "Total Reserves", value: `$${totalB.toFixed(1)}B` },
+              { label: "Import Cover", value: `${importCoverMonths.toFixed(1)} months · ${obsDate}` },
+            ];
+          })()}
+        >
           <div className="mt-6 rounded-xl border border-white/5 bg-white/[0.02] p-4">
             <p className="mb-2 text-xs font-medium text-white/40">
               24-Month Trend <span className="text-white/25">· SBP EasyData, monthly</span>

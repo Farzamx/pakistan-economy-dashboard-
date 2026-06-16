@@ -41,11 +41,14 @@ export const sectionData: SectionContent[] = [
     title: "Foreign Exchange Reserves",
     description:
       "Total liquid foreign reserves are split between the State Bank of Pakistan and commercial banks, providing a buffer for import payments.",
+    // Stats are overridden in page.tsx with live SBP EasyData values
+    // (TS_GP_EXT_PAKRES_M.Z00020 for SBP + Z00050 for commercial banks).
+    // These placeholders are never rendered.
     stats: [
-      { label: "SBP Reserves", value: "$8.1B" },
-      { label: "Commercial Banks", value: "$1.3B" },
-      { label: "Total Reserves", value: "$9.4B" },
-      { label: "Import Cover", value: "1.8 months" },
+      { label: "SBP Reserves", value: "—" },
+      { label: "Commercial Banks", value: "—" },
+      { label: "Total Reserves", value: "—" },
+      { label: "Import Cover", value: "—" },
     ],
   },
   {

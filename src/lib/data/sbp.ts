@@ -11,6 +11,7 @@ import {
   fallbackImports,
   fallbackLsm,
   fallbackMoneySupplyM2,
+  fallbackNetBankReserves,
   fallbackPibYield3y,
   fallbackPolicyRate,
   fallbackPrivateCreditGrowth,
@@ -53,6 +54,7 @@ type Frequency = "Monthly" | "As-Needed" | "Weekly" | "Annual";
 // "{dataset_code}.{series_code}".
 const SERIES_KEYS = {
   foreignReserves: "TS_GP_EXT_PAKRES_M.Z00020", // Total SBP Reserves
+  netBankReserves: "TS_GP_EXT_PAKRES_M.Z00050", // Net Reserves With Banks (commercial bank FX reserves)
   usdPkr: "TS_GP_ER_FAERPKR_M.E00220", // Avg exchange rate, PKR per USD
   policyRate: "TS_GP_IR_SIRPR_AH.SBPOL0030", // SBP Policy (Target) Rate
   cpiInflation: "TS_GP_PT_CPI_M.P00011516", // National CPI, YoY
@@ -227,6 +229,20 @@ function buildForeignReservesKpi(series: SbpSeries): Kpi {
     change: changeLabel(diffB, prevLabel, (d) => `${d.toFixed(1)}B`),
     trend: diffB >= 0 ? "up" : "down",
     glow: "blue",
+  };
+}
+
+function buildNetBankReservesKpi(series: SbpSeries): Kpi {
+  const latestB = series.latestValue / 1000;
+  const diffB = series.previousValue !== null ? (series.latestValue - series.previousValue) / 1000 : 0;
+  const prevLabel = series.previousDate ? formatMonthLabel(series.previousDate) : null;
+  return {
+    title: "Bank Reserves",
+    value: latestB.toFixed(2),
+    unit: "B USD",
+    change: changeLabel(diffB, prevLabel, (d) => `${d.toFixed(2)}B`),
+    trend: diffB >= 0 ? "up" : "down",
+    glow: "purple",
   };
 }
 
@@ -497,6 +513,14 @@ const CONFIGS: Record<SbpIndicatorKey, IndicatorConfig> = {
     toTrendValue: (v) => v / 1000,
     buildKpi: buildForeignReservesKpi,
     fallback: fallbackForeignReserves,
+  },
+  netBankReserves: {
+    seriesKey: SERIES_KEYS.netBankReserves,
+    revalidate: REVALIDATE_MONTHLY,
+    frequency: "Monthly",
+    toTrendValue: (v) => v / 1000,
+    buildKpi: buildNetBankReservesKpi,
+    fallback: fallbackNetBankReserves,
   },
   usdPkr: {
     seriesKey: SERIES_KEYS.usdPkr,

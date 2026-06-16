@@ -900,3 +900,34 @@ export const fallbackFiscalBalance: SbpIndicatorResult = {
     lastUpdated: FALLBACK_LAST_UPDATED,
   },
 };
+
+// TS_GP_EXT_PAKRES_M.Z00050 — Net Reserves With Banks (commercial bank FX reserves)
+// Used alongside Z00020 (Total SBP Reserves) to compute Total Liquid Foreign Reserves
+// and Import Cover in the Foreign Exchange Reserves section.
+// Latest observation: Apr 30, 2026 = $4,952.89M = $4.95B
+const netBankReservesTrend: TrendPoint[] = [
+  { month: "Feb '26", value: 4.76 },
+  { month: "Mar '26", value: 4.95 },
+  { month: "Apr '26", value: 4.95 },
+];
+
+export const fallbackNetBankReserves: SbpIndicatorResult = {
+  kpi: {
+    title: "Bank Reserves",
+    value: "4.95",
+    unit: "B USD",
+    change: "+0.00B vs Mar 2026",
+    trend: "up",
+    glow: "purple",
+  },
+  trend: netBankReservesTrend,
+  meta: {
+    source: "SBP EasyData (fallback)",
+    seriesKey: "TS_GP_EXT_PAKRES_M.Z00050",
+    seriesName: "Net Reserves With Banks",
+    unit: "Million USD",
+    frequency: "Monthly",
+    observationDate: "2026-04-30",
+    lastUpdated: FALLBACK_LAST_UPDATED,
+  },
+};
