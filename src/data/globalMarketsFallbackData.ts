@@ -15,6 +15,10 @@ export const fallbackGoldKpi: Kpi = {
   change: "offline — last known Jun 16",
   trend: "up",
   glow: "blue",
+  source: "Yahoo Finance",
+  seriesId: "GC=F",
+  latestDate: "2026-06-16",
+  frequency: "Hourly",
 };
 
 export const fallbackSilverKpi: Kpi = {
@@ -24,6 +28,10 @@ export const fallbackSilverKpi: Kpi = {
   change: "offline — last known Jun 16",
   trend: "up",
   glow: "purple",
+  source: "Yahoo Finance",
+  seriesId: "SI=F",
+  latestDate: "2026-06-16",
+  frequency: "Hourly",
 };
 
 export const fallbackWtiKpi: Kpi = {
@@ -33,6 +41,10 @@ export const fallbackWtiKpi: Kpi = {
   change: "offline — FRED Jun 8",
   trend: "up",
   glow: "blue",
+  source: "FRED",
+  seriesId: "DCOILWTICO",
+  latestDate: "2026-06-08",
+  frequency: "Daily",
 };
 
 export const fallbackBrentKpi: Kpi = {
@@ -42,6 +54,10 @@ export const fallbackBrentKpi: Kpi = {
   change: "offline — FRED Jun 8",
   trend: "up",
   glow: "purple",
+  source: "FRED",
+  seriesId: "DCOILBRENTEU",
+  latestDate: "2026-06-08",
+  frequency: "Daily",
 };
 
 export const fallbackNatGasKpi: Kpi = {
@@ -51,6 +67,10 @@ export const fallbackNatGasKpi: Kpi = {
   change: "offline — FRED Jun 8",
   trend: "up",
   glow: "blue",
+  source: "FRED",
+  seriesId: "DHHNGSP",
+  latestDate: "2026-06-08",
+  frequency: "Daily",
 };
 
 export const fallbackDxyKpi: Kpi = {
@@ -60,6 +80,10 @@ export const fallbackDxyKpi: Kpi = {
   change: "offline — last known Jun 16",
   trend: "up",
   glow: "purple",
+  source: "Yahoo Finance",
+  seriesId: "DX-Y.NYB",
+  latestDate: "2026-06-16",
+  frequency: "Hourly",
 };
 
 export const fallbackUs10yKpi: Kpi = {
@@ -69,6 +93,10 @@ export const fallbackUs10yKpi: Kpi = {
   change: "offline — FRED Jun 12",
   trend: "up",
   glow: "blue",
+  source: "FRED",
+  seriesId: "DGS10",
+  latestDate: "2026-06-12",
+  frequency: "Daily",
 };
 
 export const fallbackFedFundsKpi: Kpi = {
@@ -78,6 +106,10 @@ export const fallbackFedFundsKpi: Kpi = {
   change: "offline — FRED Jun 12",
   trend: "up",
   glow: "purple",
+  source: "FRED",
+  seriesId: "DFF",
+  latestDate: "2026-06-12",
+  frequency: "Daily",
 };
 
 export const fallbackPakEtfKpi: Kpi = {
@@ -87,4 +119,8 @@ export const fallbackPakEtfKpi: Kpi = {
   change: "offline — last known Jun 16",
   trend: "up",
   glow: "blue",
+  source: "Yahoo Finance",
+  seriesId: "PAK",
+  latestDate: "2026-06-16",
+  frequency: "Hourly",
 };

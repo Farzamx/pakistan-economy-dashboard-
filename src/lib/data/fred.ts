@@ -121,6 +121,7 @@ function buildKpi(
   unit: string,
   glow: Kpi["glow"],
   decimals: number,
+  seriesId: string,
 ): Kpi {
   const diff = series.previousValue !== null ? series.latestValue - series.previousValue : 0;
   return {
@@ -130,6 +131,10 @@ function buildKpi(
     change: changeLabel(diff, series.previousDate, (d) => d.toFixed(decimals)),
     trend: diff >= 0 ? "up" : "down",
     glow,
+    source: "FRED",
+    seriesId,
+    latestDate: series.latestDate,
+    frequency: "Daily",
   };
 }
 
@@ -137,7 +142,7 @@ function buildKpi(
 export async function getWtiKpi(): Promise<Kpi> {
   try {
     const series = await fetchFredSeries(SERIES_IDS.wti);
-    return buildKpi(series, "WTI Crude", "$/bbl", "blue", 2);
+    return buildKpi(series, "WTI Crude", "$/bbl", "blue", 2, SERIES_IDS.wti);
   } catch { /* fall through to Yahoo Finance */ }
   return (await getYfWtiKpi()) ?? fallbackWtiKpi;
 }
@@ -146,7 +151,7 @@ export async function getWtiKpi(): Promise<Kpi> {
 export async function getBrentKpi(): Promise<Kpi> {
   try {
     const series = await fetchFredSeries(SERIES_IDS.brent);
-    return buildKpi(series, "Brent Crude", "$/bbl", "purple", 2);
+    return buildKpi(series, "Brent Crude", "$/bbl", "purple", 2, SERIES_IDS.brent);
   } catch { /* fall through to Yahoo Finance */ }
   return (await getYfBrentKpi()) ?? fallbackBrentKpi;
 }
@@ -155,7 +160,7 @@ export async function getBrentKpi(): Promise<Kpi> {
 export async function getNaturalGasKpi(): Promise<Kpi> {
   try {
     const series = await fetchFredSeries(SERIES_IDS.naturalGas);
-    return buildKpi(series, "Natural Gas", "$/MMBtu", "blue", 2);
+    return buildKpi(series, "Natural Gas", "$/MMBtu", "blue", 2, SERIES_IDS.naturalGas);
   } catch { /* fall through to Yahoo Finance */ }
   return (await getYfNaturalGasKpi()) ?? fallbackNatGasKpi;
 }
@@ -164,7 +169,7 @@ export async function getNaturalGasKpi(): Promise<Kpi> {
 export async function getUs10yKpi(): Promise<Kpi> {
   try {
     const series = await fetchFredSeries(SERIES_IDS.us10y);
-    return buildKpi(series, "US 10Y Treasury", "%", "blue", 2);
+    return buildKpi(series, "US 10Y Treasury", "%", "blue", 2, SERIES_IDS.us10y);
   } catch { /* fall through to Yahoo Finance */ }
   return (await getYfUs10yKpi()) ?? fallbackUs10yKpi;
 }
@@ -176,7 +181,7 @@ export async function getUs10yKpi(): Promise<Kpi> {
 export async function getFedFundsKpi(): Promise<Kpi> {
   try {
     const series = await fetchFredSeries(SERIES_IDS.fedFunds);
-    return buildKpi(series, "Fed Funds Rate", "%", "purple", 2);
+    return buildKpi(series, "Fed Funds Rate", "%", "purple", 2, SERIES_IDS.fedFunds);
   } catch {
     return fallbackFedFundsKpi;
   }

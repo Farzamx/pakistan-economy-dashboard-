@@ -1,4 +1,5 @@
 import DashboardSection from "@/components/DashboardSection";
+import DataSourcesModal from "@/components/DataSourcesModal";
 import HealthScoreCard from "@/components/HealthScoreCard";
 import Hero from "@/components/Hero";
 import InfoTooltip from "@/components/InfoTooltip";
@@ -103,6 +104,17 @@ export default async function Home() {
   ];
 
   const healthScore = calculateHealthScore(healthFactors);
+
+  // All Kpi objects — passed to DataSourcesModal for the audit table
+  const allKpis = [
+    ...headlineKpis,
+    ...secondaryKpis,
+    ...globalMarketsKpis,
+    ...(pakEtfKpiRaw !== null ? [pakEtfKpiRaw] : [pakEtfKpi]),
+    ...liveFxKpis,
+    ...realEconomyKpis,
+    sbp.netBankReserves.kpi,
+  ];
 
   return (
     <div className="flex min-h-screen w-full">
@@ -338,6 +350,7 @@ export default async function Home() {
 
         <NewsIntelligenceSection items={taggedNews} />
       </main>
+      <DataSourcesModal kpis={allKpis} />
     </div>
   );
 }

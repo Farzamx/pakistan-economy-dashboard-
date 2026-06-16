@@ -38,6 +38,9 @@ const FALLBACK_RATES: FxRateKpis = {
     change: "live rate unavailable",
     trend: "up",
     glow: "blue",
+    source: "ExchangeRate-API",
+    latestDate: "2026-06-16",
+    frequency: "Hourly",
   },
   eurPkr: {
     title: "EUR / PKR",
@@ -46,6 +49,9 @@ const FALLBACK_RATES: FxRateKpis = {
     change: "live rate unavailable",
     trend: "up",
     glow: "blue",
+    source: "ExchangeRate-API",
+    latestDate: "2026-06-16",
+    frequency: "Hourly",
   },
   gbpPkr: {
     title: "GBP / PKR",
@@ -54,6 +60,9 @@ const FALLBACK_RATES: FxRateKpis = {
     change: "live rate unavailable",
     trend: "up",
     glow: "purple",
+    source: "ExchangeRate-API",
+    latestDate: "2026-06-16",
+    frequency: "Hourly",
   },
   sarPkr: {
     title: "SAR / PKR",
@@ -62,6 +71,9 @@ const FALLBACK_RATES: FxRateKpis = {
     change: "live rate unavailable",
     trend: "up",
     glow: "purple",
+    source: "ExchangeRate-API",
+    latestDate: "2026-06-16",
+    frequency: "Hourly",
   },
 };
 
@@ -80,6 +92,9 @@ function makeKpi(
     change: `interbank · ${dateLabel}`,
     trend: "up",
     glow,
+    source: "ExchangeRate-API",
+    latestDate: updatedDate,
+    frequency: "Hourly",
   };
 }
 

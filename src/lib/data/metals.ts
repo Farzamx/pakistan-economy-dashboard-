@@ -112,7 +112,7 @@ async function fetchTwelveDataSeries(symbol: string): Promise<MetalSeries> {
   };
 }
 
-function buildKpi(series: MetalSeries, title: string, unit: string, glow: Kpi["glow"]): Kpi {
+function buildKpi(series: MetalSeries, title: string, unit: string, glow: Kpi["glow"], symbol: string): Kpi {
   const diff = series.previousValue !== null ? series.latestValue - series.previousValue : 0;
   return {
     title,
@@ -121,6 +121,10 @@ function buildKpi(series: MetalSeries, title: string, unit: string, glow: Kpi["g
     change: changeLabel(diff, series.previousDate, (d) => d.toFixed(2)),
     trend: diff >= 0 ? "up" : "down",
     glow,
+    source: "Twelve Data",
+    seriesId: symbol,
+    latestDate: series.latestDate.split(/[ T]/)[0], // "2026-06-12 00:00:00" → "2026-06-12"
+    frequency: "Daily",
   };
 }
 
@@ -128,7 +132,7 @@ function buildKpi(series: MetalSeries, title: string, unit: string, glow: Kpi["g
 export async function getGoldKpi(): Promise<Kpi> {
   try {
     const series = await fetchTwelveDataSeries(SYMBOLS.gold);
-    return buildKpi(series, "Gold", "$/oz", "blue");
+    return buildKpi(series, "Gold", "$/oz", "blue", SYMBOLS.gold);
   } catch { /* fall through to Yahoo Finance */ }
   return (await getYfGoldKpi()) ?? fallbackGoldKpi;
 }
@@ -137,7 +141,7 @@ export async function getGoldKpi(): Promise<Kpi> {
 export async function getSilverKpi(): Promise<Kpi> {
   try {
     const series = await fetchTwelveDataSeries(SYMBOLS.silver);
-    return buildKpi(series, "Silver", "$/oz", "purple");
+    return buildKpi(series, "Silver", "$/oz", "purple", SYMBOLS.silver);
   } catch { /* fall through to Yahoo Finance */ }
   return (await getYfSilverKpi()) ?? fallbackSilverKpi;
 }
@@ -146,7 +150,7 @@ export async function getSilverKpi(): Promise<Kpi> {
 export async function getDxyKpi(): Promise<Kpi> {
   try {
     const series = await fetchTwelveDataSeries(SYMBOLS.dxy);
-    return buildKpi(series, "US Dollar Index", "DXY", "purple");
+    return buildKpi(series, "US Dollar Index", "DXY", "purple", SYMBOLS.dxy);
   } catch { /* fall through to Yahoo Finance */ }
   return (await getYfDxyKpi()) ?? fallbackDxyKpi;
 }

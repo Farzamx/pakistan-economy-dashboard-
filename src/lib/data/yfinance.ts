@@ -75,6 +75,7 @@ export function buildYfKpi(
   unit: string,
   glow: Kpi["glow"],
   decimals: number,
+  seriesId: string,
 ): Kpi {
   const diff = prevClose !== null ? price - prevClose : 0;
   const sign = diff >= 0 ? "+" : "";
@@ -92,6 +93,10 @@ export function buildYfKpi(
     change: changeStr,
     trend: diff >= 0 ? "up" : "down",
     glow,
+    source: "Yahoo Finance",
+    seriesId,
+    latestDate: new Date(updatedAt * 1000).toISOString().slice(0, 10),
+    frequency: "Hourly",
   };
 }
 
@@ -100,49 +105,49 @@ export function buildYfKpi(
 export async function getYfGoldKpi(): Promise<Kpi | null> {
   try {
     const { price, prevClose, updatedAt } = await fetchYfQuote(YF_SYMBOLS.gold);
-    return buildYfKpi(price, prevClose, updatedAt, "Gold", "$/oz", "blue", 2);
+    return buildYfKpi(price, prevClose, updatedAt, "Gold", "$/oz", "blue", 2, YF_SYMBOLS.gold);
   } catch { return null; }
 }
 
 export async function getYfSilverKpi(): Promise<Kpi | null> {
   try {
     const { price, prevClose, updatedAt } = await fetchYfQuote(YF_SYMBOLS.silver);
-    return buildYfKpi(price, prevClose, updatedAt, "Silver", "$/oz", "purple", 2);
+    return buildYfKpi(price, prevClose, updatedAt, "Silver", "$/oz", "purple", 2, YF_SYMBOLS.silver);
   } catch { return null; }
 }
 
 export async function getYfWtiKpi(): Promise<Kpi | null> {
   try {
     const { price, prevClose, updatedAt } = await fetchYfQuote(YF_SYMBOLS.wti);
-    return buildYfKpi(price, prevClose, updatedAt, "WTI Crude", "$/bbl", "blue", 2);
+    return buildYfKpi(price, prevClose, updatedAt, "WTI Crude", "$/bbl", "blue", 2, YF_SYMBOLS.wti);
   } catch { return null; }
 }
 
 export async function getYfBrentKpi(): Promise<Kpi | null> {
   try {
     const { price, prevClose, updatedAt } = await fetchYfQuote(YF_SYMBOLS.brent);
-    return buildYfKpi(price, prevClose, updatedAt, "Brent Crude", "$/bbl", "purple", 2);
+    return buildYfKpi(price, prevClose, updatedAt, "Brent Crude", "$/bbl", "purple", 2, YF_SYMBOLS.brent);
   } catch { return null; }
 }
 
 export async function getYfNaturalGasKpi(): Promise<Kpi | null> {
   try {
     const { price, prevClose, updatedAt } = await fetchYfQuote(YF_SYMBOLS.naturalGas);
-    return buildYfKpi(price, prevClose, updatedAt, "Natural Gas", "$/MMBtu", "blue", 3);
+    return buildYfKpi(price, prevClose, updatedAt, "Natural Gas", "$/MMBtu", "blue", 3, YF_SYMBOLS.naturalGas);
   } catch { return null; }
 }
 
 export async function getYfDxyKpi(): Promise<Kpi | null> {
   try {
     const { price, prevClose, updatedAt } = await fetchYfQuote(YF_SYMBOLS.dxy);
-    return buildYfKpi(price, prevClose, updatedAt, "US Dollar Index", "DXY", "purple", 2);
+    return buildYfKpi(price, prevClose, updatedAt, "US Dollar Index", "DXY", "purple", 2, YF_SYMBOLS.dxy);
   } catch { return null; }
 }
 
 export async function getYfUs10yKpi(): Promise<Kpi | null> {
   try {
     const { price, prevClose, updatedAt } = await fetchYfQuote(YF_SYMBOLS.us10y);
-    return buildYfKpi(price, prevClose, updatedAt, "US 10Y Treasury", "%", "blue", 3);
+    return buildYfKpi(price, prevClose, updatedAt, "US 10Y Treasury", "%", "blue", 3, YF_SYMBOLS.us10y);
   } catch { return null; }
 }
 
@@ -161,6 +166,6 @@ export async function getPakEtfKpi(): Promise<Kpi | null> {
       const ageDays = Math.round(ageMs / 86_400_000);
       throw new Error(`PAK ETF data is ${ageDays} days old — fund may be delisted`);
     }
-    return buildYfKpi(price, prevClose, updatedAt, "Pakistan ETF (NYSE: PAK)", "$", "blue", 2);
+    return buildYfKpi(price, prevClose, updatedAt, "Pakistan ETF (NYSE: PAK)", "$", "blue", 2, "PAK");
   } catch { return null; }
 }

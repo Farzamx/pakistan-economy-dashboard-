@@ -1,5 +1,6 @@
 import type { TrendPoint } from "@/components/charts/TrendLineChart";
 import type { Kpi } from "@/data/kpiData";
+import type { DataFrequency } from "@/lib/dataFreshness";
 import {
   fallbackCoreInflation,
   fallbackCpiInflation,
@@ -49,6 +50,13 @@ const REVALIDATE_MONTHLY = 60 * 60 * 24; // 24h
 const REVALIDATE_AS_NEEDED = 60 * 60 * 6; // 6h
 
 type Frequency = "Monthly" | "As-Needed" | "Weekly" | "Annual";
+
+const SBP_FREQ_MAP: Record<Frequency, DataFrequency> = {
+  "Monthly": "Monthly",
+  "As-Needed": "As Needed",
+  "Weekly": "Weekly",
+  "Annual": "Annual",
+} as const;
 
 // Series keys discovered via the SBP EasyData /meta endpoints. Each key is
 // "{dataset_code}.{series_code}".
@@ -675,8 +683,15 @@ async function buildIndicatorResult(config: IndicatorConfig): Promise<SbpIndicat
       ? formatMonthLabel
       : formatDayMonthLabel;
 
+  const baseKpi = config.buildKpi(series);
   return {
-    kpi: config.buildKpi(series),
+    kpi: {
+      ...baseKpi,
+      source: "SBP EasyData",
+      seriesId: series.seriesKey,
+      latestDate: series.latestDate,
+      frequency: SBP_FREQ_MAP[config.frequency],
+    },
     trend: series.history.slice(-HISTORY_DISPLAY_POINTS).map((point) => ({
       month: formatLabel(point.date, "short"),
       value: Number(config.toTrendValue(point.value).toFixed(2)),
@@ -703,7 +718,17 @@ export async function getSbpIndicator(key: SbpIndicatorKey): Promise<SbpIndicato
   try {
     return await buildIndicatorResult(config);
   } catch {
-    return config.fallback;
+    const fb = config.fallback;
+    return {
+      ...fb,
+      kpi: {
+        ...fb.kpi,
+        source: "SBP EasyData",
+        seriesId: config.seriesKey,
+        latestDate: fb.meta.observationDate,
+        frequency: SBP_FREQ_MAP[config.frequency],
+      },
+    };
   }
 }
 

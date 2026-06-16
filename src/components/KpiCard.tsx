@@ -3,6 +3,12 @@
 import { motion, type Variants } from "framer-motion";
 import type { Kpi } from "@/data/kpiData";
 import InfoTooltip from "@/components/InfoTooltip";
+import {
+  getFreshnessStatus,
+  formatLatestDate,
+  FRESHNESS_DOT,
+  FRESHNESS_LABEL,
+} from "@/lib/dataFreshness";
 
 function TrendArrow({ trend }: { trend: Kpi["trend"] }) {
   const isUp = trend === "up";
@@ -34,8 +40,12 @@ const hoverGlow: Record<Kpi["glow"], string> = {
   purple: "0 0 44px rgba(168, 85, 247, 0.5)",
 };
 
-export default function KpiCard({ title, value, unit, change, trend, glow }: Kpi) {
+export default function KpiCard({ title, value, unit, change, trend, glow, source, latestDate, frequency }: Kpi) {
   const trendColor = trend === "up" ? "text-emerald-400" : "text-rose-400";
+  const freshnessStatus = getFreshnessStatus(latestDate, frequency);
+  const dotClass = FRESHNESS_DOT[freshnessStatus];
+  const freshnessLabel = FRESHNESS_LABEL[freshnessStatus];
+  const displayDate = formatLatestDate(latestDate, frequency);
 
   return (
     <motion.div
@@ -57,6 +67,20 @@ export default function KpiCard({ title, value, unit, change, trend, glow }: Kpi
         <TrendArrow trend={trend} />
         <span>{change}</span>
       </div>
+      {latestDate && (
+        <div
+          suppressHydrationWarning
+          className="flex items-center gap-1.5 text-[10px] text-white/40 border-t border-white/5 pt-2 mt-0.5"
+          title={`${freshnessLabel} · ${source ?? "Unknown source"} · as of ${displayDate}`}
+        >
+          <span className={`text-[8px] ${dotClass}`}>●</span>
+          <span className={dotClass}>{freshnessLabel}</span>
+          <span className="text-white/20">·</span>
+          {source && <span>{source}</span>}
+          <span className="text-white/20">·</span>
+          <span>{displayDate}</span>
+        </div>
+      )}
     </motion.div>
   );
 }

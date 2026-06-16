@@ -85,6 +85,10 @@ function buildGdpKpi(series: IndicatorSeries): Kpi {
     change: changeLabel(diff, series.previousYear, (d) => `${d.toFixed(1)} pp`),
     trend: diff >= 0 ? "up" : "down",
     glow: "blue",
+    source: "World Bank",
+    seriesId: "NY.GDP.MKTP.KD.ZG",
+    latestDate: series.latestYear,   // "2024" — annual, year-only
+    frequency: "Annual",
   };
 }
 
