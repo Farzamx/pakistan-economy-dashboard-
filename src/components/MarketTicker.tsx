@@ -25,7 +25,7 @@ function TickerChip({ item }: { item: TickerItem }) {
     item.trend === "up" ? "▲" : item.trend === "down" ? "▼" : "•";
 
   return (
-    <span className="inline-flex items-center gap-2 px-5 border-r border-white/[0.06] last:border-r-0">
+    <span className="inline-flex items-center gap-2 px-5 border-r border-white/[0.06]">
       <span className="text-[11px] font-medium tracking-wide text-white/45">
         {item.label}
       </span>
@@ -59,22 +59,41 @@ export default function MarketTicker({ items }: MarketTickerProps) {
   const [paused, setPaused] = useState(false);
   const prefersReducedMotion = useReducedMotion();
 
-  // Duplicate the items so we can animate one full copy offscreen (-50% of
-  // the total width), at which point the second copy sits exactly where the
-  // first started — seamless visual loop with no JS timers or layout thrash.
+  // Duplicate items for the seamless loop: animation moves -50% of the strip's
+  // total width, at which point the second copy aligns exactly with where the
+  // first started — no jump, no JS timer.
   const doubled = [...items, ...items];
 
   return (
     <div
       aria-label="Live market data"
-      className="mt-6 overflow-hidden rounded-xl border border-white/[0.06]"
+      className="mt-6 rounded-xl border border-white/[0.06]"
       style={{ background: "rgba(255, 255, 255, 0.02)" }}
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
-      <div className="py-3">
+      {/*
+        Clip container: position:relative + overflow:hidden creates the visible
+        window. Explicit height reserves this space in document flow.
+
+        ROOT CAUSE FIX: The animated strip must be position:absolute so it is
+        excluded from the scroll container's overflow area calculation (per the
+        CSS Overflow spec). When the strip was in-flow with width:max-content,
+        the overflow:hidden container's min-content size became ~3000px, which
+        propagated to <main>'s min-width and forced the page wider than the
+        viewport, causing the horizontal scrollbar. Absolute positioning removes
+        the strip from that calculation entirely.
+      */}
+      <div
+        className="relative overflow-hidden"
+        style={{ height: "46px" }}
+      >
         <div
           style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            height: "100%",
             display: "flex",
             alignItems: "center",
             width: "max-content",
