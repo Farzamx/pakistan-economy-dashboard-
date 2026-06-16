@@ -1,12 +1,14 @@
-// News & Intelligence data layer — aggregates Pakistan economy headlines from
-// GNews API (keyword search, free tier 100 req/day) and two open RSS feeds
-// (Dawn Business, The News International Business).
+// News & Intelligence data layer — aggregates Pakistan economy and global
+// market headlines from GNews API and open RSS feeds.
+//
+// Source hierarchy (most → least preferred):
+//   1. GNews API keyword search (requires GNEWS_API_KEY — free, 100 req/day)
+//   2. BBC Business RSS — global market news, no key, reliable
+//   3. Dawn Pakistan RSS — Pakistan economy news, no key
+//   4. Express Tribune Business RSS — Pakistan business news, no key
 //
 // All fetches use Next.js ISR (next.revalidate) so the page always renders
-// from cache and re-fetches in the background, never blocking the user.
-//
-// GNEWS_API_KEY must be set in .env.local for GNews articles. Without it the
-// layer falls back to RSS-only (Dawn + The News), which requires no key.
+// from cache; re-fetches happen in the background without blocking users.
 
 export interface NewsItem {
   title: string;
@@ -64,26 +66,38 @@ async function fetchGNews(
 
 // ---- RSS parser --------------------------------------------------------------
 
-function parseRssItems(xml: string, source: string, category: NewsItem["category"]): NewsItem[] {
+function parseRssItems(
+  xml: string,
+  source: string,
+  category: NewsItem["category"],
+): NewsItem[] {
   const items: NewsItem[] = [];
-  const itemMatches = xml.matchAll(/<item>([\s\S]*?)<\/item>/g);
+  // Use [^>]* to match namespaced items like <item xmlns:default="...">
+  const itemMatches = xml.matchAll(/<item[^>]*>([\s\S]*?)<\/item>/g);
 
   for (const match of itemMatches) {
     const block = match[1];
 
-    const titleMatch = block.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/) ??
-      block.match(/<title>(.*?)<\/title>/);
-    const linkMatch = block.match(/<link>(.*?)<\/link>/) ??
+    const titleMatch =
+      block.match(/<title><!\[CDATA\[([\s\S]*?)\]\]><\/title>/) ??
+      block.match(/<title>([\s\S]*?)<\/title>/);
+    const linkMatch =
+      block.match(/<link>(.*?)<\/link>/) ??
       block.match(/<guid[^>]*>(https?[^<]+)<\/guid>/);
     const pubDateMatch = block.match(/<pubDate>(.*?)<\/pubDate>/);
 
     if (!titleMatch || !linkMatch) continue;
 
+    const title = titleMatch[1].trim();
+    if (!title) continue;
+
     items.push({
-      title: titleMatch[1].trim(),
+      title,
       url: linkMatch[1].trim(),
       source,
-      publishedAt: pubDateMatch ? pubDateMatch[1].trim() : new Date().toISOString(),
+      publishedAt: pubDateMatch
+        ? pubDateMatch[1].trim()
+        : new Date().toISOString(),
       category,
     });
   }
@@ -95,10 +109,13 @@ async function fetchRss(
   url: string,
   source: string,
   category: NewsItem["category"],
-  max = 5,
+  max = 6,
 ): Promise<NewsItem[]> {
   try {
-    const res = await fetch(url, { next: { revalidate: REVALIDATE_NEWS } });
+    const res = await fetch(url, {
+      headers: { "User-Agent": "Mozilla/5.0 (compatible; NewsBot/1.0)" },
+      next: { revalidate: REVALIDATE_NEWS },
+    });
     if (!res.ok) return [];
     const xml = await res.text();
     return parseRssItems(xml, source, category).slice(0, max);
@@ -109,83 +126,63 @@ async function fetchRss(
 
 // ---- Aggregation ------------------------------------------------------------
 
-const FALLBACK_NEWS: NewsItem[] = [
-  {
-    title: "Pakistan's current account records surplus for third consecutive month",
-    url: "https://www.dawn.com/business",
-    source: "Dawn Business",
-    publishedAt: new Date(Date.now() - 3_600_000).toISOString(),
-    category: "pakistan",
-  },
-  {
-    title: "SBP raises policy rate by 100 basis points amid inflation uptick",
-    url: "https://www.dawn.com/business",
-    source: "Dawn Business",
-    publishedAt: new Date(Date.now() - 7_200_000).toISOString(),
-    category: "pakistan",
-  },
-  {
-    title: "KSE-100 closes above 110,000 as foreign buying accelerates",
-    url: "https://www.thenews.com.pk/business",
-    source: "The News Business",
-    publishedAt: new Date(Date.now() - 10_800_000).toISOString(),
-    category: "markets",
-  },
-  {
-    title: "Brent crude slides as OPEC+ output deal uncertainty persists",
-    url: "https://www.dawn.com/business",
-    source: "Dawn Business",
-    publishedAt: new Date(Date.now() - 14_400_000).toISOString(),
-    category: "energy",
-  },
-  {
-    title: "Fed signals extended pause as US inflation remains sticky",
-    url: "https://www.thenews.com.pk/business",
-    source: "The News Business",
-    publishedAt: new Date(Date.now() - 18_000_000).toISOString(),
-    category: "global",
-  },
-];
-
 export async function getNews(): Promise<NewsItem[]> {
-  try {
-    const [pakistanGNews, marketsGNews, energyGNews, globalGNews, dawnRss, thenewsRss] =
-      await Promise.all([
-        fetchGNews("Pakistan economy OR Pakistan rupee OR SBP OR IMF Pakistan", "pakistan", 4),
-        fetchGNews("KSE-100 OR Pakistan stock market OR PSX", "markets", 3),
-        fetchGNews("oil price OPEC crude Brent WTI", "energy", 3),
-        fetchGNews("US Federal Reserve interest rate global economy", "global", 3),
-        fetchRss("https://www.dawn.com/feeds/business-finance", "Dawn Business", "pakistan", 5),
-        fetchRss(
-          "https://www.thenews.com.pk/rss/2/7",
-          "The News Business",
-          "pakistan",
-          5,
-        ),
-      ]);
+  const [
+    pakistanGNews,
+    marketsGNews,
+    energyGNews,
+    globalGNews,
+    bbcRss,
+    dawnRss,
+    tribuneRss,
+  ] = await Promise.all([
+    fetchGNews("Pakistan economy OR Pakistan rupee OR SBP OR IMF Pakistan", "pakistan", 4),
+    fetchGNews("KSE-100 OR Pakistan stock market OR PSX", "markets", 3),
+    fetchGNews("oil price OPEC crude Brent WTI", "energy", 3),
+    fetchGNews("US Federal Reserve interest rate global economy", "global", 3),
+    fetchRss(
+      "https://feeds.bbci.co.uk/news/business/rss.xml",
+      "BBC Business",
+      "global",
+      8,
+    ),
+    fetchRss(
+      "https://www.dawn.com/feeds/home",
+      "Dawn",
+      "pakistan",
+      8,
+    ),
+    fetchRss(
+      "https://tribune.com.pk/feed/business",
+      "Express Tribune",
+      "pakistan",
+      6,
+    ),
+  ]);
 
-    const all = [
-      ...pakistanGNews,
-      ...marketsGNews,
-      ...energyGNews,
-      ...globalGNews,
-      ...dawnRss,
-      ...thenewsRss,
-    ];
+  const all = [
+    ...pakistanGNews,
+    ...marketsGNews,
+    ...energyGNews,
+    ...globalGNews,
+    ...bbcRss,
+    ...dawnRss,
+    ...tribuneRss,
+  ];
 
-    if (all.length === 0) return FALLBACK_NEWS;
+  if (all.length === 0) return [];
 
-    // De-duplicate by URL and sort newest-first.
-    const seen = new Set<string>();
-    return all
-      .filter((item) => {
-        if (seen.has(item.url)) return false;
-        seen.add(item.url);
-        return true;
-      })
-      .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
-      .slice(0, 20);
-  } catch {
-    return FALLBACK_NEWS;
-  }
+  // De-duplicate by URL and sort newest-first.
+  const seen = new Set<string>();
+  return all
+    .filter((item) => {
+      if (seen.has(item.url)) return false;
+      seen.add(item.url);
+      return true;
+    })
+    .sort(
+      (a, b) =>
+        new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime(),
+    )
+    .slice(0, 24);
 }

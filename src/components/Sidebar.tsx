@@ -12,6 +12,7 @@ const navItems = [
   { label: "Fin. Markets", href: "#financial-markets", active: false },
   { label: "Real Economy", href: "#real-economy", active: false },
   { label: "Reserves", href: "#reserves", active: false },
+  { label: "Live FX", href: "#live-fx", active: false },
   { label: "Exchange Rate", href: "#exchange-rate", active: false },
   { label: "Remittances", href: "#remittances", active: false },
   { label: "External Sector", href: "#external-sector", active: false },

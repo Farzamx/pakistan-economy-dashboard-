@@ -4,9 +4,9 @@ import Hero from "@/components/Hero";
 import KpiGrid from "@/components/KpiGrid";
 import NewsIntelligenceSection from "@/components/NewsIntelligenceSection";
 import Sidebar from "@/components/Sidebar";
-import TradingViewWidget from "@/components/TradingViewWidget";
 import TrendLineChart from "@/components/charts/TrendLineChart";
 import { healthFactors, healthScoreExplanation } from "@/data/healthScoreData";
+import { fallbackPakEtfKpi } from "@/data/globalMarketsFallbackData";
 import { sectionData } from "@/data/sectionData";
 import { calculateHealthScore } from "@/lib/economicHealth";
 import { getAllSbpIndicators } from "@/lib/data/sbp";
@@ -18,9 +18,11 @@ import {
   getUs10yKpi,
   getWtiKpi,
 } from "@/lib/data/fred";
+import { getFxRates } from "@/lib/data/fxRates";
 import { getTaggedNews } from "@/lib/data/intelligence";
 import { getDxyKpi, getGoldKpi, getSilverKpi } from "@/lib/data/metals";
 import { getNews } from "@/lib/data/news";
+import { getPakEtfKpi } from "@/lib/data/yfinance";
 
 function getSection(id: string) {
   const section = sectionData.find((item) => item.id === id);
@@ -31,7 +33,7 @@ function getSection(id: string) {
 }
 
 export default async function Home() {
-  const [gdpKpi, sbp, goldKpi, silverKpi, brentKpi, wtiKpi, naturalGasKpi, dxyKpi, us10yKpi, fedFundsKpi, newsItems] =
+  const [gdpKpi, sbp, goldKpi, silverKpi, brentKpi, wtiKpi, naturalGasKpi, dxyKpi, us10yKpi, fedFundsKpi, newsItems, fxRates, pakEtfKpiRaw] =
     await Promise.all([
       getGdpKpi(),
       getAllSbpIndicators(),
@@ -44,7 +46,11 @@ export default async function Home() {
       getUs10yKpi(),
       getFedFundsKpi(),
       getNews(),
+      getFxRates(),
+      getPakEtfKpi(),
     ]);
+
+  const pakEtfKpi = pakEtfKpiRaw ?? fallbackPakEtfKpi;
 
   const taggedNews = await getTaggedNews(newsItems);
 
@@ -76,6 +82,13 @@ export default async function Home() {
     dxyKpi,
     us10yKpi,
     fedFundsKpi,
+  ];
+
+  const liveFxKpis = [
+    fxRates.usdPkr,
+    fxRates.eurPkr,
+    fxRates.gbpPkr,
+    fxRates.sarPkr,
   ];
 
   const realEconomyKpis = [
@@ -125,10 +138,59 @@ export default async function Home() {
             Financial Markets
           </h2>
           <p className="mt-2 max-w-2xl text-sm text-white/60">
-            KSE-100 Index live chart — Pakistan&apos;s benchmark equity index
-            tracking the top 100 companies by market capitalization.
+            Pakistan equity market proxy and bond market yields. Live data via
+            Yahoo Finance and SBP EasyData.
           </p>
-          <TradingViewWidget />
+
+          {/* PAK ETF — equity market proxy card (only if data is fresh) */}
+          {pakEtfKpiRaw !== null && <KpiGrid items={[pakEtfKpiRaw]} />}
+
+          {/* KSE-100 data availability notice */}
+          <div className="mt-6 rounded-xl border border-white/5 bg-white/[0.02] px-5 py-4">
+            <p className="text-xs font-medium uppercase tracking-wide text-white/40">
+              KSE-100 Live Chart — Data Unavailable
+            </p>
+            <p className="mt-2 text-sm text-white/50">
+              Pakistan Stock Exchange (PSX) real-time index data requires a commercial
+              data license from PSX. This restriction applies to all free-tier providers
+              including TradingView and Yahoo Finance.
+              {pakEtfKpiRaw !== null
+                ? " The PAK ETF above (Global X MSCI Pakistan ETF, NYSE) tracks the MSCI Pakistan Index and correlates with KSE-100 performance."
+                : " The Global X MSCI Pakistan ETF (NYSE: PAK), a US-listed proxy that previously tracked the MSCI Pakistan Index, is currently unavailable or delisted."}
+            </p>
+            <div className="mt-3 flex gap-6">
+              <a
+                href="https://www.psx.com.pk"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-neon-blue/70 underline underline-offset-2 hover:text-neon-blue"
+              >
+                psx.com.pk ↗
+              </a>
+              <a
+                href="https://www.tradingview.com/chart/?symbol=PSX%3AKSE100"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-neon-blue/70 underline underline-offset-2 hover:text-neon-blue"
+              >
+                KSE-100 on TradingView ↗
+              </a>
+            </div>
+          </div>
+
+          {/* Pakistan Bond Market — T-Bill 3M yield trend (24-month SBP data) */}
+          <div className="mt-6 rounded-xl border border-white/5 bg-white/[0.02] p-4">
+            <p className="mb-2 text-xs font-medium text-white/40">
+              Pakistan Bond Market &mdash; T-Bill 3M Yield
+              <span className="text-white/25"> &middot; SBP EasyData, monthly</span>
+            </p>
+            <TrendLineChart
+              data={sbp.tbillYield3m.trend}
+              color="#38bdf8"
+              unit="%"
+              gradientId="tbillFinancialMarkets"
+            />
+          </div>
         </div>
 
         <div id="real-economy" className="scroll-mt-8">
@@ -199,6 +261,18 @@ export default async function Home() {
             />
           </div>
         </DashboardSection>
+
+        <div id="live-fx" className="scroll-mt-8">
+          <h2 className="mt-12 text-xl font-semibold text-white sm:text-2xl">
+            Live Exchange Rates
+          </h2>
+          <p className="mt-2 max-w-2xl text-sm text-white/60">
+            Current interbank market rates for PKR cross-pairs, updated hourly
+            from ExchangeRate-API. Distinct from the SBP monthly-average series
+            shown in the historical trend below.
+          </p>
+          <KpiGrid items={liveFxKpis} />
+        </div>
 
         <DashboardSection {...getSection("exchange-rate")}>
           <div className="mt-6 rounded-xl border border-white/5 bg-white/[0.02] p-4">

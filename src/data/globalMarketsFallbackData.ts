@@ -1,81 +1,90 @@
 import type { Kpi } from "./kpiData";
 
-// Fallback data, used by src/lib/data/fred.ts and src/lib/data/metals.ts if
-// the FRED / Twelve Data APIs are unreachable or the relevant API key
-// (FRED_API_KEY / TWELVEDATA_API_KEY) is missing, so the dashboard never
-// shows a broken state.
+// Emergency static fallback — shown only if BOTH the primary API (Twelve Data /
+// FRED) AND the secondary free API (Yahoo Finance) fail simultaneously.
 //
-// Approximate snapshot values as of 2026-06-15 — will be replaced by live
-// figures automatically once the API keys are configured in .env.local.
+// FRED-sourced values (WTI, Brent, Natural Gas, US 10Y, Fed Funds) reflect the
+// latest FRED observations as of 2026-06-12 (retrieved Jun 16 2026).
+// Yahoo Finance-sourced values (Gold, Silver, DXY) reflect Jun 16 2026 prices.
+// These update automatically once any live source reconnects.
 
 export const fallbackGoldKpi: Kpi = {
   title: "Gold",
-  value: "3,150.40",
+  value: "4,366.20",
   unit: "$/oz",
-  change: "+12.80 vs prior day",
+  change: "offline — last known Jun 16",
   trend: "up",
   glow: "blue",
 };
 
 export const fallbackSilverKpi: Kpi = {
   title: "Silver",
-  value: "36.15",
+  value: "70.57",
   unit: "$/oz",
-  change: "+0.32 vs prior day",
+  change: "offline — last known Jun 16",
   trend: "up",
   glow: "purple",
 };
 
 export const fallbackWtiKpi: Kpi = {
   title: "WTI Crude",
-  value: "67.80",
+  value: "95.00",
   unit: "$/bbl",
-  change: "-0.65 vs prior day",
-  trend: "down",
+  change: "offline — FRED Jun 8",
+  trend: "up",
   glow: "blue",
 };
 
 export const fallbackBrentKpi: Kpi = {
   title: "Brent Crude",
-  value: "71.95",
+  value: "97.46",
   unit: "$/bbl",
-  change: "-0.58 vs prior day",
-  trend: "down",
+  change: "offline — FRED Jun 8",
+  trend: "up",
   glow: "purple",
 };
 
 export const fallbackNatGasKpi: Kpi = {
   title: "Natural Gas",
-  value: "3.22",
+  value: "3.10",
   unit: "$/MMBtu",
-  change: "+0.07 vs prior day",
+  change: "offline — FRED Jun 8",
   trend: "up",
   glow: "blue",
 };
 
 export const fallbackDxyKpi: Kpi = {
   title: "US Dollar Index",
-  value: "98.45",
+  value: "99.61",
   unit: "DXY",
-  change: "-0.21 vs prior day",
-  trend: "down",
+  change: "offline — last known Jun 16",
+  trend: "up",
   glow: "purple",
 };
 
 export const fallbackUs10yKpi: Kpi = {
   title: "US 10Y Treasury",
-  value: "4.36",
+  value: "4.48",
   unit: "%",
-  change: "+0.02 pp vs prior day",
+  change: "offline — FRED Jun 12",
   trend: "up",
   glow: "blue",
 };
 
 export const fallbackFedFundsKpi: Kpi = {
   title: "Fed Funds Rate",
-  value: "3.83",
+  value: "3.62",
   unit: "%",
-  change: "+0.00 pp vs prior day",
+  change: "offline — FRED Jun 12",
   trend: "up",
   glow: "purple",
+};
+
+export const fallbackPakEtfKpi: Kpi = {
+  title: "Pakistan ETF (NYSE: PAK)",
+  value: "16.79",
+  unit: "$",
+  change: "offline — last known Jun 16",
+  trend: "up",
+  glow: "blue",
 };

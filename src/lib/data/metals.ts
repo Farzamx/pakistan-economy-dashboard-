@@ -4,6 +4,11 @@ import {
   fallbackGoldKpi,
   fallbackSilverKpi,
 } from "@/data/globalMarketsFallbackData";
+import {
+  getYfDxyKpi,
+  getYfGoldKpi,
+  getYfSilverKpi,
+} from "./yfinance";
 
 // Gold, Silver and the US Dollar Index are read from Twelve Data's time
 // series endpoint: https://api.twelvedata.com/time_series?symbol=...&apikey=...
@@ -124,9 +129,8 @@ export async function getGoldKpi(): Promise<Kpi> {
   try {
     const series = await fetchTwelveDataSeries(SYMBOLS.gold);
     return buildKpi(series, "Gold", "$/oz", "blue");
-  } catch {
-    return fallbackGoldKpi;
-  }
+  } catch { /* fall through to Yahoo Finance */ }
+  return (await getYfGoldKpi()) ?? fallbackGoldKpi;
 }
 
 /** Silver spot price (XAG/USD), in USD per troy ounce. */
@@ -134,9 +138,8 @@ export async function getSilverKpi(): Promise<Kpi> {
   try {
     const series = await fetchTwelveDataSeries(SYMBOLS.silver);
     return buildKpi(series, "Silver", "$/oz", "purple");
-  } catch {
-    return fallbackSilverKpi;
-  }
+  } catch { /* fall through to Yahoo Finance */ }
+  return (await getYfSilverKpi()) ?? fallbackSilverKpi;
 }
 
 /** ICE US Dollar Index (DXY). */
@@ -144,7 +147,6 @@ export async function getDxyKpi(): Promise<Kpi> {
   try {
     const series = await fetchTwelveDataSeries(SYMBOLS.dxy);
     return buildKpi(series, "US Dollar Index", "DXY", "purple");
-  } catch {
-    return fallbackDxyKpi;
-  }
+  } catch { /* fall through to Yahoo Finance */ }
+  return (await getYfDxyKpi()) ?? fallbackDxyKpi;
 }

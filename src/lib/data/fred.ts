@@ -6,6 +6,12 @@ import {
   fallbackUs10yKpi,
   fallbackWtiKpi,
 } from "@/data/globalMarketsFallbackData";
+import {
+  getYfBrentKpi,
+  getYfNaturalGasKpi,
+  getYfUs10yKpi,
+  getYfWtiKpi,
+} from "./yfinance";
 
 // All series are read from the St. Louis Fed's FRED API:
 // https://api.stlouisfed.org/fred/series/observations?series_id=...&api_key=...
@@ -132,9 +138,8 @@ export async function getWtiKpi(): Promise<Kpi> {
   try {
     const series = await fetchFredSeries(SERIES_IDS.wti);
     return buildKpi(series, "WTI Crude", "$/bbl", "blue", 2);
-  } catch {
-    return fallbackWtiKpi;
-  }
+  } catch { /* fall through to Yahoo Finance */ }
+  return (await getYfWtiKpi()) ?? fallbackWtiKpi;
 }
 
 /** Brent crude oil spot price, in USD per barrel. */
@@ -142,9 +147,8 @@ export async function getBrentKpi(): Promise<Kpi> {
   try {
     const series = await fetchFredSeries(SERIES_IDS.brent);
     return buildKpi(series, "Brent Crude", "$/bbl", "purple", 2);
-  } catch {
-    return fallbackBrentKpi;
-  }
+  } catch { /* fall through to Yahoo Finance */ }
+  return (await getYfBrentKpi()) ?? fallbackBrentKpi;
 }
 
 /** Henry Hub natural gas spot price, in USD per MMBtu. */
@@ -152,9 +156,8 @@ export async function getNaturalGasKpi(): Promise<Kpi> {
   try {
     const series = await fetchFredSeries(SERIES_IDS.naturalGas);
     return buildKpi(series, "Natural Gas", "$/MMBtu", "blue", 2);
-  } catch {
-    return fallbackNatGasKpi;
-  }
+  } catch { /* fall through to Yahoo Finance */ }
+  return (await getYfNaturalGasKpi()) ?? fallbackNatGasKpi;
 }
 
 /** US 10-Year Treasury constant maturity yield, in percent. */
@@ -162,12 +165,14 @@ export async function getUs10yKpi(): Promise<Kpi> {
   try {
     const series = await fetchFredSeries(SERIES_IDS.us10y);
     return buildKpi(series, "US 10Y Treasury", "%", "blue", 2);
-  } catch {
-    return fallbackUs10yKpi;
-  }
+  } catch { /* fall through to Yahoo Finance */ }
+  return (await getYfUs10yKpi()) ?? fallbackUs10yKpi;
 }
 
-/** US Federal Funds effective rate, in percent. */
+/** US Federal Funds effective rate, in percent.
+ *  FRED is the authoritative source; no free keyless alternative exists.
+ *  The rate only changes 8 times/year so the fallback stays accurate
+ *  between FOMC meetings. */
 export async function getFedFundsKpi(): Promise<Kpi> {
   try {
     const series = await fetchFredSeries(SERIES_IDS.fedFunds);
