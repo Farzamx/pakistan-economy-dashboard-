@@ -8,10 +8,14 @@ const navItems = [
   { label: "Inflation", href: "#inflation", active: false },
   { label: "Prices", href: "#price-indices", active: false },
   { label: "Monetary Policy", href: "#monetary-policy", active: false },
+  { label: "Global Markets", href: "#global-markets", active: false },
+  { label: "Fin. Markets", href: "#financial-markets", active: false },
+  { label: "Real Economy", href: "#real-economy", active: false },
   { label: "Reserves", href: "#reserves", active: false },
   { label: "Exchange Rate", href: "#exchange-rate", active: false },
   { label: "Remittances", href: "#remittances", active: false },
   { label: "External Sector", href: "#external-sector", active: false },
+  { label: "News", href: "#news-intelligence", active: false },
   { label: "Settings", href: "#", active: false },
 ];
 

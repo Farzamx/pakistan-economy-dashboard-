@@ -2,13 +2,25 @@ import DashboardSection from "@/components/DashboardSection";
 import HealthScoreCard from "@/components/HealthScoreCard";
 import Hero from "@/components/Hero";
 import KpiGrid from "@/components/KpiGrid";
+import NewsIntelligenceSection from "@/components/NewsIntelligenceSection";
 import Sidebar from "@/components/Sidebar";
+import TradingViewWidget from "@/components/TradingViewWidget";
 import TrendLineChart from "@/components/charts/TrendLineChart";
 import { healthFactors, healthScoreExplanation } from "@/data/healthScoreData";
 import { sectionData } from "@/data/sectionData";
 import { calculateHealthScore } from "@/lib/economicHealth";
 import { getAllSbpIndicators } from "@/lib/data/sbp";
 import { getGdpKpi } from "@/lib/data/worldBank";
+import {
+  getBrentKpi,
+  getFedFundsKpi,
+  getNaturalGasKpi,
+  getUs10yKpi,
+  getWtiKpi,
+} from "@/lib/data/fred";
+import { getTaggedNews } from "@/lib/data/intelligence";
+import { getDxyKpi, getGoldKpi, getSilverKpi } from "@/lib/data/metals";
+import { getNews } from "@/lib/data/news";
 
 function getSection(id: string) {
   const section = sectionData.find((item) => item.id === id);
@@ -19,7 +31,22 @@ function getSection(id: string) {
 }
 
 export default async function Home() {
-  const [gdpKpi, sbp] = await Promise.all([getGdpKpi(), getAllSbpIndicators()]);
+  const [gdpKpi, sbp, goldKpi, silverKpi, brentKpi, wtiKpi, naturalGasKpi, dxyKpi, us10yKpi, fedFundsKpi, newsItems] =
+    await Promise.all([
+      getGdpKpi(),
+      getAllSbpIndicators(),
+      getGoldKpi(),
+      getSilverKpi(),
+      getBrentKpi(),
+      getWtiKpi(),
+      getNaturalGasKpi(),
+      getDxyKpi(),
+      getUs10yKpi(),
+      getFedFundsKpi(),
+      getNews(),
+    ]);
+
+  const taggedNews = await getTaggedNews(newsItems);
 
   const headlineKpis = [
     gdpKpi,
@@ -38,6 +65,27 @@ export default async function Home() {
     sbp.currentAccount.kpi,
     sbp.tradeBalance.kpi,
     sbp.moneySupplyM2.kpi,
+  ];
+
+  const globalMarketsKpis = [
+    goldKpi,
+    silverKpi,
+    brentKpi,
+    wtiKpi,
+    naturalGasKpi,
+    dxyKpi,
+    us10yKpi,
+    fedFundsKpi,
+  ];
+
+  const realEconomyKpis = [
+    sbp.exports.kpi,
+    sbp.imports.kpi,
+    sbp.fdiInflows.kpi,
+    sbp.reer.kpi,
+    sbp.lsm.kpi,
+    sbp.privateCreditGrowth.kpi,
+    sbp.fiscalBalance.kpi,
   ];
 
   const healthScore = calculateHealthScore(healthFactors);
@@ -60,6 +108,39 @@ export default async function Home() {
           external accounts that shape Pakistan&apos;s financing needs.
         </p>
         <KpiGrid items={secondaryKpis} />
+
+        <div id="global-markets" className="scroll-mt-8">
+          <h2 className="mt-12 text-xl font-semibold text-white sm:text-2xl">
+            Global Markets
+          </h2>
+          <p className="mt-2 max-w-2xl text-sm text-white/60">
+            Precious metals, energy benchmarks, and US rates that drive
+            global risk appetite and Pakistan&apos;s import bill.
+          </p>
+          <KpiGrid items={globalMarketsKpis} />
+        </div>
+
+        <div id="financial-markets" className="scroll-mt-8">
+          <h2 className="mt-12 text-xl font-semibold text-white sm:text-2xl">
+            Financial Markets
+          </h2>
+          <p className="mt-2 max-w-2xl text-sm text-white/60">
+            KSE-100 Index live chart — Pakistan&apos;s benchmark equity index
+            tracking the top 100 companies by market capitalization.
+          </p>
+          <TradingViewWidget />
+        </div>
+
+        <div id="real-economy" className="scroll-mt-8">
+          <h2 className="mt-12 text-xl font-semibold text-white sm:text-2xl">
+            Real Economy &amp; Fiscal
+          </h2>
+          <p className="mt-2 max-w-2xl text-sm text-white/60">
+            Trade flows, investment, competitiveness, industrial output, credit
+            expansion, and Pakistan&apos;s fiscal position.
+          </p>
+          <KpiGrid items={realEconomyKpis} />
+        </div>
 
         <DashboardSection {...getSection("gdp")} />
 
@@ -160,6 +241,8 @@ export default async function Home() {
             />
           </div>
         </DashboardSection>
+
+        <NewsIntelligenceSection items={taggedNews} />
       </main>
     </div>
   );

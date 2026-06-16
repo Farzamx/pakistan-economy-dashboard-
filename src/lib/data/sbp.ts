@@ -4,10 +4,17 @@ import {
   fallbackCoreInflation,
   fallbackCpiInflation,
   fallbackCurrentAccount,
+  fallbackExports,
+  fallbackFdiInflows,
+  fallbackFiscalBalance,
   fallbackForeignReserves,
+  fallbackImports,
+  fallbackLsm,
   fallbackMoneySupplyM2,
   fallbackPibYield3y,
   fallbackPolicyRate,
+  fallbackPrivateCreditGrowth,
+  fallbackReer,
   fallbackRemittances,
   fallbackTbillYield3m,
   fallbackTradeBalance,
@@ -40,7 +47,7 @@ const HISTORY_DISPLAY_POINTS = 24;
 const REVALIDATE_MONTHLY = 60 * 60 * 24; // 24h
 const REVALIDATE_AS_NEEDED = 60 * 60 * 6; // 6h
 
-type Frequency = "Monthly" | "As-Needed";
+type Frequency = "Monthly" | "As-Needed" | "Weekly" | "Annual";
 
 // Series keys discovered via the SBP EasyData /meta endpoints. Each key is
 // "{dataset_code}.{series_code}".
@@ -57,6 +64,13 @@ const SERIES_KEYS = {
   currentAccount: "TS_GP_BOP_BPM6SUM_M.P00010", // BPM6 current account balance
   tradeBalance: "TS_GP_BOP_BPM6SUM_M.P00050", // BPM6 balance on trade in goods
   moneySupplyM2: "TS_GP_BAM_M3_M.MA3001700", // M2
+  exports: "TS_GP_BOP_BPM6SUM_M.P00030", // BPM6 exports of goods FOB
+  imports: "TS_GP_BOP_BPM6SUM_M.P00040", // BPM6 imports of goods FOB
+  fdiInflows: "TS_GP_FI_SUMFIPK_M.FI00030", // Net FDI in Pakistan
+  reer: "TS_GP_ER_REERNEER_M.R00010", // Real Effective Exchange Rate, base 2010
+  lsm: "TS_GP_RL_LSM1516_M.LSM000160000", // LSM Quantum Index - Overall, base 2015-16
+  privateCreditGrowth: "TS_GP_BAM_M2_W.M000480", // Credit to private sector, YoY growth (weekly)
+  fiscalBalance: "TS_GP_PF_SPF_Y.SPF370000", // Consolidated fiscal balance (annual FY)
 } as const;
 
 export type SbpIndicatorKey = keyof typeof SERIES_KEYS;
@@ -369,6 +383,100 @@ function buildMoneySupplyM2Kpi(series: SbpSeries): Kpi {
   };
 }
 
+function buildExportsKpi(series: SbpSeries): Kpi {
+  const latestB = series.latestValue / 1000;
+  const diffB = series.previousValue !== null ? (series.latestValue - series.previousValue) / 1000 : 0;
+  const prevLabel = series.previousDate ? formatMonthLabel(series.previousDate) : null;
+  return {
+    title: "Exports",
+    value: latestB.toFixed(2),
+    unit: "B USD",
+    change: changeLabel(diffB, prevLabel, (d) => `${d.toFixed(2)}B`),
+    trend: diffB >= 0 ? "up" : "down",
+    glow: "blue",
+  };
+}
+
+function buildImportsKpi(series: SbpSeries): Kpi {
+  const latestB = series.latestValue / 1000;
+  const diffB = series.previousValue !== null ? (series.latestValue - series.previousValue) / 1000 : 0;
+  const prevLabel = series.previousDate ? formatMonthLabel(series.previousDate) : null;
+  return {
+    title: "Imports",
+    value: latestB.toFixed(2),
+    unit: "B USD",
+    change: changeLabel(diffB, prevLabel, (d) => `${d.toFixed(2)}B`),
+    trend: diffB >= 0 ? "up" : "down",
+    glow: "purple",
+  };
+}
+
+function buildFdiInflowsKpi(series: SbpSeries): Kpi {
+  const diff = series.previousValue !== null ? series.latestValue - series.previousValue : 0;
+  const prevLabel = series.previousDate ? formatMonthLabel(series.previousDate) : null;
+  return {
+    title: "FDI Inflows",
+    value: series.latestValue.toFixed(1),
+    unit: "M USD",
+    change: changeLabel(diff, prevLabel, (d) => `${d.toFixed(1)}M`),
+    trend: diff >= 0 ? "up" : "down",
+    glow: "blue",
+  };
+}
+
+function buildReerKpi(series: SbpSeries): Kpi {
+  const diff = series.previousValue !== null ? series.latestValue - series.previousValue : 0;
+  const prevLabel = series.previousDate ? formatMonthLabel(series.previousDate) : null;
+  return {
+    title: "REER",
+    value: series.latestValue.toFixed(1),
+    unit: "Index",
+    change: changeLabel(diff, prevLabel, (d) => d.toFixed(1)),
+    trend: diff >= 0 ? "up" : "down",
+    glow: "purple",
+  };
+}
+
+function buildLsmKpi(series: SbpSeries): Kpi {
+  const diff = series.previousValue !== null ? series.latestValue - series.previousValue : 0;
+  const prevLabel = series.previousDate ? formatMonthLabel(series.previousDate) : null;
+  return {
+    title: "LSM",
+    value: series.latestValue.toFixed(1),
+    unit: "Index",
+    change: changeLabel(diff, prevLabel, (d) => d.toFixed(1)),
+    trend: diff >= 0 ? "up" : "down",
+    glow: "blue",
+  };
+}
+
+function buildPrivateCreditGrowthKpi(series: SbpSeries): Kpi {
+  const diff = series.previousValue !== null ? series.latestValue - series.previousValue : 0;
+  const prevLabel = series.previousDate ? formatDayMonthLabel(series.previousDate) : null;
+  return {
+    title: "Private Credit Growth",
+    value: series.latestValue.toFixed(1),
+    unit: "% YoY",
+    change: changeLabel(diff, prevLabel, (d) => `${d.toFixed(1)} pp`),
+    trend: diff >= 0 ? "up" : "down",
+    glow: "purple",
+  };
+}
+
+function buildFiscalBalanceKpi(series: SbpSeries): Kpi {
+  const latestT = series.latestValue / 1e6;
+  const diffT = series.previousValue !== null ? (series.latestValue - series.previousValue) / 1e6 : 0;
+  const prevLabel = series.previousDate ? formatMonthLabel(series.previousDate) : null;
+  return {
+    title: "Fiscal Balance",
+    value: latestT.toFixed(2),
+    unit: "T PKR",
+    change: changeLabel(diffT, prevLabel, (d) => `${d.toFixed(2)}T`),
+    trend: diffT >= 0 ? "up" : "down",
+    glow: "blue",
+  };
+}
+
 // --- Indicator configuration -----------------------------------------------
 
 interface IndicatorConfig {
@@ -478,11 +586,70 @@ const CONFIGS: Record<SbpIndicatorKey, IndicatorConfig> = {
     buildKpi: buildMoneySupplyM2Kpi,
     fallback: fallbackMoneySupplyM2,
   },
+  exports: {
+    seriesKey: SERIES_KEYS.exports,
+    revalidate: REVALIDATE_MONTHLY,
+    frequency: "Monthly",
+    toTrendValue: (v) => v / 1000,
+    buildKpi: buildExportsKpi,
+    fallback: fallbackExports,
+  },
+  imports: {
+    seriesKey: SERIES_KEYS.imports,
+    revalidate: REVALIDATE_MONTHLY,
+    frequency: "Monthly",
+    toTrendValue: (v) => v / 1000,
+    buildKpi: buildImportsKpi,
+    fallback: fallbackImports,
+  },
+  fdiInflows: {
+    seriesKey: SERIES_KEYS.fdiInflows,
+    revalidate: REVALIDATE_MONTHLY,
+    frequency: "Monthly",
+    toTrendValue: (v) => v,
+    buildKpi: buildFdiInflowsKpi,
+    fallback: fallbackFdiInflows,
+  },
+  reer: {
+    seriesKey: SERIES_KEYS.reer,
+    revalidate: REVALIDATE_MONTHLY,
+    frequency: "Monthly",
+    toTrendValue: (v) => v,
+    buildKpi: buildReerKpi,
+    fallback: fallbackReer,
+  },
+  lsm: {
+    seriesKey: SERIES_KEYS.lsm,
+    revalidate: REVALIDATE_MONTHLY,
+    frequency: "Monthly",
+    toTrendValue: (v) => v,
+    buildKpi: buildLsmKpi,
+    fallback: fallbackLsm,
+  },
+  privateCreditGrowth: {
+    seriesKey: SERIES_KEYS.privateCreditGrowth,
+    revalidate: REVALIDATE_AS_NEEDED,
+    frequency: "Weekly",
+    toTrendValue: (v) => v,
+    buildKpi: buildPrivateCreditGrowthKpi,
+    fallback: fallbackPrivateCreditGrowth,
+  },
+  fiscalBalance: {
+    seriesKey: SERIES_KEYS.fiscalBalance,
+    revalidate: REVALIDATE_MONTHLY,
+    frequency: "Annual",
+    toTrendValue: (v) => v / 1e6,
+    buildKpi: buildFiscalBalanceKpi,
+    fallback: fallbackFiscalBalance,
+  },
 };
 
 async function buildIndicatorResult(config: IndicatorConfig): Promise<SbpIndicatorResult> {
   const series = await fetchSbpSeries(config.seriesKey, config.revalidate);
-  const formatLabel = config.frequency === "Monthly" ? formatMonthLabel : formatDayMonthLabel;
+  const formatLabel =
+    config.frequency === "Monthly" || config.frequency === "Annual"
+      ? formatMonthLabel
+      : formatDayMonthLabel;
 
   return {
     kpi: config.buildKpi(series),
@@ -517,7 +684,7 @@ export async function getSbpIndicator(key: SbpIndicatorKey): Promise<SbpIndicato
 }
 
 /**
- * Fetches all 12 SBP indicators in parallel. Each indicator falls back
+ * Fetches all 19 SBP indicators in parallel. Each indicator falls back
  * independently, so one failing series never breaks the others.
  */
 export async function getAllSbpIndicators(): Promise<Record<SbpIndicatorKey, SbpIndicatorResult>> {
