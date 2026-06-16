@@ -4,7 +4,7 @@
 // Source hierarchy (most → least preferred):
 //   1. GNews API keyword search (requires GNEWS_API_KEY — free, 100 req/day)
 //   2. BBC Business RSS — global market news, no key, reliable
-//   3. Dawn Pakistan RSS — Pakistan economy news, no key
+//   3. Dawn Business RSS — Pakistan economy news, no key
 //   4. Express Tribune Business RSS — Pakistan business news, no key
 //
 // All fetches use Next.js ISR (next.revalidate) so the page always renders
@@ -66,6 +66,19 @@ async function fetchGNews(
 
 // ---- RSS parser --------------------------------------------------------------
 
+// Decode common XML/HTML entities so stored URLs and titles are clean strings.
+// Without this, BBC RSS URLs contain literal "&amp;" which causes React key
+// mismatches when the same URL appears decoded elsewhere, collapsing cards.
+function decodeEntities(text: string): string {
+  return text
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#039;/g, "'")
+    .replace(/&apos;/g, "'");
+}
+
 function parseRssItems(
   xml: string,
   source: string,
@@ -88,12 +101,12 @@ function parseRssItems(
 
     if (!titleMatch || !linkMatch) continue;
 
-    const title = titleMatch[1].trim();
+    const title = decodeEntities(titleMatch[1].trim());
     if (!title) continue;
 
     items.push({
       title,
-      url: linkMatch[1].trim(),
+      url: decodeEntities(linkMatch[1].trim()),
       source,
       publishedAt: pubDateMatch
         ? pubDateMatch[1].trim()
@@ -147,8 +160,8 @@ export async function getNews(): Promise<NewsItem[]> {
       8,
     ),
     fetchRss(
-      "https://www.dawn.com/feeds/home",
-      "Dawn",
+      "https://www.dawn.com/feeds/business",
+      "Dawn Business",
       "pakistan",
       8,
     ),
@@ -156,7 +169,7 @@ export async function getNews(): Promise<NewsItem[]> {
       "https://tribune.com.pk/feed/business",
       "Express Tribune",
       "pakistan",
-      6,
+      8,
     ),
   ]);
 

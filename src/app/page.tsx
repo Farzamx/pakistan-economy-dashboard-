@@ -9,11 +9,10 @@ import NewsIntelligenceSection from "@/components/NewsIntelligenceSection";
 import Sidebar from "@/components/Sidebar";
 import ViewportFadeIn from "@/components/ViewportFadeIn";
 import TrendLineChart from "@/components/charts/TrendLineChart";
-import { healthFactors, healthScoreExplanation } from "@/data/healthScoreData";
 import { fallbackPakEtfKpi } from "@/data/globalMarketsFallbackData";
 import { sectionData } from "@/data/sectionData";
-import { calculateHealthScore } from "@/lib/economicHealth";
 import { getFreshnessStatus } from "@/lib/dataFreshness";
+import { getAiEconomicAnalysis } from "@/lib/data/aiEconomicAnalysis";
 import { getAllSbpIndicators } from "@/lib/data/sbp";
 import { getGdpKpi } from "@/lib/data/worldBank";
 import {
@@ -90,7 +89,29 @@ export default async function Home() {
     makeTickerItem(sbp.policyRate.kpi,     "SBP Rate",  "%",   "Policy Rate"),
   ];
 
-  const taggedNews = await getTaggedNews(newsItems);
+  const [taggedNews, aiAnalysis] = await Promise.all([
+    getTaggedNews(newsItems),
+    getAiEconomicAnalysis(
+    {
+      gdpGrowth:       `${gdpKpi.value}${gdpKpi.unit} (${gdpKpi.change})`,
+      cpiInflation:    `${sbp.cpiInflation.kpi.value}${sbp.cpiInflation.kpi.unit} (${sbp.cpiInflation.kpi.change})`,
+      coreInflation:   `${sbp.coreInflation.kpi.value}${sbp.coreInflation.kpi.unit} (${sbp.coreInflation.kpi.change})`,
+      policyRate:      `${sbp.policyRate.kpi.value}${sbp.policyRate.kpi.unit} (${sbp.policyRate.kpi.change})`,
+      foreignReserves: `$${sbp.foreignReserves.kpi.value}B (${sbp.foreignReserves.kpi.change})`,
+      tradeBalance:    `${sbp.tradeBalance.kpi.value}${sbp.tradeBalance.kpi.unit} (${sbp.tradeBalance.kpi.change})`,
+      currentAccount:  `${sbp.currentAccount.kpi.value}${sbp.currentAccount.kpi.unit} (${sbp.currentAccount.kpi.change})`,
+      remittances:     `$${sbp.remittances.kpi.value}B (${sbp.remittances.kpi.change})`,
+      usdPkr:          `${sbp.usdPkr.kpi.value} PKR (${sbp.usdPkr.kpi.change})`,
+      kse100:          `${pakEtfKpi.value} (${pakEtfKpi.change})`,
+      brentOil:        `$${brentKpi.value}/bbl (${brentKpi.change})`,
+      wtiOil:          `$${wtiKpi.value}/bbl (${wtiKpi.change})`,
+      gold:            `$${goldKpi.value}/oz (${goldKpi.change})`,
+      dxy:             `${dxyKpi.value} (${dxyKpi.change})`,
+      us10y:           `${us10yKpi.value}% (${us10yKpi.change})`,
+      fedFunds:        `${fedFundsKpi.value}% (${fedFundsKpi.change})`,
+    },
+    newsItems,
+  )]);
 
   const headlineKpis = [
     gdpKpi,
@@ -139,8 +160,6 @@ export default async function Home() {
     sbp.fiscalBalance.kpi,
   ];
 
-  const healthScore = calculateHealthScore(healthFactors);
-
   // Build-time data freshness audit — printed to server/build console
   console.log("\n=== Global Markets Freshness Audit ===");
   console.log("Indicator            | Source          | latestDate   | status");
@@ -175,7 +194,7 @@ export default async function Home() {
 
         <KpiGrid items={headlineKpis} />
 
-        <HealthScoreCard score={healthScore} explanation={healthScoreExplanation} />
+        <HealthScoreCard {...aiAnalysis} />
 
         <ViewportFadeIn>
           <h2 className="mt-12 text-xl font-semibold text-white sm:text-2xl">
@@ -409,7 +428,7 @@ export default async function Home() {
           </div>
         </DashboardSection>
 
-        <NewsIntelligenceSection items={taggedNews} />
+        <NewsIntelligenceSection items={taggedNews.slice(0, 5)} />
       </main>
       <DataSourcesModal kpis={allKpis} />
     </div>
