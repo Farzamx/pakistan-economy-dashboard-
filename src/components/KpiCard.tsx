@@ -73,8 +73,8 @@ export default function KpiCard({ title, value, unit, change, trend, glow, sourc
       {latestDate && (
         <div
           suppressHydrationWarning
-          className="flex items-center gap-1.5 text-[10px] text-white/40 border-t border-white/5 pt-2 mt-0.5"
-          title={`${freshnessLabel} · ${source ?? "Unknown source"} · as of ${displayDate}`}
+          className="flex flex-wrap items-center gap-1.5 text-[10px] text-white/40 border-t border-white/5 pt-2 mt-0.5"
+          title={`${freshnessLabel} · ${source ?? "Unknown source"} · ${displayDate}${frequency ? ` · ${frequency}` : ""}`}
         >
           <span className={`text-[8px] ${dotClass}`}>●</span>
           <span className={dotClass}>{freshnessLabel}</span>
@@ -82,6 +82,12 @@ export default function KpiCard({ title, value, unit, change, trend, glow, sourc
           {source && <span>{source}</span>}
           <span className="text-white/20">·</span>
           <span>{displayDate}</span>
+          {frequency && (
+            <>
+              <span className="text-white/20">·</span>
+              <span>{frequency}</span>
+            </>
+          )}
         </div>
       )}
     </motion.div>
