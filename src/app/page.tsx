@@ -4,6 +4,7 @@ import HealthScoreCard from "@/components/HealthScoreCard";
 import Hero from "@/components/Hero";
 import InfoTooltip from "@/components/InfoTooltip";
 import KpiGrid from "@/components/KpiGrid";
+import MarketTicker, { type TickerItem } from "@/components/MarketTicker";
 import NewsIntelligenceSection from "@/components/NewsIntelligenceSection";
 import Sidebar from "@/components/Sidebar";
 import ViewportFadeIn from "@/components/ViewportFadeIn";
@@ -27,6 +28,22 @@ import { getTaggedNews } from "@/lib/data/intelligence";
 import { getDxyKpi, getGoldKpi, getSilverKpi } from "@/lib/data/metals";
 import { getNews } from "@/lib/data/news";
 import { getPakEtfKpi } from "@/lib/data/yfinance";
+import type { Kpi } from "@/data/kpiData";
+
+function makeTickerItem(
+  kpi: Kpi,
+  label: string,
+  unit: string,
+  termKey: string,
+): TickerItem {
+  const m = kpi.change.match(/^([+-]?\d+\.?\d*)/);
+  const changeDisplay = m
+    ? parseFloat(m[1]) >= 0
+      ? `+${m[1]}`
+      : m[1]
+    : null;
+  return { label, value: kpi.value, unit, changeDisplay, trend: kpi.trend, termKey };
+}
 
 function getSection(id: string) {
   const section = sectionData.find((item) => item.id === id);
@@ -55,6 +72,23 @@ export default async function Home() {
     ]);
 
   const pakEtfKpi = pakEtfKpiRaw ?? fallbackPakEtfKpi;
+
+  const tickerItems: TickerItem[] = [
+    makeTickerItem(fxRates.usdPkr,         "USD/PKR",   "",    "USD / PKR"),
+    makeTickerItem(fxRates.eurPkr,         "EUR/PKR",   "",    "EUR / PKR"),
+    makeTickerItem(fxRates.gbpPkr,         "GBP/PKR",   "",    "GBP / PKR"),
+    makeTickerItem(fxRates.sarPkr,         "SAR/PKR",   "",    "SAR / PKR"),
+    makeTickerItem(goldKpi,                "Gold",      "",    "Gold"),
+    makeTickerItem(silverKpi,              "Silver",    "",    "Silver"),
+    makeTickerItem(wtiKpi,                 "WTI",       "",    "WTI Crude"),
+    makeTickerItem(brentKpi,               "Brent",     "",    "Brent Crude"),
+    makeTickerItem(naturalGasKpi,          "Nat Gas",   "",    "Natural Gas"),
+    makeTickerItem(dxyKpi,                 "DXY",       "",    "US Dollar Index"),
+    makeTickerItem(us10yKpi,               "US 10Y",    "%",   "US 10Y Treasury"),
+    makeTickerItem(fedFundsKpi,            "Fed Funds", "%",   "Fed Funds Rate"),
+    makeTickerItem(sbp.foreignReserves.kpi,"Reserves",  "B",   "Foreign Reserves"),
+    makeTickerItem(sbp.policyRate.kpi,     "SBP Rate",  "%",   "Policy Rate"),
+  ];
 
   const taggedNews = await getTaggedNews(newsItems);
 
@@ -136,6 +170,8 @@ export default async function Home() {
       <Sidebar />
       <main id="overview" className="flex-1 scroll-mt-8 px-6 py-8 sm:px-10 lg:px-16">
         <Hero />
+
+        <MarketTicker items={tickerItems} />
 
         <KpiGrid items={headlineKpis} />
 

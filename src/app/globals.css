@@ -80,6 +80,12 @@ body {
   }
 }
 
+/* Market ticker continuous scroll — animates -50% so two copies create a seamless loop */
+@keyframes ticker-scroll {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .nebula-blob,
   .star {
