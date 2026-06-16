@@ -80,6 +80,15 @@ body {
   }
 }
 
+/* Hide scrollbar while preserving scroll functionality — cross-browser */
+.hide-scrollbar {
+  scrollbar-width: none;       /* Firefox */
+  -ms-overflow-style: none;   /* IE / legacy Edge */
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;               /* Chrome, Safari, modern Edge */
+}
+
 /* Market ticker continuous scroll — animates -50% so two copies create a seamless loop */
 @keyframes ticker-scroll {
   from { transform: translateX(0); }

@@ -22,7 +22,7 @@ const navItems = [
 
 export default function Sidebar() {
   return (
-    <aside className="hidden w-64 shrink-0 flex-col gap-8 border-r border-white/5 bg-white/[0.02] p-6 backdrop-blur-xl sm:flex sticky top-0 h-screen overflow-y-auto">
+    <aside className="hidden w-64 shrink-0 flex-col gap-8 border-r border-white/5 bg-white/[0.02] p-6 backdrop-blur-xl sm:flex sticky top-0 h-screen overflow-y-auto hide-scrollbar">
       <div className="flex items-center gap-3">
         <div className="glow-blue flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-neon-blue to-neon-purple text-lg font-bold text-white">
           P
