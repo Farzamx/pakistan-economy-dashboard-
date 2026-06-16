@@ -1,6 +1,7 @@
 import DashboardSection from "@/components/DashboardSection";
 import HealthScoreCard from "@/components/HealthScoreCard";
 import Hero from "@/components/Hero";
+import InfoTooltip from "@/components/InfoTooltip";
 import KpiGrid from "@/components/KpiGrid";
 import NewsIntelligenceSection from "@/components/NewsIntelligenceSection";
 import Sidebar from "@/components/Sidebar";
@@ -180,10 +181,13 @@ export default async function Home() {
 
           {/* Pakistan Bond Market — T-Bill 3M yield trend (24-month SBP data) */}
           <div className="mt-6 rounded-xl border border-white/5 bg-white/[0.02] p-4">
-            <p className="mb-2 text-xs font-medium text-white/40">
-              Pakistan Bond Market &mdash; T-Bill 3M Yield
-              <span className="text-white/25"> &middot; SBP EasyData, monthly</span>
-            </p>
+            <div className="mb-2 flex items-center gap-1.5">
+              <p className="text-xs font-medium text-white/40">
+                Pakistan Bond Market &mdash; T-Bill 3M Yield
+                <span className="text-white/25"> &middot; SBP EasyData, monthly</span>
+              </p>
+              <InfoTooltip termKey="3M T-Bill Yield" size="xs" />
+            </div>
             <TrendLineChart
               data={sbp.tbillYield3m.trend}
               color="#38bdf8"

@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import type { ReactNode } from "react";
 import type { SectionContent } from "@/data/sectionData";
+import InfoTooltip from "@/components/InfoTooltip";
 
 interface DashboardSectionProps extends SectionContent {
   children?: ReactNode;
@@ -33,7 +34,10 @@ export default function DashboardSection({
             key={stat.label}
             className="rounded-xl border border-white/5 bg-white/[0.03] p-4"
           >
-            <p className="text-xs text-white/40">{stat.label}</p>
+            <div className="flex items-center gap-1">
+              <p className="text-xs text-white/40">{stat.label}</p>
+              <InfoTooltip termKey={stat.label} size="xs" />
+            </div>
             <p className="mt-1 text-lg font-semibold text-white">{stat.value}</p>
           </div>
         ))}

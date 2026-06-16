@@ -1,4 +1,5 @@
 import type { TaggedNewsItem } from "@/lib/data/intelligence";
+import InfoTooltip from "@/components/InfoTooltip";
 
 const CATEGORY_LABELS: Record<string, string> = {
   pakistan: "Pakistan",
@@ -69,17 +70,29 @@ export default function NewsIntelligenceSection({ items }: Props) {
             </p>
 
             <div className="flex flex-wrap items-center gap-1.5">
-              <span
-                className={`rounded-md px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
-                  SENTIMENT_STYLES[item.intelligence.sentiment]
-                }`}
-              >
-                {item.intelligence.sentiment}
+              <span className="inline-flex items-center gap-0.5">
+                <span
+                  className={`rounded-md px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
+                    SENTIMENT_STYLES[item.intelligence.sentiment]
+                  }`}
+                >
+                  {item.intelligence.sentiment}
+                </span>
+                <InfoTooltip
+                  termKey={
+                    item.intelligence.sentiment.charAt(0).toUpperCase() +
+                    item.intelligence.sentiment.slice(1)
+                  }
+                  size="xs"
+                />
               </span>
-              <span
-                className={`text-[10px] font-medium ${RISK_STYLES[item.intelligence.risk]}`}
-              >
-                {item.intelligence.risk} risk
+              <span className="inline-flex items-center gap-0.5">
+                <span
+                  className={`text-[10px] font-medium ${RISK_STYLES[item.intelligence.risk]}`}
+                >
+                  {item.intelligence.risk} risk
+                </span>
+                <InfoTooltip termKey="Risk Level" size="xs" />
               </span>
               {item.intelligence.relatedIndicators.map((ind) => (
                 <span

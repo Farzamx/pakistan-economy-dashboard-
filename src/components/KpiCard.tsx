@@ -2,6 +2,7 @@
 
 import { motion, type Variants } from "framer-motion";
 import type { Kpi } from "@/data/kpiData";
+import InfoTooltip from "@/components/InfoTooltip";
 
 function TrendArrow({ trend }: { trend: Kpi["trend"] }) {
   const isUp = trend === "up";
@@ -44,7 +45,10 @@ export default function KpiCard({ title, value, unit, change, trend, glow }: Kpi
       transition={{ type: "spring", stiffness: 300, damping: 22 }}
       className="glass-card flex flex-col gap-3 p-6"
     >
-      <span className="text-sm font-medium text-white/60">{title}</span>
+      <div className="flex items-center gap-1.5">
+        <span className="text-sm font-medium text-white/60">{title}</span>
+        <InfoTooltip termKey={title} />
+      </div>
       <div className="flex items-baseline gap-2">
         <span className="text-3xl font-semibold text-white">{value}</span>
         <span className="text-sm text-white/50">{unit}</span>
