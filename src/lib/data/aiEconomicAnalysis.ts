@@ -16,6 +16,7 @@ import { callOpenRouter } from "@/lib/openRouterClient";
 // Plain-string snapshot of each indicator — easy to serialize for the API route.
 export interface IndicatorSnapshot {
   gdpGrowth: string;
+  quarterlyGdpGrowth: string;
   cpiInflation: string;
   coreInflation: string;
   policyRate: string;
@@ -64,7 +65,8 @@ const REVALIDATE = 60 * 60; // 1h
 
 function buildPrompt(indicators: IndicatorSnapshot, news: NewsItem[]): string {
   const lines = [
-    `GDP Growth: ${indicators.gdpGrowth}`,
+    `GDP Growth (Annual, World Bank): ${indicators.gdpGrowth}`,
+    `GDP Growth (Quarterly YoY, SBP/PBS): ${indicators.quarterlyGdpGrowth}`,
     `CPI Inflation: ${indicators.cpiInflation}`,
     `Core Inflation: ${indicators.coreInflation}`,
     `Policy Rate (SBP): ${indicators.policyRate}`,

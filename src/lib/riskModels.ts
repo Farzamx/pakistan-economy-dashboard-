@@ -73,7 +73,8 @@ export interface RiskModelResult {
 }
 
 export interface RecessionModelInputs {
-  gdpGrowthPct: number;             // GDP growth YoY %
+  gdpGrowthPct: number;             // Annual GDP growth YoY % (World Bank — kept for data confidence tracking)
+  quarterlyGdpGrowthPct: number;    // Quarterly real GVA growth YoY % (SBP/PBS — used in model; more current)
   cpiInflationPct: number;          // CPI inflation YoY %
   policyRatePct: number;            // SBP policy rate %
   importCoverMonths: number;        // total reserves / monthly imports
@@ -114,25 +115,25 @@ function toProbabilityDefault(score: number): number {
   return Math.round(Math.min(100, Math.max(0, 2 + score * 0.60)));
 }
 
-// v2 weight rationale (see audit):
-// - LSM raised 0.11→0.18: Pakistan's most timely recession coincident indicator
-// - Private Credit Growth replaces PAK ETF day % (eliminated daily noise)
-// - CPI + Real Policy Rate each reduced 0.12→0.10 (partial double-count concession)
-// - Import Cover reduced 0.15→0.10 (primarily a solvency metric; dominant in Default model)
-// - GDP reduced 0.20→0.18 (annual staleness concession)
+// v3 weight rationale:
+// - GDP factor now uses quarterly YoY (SBP/PBS) instead of annual (World Bank).
+//   Quarterly data is ~18 months more current; thresholds unchanged (same % scale).
+//   Weight raised back to 0.18 (staleness concession removed since data is now quarterly).
+// - All other weights unchanged from v2.
+// - Annual gdpGrowthPct kept in inputs for data-confidence tracking only.
 export function calculateRecessionRisk(inputs: RecessionModelInputs): RiskModelResult {
   const factors: RiskFactor[] = [
     {
-      label: "GDP Growth",
-      formattedValue: `${inputs.gdpGrowthPct.toFixed(1)}%`,
+      label: "GDP Growth (Q, YoY)",
+      formattedValue: `${inputs.quarterlyGdpGrowthPct.toFixed(1)}%`,
       weight: 0.18,
       pressureScore:
-        inputs.gdpGrowthPct >= 4 ? 5 :
-        inputs.gdpGrowthPct >= 3 ? 15 :
-        inputs.gdpGrowthPct >= 2 ? 30 :
-        inputs.gdpGrowthPct >= 1 ? 50 :
-        inputs.gdpGrowthPct >= 0 ? 70 :
-        inputs.gdpGrowthPct >= -1 ? 85 : 95,
+        inputs.quarterlyGdpGrowthPct >= 4 ? 5 :
+        inputs.quarterlyGdpGrowthPct >= 3 ? 15 :
+        inputs.quarterlyGdpGrowthPct >= 2 ? 30 :
+        inputs.quarterlyGdpGrowthPct >= 1 ? 50 :
+        inputs.quarterlyGdpGrowthPct >= 0 ? 70 :
+        inputs.quarterlyGdpGrowthPct >= -1 ? 85 : 95,
     },
     {
       label: "LSM Output (MoM)",

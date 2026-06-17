@@ -40,6 +40,7 @@ function shortFy(fyLabel: string): string {
 export interface QuarterlyGdpResult {
   kpi: Kpi;
   trend: TrendPoint[];
+  isFallback: boolean;
 }
 
 function parseWorkbook(buf: ArrayBuffer): QuarterlyGdpResult {
@@ -112,7 +113,7 @@ function parseWorkbook(buf: ArrayBuffer): QuarterlyGdpResult {
     frequency:  'Quarterly',
   };
 
-  return { kpi, trend };
+  return { kpi, trend, isFallback: false };
 }
 
 export async function getQuarterlyGdpKpi(): Promise<QuarterlyGdpResult> {
@@ -122,6 +123,6 @@ export async function getQuarterlyGdpKpi(): Promise<QuarterlyGdpResult> {
     const buf = await res.arrayBuffer();
     return parseWorkbook(buf);
   } catch {
-    return { kpi: fallbackQuarterlyGdpKpi, trend: [] };
+    return { kpi: fallbackQuarterlyGdpKpi, trend: [], isFallback: true };
   }
 }

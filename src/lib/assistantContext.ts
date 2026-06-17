@@ -20,6 +20,7 @@ export interface DashboardSnapshot {
 
   // Core economic indicators (pre-formatted strings)
   gdpGrowth: string;
+  quarterlyGdpGrowth: string;
   cpiInflation: string;
   policyRate: string;
   foreignReserves: string;

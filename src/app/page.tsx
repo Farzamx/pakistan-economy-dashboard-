@@ -109,6 +109,7 @@ export default async function Home() {
 
   const recessionResult = calculateRecessionRisk({
     gdpGrowthPct: parseFloat(gdpKpi.value),
+    quarterlyGdpGrowthPct: parseFloat(quarterlyGdp.kpi.value),
     cpiInflationPct: parseFloat(sbp.cpiInflation.kpi.value),
     policyRatePct: parseFloat(sbp.policyRate.kpi.value),
     importCoverMonths,
@@ -155,9 +156,10 @@ export default async function Home() {
     return `${day} ${month} ${year} · ${time} PKT`;
   })();
 
-  // Recession model — 10 raw data inputs
+  // Recession model — 11 raw data inputs (quarterly GDP added)
   const recessionIndicators: IndicatorStatus[] = [
-    { label: "GDP Growth",        isFallback: false,                               isStale: daysSince(gdpKpi.latestDate ?? "2024") > 730 },
+    { label: "GDP Growth (Annual)",   isFallback: false,                             isStale: daysSince(gdpKpi.latestDate ?? "2024") > 730 },
+    { label: "GDP Growth (Quarterly)",isFallback: quarterlyGdp.isFallback,           isStale: !quarterlyGdp.isFallback && daysSince(quarterlyGdp.kpi.latestDate ?? "2026-03-31") > 130 },
     { label: "CPI Inflation",     isFallback: isFallback(sbp.cpiInflation.meta),  isStale: isStale(sbp.cpiInflation.meta,  isFallback(sbp.cpiInflation.meta))  },
     { label: "Policy Rate",       isFallback: isFallback(sbp.policyRate.meta),    isStale: isStale(sbp.policyRate.meta,    isFallback(sbp.policyRate.meta))    },
     { label: "SBP Reserves",      isFallback: isFallback(sbp.foreignReserves.meta), isStale: isStale(sbp.foreignReserves.meta, isFallback(sbp.foreignReserves.meta)) },
@@ -205,7 +207,8 @@ export default async function Home() {
     getTaggedNews(newsItems),
     getAiEconomicAnalysis(
     {
-      gdpGrowth:       `${gdpKpi.value}${gdpKpi.unit} (${gdpKpi.change})`,
+      gdpGrowth:            `${gdpKpi.value}${gdpKpi.unit} (${gdpKpi.change})`,
+      quarterlyGdpGrowth:   `${quarterlyGdp.kpi.value}${quarterlyGdp.kpi.unit} YoY (${quarterlyGdp.kpi.change}), ${quarterlyGdp.kpi.latestDate}`,
       cpiInflation:    `${sbp.cpiInflation.kpi.value}${sbp.cpiInflation.kpi.unit} (${sbp.cpiInflation.kpi.change})`,
       coreInflation:   `${sbp.coreInflation.kpi.value}${sbp.coreInflation.kpi.unit} (${sbp.coreInflation.kpi.change})`,
       policyRate:      `${sbp.policyRate.kpi.value}${sbp.policyRate.kpi.unit} (${sbp.policyRate.kpi.change})`,
@@ -241,6 +244,7 @@ export default async function Home() {
     defaultCategory: defaultResult.riskCategory,
     defaultModelScore: defaultResult.modelScore,
     gdpGrowth: `${gdpKpi.value}${gdpKpi.unit} (${gdpKpi.change})`,
+    quarterlyGdpGrowth: `${quarterlyGdp.kpi.value}${quarterlyGdp.kpi.unit} YoY (${quarterlyGdp.kpi.change}), as of ${quarterlyGdp.kpi.latestDate}`,
     cpiInflation: `${sbp.cpiInflation.kpi.value}${sbp.cpiInflation.kpi.unit} (${sbp.cpiInflation.kpi.change})`,
     policyRate: `${sbp.policyRate.kpi.value}${sbp.policyRate.kpi.unit} (${sbp.policyRate.kpi.change})`,
     foreignReserves: `$${sbp.foreignReserves.kpi.value}B (${sbp.foreignReserves.kpi.change})`,
