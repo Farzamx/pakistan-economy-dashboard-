@@ -61,7 +61,7 @@ const FALLBACK: AiEconomicAnalysis = {
   modelDisplayName: "Offline",
 };
 
-const REVALIDATE = 60 * 60; // 1h
+const REVALIDATE = 6 * 60 * 60; // 6h — aligns with unstable_cache bucket in page.tsx
 
 function buildPrompt(indicators: IndicatorSnapshot, news: NewsItem[]): string {
   const lines = [

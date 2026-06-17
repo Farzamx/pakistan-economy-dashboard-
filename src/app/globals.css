@@ -1,12 +1,67 @@
 @import "tailwindcss";
 
-:root {
+/* ── Design tokens: dark theme (default) ─────────────────────────────────── */
+:root,
+[data-theme="dark"] {
   --background: #05060f;
   --foreground: #e7e9f5;
   --neon-blue: #38bdf8;
   --neon-purple: #a855f7;
   --space-800: #0b0e21;
   --space-700: #141a3d;
+
+  /* Semantic surface tokens */
+  --surface:          rgba(255, 255, 255, 0.04);
+  --surface-hover:    rgba(255, 255, 255, 0.06);
+  --surface-raised:   rgba(255, 255, 255, 0.03);
+  --border:           rgba(255, 255, 255, 0.08);
+  --border-subtle:    rgba(255, 255, 255, 0.05);
+
+  /* Semantic text tokens */
+  --text-primary:   #e7e9f5;
+  --text-secondary: rgba(231, 233, 245, 0.60);
+  --text-muted:     rgba(231, 233, 245, 0.40);
+  --text-micro:     rgba(231, 233, 245, 0.25);
+
+  /* Chart tokens */
+  --chart-grid:            rgba(255, 255, 255, 0.06);
+  --chart-axis:            rgba(255, 255, 255, 0.40);
+  --chart-tooltip-bg:      rgba(11, 14, 33, 0.90);
+  --chart-tooltip-border:  rgba(255, 255, 255, 0.10);
+  --chart-tooltip-label:   rgba(255, 255, 255, 0.50);
+  --chart-tooltip-value:   #ffffff;
+  --chart-cursor:          rgba(255, 255, 255, 0.15);
+  --chart-active-stroke:   #05060f;
+}
+
+/* ── Design tokens: light theme ──────────────────────────────────────────── */
+[data-theme="light"] {
+  --background: #F4F6FA;
+  --foreground: #0F172A;
+  --neon-blue: #0284C7;
+  --neon-purple: #7C3AED;
+  --space-800: #F0F4FF;
+  --space-700: #E8EFFE;
+
+  --surface:          #FFFFFF;
+  --surface-hover:    #F1F5FF;
+  --surface-raised:   #F8FAFC;
+  --border:           #E2E6EF;
+  --border-subtle:    #EDF0F7;
+
+  --text-primary:   #0F172A;
+  --text-secondary: #475569;
+  --text-muted:     #94A3B8;
+  --text-micro:     #CBD5E1;
+
+  --chart-grid:            rgba(0, 0, 0, 0.06);
+  --chart-axis:            #64748B;
+  --chart-tooltip-bg:      #FFFFFF;
+  --chart-tooltip-border:  #E2E6EF;
+  --chart-tooltip-label:   #475569;
+  --chart-tooltip-value:   #0F172A;
+  --chart-cursor:          rgba(0, 0, 0, 0.10);
+  --chart-active-stroke:   #F4F6FA;
 }
 
 @theme inline {
@@ -20,12 +75,16 @@
   --font-mono: var(--font-geist-mono);
 }
 
+/* ── light: variant — mirrors data-theme="light" ─────────────────────────── */
+@custom-variant light (&:where([data-theme=light], [data-theme=light] *));
+
 body {
   background-color: var(--background);
   color: var(--foreground);
+  transition: background-color 0.25s ease, color 0.25s ease;
 }
 
-/* Frosted-glass card used by the sidebar, hero and KPI cards */
+/* ── Frosted-glass card ───────────────────────────────────────────────────── */
 .glass-card {
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -34,13 +93,29 @@ body {
   border-radius: 1rem;
 }
 
-/* Soft neon glow accents */
+[data-theme="light"] .glass-card {
+  background: #FFFFFF;
+  border: 1px solid #E2E6EF;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+/* ── Soft neon glow accents ──────────────────────────────────────────────── */
 .glow-blue {
   box-shadow: 0 0 24px rgba(56, 189, 248, 0.25);
 }
 
 .glow-purple {
   box-shadow: 0 0 24px rgba(168, 85, 247, 0.25);
+}
+
+[data-theme="light"] .glow-blue {
+  box-shadow: 0 0 16px rgba(2, 132, 199, 0.20);
+}
+
+[data-theme="light"] .glow-purple {
+  box-shadow: 0 0 16px rgba(124, 58, 237, 0.15);
 }
 
 /* Animated galaxy background: drifting nebula blobs + twinkling stars */
@@ -78,6 +153,17 @@ body {
     opacity: 1;
     transform: scale(1.15);
   }
+}
+
+/* ── Light mode background — subtle dot grid, no animation ──────────────── */
+.light-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -10;
+  pointer-events: none;
+  background-color: #F4F6FA;
+  background-image: radial-gradient(circle, rgba(0, 0, 0, 0.08) 1px, transparent 1px);
+  background-size: 24px 24px;
 }
 
 /* Hide scrollbar while preserving scroll functionality — cross-browser */

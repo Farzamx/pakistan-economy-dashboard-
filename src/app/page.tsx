@@ -39,6 +39,7 @@ import {
   type IndicatorStatus,
 } from "@/lib/riskModels";
 import type { Kpi } from "@/data/kpiData";
+import { unstable_cache } from "next/cache";
 
 function makeTickerItem(
   kpi: Kpi,
@@ -203,31 +204,68 @@ export default async function Home() {
     makeTickerItem(sbp.policyRate.kpi,     "SBP Rate",  "%",   "Policy Rate"),
   ];
 
+  // ── Layer 1: Risk Engine — 6h cache ──────────────────────────────────────
+  // Cache key is time-bucketed (changes every 6h) so the result is stable
+  // for the full window regardless of small indicator fluctuations.
+  // This decouples cache lifetime from prompt content and prevents the
+  // "new body → cache miss → OpenRouter call" problem that made the 1h
+  // next.revalidate setting ineffective.
+  const SIX_HOUR_MS = 6 * 60 * 60 * 1000;
+  const sixHourBucket = Math.floor(Date.now() / SIX_HOUR_MS);
+
+  // Helper: format a UTC epoch ms as a short PKT string ("17 Jun · 18:00 PKT")
+  function fmtPkt(ms: number): string {
+    const d = new Date(ms);
+    const opts: Intl.DateTimeFormatOptions = { timeZone: "Asia/Karachi", hour12: false };
+    const day   = d.toLocaleString("en-GB", { ...opts, day: "numeric" });
+    const month = d.toLocaleString("en-GB", { ...opts, month: "short" });
+    const time  = d.toLocaleString("en-GB", { ...opts, hour: "2-digit", minute: "2-digit" });
+    return `${day} ${month} · ${time} PKT`;
+  }
+
+  const aiCacheIssuedAt  = fmtPkt(sixHourBucket * SIX_HOUR_MS);
+  const aiCacheExpiresAt = fmtPkt((sixHourBucket + 1) * SIX_HOUR_MS);
+
+  // Snapshot of live indicators — used by the health score AI call.
+  // Extracted here so it can be closed over by the unstable_cache wrapper.
+  const indicatorSnapshot = {
+    gdpGrowth:          `${gdpKpi.value}${gdpKpi.unit} (${gdpKpi.change})`,
+    quarterlyGdpGrowth: `${quarterlyGdp.kpi.value}${quarterlyGdp.kpi.unit} YoY (${quarterlyGdp.kpi.change}), ${quarterlyGdp.kpi.latestDate}`,
+    cpiInflation:       `${sbp.cpiInflation.kpi.value}${sbp.cpiInflation.kpi.unit} (${sbp.cpiInflation.kpi.change})`,
+    coreInflation:      `${sbp.coreInflation.kpi.value}${sbp.coreInflation.kpi.unit} (${sbp.coreInflation.kpi.change})`,
+    policyRate:         `${sbp.policyRate.kpi.value}${sbp.policyRate.kpi.unit} (${sbp.policyRate.kpi.change})`,
+    foreignReserves:    `$${sbp.foreignReserves.kpi.value}B (${sbp.foreignReserves.kpi.change})`,
+    tradeBalance:       `${sbp.tradeBalance.kpi.value}${sbp.tradeBalance.kpi.unit} (${sbp.tradeBalance.kpi.change})`,
+    currentAccount:     `${sbp.currentAccount.kpi.value}${sbp.currentAccount.kpi.unit} (${sbp.currentAccount.kpi.change})`,
+    remittances:        `$${sbp.remittances.kpi.value}B (${sbp.remittances.kpi.change})`,
+    usdPkr:             `${sbp.usdPkr.kpi.value} PKR (${sbp.usdPkr.kpi.change})`,
+    kse100:             `${pakEtfKpi.value} (${pakEtfKpi.change})`,
+    brentOil:           `$${brentKpi.value}/bbl (${brentKpi.change})`,
+    wtiOil:             `$${wtiKpi.value}/bbl (${wtiKpi.change})`,
+    gold:               `$${goldKpi.value}/oz (${goldKpi.change})`,
+    dxy:                `${dxyKpi.value} (${dxyKpi.change})`,
+    us10y:              `${us10yKpi.value}% (${us10yKpi.change})`,
+    fedFunds:           `${fedFundsKpi.value}% (${fedFundsKpi.change})`,
+  };
+
+  // ── Layer 2: News Intelligence — 2h cache (stays fresh) ──────────────────
+  // getTaggedNews uses next: { revalidate: 7200 } internally — no change.
+  const newsSourceCount = new Set(newsItems.map((n) => n.source)).size;
+
   const [taggedNewsResult, aiAnalysis, aiRisk] = await Promise.all([
     getTaggedNews(newsItems),
-    getAiEconomicAnalysis(
-    {
-      gdpGrowth:            `${gdpKpi.value}${gdpKpi.unit} (${gdpKpi.change})`,
-      quarterlyGdpGrowth:   `${quarterlyGdp.kpi.value}${quarterlyGdp.kpi.unit} YoY (${quarterlyGdp.kpi.change}), ${quarterlyGdp.kpi.latestDate}`,
-      cpiInflation:    `${sbp.cpiInflation.kpi.value}${sbp.cpiInflation.kpi.unit} (${sbp.cpiInflation.kpi.change})`,
-      coreInflation:   `${sbp.coreInflation.kpi.value}${sbp.coreInflation.kpi.unit} (${sbp.coreInflation.kpi.change})`,
-      policyRate:      `${sbp.policyRate.kpi.value}${sbp.policyRate.kpi.unit} (${sbp.policyRate.kpi.change})`,
-      foreignReserves: `$${sbp.foreignReserves.kpi.value}B (${sbp.foreignReserves.kpi.change})`,
-      tradeBalance:    `${sbp.tradeBalance.kpi.value}${sbp.tradeBalance.kpi.unit} (${sbp.tradeBalance.kpi.change})`,
-      currentAccount:  `${sbp.currentAccount.kpi.value}${sbp.currentAccount.kpi.unit} (${sbp.currentAccount.kpi.change})`,
-      remittances:     `$${sbp.remittances.kpi.value}B (${sbp.remittances.kpi.change})`,
-      usdPkr:          `${sbp.usdPkr.kpi.value} PKR (${sbp.usdPkr.kpi.change})`,
-      kse100:          `${pakEtfKpi.value} (${pakEtfKpi.change})`,
-      brentOil:        `$${brentKpi.value}/bbl (${brentKpi.change})`,
-      wtiOil:          `$${wtiKpi.value}/bbl (${wtiKpi.change})`,
-      gold:            `$${goldKpi.value}/oz (${goldKpi.change})`,
-      dxy:             `${dxyKpi.value} (${dxyKpi.change})`,
-      us10y:           `${us10yKpi.value}% (${us10yKpi.change})`,
-      fedFunds:        `${fedFundsKpi.value}% (${fedFundsKpi.change})`,
-    },
-    newsItems,
-  ),
-    getAiRiskIntelligence(recessionResult, defaultResult),
+    // Health Score: cached for 6h via time-bucket key (prompt content not in key)
+    unstable_cache(
+      async () => getAiEconomicAnalysis(indicatorSnapshot, newsItems),
+      [`ai-health-${sixHourBucket}`],
+      { revalidate: 6 * 3600, tags: ["ai-risk-engine"] },
+    )(),
+    // Risk Intelligence: cached for 6h — same bucket as health score
+    unstable_cache(
+      async () => getAiRiskIntelligence(recessionResult, defaultResult),
+      [`ai-risk-${sixHourBucket}`],
+      { revalidate: 6 * 3600, tags: ["ai-risk-engine"] },
+    )(),
   ]);
 
   // ── Dashboard Snapshot for Floating AI Assistant ─────────────────────────
@@ -357,6 +395,8 @@ export default async function Home() {
           ai={aiRisk}
           recessionConfidence={recessionConfidence}
           defaultConfidence={defaultConfidence}
+          aiCacheIssuedAt={aiCacheIssuedAt}
+          aiCacheExpiresAt={aiCacheExpiresAt}
         />
 
         <ViewportFadeIn>
@@ -611,6 +651,8 @@ export default async function Home() {
         <NewsIntelligenceSection
           items={taggedNewsResult.items.slice(0, 5)}
           modelDisplayName={taggedNewsResult.modelDisplayName}
+          newsRefreshedAt={pktTimestamp}
+          sourceCount={newsSourceCount}
         />
       </main>
       <FloatingAssistant context={dashboardSnapshot} />

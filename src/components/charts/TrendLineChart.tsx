@@ -11,6 +11,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { useTheme } from "@/components/ThemeProvider";
 
 export interface TrendPoint {
   month: string;
@@ -26,13 +27,6 @@ interface TrendLineChartProps {
   xAxisInterval?: number | "preserveStart" | "preserveEnd" | "preserveStartEnd";
 }
 
-/**
- * Reusable themed area chart.
- * The Recharts animation is triggered by lazy-mounting the chart on viewport
- * entry — this ensures the draw animation is visible regardless of where the
- * chart sits on the page. With prefers-reduced-motion, the chart renders
- * immediately with animation disabled.
- */
 export default function TrendLineChart({
   data,
   color,
@@ -43,11 +37,19 @@ export default function TrendLineChart({
   const containerRef = useRef<HTMLDivElement>(null);
   const isInView = useInView(containerRef, { once: true });
   const prefersReducedMotion = useReducedMotion();
+  const { theme } = useTheme();
 
-  // Mount the chart only on viewport entry so Recharts' draw animation fires
-  // when the user can actually see it. With reduced motion, mount immediately
-  // and disable animation.
   const shouldRender = isInView || !!prefersReducedMotion;
+  const isLight = theme === "light";
+
+  const gridStroke     = isLight ? "rgba(0, 0, 0, 0.08)"   : "rgba(255, 255, 255, 0.06)";
+  const axisTickFill   = isLight ? "rgba(0, 0, 0, 0.50)"   : "rgba(255, 255, 255, 0.40)";
+  const tooltipBg      = isLight ? "rgba(255, 255, 255, 0.97)" : "rgba(11, 14, 33, 0.90)";
+  const tooltipBorder  = isLight ? "1px solid rgba(0, 0, 0, 0.10)"  : "1px solid rgba(255, 255, 255, 0.10)";
+  const tooltipLabel   = isLight ? "rgba(0, 0, 0, 0.50)"   : "rgba(255, 255, 255, 0.50)";
+  const tooltipItem    = isLight ? "rgba(0, 0, 0, 0.80)"   : "#ffffff";
+  const cursorStroke   = isLight ? "rgba(0, 0, 0, 0.12)"   : "rgba(255, 255, 255, 0.15)";
+  const dotStroke      = isLight ? "#ffffff"                : "#05060f";
 
   return (
     <div ref={containerRef} style={{ minHeight: 240 }}>
@@ -60,18 +62,18 @@ export default function TrendLineChart({
                 <stop offset="95%" stopColor={color} stopOpacity={0} />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.06)" vertical={false} />
+            <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} vertical={false} />
             <XAxis
               dataKey="month"
-              stroke="rgba(255, 255, 255, 0.3)"
-              tick={{ fill: "rgba(255, 255, 255, 0.4)", fontSize: 12 }}
+              stroke="transparent"
+              tick={{ fill: axisTickFill, fontSize: 12 }}
               tickLine={false}
               axisLine={false}
               {...(xAxisInterval !== undefined ? { interval: xAxisInterval } : {})}
             />
             <YAxis
-              stroke="rgba(255, 255, 255, 0.3)"
-              tick={{ fill: "rgba(255, 255, 255, 0.4)", fontSize: 12 }}
+              stroke="transparent"
+              tick={{ fill: axisTickFill, fontSize: 12 }}
               tickLine={false}
               axisLine={false}
               width={40}
@@ -79,15 +81,15 @@ export default function TrendLineChart({
             />
             <Tooltip
               contentStyle={{
-                background: "rgba(11, 14, 33, 0.9)",
-                border: "1px solid rgba(255, 255, 255, 0.1)",
+                background: tooltipBg,
+                border: tooltipBorder,
                 borderRadius: "0.75rem",
                 backdropFilter: "blur(16px)",
               }}
-              labelStyle={{ color: "rgba(255, 255, 255, 0.5)", marginBottom: 4 }}
-              itemStyle={{ color: "#ffffff", fontWeight: 600 }}
+              labelStyle={{ color: tooltipLabel, marginBottom: 4 }}
+              itemStyle={{ color: tooltipItem, fontWeight: 600 }}
               formatter={(value) => `${value}${unit}`}
-              cursor={{ stroke: "rgba(255, 255, 255, 0.15)", strokeWidth: 1 }}
+              cursor={{ stroke: cursorStroke, strokeWidth: 1 }}
             />
             <Area
               type="monotone"
@@ -95,7 +97,7 @@ export default function TrendLineChart({
               stroke={color}
               strokeWidth={2}
               fill={`url(#${gradientId})`}
-              activeDot={{ r: 4, fill: color, stroke: "#05060f", strokeWidth: 2 }}
+              activeDot={{ r: 4, fill: color, stroke: dotStroke, strokeWidth: 2 }}
               isAnimationActive={!prefersReducedMotion}
               animationDuration={1800}
               animationBegin={0}

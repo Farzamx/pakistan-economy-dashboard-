@@ -9,7 +9,6 @@ import type { CitationItem, ConfidenceLevel, SourceType } from "@/app/api/assist
 interface Message {
   role: "user" | "assistant";
   content: string;
-  // AI-specific metadata
   source?: SourceType;
   dataSource?: string | null;
   confidence?: ConfidenceLevel;
@@ -20,7 +19,6 @@ interface Message {
   searchLatencyMs?: number | null;
   sourcesFound?: number;
   modelDisplayName?: string;
-  // Roman Urdu translation (on-demand, cached)
   translation?: string;
   translationVisible?: boolean;
   translating?: boolean;
@@ -43,8 +41,8 @@ const SUGGESTED_QUESTIONS = [
 
 const SOURCE_COLORS: Record<string, string> = {
   "Dashboard Data":  "text-[#38bdf8]",
-  "Official Source": "text-[#34d399]",   // emerald — official/authoritative
-  "Financial Media": "text-[#a78bfa]",   // purple — trusted press
+  "Official Source": "text-[#34d399]",
+  "Financial Media": "text-[#a78bfa]",
   "External Sources":"text-[#a78bfa]",
   "AI Knowledge":    "text-[#a855f7]",
   "Hybrid Analysis": "text-[#34d399]",
@@ -63,15 +61,13 @@ const TIER_STYLES: Record<string, string> = {
 };
 
 // ── Inline markdown renderer ───────────────────────────────────────────────────
-// Handles **bold**, - bullets, and blank line spacing.
-// No external dependencies.
 
 function parseBold(text: string): React.ReactNode {
   const parts = text.split(/\*\*(.+?)\*\*/g);
   if (parts.length === 1) return text;
   return parts.map((part, i) =>
     i % 2 === 1 ? (
-      <strong key={i} className="font-semibold text-white/95">
+      <strong key={i} className="font-semibold text-white/95 light:text-slate-900">
         {part}
       </strong>
     ) : (
@@ -115,9 +111,8 @@ function renderMarkdown(text: string): React.ReactNode {
         output.push(<div key={`gap-${i}`} className="h-1" />);
       }
     } else if (/^\*\*[^*]+\*\*$/.test(line.trim())) {
-      // Line that is entirely **bold** — treat as section label
       output.push(
-        <p key={`hdr-${i}`} className="mt-1.5 text-[11px] font-semibold uppercase tracking-wide text-white/55">
+        <p key={`hdr-${i}`} className="mt-1.5 text-[11px] font-semibold uppercase tracking-wide text-white/55 light:text-slate-500">
           {line.trim().slice(2, -2)}
         </p>,
       );
@@ -144,7 +139,7 @@ function MessageCitations({ citations }: { citations: CitationItem[] }) {
     <div className="mt-1.5">
       <button
         onClick={() => setExpanded((v) => !v)}
-        className="flex items-center gap-1 text-[10px] text-white/30 hover:text-[#38bdf8]/60 transition-colors"
+        className="flex items-center gap-1 text-[10px] text-white/30 light:text-slate-400 hover:text-[#38bdf8]/60 transition-colors"
       >
         <span className="text-[9px]">{expanded ? "▾" : "▸"}</span>
         {citations.length} source{citations.length > 1 ? "s" : ""}
@@ -157,7 +152,7 @@ function MessageCitations({ citations }: { citations: CitationItem[] }) {
               href={c.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1.5 text-[11px] text-white/40 hover:text-[#38bdf8]/75 transition-colors"
+              className="flex items-center gap-1.5 text-[11px] text-white/40 light:text-slate-500 hover:text-[#38bdf8]/75 transition-colors"
             >
               <span
                 className={`text-[8px] px-1 py-0.5 rounded font-medium flex-shrink-0 ${TIER_STYLES[c.tier] ?? TIER_STYLES.C}`}
@@ -166,7 +161,7 @@ function MessageCitations({ citations }: { citations: CitationItem[] }) {
               </span>
               <span className="truncate">{c.domain}</span>
               {c.publishedDate && (
-                <span className="text-white/20 flex-shrink-0">
+                <span className="text-white/20 light:text-slate-400 flex-shrink-0">
                   {c.publishedDate.slice(0, 7)}
                 </span>
               )}
@@ -203,7 +198,7 @@ function TranslationSection({
       <button
         onClick={() => onTranslate(msgIndex, msg.content)}
         disabled={msg.translating}
-        className="flex items-center gap-1 text-[10px] text-white/28 hover:text-[#38bdf8]/55 transition-colors disabled:cursor-default"
+        className="flex items-center gap-1 text-[10px] text-white/28 light:text-slate-400 hover:text-[#38bdf8]/55 transition-colors disabled:cursor-default"
         aria-label={buttonLabel ?? "Translating…"}
       >
         {msg.translating ? (
@@ -212,7 +207,7 @@ function TranslationSection({
               className="w-1.5 h-1.5 rounded-full bg-[#38bdf8]/40 flex-shrink-0"
               style={{ animation: "assistant-dot-pulse 1.4s ease-in-out infinite" }}
             />
-            <span className="text-white/25">Translating…</span>
+            <span className="text-white/25 light:text-slate-400">Translating…</span>
           </>
         ) : (
           <>
@@ -223,11 +218,11 @@ function TranslationSection({
       </button>
 
       {msg.translationVisible && msg.translation && (
-        <div className="mt-1.5 rounded-xl px-3 py-2.5 bg-[#071420] border border-[#38bdf8]/10">
-          <p className="text-[9px] font-semibold uppercase tracking-wider text-[#38bdf8]/30 mb-1.5">
+        <div className="mt-1.5 rounded-xl px-3 py-2.5 bg-[#071420] light:bg-blue-50 border border-[#38bdf8]/10 light:border-blue-100">
+          <p className="text-[9px] font-semibold uppercase tracking-wider text-[#38bdf8]/30 light:text-blue-500 mb-1.5">
             Roman Urdu
           </p>
-          <div className="text-[12.5px] text-white/62 space-y-0.5 leading-snug">
+          <div className="text-[12.5px] text-white/62 light:text-slate-700 space-y-0.5 leading-snug">
             {renderMarkdown(msg.translation)}
           </div>
         </div>
@@ -240,21 +235,19 @@ function TranslationSection({
 
 function MessageFooter({ msg }: { msg: Message }) {
   const conf = msg.confidence ? CONFIDENCE_CONFIG[msg.confidence] : null;
-  const showSearch =
-    msg.searchPerformed && msg.sourcesFound !== undefined;
+  const showSearch = msg.searchPerformed && msg.sourcesFound !== undefined;
 
   return (
-    <div className="mt-2 pt-2 border-t border-white/8 space-y-1">
-      {/* Row 1: category · confidence · model */}
+    <div className="mt-2 pt-2 border-t border-white/8 light:border-slate-200 space-y-1">
       <div className="flex items-center flex-wrap gap-x-2 gap-y-0.5">
         {msg.queryCategory && (
-          <span className="text-[10px] font-medium text-white/35">
+          <span className="text-[10px] font-medium text-white/35 light:text-slate-500">
             {msg.queryCategory}
           </span>
         )}
         {conf && (
           <>
-            <span className="text-white/15 text-[10px]">·</span>
+            <span className="text-white/15 light:text-slate-300 text-[10px]">·</span>
             <span className="flex items-center gap-1">
               <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${conf.dot}`} />
               <span className={`text-[10px] font-medium ${conf.text}`}>
@@ -265,12 +258,12 @@ function MessageFooter({ msg }: { msg: Message }) {
         )}
         {msg.source && (
           <>
-            <span className="text-white/15 text-[10px]">·</span>
+            <span className="text-white/15 light:text-slate-300 text-[10px]">·</span>
             <span className={`text-[10px] font-medium ${SOURCE_COLORS[msg.source] ?? "text-white/35"}`}>
               {msg.source}
             </span>
             {msg.dataSource && (
-              <span className="text-[10px] text-white/30 font-medium">
+              <span className="text-[10px] text-white/30 light:text-slate-400 font-medium">
                 via {msg.dataSource}
               </span>
             )}
@@ -278,31 +271,28 @@ function MessageFooter({ msg }: { msg: Message }) {
         )}
         {msg.modelDisplayName && msg.modelDisplayName !== "Offline" && (
           <>
-            <span className="text-white/15 text-[10px]">·</span>
-            <span className="text-[10px] text-white/25 font-medium">
+            <span className="text-white/15 light:text-slate-300 text-[10px]">·</span>
+            <span className="text-[10px] text-white/25 light:text-slate-400 font-medium">
               {msg.modelDisplayName}
             </span>
           </>
         )}
       </div>
 
-      {/* Row 2: confidence reason */}
       {msg.confidenceReason && (
-        <p className="text-[10px] text-white/25 leading-tight">
+        <p className="text-[10px] text-white/25 light:text-slate-400 leading-tight">
           {msg.confidenceReason}
         </p>
       )}
 
-      {/* Row 3: search metadata */}
       {showSearch && (
-        <p className="text-[10px] text-white/20">
+        <p className="text-[10px] text-white/20 light:text-slate-400">
           {msg.sourcesFound! > 0
             ? `Searched · ${msg.sourcesFound} trusted source${msg.sourcesFound! > 1 ? "s" : ""}${msg.searchLatencyMs ? ` · ${msg.searchLatencyMs}ms` : ""}`
             : `Searched · no trusted sources found`}
         </p>
       )}
 
-      {/* Row 4: citations */}
       {msg.citations && msg.citations.length > 0 && (
         <MessageCitations citations={msg.citations} />
       )}
@@ -404,7 +394,6 @@ export default function AssistantChat({ context, onClose }: Props) {
     const msg = messages[msgIndex];
     if (!msg) return;
 
-    // Already translated — toggle visibility without another API call
     if (msg.translation) {
       setMessages((prev) =>
         prev.map((m, i) =>
@@ -414,7 +403,6 @@ export default function AssistantChat({ context, onClose }: Props) {
       return;
     }
 
-    // Mark as translating
     setMessages((prev) =>
       prev.map((m, i) => (i === msgIndex ? { ...m, translating: true } : m)),
     );
@@ -460,14 +448,14 @@ export default function AssistantChat({ context, onClose }: Props) {
 
   return (
     <div
-      className="flex flex-col w-[340px] bg-[#07101f] border border-[#38bdf8]/25 rounded-2xl shadow-2xl overflow-hidden"
+      className="flex flex-col w-[340px] bg-[#07101f] light:bg-white border border-[#38bdf8]/25 light:border-slate-200 rounded-2xl shadow-2xl overflow-hidden"
       style={{ boxShadow: "0 8px 40px rgba(0,0,0,0.6), 0 0 0 1px rgba(56,189,248,0.12)" }}
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-[#38bdf8]/15 bg-[#060e1c]">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-[#38bdf8]/15 light:border-slate-200 bg-[#060e1c] light:bg-slate-50">
         <div className="flex items-center gap-2.5">
           <span className="w-2 h-2 rounded-full bg-[#38bdf8] animate-pulse" />
-          <span className="text-sm font-semibold text-white/90 tracking-tight">
+          <span className="text-sm font-semibold text-white/90 light:text-slate-900 tracking-tight">
             Economic Intelligence
           </span>
         </div>
@@ -478,7 +466,7 @@ export default function AssistantChat({ context, onClose }: Props) {
           <button
             onClick={onClose}
             aria-label="Close assistant"
-            className="w-6 h-6 rounded-full flex items-center justify-center text-white/40 hover:text-white/80 hover:bg-white/8 transition-colors"
+            className="w-6 h-6 rounded-full flex items-center justify-center text-white/40 light:text-slate-400 hover:text-white/80 light:hover:text-slate-700 hover:bg-white/8 light:hover:bg-slate-100 transition-colors"
           >
             ×
           </button>
@@ -491,14 +479,14 @@ export default function AssistantChat({ context, onClose }: Props) {
         {/* Suggested questions — only when empty */}
         {isEmpty && (
           <div className="space-y-2 pt-1">
-            <p className="text-[11px] text-white/35 font-medium uppercase tracking-wider px-0.5">
+            <p className="text-[11px] text-white/35 light:text-slate-500 font-medium uppercase tracking-wider px-0.5">
               Ask me anything
             </p>
             {SUGGESTED_QUESTIONS.map((q) => (
               <button
                 key={q}
                 onClick={() => void send(q)}
-                className="w-full text-left text-xs text-white/60 hover:text-white/90 bg-white/4 hover:bg-[#38bdf8]/10 border border-white/8 hover:border-[#38bdf8]/30 rounded-xl px-3 py-2.5 transition-all"
+                className="w-full text-left text-xs text-white/60 light:text-slate-600 hover:text-white/90 light:hover:text-slate-900 bg-white/4 light:bg-slate-50 hover:bg-[#38bdf8]/10 light:hover:bg-blue-50 border border-white/8 light:border-slate-200 hover:border-[#38bdf8]/30 light:hover:border-blue-200 rounded-xl px-3 py-2.5 transition-all"
               >
                 {q}
               </button>
@@ -515,8 +503,8 @@ export default function AssistantChat({ context, onClose }: Props) {
             <div
               className={`max-w-[92%] rounded-2xl px-3.5 py-2.5 text-[13px] ${
                 msg.role === "user"
-                  ? "bg-[#38bdf8]/20 text-white/90 rounded-br-md border border-[#38bdf8]/25"
-                  : "bg-white/5 text-white/82 rounded-bl-md border border-white/8"
+                  ? "bg-[#38bdf8]/20 light:bg-blue-50 text-white/90 light:text-slate-800 rounded-br-md border border-[#38bdf8]/25 light:border-blue-200"
+                  : "bg-white/5 light:bg-slate-50 text-white/82 light:text-slate-700 rounded-bl-md border border-white/8 light:border-slate-200"
               }`}
             >
               {msg.role === "assistant" ? (
@@ -539,7 +527,7 @@ export default function AssistantChat({ context, onClose }: Props) {
         {/* Typing indicator */}
         {isLoading && (
           <div className="flex justify-start">
-            <div className="bg-white/5 border border-white/8 rounded-2xl rounded-bl-md px-4 py-3 flex items-center gap-1.5">
+            <div className="bg-white/5 light:bg-slate-100 border border-white/8 light:border-slate-200 rounded-2xl rounded-bl-md px-4 py-3 flex items-center gap-1.5">
               <span
                 className="w-1.5 h-1.5 rounded-full bg-[#38bdf8]/70"
                 style={{ animation: "assistant-typing-bounce 1.2s ease-in-out 0s infinite" }}
@@ -560,8 +548,8 @@ export default function AssistantChat({ context, onClose }: Props) {
       </div>
 
       {/* Input bar */}
-      <div className="px-3 pb-3 pt-2 border-t border-white/6">
-        <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-xl px-3 py-2 focus-within:border-[#38bdf8]/40 transition-colors">
+      <div className="px-3 pb-3 pt-2 border-t border-white/6 light:border-slate-200">
+        <div className="flex items-center gap-2 bg-white/5 light:bg-slate-50 border border-white/10 light:border-slate-200 rounded-xl px-3 py-2 focus-within:border-[#38bdf8]/40 transition-colors">
           <input
             ref={inputRef}
             type="text"
@@ -570,7 +558,7 @@ export default function AssistantChat({ context, onClose }: Props) {
             onKeyDown={handleKeyDown}
             placeholder="Ask about Pakistan's economy…"
             disabled={isLoading}
-            className="flex-1 bg-transparent text-[13px] text-white/85 placeholder-white/25 outline-none disabled:opacity-50"
+            className="flex-1 bg-transparent text-[13px] text-white/85 light:text-slate-800 placeholder-white/25 light:placeholder-slate-400 outline-none disabled:opacity-50"
           />
           <button
             onClick={() => void send(input)}
@@ -593,7 +581,7 @@ export default function AssistantChat({ context, onClose }: Props) {
             </svg>
           </button>
         </div>
-        <p className="text-[10px] text-white/18 text-center mt-1.5">
+        <p className="text-[10px] text-white/18 light:text-slate-400 text-center mt-1.5">
           as of {context.asOf} · dashboard + web research
         </p>
       </div>

@@ -16,24 +16,24 @@ export interface TickerItem {
 function TickerChip({ item }: { item: TickerItem }) {
   const trendClass =
     item.trend === "up"
-      ? "text-emerald-400"
+      ? "text-emerald-400 light:text-emerald-700"
       : item.trend === "down"
-        ? "text-rose-400"
-        : "text-white/35";
+        ? "text-rose-400 light:text-rose-700"
+        : "text-white/35 light:text-slate-400";
 
   const arrow =
     item.trend === "up" ? "▲" : item.trend === "down" ? "▼" : "•";
 
   return (
-    <span className="inline-flex items-center gap-2 px-5 border-r border-white/[0.06]">
-      <span className="text-[11px] font-medium tracking-wide text-white/45">
+    <span className="inline-flex items-center gap-2 px-5 border-r border-white/[0.06] light:border-slate-200">
+      <span className="text-[11px] font-medium tracking-wide text-white/45 light:text-slate-400">
         {item.label}
       </span>
 
-      <span className="text-[13px] font-semibold text-white tabular-nums">
+      <span className="text-[13px] font-semibold text-white light:text-slate-800 tabular-nums">
         {item.value}
         {item.unit && (
-          <span className="ml-0.5 text-[10px] font-normal text-white/30">
+          <span className="ml-0.5 text-[10px] font-normal text-white/30 light:text-slate-400">
             {item.unit}
           </span>
         )}
@@ -67,7 +67,7 @@ export default function MarketTicker({ items }: MarketTickerProps) {
   return (
     <div
       aria-label="Live market data"
-      className="mt-6 rounded-xl border border-white/[0.06]"
+      className="mt-6 rounded-xl border border-white/[0.06] light:border-slate-200 light:bg-white"
       style={{ background: "rgba(255, 255, 255, 0.02)" }}
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}

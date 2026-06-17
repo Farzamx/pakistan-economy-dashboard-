@@ -39,7 +39,7 @@ export default function HealthScoreCard({
 
       <div className="flex flex-col items-center sm:items-start">
         <div className="flex items-center gap-2">
-          <span className="text-xs font-semibold uppercase tracking-[0.3em] text-white/40">
+          <span className="text-xs font-semibold uppercase tracking-[0.3em] text-white/40 light:text-slate-400">
             Economic Health Score
           </span>
           <span className="rounded-full border border-neon-blue/20 bg-neon-blue/10 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-widest text-neon-blue/70">
@@ -65,12 +65,12 @@ export default function HealthScoreCard({
           </span>
         </div>
 
-        <p className="mt-3 max-w-md text-sm text-white/60">{summary}</p>
+        <p className="mt-3 max-w-md text-sm text-white/60 light:text-slate-500">{summary}</p>
 
         {topDrivers.length > 0 && (
           <ul className="mt-3 space-y-1">
             {topDrivers.map((driver, i) => (
-              <li key={i} className="flex items-start gap-2 text-xs text-white/45">
+              <li key={i} className="flex items-start gap-2 text-xs text-white/45 light:text-slate-500">
                 <span className="mt-0.5 text-[8px] text-neon-blue/60">▶</span>
                 {driver}
               </li>

@@ -25,20 +25,20 @@ export default function DashboardSection({
       viewport={{ once: true, amount: 0.3 }}
       transition={{ duration: 0.5, ease: "easeOut" }}
     >
-      <h2 className="text-xl font-semibold text-white sm:text-2xl">{title}</h2>
-      <p className="mt-2 max-w-2xl text-sm text-white/60">{description}</p>
+      <h2 className="text-xl font-semibold text-white light:text-slate-900 sm:text-2xl">{title}</h2>
+      <p className="mt-2 max-w-2xl text-sm text-white/60 light:text-slate-500">{description}</p>
 
       <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
         {stats.map((stat) => (
           <div
             key={stat.label}
-            className="rounded-xl border border-white/5 bg-white/[0.03] p-4"
+            className="rounded-xl border border-white/5 light:border-slate-200 bg-white/[0.03] light:bg-slate-50 p-4"
           >
             <div className="flex items-center gap-1">
-              <p className="text-xs text-white/40">{stat.label}</p>
+              <p className="text-xs text-white/40 light:text-slate-400">{stat.label}</p>
               <InfoTooltip termKey={stat.label} size="xs" />
             </div>
-            <p className="mt-1 text-lg font-semibold text-white">{stat.value}</p>
+            <p className="mt-1 text-lg font-semibold text-white light:text-slate-900">{stat.value}</p>
           </div>
         ))}
       </div>

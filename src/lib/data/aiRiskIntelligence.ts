@@ -60,39 +60,51 @@ const FALLBACK: AiRiskIntelligence = {
   modelDisplayName: "Offline",
 };
 
-const REVALIDATE = 60 * 60; // 1h
+const REVALIDATE = 6 * 60 * 60; // 6h — aligns with unstable_cache bucket in page.tsx
 
+// Only factor labels and formatted indicator values are passed — no probability
+// percentages or model scores. This keeps the narrative timeless within the 6h
+// cache window: probabilities update live on the gauges while the AI text
+// remains accurate regardless of small quantitative shifts.
 function formatFactors(factors: RiskModelResult["topRiskFactors"]): string {
-  return factors.map((f) => `${f.label}: ${f.formattedValue} (pressure ${f.pressureScore}/100)`).join(", ");
+  return factors.map((f) => `${f.label}: ${f.formattedValue}`).join(", ");
 }
 
 function buildPrompt(recession: RiskModelResult, defaultRisk: RiskModelResult): string {
   return `You are a senior economist specializing in Pakistan and emerging markets.
 
-A deterministic quantitative model has calculated the following risk probabilities for Pakistan.
-Your role is ONLY to explain these pre-calculated values — do NOT modify, recalculate, or contradict them.
+A deterministic quantitative model has assessed the following risk levels for Pakistan.
+Your role is ONLY to explain these outputs — do NOT modify, recalculate, or contradict them.
 
-RECESSION PROBABILITY: ${recession.probability}% (${recession.riskCategory} risk)
-Model score: ${recession.modelScore}/100
-Top pressure factors: ${formatFactors(recession.topRiskFactors)}
-Strongest cushions: ${formatFactors(recession.topCushionFactors)}
+CRITICAL STYLE RULE: Do NOT quote or embed any numerical probability percentages or model scores
+in your response. The live gauges already display exact numbers. Your explanation will be cached
+and served alongside updated live figures, so probability-specific language would quickly become
+inconsistent. Instead, use the risk category label and directional language only.
+  Incorrect: "The 28% recession probability reflects..."
+  Incorrect: "With a model score of 42..."
+  Correct:   "Recession risk sits in the ${recession.riskCategory.toLowerCase()} range, driven by..."
+  Correct:   "Default risk remains relatively contained, supported by..."
 
-SOVEREIGN DEFAULT PROBABILITY: ${defaultRisk.probability}% (${defaultRisk.riskCategory} risk)
-Model score: ${defaultRisk.modelScore}/100
-Top pressure factors: ${formatFactors(defaultRisk.topRiskFactors)}
-Strongest cushions: ${formatFactors(defaultRisk.topCushionFactors)}
+RECESSION RISK LEVEL: ${recession.riskCategory}
+Key pressure factors: ${formatFactors(recession.topRiskFactors)}
+Key cushion factors: ${formatFactors(recession.topCushionFactors)}
 
-Provide a brief expert explanation of these model outputs. Ground your language in the specific factors listed.
+SOVEREIGN DEFAULT RISK LEVEL: ${defaultRisk.riskCategory}
+Key pressure factors: ${formatFactors(defaultRisk.topRiskFactors)}
+Key cushion factors: ${formatFactors(defaultRisk.topCushionFactors)}
+
+Describe the direction, trend, structural drivers, and stabilizing factors for each risk category.
+Ground your language in the specific factor data listed above. Avoid all numerical probability quotes.
 
 Respond ONLY with this JSON (no markdown, no code fences, no explanation outside JSON):
 {
   "recession": {
-    "explanation": "<2-3 sentence narrative grounded in the factor data above>",
+    "explanation": "<2-3 sentence narrative using direction/trend language, grounded in the factors>",
     "keyRisks": ["<specific risk 1>", "<specific risk 2>", "<specific risk 3>"],
     "keyPositives": ["<stabilizing factor 1>", "<stabilizing factor 2>"]
   },
   "default": {
-    "explanation": "<2-3 sentence narrative grounded in the factor data above>",
+    "explanation": "<2-3 sentence narrative using direction/trend language, grounded in the factors>",
     "keyRisks": ["<specific risk 1>", "<specific risk 2>", "<specific risk 3>"],
     "keyPositives": ["<stabilizing factor 1>", "<stabilizing factor 2>"]
   }

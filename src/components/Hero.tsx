@@ -27,13 +27,13 @@ export default function Hero({ rightSlot }: Props) {
       <p className="text-xs font-semibold uppercase tracking-[0.3em] text-neon-blue">
         Live Economic Overview
       </p>
-      <h1 className="mt-3 text-3xl font-bold tracking-tight text-white sm:text-5xl">
+      <h1 className="mt-3 text-3xl font-bold tracking-tight text-white light:text-slate-900 sm:text-5xl">
         Pakistan Economic{" "}
         <span className="bg-gradient-to-r from-neon-blue to-neon-purple bg-clip-text text-transparent">
           Intelligence Center
         </span>
       </h1>
-      <p className="mt-4 max-w-2xl text-sm text-white/60 sm:text-base">
+      <p className="mt-4 max-w-2xl text-sm text-white/60 light:text-slate-500 sm:text-base">
         A real-time command center tracking the indicators that drive
         Pakistan&apos;s economy &mdash; growth, prices, reserves, currency and
         remittances, all in one place.
