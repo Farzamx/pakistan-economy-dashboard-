@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 
 const navItems = [
   { label: "Overview", href: "#overview", active: true },
+  { label: "Risk Intel", href: "#risk-intelligence", active: false },
   { label: "GDP", href: "#gdp", active: false },
   { label: "Inflation", href: "#inflation", active: false },
   { label: "Prices", href: "#price-indices", active: false },

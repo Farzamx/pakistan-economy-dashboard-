@@ -6,6 +6,7 @@ import InfoTooltip from "@/components/InfoTooltip";
 import KpiGrid from "@/components/KpiGrid";
 import MarketTicker, { type TickerItem } from "@/components/MarketTicker";
 import NewsIntelligenceSection from "@/components/NewsIntelligenceSection";
+import RiskIntelligenceSection from "@/components/RiskIntelligenceSection";
 import Sidebar from "@/components/Sidebar";
 import ViewportFadeIn from "@/components/ViewportFadeIn";
 import TrendLineChart from "@/components/charts/TrendLineChart";
@@ -13,6 +14,7 @@ import { fallbackPakEtfKpi } from "@/data/globalMarketsFallbackData";
 import { sectionData } from "@/data/sectionData";
 import { getFreshnessStatus } from "@/lib/dataFreshness";
 import { getAiEconomicAnalysis } from "@/lib/data/aiEconomicAnalysis";
+import { getAiRiskIntelligence } from "@/lib/data/aiRiskIntelligence";
 import { getAllSbpIndicators } from "@/lib/data/sbp";
 import { getGdpKpi } from "@/lib/data/worldBank";
 import {
@@ -27,6 +29,7 @@ import { getTaggedNews } from "@/lib/data/intelligence";
 import { getDxyKpi, getGoldKpi, getSilverKpi } from "@/lib/data/metals";
 import { getNews } from "@/lib/data/news";
 import { getPakEtfKpi } from "@/lib/data/yfinance";
+import { calculateRecessionRisk, calculateDefaultRisk } from "@/lib/riskModels";
 import type { Kpi } from "@/data/kpiData";
 
 function makeTickerItem(
@@ -72,6 +75,54 @@ export default async function Home() {
 
   const pakEtfKpi = pakEtfKpiRaw ?? fallbackPakEtfKpi;
 
+  // ── Quantitative risk model inputs ────────────────────────────────────────
+  // Compute USD/PKR YoY change from the 24-month trend array (index −13 = 12mo ago)
+  const usdPkrTrend = sbp.usdPkr.trend;
+  const currentUsdPkr = parseFloat(sbp.usdPkr.kpi.value);
+  const yearAgoUsdPkr =
+    usdPkrTrend[Math.max(0, usdPkrTrend.length - 13)]?.value ?? currentUsdPkr;
+  const usdPkrYoyPct =
+    yearAgoUsdPkr > 0 ? ((currentUsdPkr - yearAgoUsdPkr) / yearAgoUsdPkr) * 100 : 0;
+
+  // Import cover = total reserves (SBP + banks) / monthly imports
+  const sbpReservesB = parseFloat(sbp.foreignReserves.kpi.value);
+  const bankReservesB = parseFloat(sbp.netBankReserves.kpi.value);
+  const monthlyImportsB = parseFloat(sbp.imports.kpi.value);
+  const importCoverMonths =
+    monthlyImportsB > 0 ? (sbpReservesB + bankReservesB) / monthlyImportsB : 3.0;
+
+  // PAK ETF day % change: change string is absolute price diff (e.g. "+1.23 vs prev close")
+  const etfPrice = parseFloat(pakEtfKpi.value.replace(/,/g, ""));
+  const etfDiffMatch = pakEtfKpi.change.match(/^([+-]?\d+\.?\d*)/);
+  const etfDiff = etfDiffMatch ? parseFloat(etfDiffMatch[1]) : 0;
+  const etfPrev = etfPrice - etfDiff;
+  const pakEtfDayChangePct = etfPrev > 0 ? (etfDiff / etfPrev) * 100 : 0;
+
+  // LSM MoM index points change (change string: "-6.8 vs Feb 2026")
+  const lsmMatch = sbp.lsm.kpi.change.match(/^([+-]?\d+\.?\d*)/);
+  const lsmMomPoints = lsmMatch ? parseFloat(lsmMatch[1]) : 0;
+
+  const recessionResult = calculateRecessionRisk({
+    gdpGrowthPct: parseFloat(gdpKpi.value),
+    cpiInflationPct: parseFloat(sbp.cpiInflation.kpi.value),
+    policyRatePct: parseFloat(sbp.policyRate.kpi.value),
+    importCoverMonths,
+    currentAccountMonthlyB: parseFloat(sbp.currentAccount.kpi.value),
+    usdPkrYoyChangePct: usdPkrYoyPct,
+    pakEtfDayChangePct,
+    lsmMomPoints,
+  });
+
+  const defaultResult = calculateDefaultRisk({
+    sbpReservesB,
+    importCoverMonths,
+    fiscalBalanceTrn: parseFloat(sbp.fiscalBalance.kpi.value),
+    currentAccountMonthlyB: parseFloat(sbp.currentAccount.kpi.value),
+    usdPkrYoyChangePct: usdPkrYoyPct,
+    policyRatePct: parseFloat(sbp.policyRate.kpi.value),
+  });
+  // ─────────────────────────────────────────────────────────────────────────
+
   const tickerItems: TickerItem[] = [
     makeTickerItem(fxRates.usdPkr,         "USD/PKR",   "",    "USD / PKR"),
     makeTickerItem(fxRates.eurPkr,         "EUR/PKR",   "",    "EUR / PKR"),
@@ -89,7 +140,7 @@ export default async function Home() {
     makeTickerItem(sbp.policyRate.kpi,     "SBP Rate",  "%",   "Policy Rate"),
   ];
 
-  const [taggedNews, aiAnalysis] = await Promise.all([
+  const [taggedNews, aiAnalysis, aiRisk] = await Promise.all([
     getTaggedNews(newsItems),
     getAiEconomicAnalysis(
     {
@@ -111,7 +162,9 @@ export default async function Home() {
       fedFunds:        `${fedFundsKpi.value}% (${fedFundsKpi.change})`,
     },
     newsItems,
-  )]);
+  ),
+    getAiRiskIntelligence(recessionResult, defaultResult),
+  ]);
 
   const headlineKpis = [
     gdpKpi,
@@ -195,6 +248,12 @@ export default async function Home() {
         <KpiGrid items={headlineKpis} />
 
         <HealthScoreCard {...aiAnalysis} />
+
+        <RiskIntelligenceSection
+          recession={recessionResult}
+          defaultRisk={defaultResult}
+          ai={aiRisk}
+        />
 
         <ViewportFadeIn>
           <h2 className="mt-12 text-xl font-semibold text-white sm:text-2xl">
