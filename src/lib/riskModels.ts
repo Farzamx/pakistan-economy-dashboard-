@@ -4,6 +4,59 @@
 
 export type RiskCategory = "Low" | "Elevated" | "High" | "Severe";
 
+// ── Data Confidence Scoring ───────────────────────────────────────────────────
+// Purely quantitative — AI is never involved in confidence calculation.
+
+export type ConfidenceLevel = "High" | "Moderate" | "Low";
+
+export interface IndicatorStatus {
+  label: string;
+  isFallback: boolean; // true = API failed, using hardcoded snapshot (-10 pts each)
+  isStale: boolean;    // true = live data older than expected frequency (-5 pts each)
+}
+
+export interface DataConfidence {
+  score: number;           // 0-100, starts at 100 and deducts per stale/fallback indicator
+  level: ConfidenceLevel;
+  currentCount: number;    // indicators with fresh live data
+  staleCount: number;      // indicators that are fallback or stale
+  totalCount: number;
+  calculatedAt: string;    // formatted PKT timestamp of the last ISR render
+}
+
+// Starts at 100. Fallback indicators (hardcoded snapshot) deduct 10 pts each.
+// Stale live indicators (older than frequency threshold) deduct 5 pts each.
+export function computeDataConfidence(
+  indicators: IndicatorStatus[],
+  calculatedAt: string,
+): DataConfidence {
+  let deductions = 0;
+  let staleCount = 0;
+
+  for (const ind of indicators) {
+    if (ind.isFallback) {
+      deductions += 10;
+      staleCount++;
+    } else if (ind.isStale) {
+      deductions += 5;
+      staleCount++;
+    }
+  }
+
+  const score = Math.max(0, 100 - deductions);
+  const level: ConfidenceLevel = score >= 90 ? "High" : score >= 70 ? "Moderate" : "Low";
+
+  return {
+    score,
+    level,
+    currentCount: indicators.length - staleCount,
+    staleCount,
+    totalCount: indicators.length,
+    calculatedAt,
+  };
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
 export interface RiskFactor {
   label: string;
   formattedValue: string;

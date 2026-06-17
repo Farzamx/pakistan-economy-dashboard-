@@ -29,7 +29,12 @@ import { getTaggedNews } from "@/lib/data/intelligence";
 import { getDxyKpi, getGoldKpi, getSilverKpi } from "@/lib/data/metals";
 import { getNews } from "@/lib/data/news";
 import { getPakEtfKpi } from "@/lib/data/yfinance";
-import { calculateRecessionRisk, calculateDefaultRisk } from "@/lib/riskModels";
+import {
+  calculateRecessionRisk,
+  calculateDefaultRisk,
+  computeDataConfidence,
+  type IndicatorStatus,
+} from "@/lib/riskModels";
 import type { Kpi } from "@/data/kpiData";
 
 function makeTickerItem(
@@ -121,6 +126,61 @@ export default async function Home() {
     usdPkrYoyChangePct: usdPkrYoyPct,
     policyRatePct: parseFloat(sbp.policyRate.kpi.value),
   });
+
+  // ── Data Confidence ───────────────────────────────────────────────────────
+  // Returns days since an observation date string ("YYYY-MM-DD" or "YYYY").
+  function daysSince(dateStr: string): number {
+    const d = dateStr.length === 4 ? new Date(`${dateStr}-07-01`) : new Date(dateStr);
+    return (Date.now() - d.getTime()) / 86_400_000;
+  }
+  function isFallback(meta: { source: string }): boolean {
+    return meta.source.includes("fallback");
+  }
+  function isStale(meta: { observationDate: string; frequency: string }, isFb: boolean): boolean {
+    if (isFb) return false; // already counted as fallback
+    const days = daysSince(meta.observationDate);
+    if (meta.frequency === "Annual") return days > 730;
+    if (meta.frequency === "As-Needed") return days > 45;
+    return days > 50; // Monthly / Weekly
+  }
+
+  const pktTimestamp = (() => {
+    const d = new Date();
+    const opts: Intl.DateTimeFormatOptions = { timeZone: "Asia/Karachi", hour12: false };
+    const day = d.toLocaleString("en-GB", { ...opts, day: "numeric" });
+    const month = d.toLocaleString("en-GB", { ...opts, month: "short" });
+    const year = d.toLocaleString("en-GB", { ...opts, year: "numeric" });
+    const time = d.toLocaleString("en-GB", { ...opts, hour: "2-digit", minute: "2-digit" });
+    return `${day} ${month} ${year} · ${time} PKT`;
+  })();
+
+  // Recession model — 10 raw data inputs
+  const recessionIndicators: IndicatorStatus[] = [
+    { label: "GDP Growth",        isFallback: false,                               isStale: daysSince(gdpKpi.latestDate ?? "2024") > 730 },
+    { label: "CPI Inflation",     isFallback: isFallback(sbp.cpiInflation.meta),  isStale: isStale(sbp.cpiInflation.meta,  isFallback(sbp.cpiInflation.meta))  },
+    { label: "Policy Rate",       isFallback: isFallback(sbp.policyRate.meta),    isStale: isStale(sbp.policyRate.meta,    isFallback(sbp.policyRate.meta))    },
+    { label: "SBP Reserves",      isFallback: isFallback(sbp.foreignReserves.meta), isStale: isStale(sbp.foreignReserves.meta, isFallback(sbp.foreignReserves.meta)) },
+    { label: "Bank Reserves",     isFallback: isFallback(sbp.netBankReserves.meta), isStale: isStale(sbp.netBankReserves.meta, isFallback(sbp.netBankReserves.meta)) },
+    { label: "Monthly Imports",   isFallback: isFallback(sbp.imports.meta),       isStale: isStale(sbp.imports.meta,       isFallback(sbp.imports.meta))       },
+    { label: "Current Account",   isFallback: isFallback(sbp.currentAccount.meta),isStale: isStale(sbp.currentAccount.meta,isFallback(sbp.currentAccount.meta)) },
+    { label: "USD/PKR Rate",      isFallback: isFallback(sbp.usdPkr.meta),        isStale: isStale(sbp.usdPkr.meta,        isFallback(sbp.usdPkr.meta))        },
+    { label: "LSM Output",        isFallback: isFallback(sbp.lsm.meta),           isStale: isStale(sbp.lsm.meta,           isFallback(sbp.lsm.meta))           },
+    { label: "PAK ETF",           isFallback: pakEtfKpiRaw === null,              isStale: false },
+  ];
+
+  // Default model — 7 raw data inputs
+  const defaultIndicators: IndicatorStatus[] = [
+    { label: "SBP Reserves",      isFallback: isFallback(sbp.foreignReserves.meta), isStale: isStale(sbp.foreignReserves.meta, isFallback(sbp.foreignReserves.meta)) },
+    { label: "Bank Reserves",     isFallback: isFallback(sbp.netBankReserves.meta), isStale: isStale(sbp.netBankReserves.meta, isFallback(sbp.netBankReserves.meta)) },
+    { label: "Monthly Imports",   isFallback: isFallback(sbp.imports.meta),       isStale: isStale(sbp.imports.meta,       isFallback(sbp.imports.meta))       },
+    { label: "Fiscal Balance",    isFallback: isFallback(sbp.fiscalBalance.meta), isStale: isStale(sbp.fiscalBalance.meta, isFallback(sbp.fiscalBalance.meta)) },
+    { label: "Current Account",   isFallback: isFallback(sbp.currentAccount.meta),isStale: isStale(sbp.currentAccount.meta,isFallback(sbp.currentAccount.meta)) },
+    { label: "USD/PKR Rate",      isFallback: isFallback(sbp.usdPkr.meta),        isStale: isStale(sbp.usdPkr.meta,        isFallback(sbp.usdPkr.meta))        },
+    { label: "Policy Rate",       isFallback: isFallback(sbp.policyRate.meta),    isStale: isStale(sbp.policyRate.meta,    isFallback(sbp.policyRate.meta))    },
+  ];
+
+  const recessionConfidence = computeDataConfidence(recessionIndicators, pktTimestamp);
+  const defaultConfidence   = computeDataConfidence(defaultIndicators,   pktTimestamp);
   // ─────────────────────────────────────────────────────────────────────────
 
   const tickerItems: TickerItem[] = [
@@ -253,6 +313,8 @@ export default async function Home() {
           recession={recessionResult}
           defaultRisk={defaultResult}
           ai={aiRisk}
+          recessionConfidence={recessionConfidence}
+          defaultConfidence={defaultConfidence}
         />
 
         <ViewportFadeIn>

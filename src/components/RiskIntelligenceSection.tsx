@@ -8,6 +8,8 @@ import {
   getRiskCategoryClass,
   type RiskModelResult,
   type RiskCategory,
+  type DataConfidence,
+  type ConfidenceLevel,
 } from "@/lib/riskModels";
 import type { AiRiskExplanation, AiRiskIntelligence } from "@/lib/data/aiRiskIntelligence";
 
@@ -18,14 +20,84 @@ const CATEGORY_LABEL: Record<RiskCategory, string> = {
   Severe:   "Severe Risk",
 };
 
+const CONFIDENCE_DOT: Record<ConfidenceLevel, string> = {
+  High:     "text-emerald-400",
+  Moderate: "text-amber-400",
+  Low:      "text-rose-400",
+};
+
+interface ConfidencePanelProps {
+  confidence: DataConfidence;
+  modelScore: number;
+}
+
+function ConfidencePanel({ confidence, modelScore }: ConfidencePanelProps) {
+  return (
+    <div className="rounded-lg border border-white/5 bg-white/[0.02] px-4 py-3">
+      <p className="mb-2.5 text-[9px] font-semibold uppercase tracking-widest text-white/25">
+        Transparency
+      </p>
+      <div className="grid grid-cols-3 gap-x-4 gap-y-0.5">
+        {/* Column 1 — Last Calculated */}
+        <div>
+          <p className="text-[9px] font-medium uppercase tracking-wider text-white/25">
+            Last Calculated
+          </p>
+          <p className="mt-1 text-[10px] leading-tight text-white/50">
+            {/* Split at the · to show date and time on two lines */}
+            {confidence.calculatedAt.split(" · ")[0]}
+          </p>
+          <p className="text-[10px] leading-tight text-white/35">
+            {confidence.calculatedAt.split(" · ")[1]}
+          </p>
+        </div>
+
+        {/* Column 2 — Indicators */}
+        <div>
+          <p className="text-[9px] font-medium uppercase tracking-wider text-white/25">
+            Indicators
+          </p>
+          <p className="mt-1 text-[10px] leading-tight text-white/50">
+            {confidence.currentCount}/{confidence.totalCount} Current
+          </p>
+          <p className="text-[10px] leading-tight text-white/35">
+            {confidence.staleCount === 0
+              ? "None stale"
+              : `${confidence.staleCount} Stale`}
+          </p>
+        </div>
+
+        {/* Column 3 — Confidence Score */}
+        <div>
+          <p className="text-[9px] font-medium uppercase tracking-wider text-white/25">
+            Confidence
+          </p>
+          <p className="mt-1 font-mono text-[10px] leading-tight text-white/50">
+            {confidence.score}%
+          </p>
+          <p className={`text-[10px] leading-tight ${CONFIDENCE_DOT[confidence.level]}`}>
+            ● {confidence.level}
+          </p>
+        </div>
+      </div>
+
+      {/* Methodology note */}
+      <p className="mt-2.5 text-[9px] text-white/20">
+        Model score {modelScore}/100 · −10 pts per fallback indicator · −5 pts per stale indicator · AI explanation via OpenRouter
+      </p>
+    </div>
+  );
+}
+
 interface RiskCardProps {
   title: string;
   result: RiskModelResult;
   ai: AiRiskExplanation;
+  confidence: DataConfidence;
   delay?: number;
 }
 
-function RiskCard({ title, result, ai, delay = 0 }: RiskCardProps) {
+function RiskCard({ title, result, ai, confidence, delay = 0 }: RiskCardProps) {
   const gaugeColor = getRiskGaugeColor(result.riskCategory);
   const categoryClass = getRiskCategoryClass(result.riskCategory);
 
@@ -122,10 +194,8 @@ function RiskCard({ title, result, ai, delay = 0 }: RiskCardProps) {
         </div>
       </div>
 
-      {/* Transparency footer */}
-      <p className="text-[9px] text-white/20">
-        Quantitative model score {result.modelScore}/100 · Probability calculated deterministically from live indicators · AI explanation via OpenRouter
-      </p>
+      {/* Transparency panel */}
+      <ConfidencePanel confidence={confidence} modelScore={result.modelScore} />
     </motion.div>
   );
 }
@@ -134,12 +204,16 @@ interface RiskIntelligenceSectionProps {
   recession: RiskModelResult;
   defaultRisk: RiskModelResult;
   ai: AiRiskIntelligence;
+  recessionConfidence: DataConfidence;
+  defaultConfidence: DataConfidence;
 }
 
 export default function RiskIntelligenceSection({
   recession,
   defaultRisk,
   ai,
+  recessionConfidence,
+  defaultConfidence,
 }: RiskIntelligenceSectionProps) {
   return (
     <div id="risk-intelligence" className="scroll-mt-8">
@@ -158,12 +232,14 @@ export default function RiskIntelligenceSection({
           title="Recession Probability"
           result={recession}
           ai={ai.recession}
+          confidence={recessionConfidence}
           delay={0}
         />
         <RiskCard
           title="Sovereign Default Probability"
           result={defaultRisk}
           ai={ai.default}
+          confidence={defaultConfidence}
           delay={0.1}
         />
       </div>
