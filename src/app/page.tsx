@@ -96,12 +96,8 @@ export default async function Home() {
   const importCoverMonths =
     monthlyImportsB > 0 ? (sbpReservesB + bankReservesB) / monthlyImportsB : 3.0;
 
-  // PAK ETF day % change: change string is absolute price diff (e.g. "+1.23 vs prev close")
-  const etfPrice = parseFloat(pakEtfKpi.value.replace(/,/g, ""));
-  const etfDiffMatch = pakEtfKpi.change.match(/^([+-]?\d+\.?\d*)/);
-  const etfDiff = etfDiffMatch ? parseFloat(etfDiffMatch[1]) : 0;
-  const etfPrev = etfPrice - etfDiff;
-  const pakEtfDayChangePct = etfPrev > 0 ? (etfDiff / etfPrev) * 100 : 0;
+  // Private credit growth YoY % — weekly SBP series; replaces PAK ETF day % (too noisy)
+  const privateCreditGrowthPct = parseFloat(sbp.privateCreditGrowth.kpi.value);
 
   // LSM MoM index points change (change string: "-6.8 vs Feb 2026")
   const lsmMatch = sbp.lsm.kpi.change.match(/^([+-]?\d+\.?\d*)/);
@@ -114,12 +110,13 @@ export default async function Home() {
     importCoverMonths,
     currentAccountMonthlyB: parseFloat(sbp.currentAccount.kpi.value),
     usdPkrYoyChangePct: usdPkrYoyPct,
-    pakEtfDayChangePct,
+    privateCreditGrowthPct,
     lsmMomPoints,
   });
 
+  // SBP Reserves removed from DefaultModelInputs — it was the numerator of importCoverMonths,
+  // causing double-counting at a combined 0.45 effective weight.
   const defaultResult = calculateDefaultRisk({
-    sbpReservesB,
     importCoverMonths,
     fiscalBalanceTrn: parseFloat(sbp.fiscalBalance.kpi.value),
     currentAccountMonthlyB: parseFloat(sbp.currentAccount.kpi.value),
@@ -164,8 +161,8 @@ export default async function Home() {
     { label: "Monthly Imports",   isFallback: isFallback(sbp.imports.meta),       isStale: isStale(sbp.imports.meta,       isFallback(sbp.imports.meta))       },
     { label: "Current Account",   isFallback: isFallback(sbp.currentAccount.meta),isStale: isStale(sbp.currentAccount.meta,isFallback(sbp.currentAccount.meta)) },
     { label: "USD/PKR Rate",      isFallback: isFallback(sbp.usdPkr.meta),        isStale: isStale(sbp.usdPkr.meta,        isFallback(sbp.usdPkr.meta))        },
-    { label: "LSM Output",        isFallback: isFallback(sbp.lsm.meta),           isStale: isStale(sbp.lsm.meta,           isFallback(sbp.lsm.meta))           },
-    { label: "PAK ETF",           isFallback: pakEtfKpiRaw === null,              isStale: false },
+    { label: "LSM Output",        isFallback: isFallback(sbp.lsm.meta),                    isStale: isStale(sbp.lsm.meta,                    isFallback(sbp.lsm.meta))                    },
+    { label: "Private Credit",    isFallback: isFallback(sbp.privateCreditGrowth.meta),    isStale: isStale(sbp.privateCreditGrowth.meta,    isFallback(sbp.privateCreditGrowth.meta))    },
   ];
 
   // Default model — 7 raw data inputs

@@ -73,23 +73,25 @@ export interface RiskModelResult {
 }
 
 export interface RecessionModelInputs {
-  gdpGrowthPct: number;           // GDP growth YoY %
-  cpiInflationPct: number;        // CPI inflation YoY %
-  policyRatePct: number;          // SBP policy rate %
-  importCoverMonths: number;      // total reserves / monthly imports
-  currentAccountMonthlyB: number; // current account balance B USD (negative = deficit)
-  usdPkrYoyChangePct: number;     // USD/PKR YoY change % (positive = PKR depreciation)
-  pakEtfDayChangePct: number;     // PAK ETF day % change (negative = market decline)
-  lsmMomPoints: number;           // LSM index MoM change in index points
+  gdpGrowthPct: number;             // GDP growth YoY %
+  cpiInflationPct: number;          // CPI inflation YoY %
+  policyRatePct: number;            // SBP policy rate %
+  importCoverMonths: number;        // total reserves / monthly imports
+  currentAccountMonthlyB: number;   // current account balance B USD (negative = deficit)
+  usdPkrYoyChangePct: number;       // USD/PKR YoY change % (positive = PKR depreciation)
+  privateCreditGrowthPct: number;   // private sector credit growth YoY % (replaces PAK ETF day %)
+  lsmMomPoints: number;             // LSM index MoM change in index points
 }
 
 export interface DefaultModelInputs {
-  sbpReservesB: number;           // SBP foreign reserves B USD
-  importCoverMonths: number;      // total reserves / monthly imports
-  fiscalBalanceTrn: number;       // consolidated fiscal balance T PKR (negative = deficit)
-  currentAccountMonthlyB: number; // current account balance B USD (negative = deficit)
-  usdPkrYoyChangePct: number;     // USD/PKR YoY change % (positive = PKR depreciation)
-  policyRatePct: number;          // SBP policy rate %
+  // SBP Reserves removed — its value flows into the model via importCoverMonths,
+  // which already captures reserve adequacy in context. Listing it separately
+  // caused double-counting at a combined 0.45 effective weight.
+  importCoverMonths: number;        // (SBP + bank FX reserves) / monthly imports
+  fiscalBalanceTrn: number;         // consolidated fiscal balance T PKR (negative = deficit)
+  currentAccountMonthlyB: number;   // current account balance B USD (negative = deficit)
+  usdPkrYoyChangePct: number;       // USD/PKR YoY change % (positive = PKR depreciation)
+  policyRatePct: number;            // SBP policy rate %
 }
 
 function getRiskCategory(prob: number): RiskCategory {
@@ -112,12 +114,18 @@ function toProbabilityDefault(score: number): number {
   return Math.round(Math.min(100, Math.max(0, 2 + score * 0.60)));
 }
 
+// v2 weight rationale (see audit):
+// - LSM raised 0.11→0.18: Pakistan's most timely recession coincident indicator
+// - Private Credit Growth replaces PAK ETF day % (eliminated daily noise)
+// - CPI + Real Policy Rate each reduced 0.12→0.10 (partial double-count concession)
+// - Import Cover reduced 0.15→0.10 (primarily a solvency metric; dominant in Default model)
+// - GDP reduced 0.20→0.18 (annual staleness concession)
 export function calculateRecessionRisk(inputs: RecessionModelInputs): RiskModelResult {
   const factors: RiskFactor[] = [
     {
       label: "GDP Growth",
       formattedValue: `${inputs.gdpGrowthPct.toFixed(1)}%`,
-      weight: 0.20,
+      weight: 0.18,
       pressureScore:
         inputs.gdpGrowthPct >= 4 ? 5 :
         inputs.gdpGrowthPct >= 3 ? 15 :
@@ -127,9 +135,44 @@ export function calculateRecessionRisk(inputs: RecessionModelInputs): RiskModelR
         inputs.gdpGrowthPct >= -1 ? 85 : 95,
     },
     {
+      label: "LSM Output (MoM)",
+      formattedValue: `${inputs.lsmMomPoints >= 0 ? "+" : ""}${inputs.lsmMomPoints.toFixed(1)} pts`,
+      weight: 0.18,
+      pressureScore:
+        inputs.lsmMomPoints >= 5 ? 5 :
+        inputs.lsmMomPoints >= 2 ? 20 :
+        inputs.lsmMomPoints >= 0 ? 35 :
+        inputs.lsmMomPoints >= -3 ? 55 :
+        inputs.lsmMomPoints >= -8 ? 75 : 90,
+    },
+    {
+      label: "PKR Depreciation (YoY)",
+      formattedValue: `${inputs.usdPkrYoyChangePct >= 0 ? "+" : ""}${inputs.usdPkrYoyChangePct.toFixed(1)}%`,
+      weight: 0.12,
+      pressureScore:
+        inputs.usdPkrYoyChangePct <= -2 ? 5 :
+        inputs.usdPkrYoyChangePct <= 3 ? 10 :
+        inputs.usdPkrYoyChangePct <= 8 ? 30 :
+        inputs.usdPkrYoyChangePct <= 15 ? 55 :
+        inputs.usdPkrYoyChangePct <= 25 ? 75 : 90,
+    },
+    {
+      label: "Private Credit (YoY)",
+      formattedValue: `${inputs.privateCreditGrowthPct.toFixed(1)}%`,
+      weight: 0.12,
+      // High credit growth = supportive financial conditions = low recession pressure.
+      // In Pakistan's chronic credit-crunch context, strong credit = investment can continue.
+      pressureScore:
+        inputs.privateCreditGrowthPct >= 20 ? 5 :
+        inputs.privateCreditGrowthPct >= 12 ? 15 :
+        inputs.privateCreditGrowthPct >= 6 ? 30 :
+        inputs.privateCreditGrowthPct >= 0 ? 55 :
+        inputs.privateCreditGrowthPct >= -5 ? 75 : 90,
+    },
+    {
       label: "CPI Inflation",
       formattedValue: `${inputs.cpiInflationPct.toFixed(1)}%`,
-      weight: 0.12,
+      weight: 0.10,
       pressureScore:
         inputs.cpiInflationPct <= 3 ? 5 :
         inputs.cpiInflationPct <= 6 ? 20 :
@@ -140,7 +183,7 @@ export function calculateRecessionRisk(inputs: RecessionModelInputs): RiskModelR
     {
       label: "Real Policy Rate",
       formattedValue: `${(inputs.policyRatePct - inputs.cpiInflationPct).toFixed(1)}%`,
-      weight: 0.12,
+      weight: 0.10,
       pressureScore: (() => {
         const real = inputs.policyRatePct - inputs.cpiInflationPct;
         return real >= 3 ? 10 : real >= 1 ? 20 : real >= -1 ? 35 :
@@ -150,7 +193,7 @@ export function calculateRecessionRisk(inputs: RecessionModelInputs): RiskModelR
     {
       label: "Import Cover",
       formattedValue: `${inputs.importCoverMonths.toFixed(1)} mo`,
-      weight: 0.15,
+      weight: 0.10,
       pressureScore:
         inputs.importCoverMonths >= 5 ? 5 :
         inputs.importCoverMonths >= 4 ? 15 :
@@ -169,38 +212,6 @@ export function calculateRecessionRisk(inputs: RecessionModelInputs): RiskModelR
         inputs.currentAccountMonthlyB >= -0.6 ? 40 :
         inputs.currentAccountMonthlyB >= -1.0 ? 60 : 80,
     },
-    {
-      label: "PKR Depreciation (YoY)",
-      formattedValue: `${inputs.usdPkrYoyChangePct >= 0 ? "+" : ""}${inputs.usdPkrYoyChangePct.toFixed(1)}%`,
-      weight: 0.12,
-      pressureScore:
-        inputs.usdPkrYoyChangePct <= -2 ? 5 :
-        inputs.usdPkrYoyChangePct <= 3 ? 10 :
-        inputs.usdPkrYoyChangePct <= 8 ? 30 :
-        inputs.usdPkrYoyChangePct <= 15 ? 55 :
-        inputs.usdPkrYoyChangePct <= 25 ? 75 : 90,
-    },
-    {
-      label: "PAK ETF (day %)",
-      formattedValue: `${inputs.pakEtfDayChangePct >= 0 ? "+" : ""}${inputs.pakEtfDayChangePct.toFixed(1)}%`,
-      weight: 0.08,
-      pressureScore:
-        inputs.pakEtfDayChangePct >= 3 ? 10 :
-        inputs.pakEtfDayChangePct >= 0 ? 25 :
-        inputs.pakEtfDayChangePct >= -3 ? 45 :
-        inputs.pakEtfDayChangePct >= -7 ? 65 : 80,
-    },
-    {
-      label: "LSM Output (MoM)",
-      formattedValue: `${inputs.lsmMomPoints >= 0 ? "+" : ""}${inputs.lsmMomPoints.toFixed(1)} pts`,
-      weight: 0.11,
-      pressureScore:
-        inputs.lsmMomPoints >= 5 ? 5 :
-        inputs.lsmMomPoints >= 2 ? 20 :
-        inputs.lsmMomPoints >= 0 ? 35 :
-        inputs.lsmMomPoints >= -3 ? 55 :
-        inputs.lsmMomPoints >= -8 ? 75 : 90,
-    },
   ];
 
   const modelScore = Math.round(
@@ -218,24 +229,18 @@ export function calculateRecessionRisk(inputs: RecessionModelInputs): RiskModelR
   };
 }
 
+// v2 weight rationale (see audit):
+// - SBP Reserves REMOVED: it was the numerator of Import Cover — double-counted at 0.25+0.20=0.45
+// - Import Cover raised 0.20→0.32: sole reserve adequacy measure; IMF's preferred metric
+// - Fiscal Balance raised 0.15→0.23: primary Pakistan default path per IMF Article IV
+//   Thresholds recalibrated to Pakistan's actual deficit range (−3T to −12T PKR)
+// - Current Account raised 0.15→0.20: direct FX flow determining reserve drawdown velocity
 export function calculateDefaultRisk(inputs: DefaultModelInputs): RiskModelResult {
   const factors: RiskFactor[] = [
     {
-      label: "SBP Reserves",
-      formattedValue: `$${inputs.sbpReservesB.toFixed(1)}B`,
-      weight: 0.25,
-      pressureScore:
-        inputs.sbpReservesB >= 18 ? 5 :
-        inputs.sbpReservesB >= 14 ? 10 :
-        inputs.sbpReservesB >= 10 ? 20 :
-        inputs.sbpReservesB >= 7 ? 40 :
-        inputs.sbpReservesB >= 5 ? 65 :
-        inputs.sbpReservesB >= 3 ? 80 : 93,
-    },
-    {
       label: "Import Cover",
       formattedValue: `${inputs.importCoverMonths.toFixed(1)} mo`,
-      weight: 0.20,
+      weight: 0.32,
       pressureScore:
         inputs.importCoverMonths >= 5 ? 5 :
         inputs.importCoverMonths >= 4 ? 15 :
@@ -247,18 +252,20 @@ export function calculateDefaultRisk(inputs: DefaultModelInputs): RiskModelResul
     {
       label: "Fiscal Balance",
       formattedValue: `${inputs.fiscalBalanceTrn.toFixed(1)}T PKR`,
-      weight: 0.15,
+      weight: 0.23,
+      // Thresholds calibrated to Pakistan's historical range (FY20–FY25: −3T to −7T PKR).
+      // −7T is at the IMF target zone; −9T+ is significantly expansionary.
       pressureScore:
-        inputs.fiscalBalanceTrn >= -2 ? 10 :
-        inputs.fiscalBalanceTrn >= -4 ? 25 :
-        inputs.fiscalBalanceTrn >= -6 ? 45 :
-        inputs.fiscalBalanceTrn >= -8 ? 65 :
-        inputs.fiscalBalanceTrn >= -10 ? 80 : 92,
+        inputs.fiscalBalanceTrn >= -3 ? 10 :
+        inputs.fiscalBalanceTrn >= -5 ? 25 :
+        inputs.fiscalBalanceTrn >= -7 ? 45 :
+        inputs.fiscalBalanceTrn >= -9 ? 65 :
+        inputs.fiscalBalanceTrn >= -12 ? 80 : 92,
     },
     {
       label: "Current Account",
       formattedValue: `${inputs.currentAccountMonthlyB >= 0 ? "+" : ""}${inputs.currentAccountMonthlyB.toFixed(2)}B`,
-      weight: 0.15,
+      weight: 0.20,
       pressureScore:
         inputs.currentAccountMonthlyB >= 0 ? 5 :
         inputs.currentAccountMonthlyB >= -0.2 ? 15 :
