@@ -336,7 +336,7 @@ export default async function Home() {
     <div className="flex min-h-screen w-full">
       <Sidebar />
       <main id="overview" className="flex-1 scroll-mt-8 px-6 py-8 sm:px-10 lg:px-16">
-        <Hero />
+        <Hero rightSlot={<DataSourcesModal kpis={allKpis} />} />
 
         <MarketTicker items={tickerItems} />
 
@@ -589,7 +589,6 @@ export default async function Home() {
           modelDisplayName={taggedNewsResult.modelDisplayName}
         />
       </main>
-      <DataSourcesModal kpis={allKpis} />
       <FloatingAssistant context={dashboardSnapshot} />
     </div>
   );

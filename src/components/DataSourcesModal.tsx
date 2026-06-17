@@ -42,14 +42,13 @@ export default function DataSourcesModal({ kpis }: Props) {
 
   return (
     <>
-      {/* Floating trigger button */}
+      {/* Trigger button — rendered inline in the hero right slot */}
       <button
         onClick={() => setOpen(true)}
-        className="fixed bottom-6 right-6 z-40 flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-xs font-medium text-white/60 shadow-lg transition hover:border-white/20 hover:text-white/80"
-        style={{ background: "rgba(8, 10, 26, 0.85)", backdropFilter: "blur(16px)" }}
+        className="flex items-center gap-1.5 rounded-lg border border-[#38bdf8]/20 px-3 py-1.5 text-[11px] font-medium text-[#38bdf8]/55 transition-all hover:border-[#38bdf8]/45 hover:text-[#38bdf8]/90 hover:bg-[#38bdf8]/5"
         aria-label="Open data sources audit table"
       >
-        <span className="text-[10px]">⬡</span>
+        <span className="text-[9px] opacity-70">⬡</span>
         Data Sources
       </button>
 

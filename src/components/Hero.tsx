@@ -2,7 +2,11 @@
 
 import { motion } from "framer-motion";
 
-export default function Hero() {
+interface Props {
+  rightSlot?: React.ReactNode;
+}
+
+export default function Hero({ rightSlot }: Props) {
   return (
     <motion.section
       initial={{ opacity: 0, y: 16 }}
@@ -12,6 +16,13 @@ export default function Hero() {
     >
       <div className="pointer-events-none absolute -top-24 -right-24 h-64 w-64 rounded-full bg-neon-purple/30 blur-3xl" />
       <div className="pointer-events-none absolute -bottom-24 -left-24 h-64 w-64 rounded-full bg-neon-blue/20 blur-3xl" />
+
+      {/* Top-right slot — Data Sources button lives here */}
+      {rightSlot && (
+        <div className="absolute right-4 top-4 sm:right-6 sm:top-6">
+          {rightSlot}
+        </div>
+      )}
 
       <p className="text-xs font-semibold uppercase tracking-[0.3em] text-neon-blue">
         Live Economic Overview
