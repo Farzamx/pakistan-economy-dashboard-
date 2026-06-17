@@ -8,7 +8,7 @@ import type { SbpIndicatorResult } from "@/lib/data/sbp";
 // Snapshot captured from SBP EasyData on 2026-06-15. Trend arrays hold the
 // last 24 published observations per series (last 17 for Policy Rate, which
 // only changes "as needed" at MPC meetings).
-const FALLBACK_LAST_UPDATED = "2026-06-15T00:00:00.000Z";
+const FALLBACK_LAST_UPDATED = "2026-06-17T00:00:00.000Z";
 
 const foreignReservesTrend: TrendPoint[] = [
   { month: "May '24", value: 9.2 },
@@ -274,7 +274,6 @@ const currentAccountTrend: TrendPoint[] = [
 ];
 
 const tradeBalanceTrend: TrendPoint[] = [
-  { month: "May '24", value: -2.01 },
   { month: "Jun '24", value: -2.19 },
   { month: "Jul '24", value: -2.48 },
   { month: "Aug '24", value: -2.27 },
@@ -294,10 +293,11 @@ const tradeBalanceTrend: TrendPoint[] = [
   { month: "Oct '25", value: -2.76 },
   { month: "Nov '25", value: -2.45 },
   { month: "Dec '25", value: -3.01 },
-  { month: "Jan '26", value: -2.6 },
+  { month: "Jan '26", value: -2.60 },
   { month: "Feb '26", value: -2.69 },
   { month: "Mar '26", value: -2.37 },
-  { month: "Apr '26", value: -3.41 },
+  { month: "Apr '26", value: -3.37 },
+  { month: "May '26", value: -3.32 },
 ];
 
 const moneySupplyM2Trend: TrendPoint[] = [
@@ -328,7 +328,6 @@ const moneySupplyM2Trend: TrendPoint[] = [
 ];
 
 const exportsTrend: TrendPoint[] = [
-  { month: "May '24", value: 3.01 },
   { month: "Jun '24", value: 2.44 },
   { month: "Jul '24", value: 2.37 },
   { month: "Aug '24", value: 2.44 },
@@ -351,11 +350,11 @@ const exportsTrend: TrendPoint[] = [
   { month: "Jan '26", value: 2.75 },
   { month: "Feb '26", value: 2.48 },
   { month: "Mar '26", value: 2.53 },
-  { month: "Apr '26", value: 2.56 },
+  { month: "Apr '26", value: 2.62 },
+  { month: "May '26", value: 2.37 },
 ];
 
 const importsTrend: TrendPoint[] = [
-  { month: "May '24", value: 5.01 },
   { month: "Jun '24", value: 4.64 },
   { month: "Jul '24", value: 4.85 },
   { month: "Aug '24", value: 4.71 },
@@ -378,7 +377,8 @@ const importsTrend: TrendPoint[] = [
   { month: "Jan '26", value: 5.35 },
   { month: "Feb '26", value: 5.17 },
   { month: "Mar '26", value: 4.89 },
-  { month: "Apr '26", value: 5.97 },
+  { month: "Apr '26", value: 5.99 },
+  { month: "May '26", value: 5.69 },
 ];
 
 const reerTrend: TrendPoint[] = [
@@ -715,10 +715,10 @@ export const fallbackCurrentAccount: SbpIndicatorResult = {
 export const fallbackTradeBalance: SbpIndicatorResult = {
   kpi: {
     title: "Trade Balance",
-    value: "-3.41",
+    value: "-3.32",
     unit: "B USD",
-    change: "-1.05B vs Mar 2026",
-    trend: "down",
+    change: "+0.05B vs Apr 2026",
+    trend: "up",
     glow: "blue",
   },
   trend: tradeBalanceTrend,
@@ -728,7 +728,7 @@ export const fallbackTradeBalance: SbpIndicatorResult = {
     seriesName: "BOP-BPM6-Balance on trade in goods",
     unit: "Million USD",
     frequency: "Monthly",
-    observationDate: "2026-04-30",
+    observationDate: "2026-05-31",
     lastUpdated: FALLBACK_LAST_UPDATED,
   },
 };
@@ -757,10 +757,10 @@ export const fallbackMoneySupplyM2: SbpIndicatorResult = {
 export const fallbackExports: SbpIndicatorResult = {
   kpi: {
     title: "Exports",
-    value: "2.56",
+    value: "2.37",
     unit: "B USD",
-    change: "+0.03B vs Mar 2026",
-    trend: "up",
+    change: "-0.25B vs Apr 2026",
+    trend: "down",
     glow: "blue",
   },
   trend: exportsTrend,
@@ -770,7 +770,7 @@ export const fallbackExports: SbpIndicatorResult = {
     seriesName: "BOP-BPM6-Exports of goods FOB",
     unit: "Million USD",
     frequency: "Monthly",
-    observationDate: "2026-04-30",
+    observationDate: "2026-05-31",
     lastUpdated: FALLBACK_LAST_UPDATED,
   },
 };
@@ -778,10 +778,10 @@ export const fallbackExports: SbpIndicatorResult = {
 export const fallbackImports: SbpIndicatorResult = {
   kpi: {
     title: "Imports",
-    value: "5.97",
+    value: "5.69",
     unit: "B USD",
-    change: "+1.08B vs Mar 2026",
-    trend: "up",
+    change: "-0.30B vs Apr 2026",
+    trend: "down",
     glow: "purple",
   },
   trend: importsTrend,
@@ -791,7 +791,7 @@ export const fallbackImports: SbpIndicatorResult = {
     seriesName: "BOP-BPM6-Imports of goods FOB",
     unit: "Million USD",
     frequency: "Monthly",
-    observationDate: "2026-04-30",
+    observationDate: "2026-05-31",
     lastUpdated: FALLBACK_LAST_UPDATED,
   },
 };
