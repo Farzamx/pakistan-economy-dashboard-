@@ -155,45 +155,79 @@ function buildSearchBlock(results: SearchResult[]): string {
   return `RETRIEVED EXTERNAL CONTEXT (from trusted sources):\n${items}`;
 }
 
+// ── Mode detection ────────────────────────────────────────────────────────────
+
+const DETAILED_TRIGGERS = [
+  /explain\s+in\s+detail/i,
+  /give\s+(me\s+)?(full|detailed|thorough|complete|in.?depth)\s+analysis/i,
+  /provide\s+(a\s+)?(research\s+report|full\s+report|detailed\s+report)/i,
+  /detailed\s+mode/i,
+  /full\s+analysis/i,
+  /in.?depth\s+(analysis|explanation|breakdown)/i,
+  /comprehensive\s+(analysis|breakdown|report)/i,
+  /break\s+it\s+down\s+(fully|completely|in\s+detail)/i,
+];
+
+function detectDetailedMode(message: string): boolean {
+  return DETAILED_TRIGGERS.some((re) => re.test(message));
+}
+
+// ── Style block (injected after persona, before data blocks) ─────────────────
+
+function buildStyleBlock(isDetailedMode: boolean): string {
+  if (isDetailedMode) {
+    return (
+      "RESPONSE MODE: Detailed (user requested full analysis)\n" +
+      "Write a thorough response. Still use plain English and prefer bullet points over dense prose.\n" +
+      "Maximum ~600 words. Explain technical terms as you use them."
+    );
+  }
+  return (
+    "RESPONSE MODE: Simple (default)\n" +
+    "CRITICAL STYLE RULES:\n" +
+    "- Plain English only. No jargon without a one-sentence explanation.\n" +
+    "- Use short paragraphs or bullet points. No essay-style blocks of text.\n" +
+    "- Answer structure: (1) Simple Answer — 1-3 sentences. (2) Why It Matters — 1-2 sentences. (3) Key Numbers — 2-3 bullets ONLY if relevant.\n" +
+    "- Length limits: Dashboard = 1-3 sentences | Concept = 3-5 sentences | News/Events = max 5 bullets | Hybrid = max 8 bullets.\n" +
+    "- If the question is short and simple, the answer must also be short and simple.\n" +
+    "- Never write multi-paragraph academic analysis unless the user explicitly asked for it."
+  );
+}
+
 // ── Task Instructions per category ───────────────────────────────────────────
 
 const INSTRUCTIONS: Record<QueryCategory, string> = {
   dashboard: `TASK: Answer using ONLY the live dashboard data above.
-- Cite exact values from the dashboard.
+- Give a direct, plain-English answer. Use exact numbers from the dashboard.
 - Do not use external knowledge for factual claims about Pakistan.
-- State dashboard source clearly: e.g., "The dashboard shows..." or "Live data indicates..."
-- If data is not in the dashboard, say so — do not invent.
-- Be concise: 2-3 sentences for simple questions, 4-5 for complex.
+- If data is not in the dashboard, say so — do not invent anything.
 End with: SOURCE: Dashboard Data`,
 
-  concept: `TASK: Explain this economic concept clearly and concisely.
-- Define the concept in 1-2 sentences.
-- Briefly apply it to Pakistan's current situation using the context reference above.
+  concept: `TASK: Explain this economic concept in simple, plain English.
+- Define the concept in 1-2 clear sentences anyone can understand.
+- Briefly apply it to Pakistan's current situation using the context above.
 - Do not claim live data accuracy — this is general economic knowledge.
-- Accessible language; no jargon without explanation.
 End with: SOURCE: AI Knowledge`,
 
-  current_events: `TASK: Answer based primarily on the retrieved external sources above.
-- Quote specific facts and name the source domain in parentheses, e.g., (imf.org).
-- Do not fabricate statistics, dates, or quotes not present in the sources.
-- If retrieved context is insufficient, say what was found and acknowledge the gap.
-- Use dashboard data if it provides relevant supporting context.
+  current_events: `TASK: Answer based on the retrieved external sources above.
+- Bullet points preferred. Name the source in parentheses: (imf.org).
+- Do not fabricate statistics, dates, or quotes not in the sources.
+- If sources are insufficient, acknowledge the gap honestly.
 End with: SOURCE: External Sources
 CITATIONS: [comma-separated URLs of sources you actually cited — leave blank if none]`,
 
   market_news: `TASK: Explain this market development based on retrieved sources.
-- State what sources say caused the price movement or event.
+- Bullet points preferred. State what sources say caused the move.
 - If sources don't explain the cause, say so — do not speculate.
 - Note any direct relevance to Pakistan using the dashboard mini-context.
-- Do not fabricate price levels, % moves, or causal chains.
 End with: SOURCE: External Sources
 CITATIONS: [comma-separated URLs of sources you cited — leave blank if none]`,
 
-  hybrid: `TASK: Provide integrated analysis using BOTH dashboard data and external sources.
-- Dashboard data is the primary source of truth — it overrides external sources on specific Pakistan indicator values.
-- External sources provide recent context (news, forecasts, institutional views) not in the dashboard.
-- Clearly flag what comes from dashboard vs. external: "Dashboard shows X, while IMF projects Y."
-- Never fabricate statistics. If sources conflict, explain the discrepancy.
+  hybrid: `TASK: Integrated analysis using BOTH dashboard data and external sources.
+- Bullet points preferred.
+- Dashboard data is the primary source of truth — overrides external sources on specific Pakistan values.
+- Label sources clearly: "Dashboard: X" vs "IMF: Y".
+- Never fabricate statistics. If sources conflict, explain in plain English.
 End with: SOURCE: Hybrid Analysis
 CITATIONS: [comma-separated URLs of external sources you cited — leave blank if none]`,
 };
@@ -202,11 +236,15 @@ function buildSystemPrompt(
   ctx: DashboardSnapshot,
   routerResult: RouterResult,
   search: SearchResponse | null,
+  isDetailedMode: boolean,
 ): string {
   const blocks: string[] = [
-    "You are the Pakistan Economic Intelligence Assistant — a professional economic analyst embedded in a live macroeconomic dashboard.",
-    "You reason like a seasoned economist, not a generic chatbot.",
+    "You are the Pakistan Economic Intelligence Assistant — a friendly, plain-English guide to Pakistan's economy.",
+    "Your audience is retail investors, students, and the general public — many with little economics background.",
+    "Always explain things simply. Define any jargon the first time you use it.",
     "Distinguish clearly: facts, estimates, opinions. Never fabricate statistics.",
+    "",
+    buildStyleBlock(isDetailedMode),
     "",
   ];
 
@@ -335,7 +373,8 @@ export async function POST(request: Request): Promise<Response> {
   const { level: confidence, reason: confidenceReason } = computeConfidence(routerResult, search);
 
   // ── Step 4: Build augmented system prompt ─────────────────────────────────
-  const systemPrompt = buildSystemPrompt(context, routerResult, search);
+  const isDetailedMode = detectDetailedMode(message);
+  const systemPrompt = buildSystemPrompt(context, routerResult, search, isDetailedMode);
 
   const messages = [
     { role: "system" as const, content: systemPrompt },
@@ -357,7 +396,7 @@ export async function POST(request: Request): Promise<Response> {
           model,
           messages,
           temperature: 0.3,
-          max_tokens: 550,
+          max_tokens: isDetailedMode ? 900 : 550,
         }),
         cache: "no-store",
       });
