@@ -7,7 +7,7 @@ import {
   useMotionValue,
   useReducedMotion,
 } from "framer-motion";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { DashboardSnapshot } from "@/lib/assistantContext";
 import AssistantAvatar from "./AssistantAvatar";
 import AssistantChat from "./AssistantChat";
@@ -114,6 +114,10 @@ export default function FloatingAssistant({ context }: Props) {
   // Chat panel `bottom` offset from viewport bottom — recomputed on each open
   const [chatBottom, setChatBottom] = useState(100);
 
+  // Refs for click-outside detection
+  const chatRef = useRef<HTMLDivElement>(null);
+  const avatarRef = useRef<HTMLDivElement>(null);
+
   // Absolute position of avatar's top-left corner
   const x = useMotionValue(0);
   const y = useMotionValue(0);
@@ -168,6 +172,23 @@ export default function FloatingAssistant({ context }: Props) {
     return () => window.removeEventListener("keydown", onKey);
   }, [isOpen]);
 
+  // ── Click outside to close ──────────────────────────────────────────────────
+  // Fires on pointerdown (covers mouse + touch) while the panel is open.
+  // Clicks inside the chat panel or on the avatar are ignored — the avatar's
+  // own onClick handler manages the toggle.
+  useEffect(() => {
+    if (!isOpen) return;
+
+    function onPointerDown(e: PointerEvent) {
+      const target = e.target as Node;
+      if (chatRef.current?.contains(target) || avatarRef.current?.contains(target)) return;
+      setIsOpen(false);
+    }
+
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, [isOpen]);
+
   // ── Drag end → snap to nearest edge ────────────────────────────────────────
   const handleDragEnd = useCallback(() => {
     const avatarSize = getAvatarSize();
@@ -204,6 +225,7 @@ export default function FloatingAssistant({ context }: Props) {
       <AnimatePresence>
         {isOpen && (
           <motion.div
+            ref={chatRef}
             initial={
               prefersReducedMotion
                 ? { opacity: 1 }
@@ -238,6 +260,7 @@ export default function FloatingAssistant({ context }: Props) {
           Draggable (locked when chat is open).
           position: fixed; left: 0; top: 0 — x/y are absolute screen coords. */}
       <motion.div
+        ref={avatarRef}
         drag={!isOpen}
         dragMomentum={false}
         dragElastic={0.05}
