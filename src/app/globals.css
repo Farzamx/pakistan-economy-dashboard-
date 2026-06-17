@@ -189,3 +189,13 @@ body {
   .assistant-halo      { box-shadow: 0 0 9px rgba(56, 189, 248, 0.3); }
   .assistant-halo-open { box-shadow: 0 0 15px rgba(56, 189, 248, 0.5), 0 0 4px rgba(56, 189, 248, 0.35); }
 }
+
+/* Pulsing dot spinner — used in AI chat and tooltips while translating */
+.assistant-dot-pulse {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--neon-blue);
+  animation: assistant-dot-pulse 1.2s ease-in-out infinite;
+}

@@ -1,142 +1,335 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { TERMINOLOGY } from "@/data/terminology";
 
+// Session-level cache: termKey → Roman Urdu formatted string
+const urduCache = new Map<string, string>();
+
 interface Props {
-  /** Must match a key in TERMINOLOGY exactly. Renders nothing if not found. */
   termKey: string;
-  /** Visual size of the trigger button. Defaults to "sm". */
   size?: "xs" | "sm";
 }
 
+interface Placement {
+  panelStyle: React.CSSProperties;
+  arrowStyle: React.CSSProperties;
+  isMobile: boolean;
+}
+
+const PANEL_WIDTH = 420;
+
+function computePlacement(rect: DOMRect): Placement {
+  if (window.innerWidth < 640) {
+    return {
+      panelStyle: {
+        position: "fixed",
+        top: "50%",
+        left: "50%",
+        transform: "translate(-50%, -50%)",
+        width: `min(90vw, ${PANEL_WIDTH}px)`,
+        maxHeight: "80vh",
+        overflowY: "auto",
+        zIndex: 9999,
+      },
+      arrowStyle: {},
+      isMobile: true,
+    };
+  }
+
+  const vw = window.innerWidth;
+
+  // Center on trigger, clamped to viewport edges
+  const cx = rect.left + rect.width / 2;
+  let left = cx - PANEL_WIDTH / 2;
+  left = Math.max(12, Math.min(left, vw - PANEL_WIDTH - 12));
+
+  // Arrow left position relative to tooltip panel
+  const arrowAbsLeft = cx - 5; // center of trigger minus half-arrow
+  const arrowLeft = Math.max(8, Math.min(arrowAbsLeft - left, PANEL_WIDTH - 20));
+
+  // Open above if more space above than below
+  const spaceAbove = rect.top;
+  const spaceBelow = window.innerHeight - rect.bottom;
+  const openAbove = spaceAbove > spaceBelow || spaceAbove > 320;
+
+  const base: React.CSSProperties = {
+    position: "fixed",
+    left,
+    width: PANEL_WIDTH,
+    maxHeight: "70vh",
+    overflowY: "auto",
+    zIndex: 9999,
+  };
+
+  if (openAbove) {
+    return {
+      panelStyle: {
+        ...base,
+        // bottom: distance from bottom of viewport to top of trigger, plus 8px gap
+        bottom: window.innerHeight - rect.top + 8,
+      },
+      arrowStyle: {
+        position: "absolute",
+        bottom: -5,
+        left: arrowLeft,
+        width: 0,
+        height: 0,
+        borderLeft: "5px solid transparent",
+        borderRight: "5px solid transparent",
+        borderTop: "5px solid rgba(255,255,255,0.08)",
+      },
+      isMobile: false,
+    };
+  }
+
+  return {
+    panelStyle: {
+      ...base,
+      top: rect.bottom + 8,
+    },
+    arrowStyle: {
+      position: "absolute",
+      top: -5,
+      left: arrowLeft,
+      width: 0,
+      height: 0,
+      borderLeft: "5px solid transparent",
+      borderRight: "5px solid transparent",
+      borderBottom: "5px solid rgba(255,255,255,0.08)",
+    },
+    isMobile: false,
+  };
+}
+
 export default function InfoTooltip({ termKey, size = "sm" }: Props) {
+  // All hooks before any conditional return
+  const [open, setOpen] = useState(false);
+  const [placement, setPlacement] = useState<Placement | null>(null);
+  const [translating, setTranslating] = useState(false);
+  const [urduVisible, setUrduVisible] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout>>(null);
+
+  useEffect(() => setMounted(true), []);
+
+  const cancelClose = useCallback(() => {
+    if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+  }, []);
+
+  const doClose = useCallback(() => {
+    cancelClose();
+    setOpen(false);
+    setUrduVisible(false);
+  }, [cancelClose]);
+
+  const scheduleClose = useCallback(() => {
+    closeTimerRef.current = setTimeout(doClose, 80);
+  }, [doClose]);
+
+  const doOpen = useCallback(() => {
+    if (!triggerRef.current) return;
+    cancelClose();
+    const rect = triggerRef.current.getBoundingClientRect();
+    setPlacement(computePlacement(rect));
+    setOpen(true);
+  }, [cancelClose]);
+
+  // Close on Escape
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") doClose(); };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open, doClose]);
+
+  // Close on outside click
+  useEffect(() => {
+    if (!open) return;
+    const onOutside = (e: MouseEvent) => {
+      const t = e.target as Node;
+      if (
+        panelRef.current && !panelRef.current.contains(t) &&
+        triggerRef.current && !triggerRef.current.contains(t)
+      ) {
+        doClose();
+      }
+    };
+    document.addEventListener("mousedown", onOutside);
+    return () => document.removeEventListener("mousedown", onOutside);
+  }, [open, doClose]);
+
+  const handleTranslate = useCallback(async () => {
+    const entry = TERMINOLOGY[termKey];
+    if (!entry) return;
+
+    if (urduCache.has(termKey)) {
+      setUrduVisible(v => !v);
+      return;
+    }
+
+    setTranslating(true);
+    const text = [
+      `Kya hai?\n${entry.what}`,
+      `Kyun zaroori hai?\n${entry.why}`,
+      `Kaise samjhein?\n${entry.how.map(b => `• ${b}`).join("\n")}`,
+    ].join("\n\n");
+
+    try {
+      const res = await fetch("/api/assistant/translate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text }),
+      });
+      const data = (await res.json()) as { translation?: string };
+      urduCache.set(termKey, data.translation ?? "Translation unavailable.");
+    } catch {
+      urduCache.set(termKey, "Translation unavailable.");
+    }
+
+    setTranslating(false);
+    setUrduVisible(true);
+  }, [termKey]);
+
   const entry = TERMINOLOGY[termKey];
   if (!entry) return null;
 
-  const [open, setOpen] = useState(false);
-  const [above, setAbove] = useState(true);
-  const [alignRight, setAlignRight] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const btnSize = size === "xs" ? "h-3.5 w-3.5 text-[9px]" : "h-4 w-4 text-[10px]";
 
-  const computePlacement = useCallback(() => {
-    if (!containerRef.current) return;
-    const rect = containerRef.current.getBoundingClientRect();
-    setAbove(rect.top > 240);
-    setAlignRight(rect.left > window.innerWidth * 0.62);
-  }, []);
+  const panel =
+    open && placement && mounted
+      ? createPortal(
+          <>
+            {/* Mobile backdrop */}
+            {placement.isMobile && (
+              <div
+                className="fixed inset-0 bg-black/60"
+                style={{ zIndex: 9998 }}
+                onClick={doClose}
+              />
+            )}
 
-  const show = useCallback(() => {
-    computePlacement();
-    setOpen(true);
-  }, [computePlacement]);
+            <div
+              ref={panelRef}
+              role="tooltip"
+              aria-live="polite"
+              style={{
+                ...placement.panelStyle,
+                background: "rgba(8, 10, 26, 0.97)",
+                backdropFilter: "blur(24px)",
+                WebkitBackdropFilter: "blur(24px)",
+                border: "1px solid rgba(255,255,255,0.10)",
+                borderRadius: "0.75rem",
+                padding: "1rem",
+                boxShadow: "0 25px 50px rgba(0,0,0,0.5), 0 0 0 1px rgba(56,189,248,0.04)",
+              }}
+              onMouseEnter={cancelClose}
+              onMouseLeave={scheduleClose}
+            >
+              {/* Arrow (desktop only) */}
+              {!placement.isMobile && (
+                <div style={placement.arrowStyle} className="pointer-events-none" />
+              )}
 
-  const hide = useCallback(() => setOpen(false), []);
+              {/* Header */}
+              <div className="mb-3 flex items-start justify-between gap-2">
+                <p className="text-xs font-semibold text-neon-blue">{entry.title}</p>
+                <button
+                  onClick={doClose}
+                  aria-label="Close tooltip"
+                  className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] text-white/30 transition-colors hover:text-white/70"
+                >
+                  ✕
+                </button>
+              </div>
 
-  // Close on outside click (for mobile tap-toggle)
-  useEffect(() => {
-    if (!open) return;
-    function onOutside(e: MouseEvent) {
-      if (!containerRef.current?.contains(e.target as Node)) setOpen(false);
-    }
-    document.addEventListener("mousedown", onOutside);
-    return () => document.removeEventListener("mousedown", onOutside);
-  }, [open]);
+              {/* WHAT */}
+              <p className="mb-1 text-[9px] font-semibold uppercase tracking-wider text-white/30">
+                What is it?
+              </p>
+              <p className="mb-3 text-xs leading-relaxed text-white/75">{entry.what}</p>
 
-  // Close on Escape key
-  useEffect(() => {
-    if (!open) return;
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") setOpen(false);
-    }
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [open]);
+              {/* WHY */}
+              <p className="mb-1 text-[9px] font-semibold uppercase tracking-wider text-white/30">
+                Why it matters?
+              </p>
+              <p className="mb-3 text-xs leading-relaxed text-white/65">{entry.why}</p>
 
-  const btnSize =
-    size === "xs"
-      ? "h-3.5 w-3.5 text-[9px]"
-      : "h-4 w-4 text-[10px]";
+              {/* HOW */}
+              <p className="mb-1.5 text-[9px] font-semibold uppercase tracking-wider text-white/30">
+                How to read it?
+              </p>
+              <ul className="mb-3 space-y-1">
+                {entry.how.map((bullet, i) => (
+                  <li key={i} className="flex items-start gap-1.5 text-xs text-white/65">
+                    <span className="mt-0.5 shrink-0 text-[8px] text-neon-blue/50">•</span>
+                    <span>{bullet}</span>
+                  </li>
+                ))}
+              </ul>
 
-  const yClass = above
-    ? "bottom-[calc(100%+6px)]"
-    : "top-[calc(100%+6px)]";
+              {/* Divider + translate */}
+              <div className="mb-2.5 border-t border-white/[0.06]" />
 
-  const xClass = alignRight
-    ? "right-0"
-    : "left-1/2 -translate-x-1/2";
+              <button
+                onClick={handleTranslate}
+                disabled={translating}
+                className="flex items-center gap-1.5 text-[10px] text-white/35 transition-colors hover:text-neon-blue/70 disabled:pointer-events-none disabled:opacity-50"
+              >
+                {translating ? (
+                  <>
+                    <span className="assistant-dot-pulse" />
+                    <span>Translating…</span>
+                  </>
+                ) : (
+                  <>
+                    <span>🌐</span>
+                    <span>{urduVisible ? "Hide Roman Urdu" : "Roman Urdu"}</span>
+                  </>
+                )}
+              </button>
+
+              {/* Roman Urdu block */}
+              {urduVisible && urduCache.has(termKey) && (
+                <div className="mt-2.5 rounded-lg border border-white/5 bg-[#071420] p-3">
+                  <p className="mb-1.5 text-[9px] font-semibold uppercase tracking-wider text-neon-blue/40">
+                    Roman Urdu
+                  </p>
+                  <p className="whitespace-pre-wrap text-xs leading-relaxed text-white/60">
+                    {urduCache.get(termKey)}
+                  </p>
+                </div>
+              )}
+            </div>
+          </>,
+          document.body,
+        )
+      : null;
 
   return (
-    <div
-      ref={containerRef}
-      className="relative inline-flex shrink-0"
-      onMouseEnter={show}
-      onMouseLeave={hide}
-    >
+    <span className="relative inline-flex shrink-0">
       <button
+        ref={triggerRef}
         type="button"
         aria-label={`What is ${entry.title}?`}
         aria-expanded={open}
+        onMouseEnter={doOpen}
+        onMouseLeave={scheduleClose}
+        onFocus={doOpen}
+        onBlur={scheduleClose}
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
-          open ? hide() : show();
+          open ? doClose() : doOpen();
         }}
-        onFocus={show}
-        onBlur={hide}
         className={`inline-flex items-center justify-center rounded-full border border-white/20 font-semibold text-white/35 transition-colors hover:border-neon-blue/60 hover:text-neon-blue focus:outline-none focus-visible:ring-1 focus-visible:ring-neon-blue ${btnSize}`}
       >
         ?
       </button>
-
-      {open && (
-        <div
-          role="tooltip"
-          aria-live="polite"
-          className={`absolute z-50 w-[288px] rounded-xl border border-white/10 p-4 shadow-2xl ${yClass} ${xClass}`}
-          style={{
-            background: "rgba(8, 10, 26, 0.94)",
-            backdropFilter: "blur(24px)",
-          }}
-        >
-          {/* Arrow connector */}
-          <div
-            className={`pointer-events-none absolute ${
-              above
-                ? "bottom-[-5px] border-t-[5px] border-t-white/10"
-                : "top-[-5px] border-b-[5px] border-b-white/10"
-            } ${
-              alignRight ? "right-3" : "left-1/2 -translate-x-1/2"
-            } h-0 w-0 border-x-[5px] border-x-transparent`}
-          />
-
-          <p className="mb-2 text-xs font-semibold text-neon-blue">
-            {entry.title}
-          </p>
-
-          <p className="mb-2 text-xs leading-relaxed text-white/75">
-            {entry.definition}
-          </p>
-
-          <div className="mb-2 border-t border-white/[0.06]" />
-
-          <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-white/30">
-            Why it matters
-          </p>
-          <p className="mb-2 text-xs leading-relaxed text-white/65">
-            {entry.whyItMatters}
-          </p>
-
-          <div className="mb-2 border-t border-white/[0.06]" />
-
-          <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-white/30">
-            How to interpret
-          </p>
-          <p className="text-xs leading-relaxed text-white/65">
-            {entry.interpretation}
-          </p>
-        </div>
-      )}
-    </div>
+      {panel}
+    </span>
   );
 }
