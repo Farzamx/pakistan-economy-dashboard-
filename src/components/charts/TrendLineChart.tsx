@@ -22,6 +22,8 @@ interface TrendLineChartProps {
   color: string;
   unit: string;
   gradientId: string;
+  /** Recharts XAxis interval. Default auto. Pass a number to show every Nth label. */
+  xAxisInterval?: number | "preserveStart" | "preserveEnd" | "preserveStartEnd";
 }
 
 /**
@@ -36,6 +38,7 @@ export default function TrendLineChart({
   color,
   unit,
   gradientId,
+  xAxisInterval,
 }: TrendLineChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const isInView = useInView(containerRef, { once: true });
@@ -64,6 +67,7 @@ export default function TrendLineChart({
               tick={{ fill: "rgba(255, 255, 255, 0.4)", fontSize: 12 }}
               tickLine={false}
               axisLine={false}
+              {...(xAxisInterval !== undefined ? { interval: xAxisInterval } : {})}
             />
             <YAxis
               stroke="rgba(255, 255, 255, 0.3)"

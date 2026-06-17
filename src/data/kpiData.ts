@@ -31,3 +31,17 @@ export const fallbackGdpKpi: Kpi = {
   latestDate: "2023",
   frequency: "Annual",
 };
+
+// Fallback used by getQuarterlyGdpKpi() when the SBP QGDP.xlsx is unreachable.
+export const fallbackQuarterlyGdpKpi: Kpi = {
+  title: "Quarterly GDP Growth (YoY)",
+  value: "3.99",
+  unit: "%",
+  change: "-0.06 pp vs Q2 FY26",
+  trend: "down",
+  glow: "blue",
+  source: "SBP / PBS",
+  seriesId: "QGDP.xlsx / Growth_Q / row D.",
+  latestDate: "2026-03-31",
+  frequency: "Quarterly",
+};

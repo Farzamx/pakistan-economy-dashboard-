@@ -29,6 +29,17 @@ export const TERMINOLOGY: Record<string, TermEntry> = {
     ],
   },
 
+  "Quarterly GDP Growth (YoY)": {
+    title: "Quarterly GDP Growth (YoY)",
+    what: "Pakistan's real GVA growth rate vs the same quarter one year ago — published by PBS via SBP.",
+    why: "Quarterly YoY data reveals momentum faster than the annual figure and removes seasonal swings.",
+    how: [
+      "Above 4% = Strong | 2–4% = Moderate | Below 2% = Weak",
+      "YoY = this quarter vs same quarter last year",
+      "Source: PBS QGDP.xlsx, updated ~6 weeks after quarter end",
+    ],
+  },
+
   "CPI Inflation": {
     title: "CPI Inflation",
     what: "How fast prices of everyday items — food, rent, transport, medicine — rose compared to last year.",

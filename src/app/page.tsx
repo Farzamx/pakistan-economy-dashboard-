@@ -19,6 +19,7 @@ import { getAiEconomicAnalysis } from "@/lib/data/aiEconomicAnalysis";
 import { getAiRiskIntelligence } from "@/lib/data/aiRiskIntelligence";
 import { getAllSbpIndicators } from "@/lib/data/sbp";
 import { getGdpKpi } from "@/lib/data/worldBank";
+import { getQuarterlyGdpKpi } from "@/lib/data/quarterlyGdp";
 import {
   getBrentKpi,
   getFedFundsKpi,
@@ -63,7 +64,7 @@ function getSection(id: string) {
 }
 
 export default async function Home() {
-  const [gdpKpi, sbp, goldKpi, silverKpi, brentKpi, wtiKpi, naturalGasKpi, dxyKpi, us10yKpi, fedFundsKpi, newsItems, fxRates, pakEtfKpiRaw] =
+  const [gdpKpi, sbp, goldKpi, silverKpi, brentKpi, wtiKpi, naturalGasKpi, dxyKpi, us10yKpi, fedFundsKpi, newsItems, fxRates, pakEtfKpiRaw, quarterlyGdp] =
     await Promise.all([
       getGdpKpi(),
       getAllSbpIndicators(),
@@ -78,6 +79,7 @@ export default async function Home() {
       getNews(),
       getFxRates(),
       getPakEtfKpi(),
+      getQuarterlyGdpKpi(),
     ]);
 
   const pakEtfKpi = pakEtfKpiRaw ?? fallbackPakEtfKpi;
@@ -263,6 +265,7 @@ export default async function Home() {
 
   const headlineKpis = [
     gdpKpi,
+    quarterlyGdp.kpi,
     sbp.cpiInflation.kpi,
     sbp.foreignReserves.kpi,
     sbp.usdPkr.kpi,
@@ -340,7 +343,7 @@ export default async function Home() {
 
         <MarketTicker items={tickerItems} />
 
-        <KpiGrid items={headlineKpis} />
+        <KpiGrid items={headlineKpis} cols={3} />
 
         <HealthScoreCard {...aiAnalysis} />
 
@@ -454,7 +457,24 @@ export default async function Home() {
           <KpiGrid items={realEconomyKpis} />
         </div>
 
-        <DashboardSection {...getSection("gdp")} />
+        <DashboardSection {...getSection("gdp")}>
+          <div className="mt-6 rounded-xl border border-white/5 bg-white/[0.02] p-4">
+            <div className="mb-2 flex items-center gap-1.5">
+              <p className="text-xs font-medium text-white/40">
+                Quarterly GDP Growth &mdash; Real GVA
+                <span className="text-white/25"> &middot; SBP EasyData, quarterly</span>
+              </p>
+              <InfoTooltip termKey="Quarterly GDP Growth (YoY)" size="xs" />
+            </div>
+            <TrendLineChart
+              data={quarterlyGdp.trend}
+              color="#38bdf8"
+              unit="%"
+              gradientId="quarterlyGdpGradient"
+              xAxisInterval={3}
+            />
+          </div>
+        </DashboardSection>
 
         <DashboardSection {...getSection("inflation")}>
           <div className="mt-6 rounded-xl border border-white/5 bg-white/[0.02] p-4">
