@@ -1,12 +1,11 @@
 // Centralized Economic Knowledge Registry
 //
-// Every term has three plain-English sections rendered by InfoTooltip:
-//   what  — 1–2 sentences explaining the indicator
-//   why   — 1–2 sentences on why it matters for Pakistan
-//   how   — 2–4 bullet strings (no leading "•"; UI adds them)
+// Structure per entry:
+//   what  — 1 sentence (max ~20 words)
+//   why   — 1 sentence (max ~20 words)
+//   how   — max 3 bullet strings (UI adds "•" prefix)
 //
-// Target audience: students, retail investors, general public.
-// Word limit: ~120 words per entry.
+// Target natural tooltip height: ~200–240px (no scrollbar on any desktop)
 
 export interface TermEntry {
   title: string;
@@ -21,272 +20,254 @@ export const TERMINOLOGY: Record<string, TermEntry> = {
 
   "GDP Growth": {
     title: "GDP Growth",
-    what: "Shows how fast Pakistan's total economy grew compared to last year, covering agriculture, industry, and services combined.",
-    why: "Faster growth means more jobs, higher wages, and better living standards. Pakistan needs sustained 5%+ growth to reduce poverty and manage its rising debts.",
+    what: "How fast Pakistan's total economy grew this year, across agriculture, industry, and services.",
+    why: "Higher growth means more jobs and better living standards — Pakistan needs 5%+ to reduce poverty.",
     how: [
-      "Above 5% = Strong expansion",
-      "2–5% = Moderate recovery",
+      "Above 5% = Strong | 2–5% = Moderate",
       "Below 2% = Weak economy",
-      "Negative = Recession (economy shrinking)",
+      "Negative = Recession",
     ],
   },
 
   "CPI Inflation": {
     title: "CPI Inflation",
-    what: "Measures how quickly prices of everyday items — food, rent, transport, medicine — are rising. If CPI is 12%, prices rose 12% over the past year.",
-    why: "High inflation makes life more expensive and erodes your savings. It also forces the SBP to raise interest rates, making loans costlier for everyone.",
+    what: "How fast prices of everyday items — food, rent, transport, medicine — rose compared to last year.",
+    why: "High inflation makes life more expensive and forces SBP to raise interest rates, slowing the economy.",
     how: [
-      "5–7% = Healthy (SBP's target range)",
-      "7–12% = Elevated inflation",
-      "Above 15% = High — urgent action needed",
-      "Falling trend = Generally a positive sign",
+      "5–7% = Healthy (SBP target) | 7–12% = Elevated",
+      "Above 15% = Crisis level",
+      "Falling trend = Positive sign",
     ],
   },
 
   "Core Inflation": {
     title: "Core Inflation",
-    what: "CPI inflation with food and energy removed — shows price pressure across clothing, furniture, services, and other everyday items that aren't affected by weather or oil shocks.",
-    why: "Food and energy prices swing wildly due to weather and global events. Core inflation reveals whether inflation is truly widespread, which is harder to fix.",
+    what: "CPI inflation with food and energy removed — shows the underlying price pressure across the broader economy.",
+    why: "It tells SBP whether inflation is truly widespread or just a temporary food/fuel spike.",
     how: [
-      "Core above CPI = Inflation is broad-based and entrenched",
-      "Core below CPI = Mainly a food or fuel spike (often temporary)",
-      "Falling core = SBP more likely to start cutting interest rates",
+      "Core above CPI = Inflation is broad-based and hard to fix",
+      "Core below CPI = Mainly a supply shock (often temporary)",
+      "Falling core = Rate cuts becoming likely",
     ],
   },
 
   "WPI Inflation": {
     title: "WPI Inflation",
-    what: "Measures price changes at the factory and wholesale level — what businesses pay for raw materials before goods reach shops. Think of it as inflation 'in the pipeline.'",
-    why: "When wholesale prices rise, businesses pass those costs to consumers within a few months. Rising WPI today often means higher retail prices soon.",
+    what: "Prices at the factory/wholesale level — what businesses pay before goods reach shops.",
+    why: "A leading signal: rising wholesale prices typically pass through to consumers within 1–3 months.",
     how: [
-      "WPI rising faster than CPI = Consumer price hikes likely ahead",
-      "WPI falling while CPI is high = Relief for consumers coming soon",
-      "Declining WPI = Deflationary pressure building in the production chain",
+      "WPI rising faster than CPI = Consumer hikes coming soon",
+      "WPI falling = Pipeline pressure easing",
+      "Watch for 3-month lag to CPI",
     ],
   },
 
   "Foreign Reserves": {
     title: "Foreign Reserves",
-    what: "The US dollars and other hard currencies held by the State Bank of Pakistan (SBP). Used to pay for imports and repay foreign debt.",
-    why: "Pakistan's financial safety net. When reserves fall too low, the country cannot pay for imports or service its foreign debts — exactly the crisis seen in early 2023.",
+    what: "Hard currency (mainly US dollars) held by SBP to pay for imports and foreign debt.",
+    why: "Pakistan's financial safety net — when reserves fall too low, the country can't pay its bills.",
     how: [
-      "Above $15B = Comfortable buffer",
-      "$8–12B = Borderline safe",
-      "Below $8B = Vulnerable to shocks",
-      "Below $4B = Crisis territory (as in Feb 2023)",
+      "Above $12B = Comfortable | $8–12B = Borderline",
+      "Below $8B = Vulnerable",
+      "Below $4B = Crisis (as in Feb 2023)",
     ],
   },
 
   "Policy Rate": {
     title: "Policy Rate",
-    what: "The interest rate set by Pakistan's central bank (SBP) — the rate at which banks borrow from SBP. All commercial lending and deposit rates follow this number.",
-    why: "Raising the rate makes borrowing more expensive, slowing spending and fighting inflation. Cutting it makes credit cheaper, stimulating economic activity and investment.",
+    what: "The interest rate SBP sets for banks — all lending and deposit rates in Pakistan follow it.",
+    why: "Higher rate = fighting inflation; lower rate = stimulating growth and investment.",
     how: [
-      "Rate hikes = SBP fighting high inflation",
-      "Rate cuts = SBP confident inflation is sustainably falling",
-      "Real rate = Policy Rate minus CPI; negative real rate = still stimulating",
-      "Compare to CPI: if Policy Rate > CPI, monetary policy is genuinely tight",
+      "Rate hikes = SBP fighting inflation",
+      "Rate cuts = SBP confident inflation is falling",
+      "Real rate = Policy Rate minus CPI (negative = still stimulating)",
     ],
   },
 
   "3M T-Bill Yield": {
     title: "3M T-Bill Yield",
-    what: "The interest rate the Pakistani government pays to borrow for 3 months via Treasury Bill auctions. It closely mirrors the SBP Policy Rate.",
-    why: "The benchmark short-term money-market rate in Pakistan. Banks price deposits and loans against it. The government must pay this yield to roll over its massive short-term debt.",
+    what: "The interest rate the government pays to borrow money for 3 months at auction.",
+    why: "Pakistan's benchmark short-term rate — banks price all lending and deposits against it.",
     how: [
-      "Tracks SBP Policy Rate closely (usually within 0.5%)",
-      "Rising ahead of MPC meeting = Market expects rate hike",
-      "Falling = Market expects rate cut",
-      "Compare to 3Y PIB yield to see yield curve direction",
+      "Tracks SBP Policy Rate closely",
+      "Rising before MPC meeting = Rate hike expected",
+      "Falling = Rate cut expected",
     ],
   },
 
   "3Y PIB Yield": {
     title: "3Y PIB Yield",
-    what: "The interest rate the government pays to borrow for 3 years via Pakistan Investment Bonds (PIBs). Shows medium-term borrowing costs.",
-    why: "Reveals what markets expect for interest rates and inflation over the next 3 years. Rising PIB yields increase government debt costs and signal fiscal stress.",
+    what: "The interest rate the government pays to borrow for 3 years via Pakistan Investment Bonds.",
+    why: "Shows what markets expect for interest rates and inflation over the next 3 years.",
     how: [
-      "PIB above T-Bill = Normal upward-sloping curve",
-      "PIB below T-Bill = Inverted; market expects rate cuts ahead",
-      "High PIB yield + falling inflation = Rate cuts likely coming",
-      "Wide spread = Market expects rates to stay elevated longer",
+      "PIB above T-Bill = Normal yield curve",
+      "PIB below T-Bill = Market expects rate cuts",
+      "Rising PIB = Higher government debt costs ahead",
     ],
   },
 
   "Remittances": {
     title: "Remittances",
-    what: "Money sent home by Pakistanis working abroad — primarily from Saudi Arabia, UAE, UK, and USA — through banks and formal transfer channels.",
-    why: "Pakistan's single largest source of foreign currency, consistently exceeding goods export earnings. Remittances support millions of families and help fund the entire import bill.",
+    what: "Money sent home by Pakistanis working abroad — mainly from Saudi Arabia, UAE, UK, and USA.",
+    why: "Pakistan's biggest source of foreign currency, consistently exceeding all goods exports combined.",
     how: [
       "Above $3B/month = Strong",
-      "$2–3B/month = Normal range",
-      "Below $2B/month = Concerning — pressure on PKR",
-      "Spikes seasonally during Ramadan and Eid",
+      "$2–3B = Normal | Below $2B = Concerning",
+      "Peaks seasonally during Ramadan and Eid",
     ],
   },
 
   "Current Account": {
     title: "Current Account",
-    what: "A summary of all money flowing in and out of Pakistan internationally — exports minus imports of goods and services, plus remittances and other transfers.",
-    why: "A persistent deficit means Pakistan spends more abroad than it earns, forcing the country to borrow externally. Large deficits are the main trigger for Pakistan's IMF program cycles.",
+    what: "All money flowing in and out of Pakistan internationally — exports, imports, remittances, and transfers.",
+    why: "A persistent deficit means Pakistan borrows to fund its lifestyle, triggering recurring IMF programs.",
     how: [
-      "Surplus = Pakistan earning more than spending abroad (positive)",
+      "Surplus = Earning more than spending abroad",
       "Deficit below 1% of GDP = Manageable",
-      "Deficit 2–3% of GDP = Elevated concern",
       "Above 4% of GDP = High crisis risk",
     ],
   },
 
   "Trade Balance": {
     title: "Trade Balance",
-    what: "The difference between Pakistan's export earnings and import payments for physical goods. Pakistan consistently imports more than it exports.",
-    why: "The largest driver of Pakistan's current account deficit. Narrowing this gap — through higher exports or lower imports — is critical for external stability.",
+    what: "Pakistan's export earnings minus import payments for physical goods — Pakistan always imports more than it exports.",
+    why: "The biggest driver of the current account deficit; narrowing it is critical for stability.",
     how: [
-      "Closer to zero = Better external position",
-      "Narrowing from export growth = Structurally positive",
-      "Narrowing from import compression = Usually means economic slowdown",
-      "Widening gap = Rising import demand or falling exports",
+      "Closer to zero = Better",
+      "Narrowing from export growth = Positive",
+      "Narrowing from import compression = Usually means slowdown",
     ],
   },
 
   "Money Supply (M2)": {
     title: "Money Supply (M2)",
-    what: "The total amount of money in Pakistan's economy — physical cash plus all bank deposits people can easily access.",
-    why: "When money supply grows much faster than the economy, it fuels inflation. The SBP monitors M2 to ensure money creation stays in line with actual economic output.",
+    what: "Total money in the economy — physical cash plus all bank deposits people can easily access.",
+    why: "When M2 grows much faster than the economy, it fuels inflation.",
     how: [
-      "M2 growing > nominal GDP growth = Inflation risk building",
-      "M2 growth 10–15% = Broadly normal",
-      "Above 20% = High risk of fueling inflation",
+      "M2 growth 10–15% = Normal range",
+      "Above 20% = Inflation risk building",
       "Falling real M2 = Monetary tightening working",
     ],
   },
 
   "USD / PKR": {
     title: "USD / PKR",
-    what: "How many Pakistani Rupees it takes to buy one US Dollar. The most closely watched financial number in Pakistan.",
-    why: "A weaker Rupee makes oil, machinery, and imported goods more expensive, fuels domestic inflation, and increases the cost of repaying Pakistan's foreign debts.",
+    what: "How many Rupees it takes to buy one US Dollar — the most watched financial indicator in Pakistan.",
+    why: "A weaker Rupee makes all imports more expensive and inflates the cost of foreign debt repayments.",
     how: [
-      "Rising number = Rupee weakening (depreciation)",
-      "Falling number = Rupee strengthening (appreciation)",
-      "Rapid rise = Signals balance of payments stress",
-      "Live FX shows real-time rate; history section shows monthly average",
+      "Rising = Rupee weakening (depreciation)",
+      "Falling = Rupee strengthening",
+      "Rapid rise = Balance of payments stress",
     ],
   },
 
   "EUR / PKR": {
     title: "EUR / PKR",
-    what: "How many Rupees it takes to buy one Euro. Updated hourly from live market data.",
-    why: "Relevant for trade with European countries (a major buyer of Pakistani textiles) and for Pakistanis with income or expenses in euros.",
+    what: "How many Rupees buy one Euro — updated hourly from live market data.",
+    why: "Relevant for Pakistan's trade with the EU (a major textile buyer) and euro-denominated obligations.",
     how: [
-      "Rising = Rupee weakening against the Euro",
-      "Primarily tracks USD/PKR movements",
-      "Also influenced by EUR/USD rate in global markets",
+      "Rising = Rupee weakening vs Euro",
+      "Primarily mirrors USD/PKR movements",
+      "Secondary influence from EUR/USD in global markets",
     ],
   },
 
   "GBP / PKR": {
     title: "GBP / PKR",
-    what: "How many Rupees it takes to buy one British Pound. Updated hourly from live market data.",
-    why: "The UK hosts one of the world's largest Pakistani diaspora communities. This rate directly determines the PKR value of remittances sent from the UK.",
+    what: "How many Rupees buy one British Pound — updated hourly.",
+    why: "The UK hosts a large Pakistani diaspora; this rate determines the PKR value of remittances from the UK.",
     how: [
-      "Rising = Rupee weakening against Sterling",
+      "Rising = Rupee weakening vs Pound",
       "Primarily tracks USD/PKR",
-      "Bank of England policy decisions can affect GBP/PKR independently",
+      "Bank of England decisions can shift GBP independently",
     ],
   },
 
   "SAR / PKR": {
     title: "SAR / PKR",
-    what: "How many Rupees buy one Saudi Riyal. Updated hourly. The SAR is fixed to the USD at 3.75 SAR = 1 USD, so it mirrors USD/PKR almost exactly.",
-    why: "Saudi Arabia is Pakistan's top remittance corridor — over $0.7–0.9B per month. A weaker Rupee increases the PKR value received by families from Saudi-based workers.",
+    what: "How many Rupees buy one Saudi Riyal — updated hourly. The SAR is pegged to the USD at 3.75.",
+    why: "Saudi Arabia is Pakistan's top remittance corridor; a weaker Rupee boosts PKR received by workers' families.",
     how: [
-      "Rising = Rupee weakening (same direction as USD/PKR)",
+      "Rising = Rupee weakening (mirrors USD/PKR)",
       "SAR/PKR ≈ USD/PKR ÷ 3.75",
-      "Any divergence from USD/PKR would be very unusual",
+      "SAR peg to USD is very stable",
     ],
   },
 
   "Exports": {
     title: "Exports",
-    what: "Total value of goods Pakistan sells to other countries each month — mainly textiles, leather, surgical instruments, sports goods, and food.",
-    why: "Export earnings are Pakistan's primary sustainable source of foreign currency. The export base is narrow and heavily concentrated in low-value textiles.",
+    what: "Total value of goods Pakistan sells abroad — mainly textiles, leather, surgical goods, and food.",
+    why: "The only sustainable source of foreign currency; Pakistan's narrow export base is a chronic weakness.",
     how: [
       "Above $3B/month = Strong",
-      "$2–2.5B/month = Typical range",
-      "Below $2B/month = Weak — pressure on trade balance",
-      "Long-term goal: diversify beyond textiles to higher-value products",
+      "$2–2.5B = Typical | Below $2B = Weak",
+      "Goal: diversify beyond textiles",
     ],
   },
 
   "Imports": {
     title: "Imports",
-    what: "Total value of goods Pakistan buys from other countries each month — mostly oil and energy, machinery, chemicals, and food.",
-    why: "High imports widen the trade deficit. Energy imports are the biggest vulnerability — global oil price spikes directly hit Pakistan's import bill.",
+    what: "Total value of goods Pakistan buys from abroad — mainly oil, machinery, chemicals, and food.",
+    why: "High energy imports are the biggest vulnerability; oil price spikes directly hit Pakistan's trade deficit.",
     how: [
-      "Rising capital goods = Investment and industrial growth (positive)",
-      "Rising energy imports = High global oil prices hurting Pakistan",
-      "Sharp import drop = Economic slowdown or import restrictions",
-      "Compare to exports to see the trade gap",
+      "Rising capital goods = Investment growth (positive)",
+      "Rising energy imports = Oil prices hurting Pakistan",
+      "Sharp drop = Economic slowdown or import curbs",
     ],
   },
 
   "FDI Inflows": {
     title: "FDI Inflows",
-    what: "Net investment from foreign companies and investors buying stakes in Pakistani businesses, minus any capital they withdraw.",
-    why: "FDI brings productive capital without creating debt. Pakistan's FDI is historically low versus regional peers, limiting industrial growth and job creation.",
+    what: "Net foreign investment into Pakistani businesses — money coming in minus money being withdrawn.",
+    why: "FDI brings productive capital without debt; Pakistan's FDI is chronically low vs regional peers.",
     how: [
       "Above $200M/month = Healthy",
-      "Below $100M/month = Weak",
-      "Negative = Foreign capital leaving the country",
-      "CPEC (China-Pakistan Economic Corridor) is the largest single source",
+      "Below $100M = Weak | Negative = Capital leaving",
+      "CPEC (China) is the largest single source",
     ],
   },
 
   "REER": {
-    title: "REER (Real Effective Exchange Rate)",
-    what: "Pakistan's exchange rate adjusted for inflation differences with trading partners. It shows how expensive Pakistani goods are versus competitors — regardless of the Rupee's nominal level.",
-    why: "The truest measure of export competitiveness. An overvalued REER means Pakistani goods are too expensive globally and contributed to the 2021–22 balance of payments crisis.",
+    title: "REER",
+    what: "The Rupee's value adjusted for Pakistan's higher inflation vs trading partners — measures true competitiveness.",
+    why: "An overvalued REER makes Pakistani exports too expensive globally, contributing to trade deficits.",
     how: [
-      "Below 100 = Rupee competitively priced vs 2010 baseline",
-      "Above 100 = Relatively expensive (less competitive exports)",
-      "Falling REER = Improving competitiveness",
-      "Rising REER = Exports becoming harder to sell globally",
+      "Below 100 = Competitively priced (vs 2010 base)",
+      "Above 100 = Relatively expensive exports",
+      "Falling REER = Competitiveness improving",
     ],
   },
 
   "LSM": {
     title: "LSM (Large-Scale Manufacturing)",
-    what: "Measures the physical output of Pakistan's large factories — textiles, chemicals, food processing, steel, and other heavy industries. Base year 2015–16 = 100.",
-    why: "A monthly snapshot of industrial health, available faster than quarterly GDP data. LSM reflects energy availability, credit access, and manufacturing demand.",
+    what: "Monthly output of Pakistan's large factories — textiles, chemicals, food, steel, and engineering goods.",
+    why: "A real-time proxy for industrial health; typically leads GDP by 1–2 months.",
     how: [
-      "Rising index = Industrial expansion",
-      "Falling = Factories cutting output",
-      "Sharp drop = Energy shortage, import restrictions, or credit squeeze",
-      "Leads GDP by 1–2 months — a reliable early warning indicator",
+      "Rising = Industrial expansion",
+      "Falling = Factory output contracting",
+      "Sharp drop = Energy shortages or credit squeeze",
     ],
   },
 
   "Private Credit Growth": {
     title: "Private Credit Growth",
-    what: "How fast bank lending to businesses and households is growing year-on-year. Does not include government borrowing from banks.",
-    why: "Credit growth fuels investment and consumer spending. When the government borrows too much from banks, less credit is available for businesses — this is called 'crowding out.'",
+    what: "How fast banks are lending to businesses and households (excludes government borrowing).",
+    why: "Low private credit means businesses can't invest or grow — often caused by government 'crowding out' banks.",
     how: [
-      "Growing faster than CPI = Real credit expansion (positive)",
-      "Growing at same rate as CPI = Flat in real terms",
-      "Negative = Credit is actually shrinking after inflation",
-      "Rebound in private credit = Economy normalizing",
+      "Growing faster than CPI = Real credit expansion",
+      "Negative real growth = Credit is shrinking",
+      "Rebound = Economy beginning to normalize",
     ],
   },
 
   "Fiscal Balance": {
     title: "Fiscal Balance",
-    what: "The difference between total government income (taxes, fees) and spending (salaries, subsidies, development). A negative number means the government is running a deficit.",
-    why: "Pakistan's persistent budget deficit is the root cause of its debt cycle. Deficits are funded by borrowing, piling up interest costs and leaving less for development.",
+    what: "Government income minus spending — a negative number means a deficit (spending more than it earns).",
+    why: "Pakistan's chronic deficit is the root cause of its debt cycle and dependency on IMF bailouts.",
     how: [
-      "Surplus = Government saving (rare for Pakistan)",
       "Below 3% of GDP = Manageable",
-      "4–6% of GDP = Elevated — borrowing is rising",
-      "Pakistan's historical range: 6–8% of GDP (high)",
+      "4–6% = Elevated | Above 6% = Pakistan's historical norm",
+      "Surplus = Extremely rare for Pakistan",
     ],
   },
 
@@ -294,97 +275,89 @@ export const TERMINOLOGY: Record<string, TermEntry> = {
 
   "Gold": {
     title: "Gold",
-    what: "Spot price of gold per troy ounce in US dollars. Gold is held globally as a savings asset, inflation hedge, and safe haven during economic uncertainty.",
-    why: "Rising gold prices increase Pakistan's import costs (Pakistan is a large gold consumer) and signal global risk aversion. Falling gold signals improving investor confidence.",
+    what: "Spot price of gold per ounce in USD — a global safe-haven and inflation hedge.",
+    why: "Rising gold signals global uncertainty and increases Pakistan's import costs (Pakistan is a large gold consumer).",
     how: [
-      "Rising gold = Global uncertainty or inflation fears",
-      "Falling gold = Risk appetite improving, stronger dollar",
-      "Pakistan's informal household gold holdings are massive",
-      "Long-term uptrend reflects declining trust in paper currencies",
+      "Rising = Global risk aversion or inflation fears",
+      "Falling = Investor confidence improving",
+      "Pakistan's household gold holdings are very large",
     ],
   },
 
   "Silver": {
     title: "Silver",
-    what: "Spot price of silver per troy ounce in US dollars. Silver plays a dual role: precious metal (inflation hedge) and industrial material (electronics, solar panels).",
-    why: "Tracks gold as a market sentiment indicator but with higher volatility. The industrial demand component links it to global manufacturing health.",
+    what: "Spot price of silver per ounce — both a precious metal and industrial material (electronics, solar).",
+    why: "Tracks gold as a sentiment signal but is more volatile and sensitive to manufacturing trends.",
     how: [
       "Rising with gold = Safe-haven demand",
       "Rising faster than gold = Industrial demand pickup",
-      "Gold/Silver ratio above 80 = Silver historically cheap vs. gold",
-      "Higher volatility than gold — bigger moves in both directions",
+      "Gold/Silver ratio above 80 = Silver historically cheap",
     ],
   },
 
   "WTI Crude": {
     title: "WTI Crude",
-    what: "West Texas Intermediate crude oil price per barrel — the US benchmark for oil prices. Very similar to Brent, the global benchmark Pakistan uses for imports.",
-    why: "Oil is Pakistan's biggest import by value. Every $10 rise in oil prices adds roughly $1.5–2B to Pakistan's annual import bill, widening the trade deficit.",
+    what: "West Texas Intermediate crude oil per barrel — the US oil benchmark, very similar to Brent.",
+    why: "Every $10 rise adds roughly $1.5–2B to Pakistan's annual import bill.",
     how: [
-      "Below $60/bbl = Favorable for Pakistan",
-      "$60–80 = Manageable",
-      "Above $90 = Significant pressure on trade balance",
-      "Above $100 = Crisis-level costs for Pakistan's external accounts",
+      "Below $60 = Favorable | $60–80 = Manageable",
+      "Above $90 = Significant import stress",
+      "Above $100 = Crisis-level costs for Pakistan",
     ],
   },
 
   "Brent Crude": {
     title: "Brent Crude",
-    what: "Brent crude oil price per barrel — the global oil benchmark used to price most international contracts, including Pakistan's petroleum imports.",
-    why: "Pakistan's oil and LNG import costs are directly tied to Brent prices. This is the most relevant oil price for Pakistan's economy.",
+    what: "The global oil benchmark per barrel — Pakistan's petroleum imports are directly priced against Brent.",
+    why: "The most relevant oil price for Pakistan; LNG import contracts are also linked to Brent.",
     how: [
-      "Below $60/bbl = Low import costs — favorable",
-      "$60–80 = Moderate",
-      "Above $90 = Elevated import bill stress",
-      "Typically $2–5/bbl above WTI (US benchmark)",
+      "Below $60 = Low import costs (favorable)",
+      "Above $90 = Significant trade balance pressure",
+      "Typically $2–5/bbl above WTI",
     ],
   },
 
   "Natural Gas": {
     title: "Natural Gas",
-    what: "Henry Hub natural gas price per million BTU — the US benchmark widely used as a reference for global LNG contracts.",
-    why: "Pakistan imports LNG to supplement declining domestic gas production. High global gas prices increase industrial energy costs and widen Pakistan's import bill.",
+    what: "Henry Hub gas price per MMBtu — the US benchmark, widely used to price global LNG contracts.",
+    why: "Pakistan imports LNG to supplement declining domestic gas; high prices ripple through industrial energy costs.",
     how: [
-      "Below $3/MMBtu = Cheap",
-      "$3–5 = Moderate",
-      "Above $5 = Elevated — LNG costs rising for Pakistan",
-      "2022 European gas crisis spiked above $10, severely hurting Pakistan",
+      "Below $3 = Cheap | $3–5 = Moderate",
+      "Above $5 = Elevated LNG costs for Pakistan",
+      "2022 European crisis spiked above $10",
     ],
   },
 
   "US Dollar Index": {
     title: "US Dollar Index (DXY)",
-    what: "Measures the strength of the US Dollar against 6 major currencies — mainly Euro, Japanese Yen, and British Pound. A rising DXY means the dollar is getting stronger.",
-    why: "A stronger dollar makes commodities like oil more expensive for everyone and puts pressure on emerging market currencies like the Rupee. Pakistan struggles most when DXY is high.",
+    what: "Strength of the USD against 6 major currencies — mainly Euro, Yen, and Pound.",
+    why: "A strong dollar makes commodities more expensive globally and pressures the Rupee.",
     how: [
-      "Below 95 = Weak dollar (favorable for Pakistan)",
-      "95–100 = Neutral",
+      "Below 95 = Weak dollar (good for Pakistan)",
       "Above 100 = Strong dollar (pressure on PKR)",
-      "Above 106 = Very strong — significant stress for Pakistan",
+      "Above 106 = Very strong — significant EM stress",
     ],
   },
 
   "US 10Y Treasury": {
     title: "US 10Y Treasury Yield",
-    what: "The interest rate on 10-year US government bonds — the world's most important benchmark rate, influencing global capital flows and sovereign borrowing costs.",
-    why: "Rising US yields pull investment capital away from emerging markets like Pakistan, weakening the Rupee and raising Pakistan's international borrowing costs.",
+    what: "Interest rate on 10-year US government bonds — the world's most important benchmark rate.",
+    why: "Rising yields pull capital out of emerging markets like Pakistan, weakening the Rupee.",
     how: [
-      "Below 2.5% = Low — favorable for Pakistan (capital flows to EM)",
-      "3–4% = Moderate",
-      "Above 4.5% = Elevated — significant headwind for Pakistan",
+      "Below 2.5% = Favorable for Pakistan",
+      "Above 4.5% = Significant headwind",
       "2022–23 surge to 5% = Hardest EM environment in 15 years",
     ],
   },
 
   "Fed Funds Rate": {
     title: "Fed Funds Rate",
-    what: "The US Federal Reserve's key interest rate — the most powerful interest rate in the world. When the Fed raises rates, it tightens money globally, not just in the US.",
-    why: "High US rates attract capital to America, weakening the Rupee and making it more expensive for Pakistan to borrow in dollars or attract foreign investment.",
+    what: "The US Federal Reserve's key interest rate — the most powerful rate in the world.",
+    why: "High US rates attract capital to America, weakening the Rupee and raising Pakistan's borrowing costs.",
     how: [
-      "High Fed rate (above 4%) = Pressure on PKR and Pakistan's borrowing costs",
-      "Fed cutting rates = Relief for Pakistan — capital flows back to EMs",
-      "Fed policy is the single biggest external driver of Pakistan's finances",
-      "Watch for Fed cut signals to anticipate PKR stabilization",
+      "High rate (above 4%) = Pressure on PKR",
+      "Fed cuts = Relief for Pakistan (capital returns to EMs)",
+      "Single biggest external driver of Pakistan's finances",
     ],
   },
 
@@ -392,23 +365,23 @@ export const TERMINOLOGY: Record<string, TermEntry> = {
 
   "Bank Reserves": {
     title: "Commercial Bank FX Reserves",
-    what: "Foreign currency held by Pakistan's commercial banks — separate from SBP's reserves. Combined with SBP reserves, it gives Total Liquid FX Reserves.",
-    why: "Adds to the country's total foreign currency buffer. This combined figure is what most media reports refer to when citing 'Pakistan's FX Reserves.'",
+    what: "Foreign currency held by Pakistani commercial banks — separate from SBP's own reserves.",
+    why: "Add to SBP reserves for Total Liquid Reserves — the figure most cited in financial media.",
     how: [
-      "Add to SBP reserves for Total Liquid Reserves",
-      "Higher is better — more buffer for payments",
+      "SBP + Bank reserves = Total system FX buffer",
+      "Higher is better",
       "SBP monthly data lags weekly press releases by 4–6 weeks",
     ],
   },
 
   "Pakistan ETF (NYSE: PAK)": {
     title: "Pakistan ETF (NYSE: PAK)",
-    what: "A US-listed fund that tracked Pakistan's top publicly listed companies on the PSX, allowing international investors to buy into Pakistan's stock market.",
-    why: "Served as a proxy for foreign investor sentiment toward Pakistan. Capital flows showed international risk appetite. The fund has been unavailable or delisted since mid-2025.",
+    what: "A US-listed fund that tracked Pakistan's top listed companies — a proxy for foreign investor sentiment.",
+    why: "Capital flows into/out of this fund showed international risk appetite for Pakistan. Delisted since mid-2025.",
     how: [
-      "Rising price = Positive foreign sentiment toward Pakistan",
-      "Falling price = Foreign investors reducing Pakistan exposure",
-      "Data may be stale if fund is suspended or delisted",
+      "Rising = Positive foreign sentiment",
+      "Falling = Foreign investors reducing exposure",
+      "Data may be stale if fund is suspended",
     ],
   },
 
@@ -416,45 +389,41 @@ export const TERMINOLOGY: Record<string, TermEntry> = {
 
   "Bullish": {
     title: "Bullish Sentiment",
-    what: "An AI tag applied to news articles when the content is likely to have positive effects on Pakistan's economy — inflation falling, reserves rising, IMF funds arriving.",
-    why: "Quickly shows whether recent news is good for Pakistan. A cluster of bullish headlines often signals improving conditions before hard data catches up.",
+    what: "AI tag for news articles likely to have positive economic effects — inflation falling, reserves rising, IMF funds arriving.",
+    why: "A cluster of bullish headlines often signals improving conditions before hard data confirms it.",
     how: [
       "Many bullish = Positive news cycle",
-      "Mixed = Unclear direction",
-      "Use as a directional signal, not a precise forecast",
+      "Use as directional signal, not forecast",
     ],
   },
 
   "Bearish": {
     title: "Bearish Sentiment",
-    what: "An AI tag applied to news articles when the content signals potential economic trouble — IMF program delays, fiscal stress, currency pressure, or rising risks.",
-    why: "Quickly identifies negative news for risk monitoring. Persistent bearish headlines often precede PKR weakness or market stress.",
+    what: "AI tag for news signalling potential trouble — IMF delays, fiscal stress, or currency pressure.",
+    why: "Persistent bearish headlines often precede PKR weakness or market stress by several weeks.",
     how: [
-      "Mostly bearish = Watch for PKR pressure or policy tightening",
-      "Concentrated in fiscal/external = Especially concerning",
-      "Early warning signal before hard data confirms deterioration",
+      "Mostly bearish = Watch for PKR pressure",
+      "Concentrated in fiscal/external = Most concerning",
     ],
   },
 
   "Neutral": {
     title: "Neutral Sentiment",
-    what: "An AI tag for news articles that are informational or data-reporting — without a clear positive or negative economic implication.",
-    why: "The baseline against which bullish and bearish signals are measured. A mostly neutral news cycle means things are calm and routine.",
+    what: "AI tag for informational or data-reporting articles without a clear positive or negative economic implication.",
+    why: "The baseline signal — a neutral-heavy cycle means things are stable and unremarkable.",
     how: [
-      "High neutral proportion = Stable, routine news environment",
-      "Shift toward bearish = Emerging risk worth monitoring",
-      "Shift toward bullish = Conditions improving",
+      "High neutral = Calm news environment",
+      "Shift toward bearish = Risk emerging",
     ],
   },
 
   "Risk Level": {
     title: "Risk Level",
-    what: "An AI assessment of how much economic risk a news article poses for Pakistan — Low, Medium, or High.",
-    why: "Helps you quickly spot the most important articles. Multiple concurrent High-risk tags are an early warning of a potential emerging crisis.",
+    what: "AI rating of how much economic risk a news article poses for Pakistan — Low, Medium, or High.",
+    why: "Multiple concurrent High-risk tags are an early warning of a potential crisis forming.",
     how: [
-      "Low = Routine news, limited economic impact",
-      "Medium = Notable development worth watching",
-      "High = Significant risk: IMF issues, large FX move, or policy failure",
+      "Low = Routine news | Medium = Worth watching",
+      "High = Significant risk event (IMF, FX move, policy failure)",
     ],
   },
 
@@ -462,11 +431,10 @@ export const TERMINOLOGY: Record<string, TermEntry> = {
 
   "Import Cover": {
     title: "Import Cover",
-    what: "How many months of imports Pakistan can pay for using its current foreign reserves. Calculated as: Total FX Reserves ÷ Monthly Import Cost.",
-    why: "The standard international measure of whether a country has enough foreign currency. Pakistan fell below 1 month of cover in early 2023, requiring emergency IMF help.",
+    what: "How many months of imports Pakistan can pay for using current foreign reserves.",
+    why: "The IMF's standard measure of external liquidity — Pakistan fell below 1 month in early 2023.",
     how: [
-      "Above 3 months = Adequate (IMF minimum benchmark)",
-      "2–3 months = Borderline",
+      "Above 3 months = Adequate (IMF minimum)",
       "Below 2 months = Vulnerable",
       "Below 1 month = Crisis territory",
     ],
@@ -474,110 +442,106 @@ export const TERMINOLOGY: Record<string, TermEntry> = {
 
   "3Y - 3M Spread": {
     title: "Yield Curve Spread (3Y − 3M)",
-    what: "The difference between 3-year government bond yields and 3-month T-Bill yields. Positive means longer-term bonds pay more — the normal situation.",
-    why: "When this spread turns negative (inverted), it signals the market expects interest rate cuts ahead. A reliable leading indicator of monetary policy direction.",
+    what: "Difference between 3-year PIB yields and 3-month T-Bill yields — the slope of the yield curve.",
+    why: "When this turns negative (inverted), markets expect rate cuts — a reliable leading indicator.",
     how: [
-      "Positive = Normal yield curve; stable or rising rate outlook",
-      "Near zero = Flat; market uncertain about direction",
-      "Negative = Market expects rate cuts — often follows peak inflation",
-      "Wide positive = Market expects rates to stay high longer",
+      "Positive = Normal curve (stable outlook)",
+      "Near zero = Uncertainty about direction",
+      "Negative = Rate cuts expected ahead",
     ],
   },
 
   "SBP Policy Rate": {
     title: "SBP Policy Rate",
-    what: "The State Bank of Pakistan's key interest rate — same as the 'Policy Rate' KPI card, shown here as a reference stat in the monetary policy section.",
-    why: "Anchors all lending and deposit rates in Pakistan. The direction of change matters as much as the level itself.",
+    what: "SBP's key interest rate — same as the Policy Rate KPI, shown here as a section reference.",
+    why: "Anchors all lending and deposit rates; direction of change matters as much as the level.",
     how: [
-      "Decreasing = Monetary easing (supports growth and borrowing)",
-      "Increasing = Monetary tightening (fighting inflation)",
+      "Decreasing = Monetary easing",
+      "Increasing = Monetary tightening",
       "Real rate = Policy Rate minus CPI",
     ],
   },
 
   "CPI Inflation (YoY)": {
     title: "CPI Inflation (YoY)",
-    what: "Year-on-year Consumer Price Index inflation — the same as the CPI Inflation headline KPI, shown here as a breakdown stat.",
-    why: "The primary measure of price pressure on Pakistani households.",
+    what: "Year-on-year consumer price inflation — same indicator as the CPI Inflation headline KPI.",
+    why: "Primary measure of price pressure on Pakistani households.",
     how: [
-      "Below 7% = Controlled; SBP target range",
-      "7–12% = Elevated",
-      "Above 15% = High inflation requiring action",
+      "Below 7% = Controlled | 7–12% = Elevated",
+      "Above 15% = High",
     ],
   },
 
   "Core Inflation (Urban NFNE)": {
     title: "Core Inflation (Urban NFNE)",
-    what: "Urban Non-Food Non-Energy inflation — the core CPI measure SBP uses as its primary policy signal, showing underlying price pressure in cities.",
-    why: "SBP's operational target for monetary policy. Declining core is the main indicator that interest rate cuts are justified.",
+    what: "Urban Non-Food Non-Energy inflation — SBP's primary policy signal for underlying price pressure.",
+    why: "Declining core is the key condition SBP looks for before cutting interest rates.",
     how: [
-      "Falling core = Rate cuts becoming possible",
-      "Rising core = Policy must stay tight",
-      "Core above headline CPI = Inflation is broad-based",
+      "Falling = Rate cuts becoming justified",
+      "Rising = Policy must stay tight",
     ],
   },
 
   "WPI Inflation (YoY)": {
     title: "WPI Inflation (YoY)",
-    what: "Year-on-year Wholesale Price Index inflation — same as the WPI Inflation headline KPI, shown as a breakdown stat.",
-    why: "Leading indicator of future consumer prices. Rising WPI means businesses are paying more, which passes through to shops within 1–3 months.",
+    what: "Year-on-year wholesale price inflation — same as the WPI Inflation headline KPI.",
+    why: "Leading indicator of future CPI — wholesale cost rises pass through to consumers in 1–3 months.",
     how: [
-      "WPI above CPI = Consumer price hikes coming soon",
-      "WPI below CPI = Pipeline pressure easing",
+      "WPI above CPI = Consumer hikes coming",
+      "WPI below CPI = Pipeline easing",
     ],
   },
 
   "Trade Balance (Goods)": {
     title: "Trade Balance (Goods)",
-    what: "Net of goods exports minus goods imports — the same as the Trade Balance KPI, shown here in the external sector section.",
-    why: "The largest single contributor to Pakistan's current account deficit.",
+    what: "Net of goods exports minus imports — same as the Trade Balance KPI.",
+    why: "The largest contributor to Pakistan's current account deficit.",
     how: [
-      "Narrowing = Improving external position",
-      "Widening = Growing pressure on foreign reserves",
+      "Narrowing = External position improving",
+      "Widening = Growing pressure on reserves",
     ],
   },
 
   "Foreign Reserves (SBP)": {
     title: "Foreign Reserves (SBP)",
-    what: "SBP-held foreign exchange reserves only — liquid assets directly controlled by the central bank, excluding reserves held by commercial banks.",
-    why: "The subset of reserves most closely watched by the IMF and international markets. More reliable as a policy backstop than commercial bank reserves.",
+    what: "SBP-held foreign currency only — excludes reserves at commercial banks.",
+    why: "The most closely watched reserve figure by the IMF and international markets.",
     how: [
       "Above $12B = Comfortable",
-      "$8–12B = Borderline",
-      "Below $4B = Crisis territory",
+      "Below $8B = Vulnerable | Below $4B = Crisis",
     ],
   },
 
   "Agriculture": {
     title: "Agriculture Sector",
-    what: "Pakistan's agriculture GDP — covering crop production (wheat, cotton, rice, sugarcane), livestock, fishing, and forestry.",
-    why: "Agriculture employs ~38% of Pakistan's workforce and contributes ~23% of GDP. Good harvests support rural incomes, food prices, and cotton supply for textile exports.",
+    what: "Pakistan's agriculture GDP — crops, livestock, fishing, and forestry.",
+    why: "Employs ~38% of the workforce; good harvests lower food prices and support textile exports.",
     how: [
-      "Strong growth (5%+) = Lower food prices, higher rural incomes",
-      "Weak growth (floods, droughts) = Food inflation spikes",
-      "Cotton harvest quality directly affects textile export capacity",
+      "Strong harvest = Lower food inflation",
+      "Floods or drought = Immediate food price spike",
+      "Cotton crop directly affects textile export capacity",
     ],
   },
 
   "Industry": {
     title: "Industry Sector",
-    what: "Pakistan's industrial GDP — manufacturing (large and small scale), construction, and mining.",
-    why: "Industry drives formal employment, export capacity (especially textiles), and fiscal revenue. Industrial contraction quickly shows up in the trade deficit.",
+    what: "Pakistan's industrial GDP — manufacturing, construction, and mining.",
+    why: "Drives formal employment and export capacity; contraction quickly shows in the trade deficit.",
     how: [
-      "Positive growth = Economic momentum building",
-      "Contraction = Capacity underutilization — often from energy shortages",
-      "LSM is the monthly indicator that tracks this in real time",
+      "Positive = Economic momentum building",
+      "Contraction = Often signals energy shortages",
+      "LSM is the monthly real-time proxy",
     ],
   },
 
   "Services": {
     title: "Services Sector",
-    what: "Pakistan's services GDP — the largest sector, covering trade, transport, finance, real estate, IT, and public administration.",
-    why: "Services represent ~60% of Pakistan's GDP. Growth here reflects domestic consumption strength, financial sector health, and a rapidly growing IT and freelancing sector.",
+    what: "Pakistan's largest sector (~60% of GDP) — trade, finance, IT, transport, and public services.",
+    why: "Sustained services growth supports GDP even during industrial weakness; IT exports are fast-growing.",
     how: [
-      "Above 3% growth = Supports GDP even during industrial weakness",
-      "Weak services = Broad consumer demand compression",
-      "IT and digital exports are a fast-growing component to watch",
+      "Above 3% growth = Broad economic support",
+      "Weak services = Consumer demand compressing",
+      "IT and freelancing are a rising component",
     ],
   },
 

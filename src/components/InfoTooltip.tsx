@@ -18,7 +18,7 @@ interface Placement {
   isMobile: boolean;
 }
 
-const PANEL_WIDTH = 420;
+const PANEL_WIDTH = 460;
 
 function computePlacement(rect: DOMRect): Placement {
   if (window.innerWidth < 640) {
@@ -58,8 +58,6 @@ function computePlacement(rect: DOMRect): Placement {
     position: "fixed",
     left,
     width: PANEL_WIDTH,
-    maxHeight: "70vh",
-    overflowY: "auto",
     zIndex: 9999,
   };
 
@@ -292,9 +290,9 @@ export default function InfoTooltip({ termKey, size = "sm" }: Props) {
                 )}
               </button>
 
-              {/* Roman Urdu block */}
+              {/* Roman Urdu block — only this sub-block scrolls if long */}
               {urduVisible && urduCache.has(termKey) && (
-                <div className="mt-2.5 rounded-lg border border-white/5 bg-[#071420] p-3">
+                <div className="mt-2.5 rounded-lg border border-white/5 bg-[#071420] p-3" style={{ maxHeight: 160, overflowY: "auto" }}>
                   <p className="mb-1.5 text-[9px] font-semibold uppercase tracking-wider text-neon-blue/40">
                     Roman Urdu
                   </p>
