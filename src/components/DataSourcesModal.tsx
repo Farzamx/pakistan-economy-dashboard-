@@ -115,12 +115,12 @@ export default function DataSourcesModal({ kpis }: Props) {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/[0.04]">
-                  {kpis.map((kpi) => {
+                  {kpis.map((kpi, i) => {
                     const status = getFreshnessStatus(kpi.latestDate, kpi.frequency);
                     const dotClass = FRESHNESS_DOT[status];
                     const label = FRESHNESS_LABEL[status];
                     return (
-                      <tr key={kpi.title} className="transition hover:bg-white/[0.02]">
+                      <tr key={`${i}-${kpi.title}`} className="transition hover:bg-white/[0.02]">
                         <td className="px-6 py-3 font-medium text-white/80">{kpi.title}</td>
                         <td className="px-4 py-3 text-white/50">{kpi.source ?? "—"}</td>
                         <td className="px-4 py-3 font-mono text-white/35">{kpi.seriesId ?? "—"}</td>

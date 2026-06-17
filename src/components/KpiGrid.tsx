@@ -22,8 +22,8 @@ export default function KpiGrid({ items }: { items: Kpi[] }) {
       viewport={{ once: true, amount: 0.1 }}
       variants={containerVariants}
     >
-      {items.map((kpi) => (
-        <KpiCard key={kpi.title} {...kpi} />
+      {items.map((kpi, i) => (
+        <KpiCard key={`${i}-${kpi.title}`} {...kpi} />
       ))}
     </motion.section>
   );
