@@ -1,5 +1,7 @@
 import DashboardSection from "@/components/DashboardSection";
 import DataSourcesModal from "@/components/DataSourcesModal";
+import FloatingAssistant from "@/components/assistant/FloatingAssistant";
+import type { DashboardSnapshot } from "@/lib/assistantContext";
 import HealthScoreCard from "@/components/HealthScoreCard";
 import Hero from "@/components/Hero";
 import InfoTooltip from "@/components/InfoTooltip";
@@ -222,6 +224,42 @@ export default async function Home() {
   ),
     getAiRiskIntelligence(recessionResult, defaultResult),
   ]);
+
+  // ── Dashboard Snapshot for Floating AI Assistant ─────────────────────────
+  const dashboardSnapshot: DashboardSnapshot = {
+    economicHealthScore: aiAnalysis.economicHealthScore,
+    sentiment: aiAnalysis.sentiment,
+    riskLevel: aiAnalysis.riskLevel,
+    summary: aiAnalysis.summary,
+    topDrivers: aiAnalysis.topDrivers,
+    recessionProbability: recessionResult.probability,
+    recessionCategory: recessionResult.riskCategory,
+    recessionModelScore: recessionResult.modelScore,
+    defaultProbability: defaultResult.probability,
+    defaultCategory: defaultResult.riskCategory,
+    defaultModelScore: defaultResult.modelScore,
+    gdpGrowth: `${gdpKpi.value}${gdpKpi.unit} (${gdpKpi.change})`,
+    cpiInflation: `${sbp.cpiInflation.kpi.value}${sbp.cpiInflation.kpi.unit} (${sbp.cpiInflation.kpi.change})`,
+    policyRate: `${sbp.policyRate.kpi.value}${sbp.policyRate.kpi.unit} (${sbp.policyRate.kpi.change})`,
+    foreignReserves: `$${sbp.foreignReserves.kpi.value}B (${sbp.foreignReserves.kpi.change})`,
+    usdPkr: `${sbp.usdPkr.kpi.value} PKR (${sbp.usdPkr.kpi.change})`,
+    tradeBalance: `${sbp.tradeBalance.kpi.value}${sbp.tradeBalance.kpi.unit} (${sbp.tradeBalance.kpi.change})`,
+    currentAccount: `${sbp.currentAccount.kpi.value}${sbp.currentAccount.kpi.unit} (${sbp.currentAccount.kpi.change})`,
+    remittances: `$${sbp.remittances.kpi.value}B (${sbp.remittances.kpi.change})`,
+    exports: `$${sbp.exports.kpi.value}B (${sbp.exports.kpi.change})`,
+    imports: `$${sbp.imports.kpi.value}B (${sbp.imports.kpi.change})`,
+    fiscalBalance: `${sbp.fiscalBalance.kpi.value}${sbp.fiscalBalance.kpi.unit} (${sbp.fiscalBalance.kpi.change})`,
+    lsm: `${sbp.lsm.kpi.value}${sbp.lsm.kpi.unit} (${sbp.lsm.kpi.change})`,
+    privateCreditGrowth: `${sbp.privateCreditGrowth.kpi.value}${sbp.privateCreditGrowth.kpi.unit} (${sbp.privateCreditGrowth.kpi.change})`,
+    brentOil: `$${brentKpi.value}/bbl (${brentKpi.change})`,
+    gold: `$${goldKpi.value}/oz (${goldKpi.change})`,
+    dxy: `${dxyKpi.value} (${dxyKpi.change})`,
+    us10y: `${us10yKpi.value}% (${us10yKpi.change})`,
+    fedFunds: `${fedFundsKpi.value}% (${fedFundsKpi.change})`,
+    recentHeadlines: newsItems.slice(0, 5).map((n) => n.title),
+    asOf: new Date().toISOString().split("T")[0],
+  };
+  // ─────────────────────────────────────────────────────────────────────────
 
   const headlineKpis = [
     gdpKpi,
@@ -552,6 +590,7 @@ export default async function Home() {
         />
       </main>
       <DataSourcesModal kpis={allKpis} />
+      <FloatingAssistant context={dashboardSnapshot} />
     </div>
   );
 }

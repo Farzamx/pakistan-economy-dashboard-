@@ -102,3 +102,77 @@ body {
     opacity: 0.5;
   }
 }
+
+/* ── Floating AI Assistant ─────────────────────────────────────── */
+
+/* Breathing scale — applied to the avatar SVG wrapper */
+@keyframes assistant-breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.035); }
+}
+
+/* One-shot wave on state trigger — mutually exclusive with breathe */
+@keyframes assistant-wave {
+  0%   { transform: scale(1) rotate(0deg); }
+  18%  { transform: scale(1.06) rotate(-11deg); }
+  38%  { transform: scale(1.06) rotate(10deg); }
+  58%  { transform: scale(1.05) rotate(-8deg); }
+  78%  { transform: scale(1.04) rotate(6deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+
+/* Eye blink — applied to SVG <g> elements containing each eye */
+@keyframes assistant-blink {
+  0%, 87%, 100% { transform: scaleY(1); }
+  92% { transform: scaleY(0.05); }
+}
+
+/* Neon border ring pulse */
+@keyframes assistant-glow-pulse {
+  0%, 100% { stroke-opacity: 0.45; }
+  50% { stroke-opacity: 1; }
+}
+
+/* Availability dot pulse (distinct timing from global animate-pulse) */
+@keyframes assistant-dot-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.85); }
+}
+
+/* Typing indicator bounce */
+@keyframes assistant-typing-bounce {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
+  30% { transform: translateY(-4px); opacity: 1; }
+}
+
+.assistant-breathe {
+  animation: assistant-breathe 3.5s ease-in-out infinite;
+}
+
+.assistant-wave {
+  animation: assistant-wave 0.75s ease-in-out 1;
+}
+
+.assistant-eye {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: assistant-blink 4.3s ease-in-out infinite;
+}
+
+.assistant-eye-r {
+  animation-delay: 0.08s;
+}
+
+.assistant-glow-ring {
+  animation: assistant-glow-pulse 2.6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .assistant-breathe,
+  .assistant-wave,
+  .assistant-eye,
+  .assistant-eye-r,
+  .assistant-glow-ring {
+    animation: none;
+  }
+}
