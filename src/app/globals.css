@@ -176,3 +176,16 @@ body {
     animation: none;
   }
 }
+
+/* Responsive halo glow — sizes down on mobile proportionally */
+.assistant-halo {
+  box-shadow: 0 0 14px rgba(56, 189, 248, 0.35);
+  transition: box-shadow 0.3s ease;
+}
+.assistant-halo-open {
+  box-shadow: 0 0 24px rgba(56, 189, 248, 0.55), 0 0 7px rgba(56, 189, 248, 0.4);
+}
+@media (max-width: 767px) {
+  .assistant-halo      { box-shadow: 0 0 9px rgba(56, 189, 248, 0.3); }
+  .assistant-halo-open { box-shadow: 0 0 15px rgba(56, 189, 248, 0.5), 0 0 4px rgba(56, 189, 248, 0.35); }
+}
