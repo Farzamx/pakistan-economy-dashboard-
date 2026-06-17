@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { TERMINOLOGY } from "@/data/terminology";
+import { useTheme } from "@/components/ThemeProvider";
 
 // Session-level cache: termKey → Roman Urdu formatted string
 const urduCache = new Map<string, string>();
@@ -20,7 +21,7 @@ interface Placement {
 
 const PANEL_WIDTH = 460;
 
-function computePlacement(rect: DOMRect): Placement {
+function computePlacement(rect: DOMRect, arrowColor: string): Placement {
   if (window.innerWidth < 640) {
     return {
       panelStyle: {
@@ -40,16 +41,13 @@ function computePlacement(rect: DOMRect): Placement {
 
   const vw = window.innerWidth;
 
-  // Center on trigger, clamped to viewport edges
   const cx = rect.left + rect.width / 2;
   let left = cx - PANEL_WIDTH / 2;
   left = Math.max(12, Math.min(left, vw - PANEL_WIDTH - 12));
 
-  // Arrow left position relative to tooltip panel
-  const arrowAbsLeft = cx - 5; // center of trigger minus half-arrow
+  const arrowAbsLeft = cx - 5;
   const arrowLeft = Math.max(8, Math.min(arrowAbsLeft - left, PANEL_WIDTH - 20));
 
-  // Open above if more space above than below
   const spaceAbove = rect.top;
   const spaceBelow = window.innerHeight - rect.bottom;
   const openAbove = spaceAbove > spaceBelow || spaceAbove > 320;
@@ -65,7 +63,6 @@ function computePlacement(rect: DOMRect): Placement {
     return {
       panelStyle: {
         ...base,
-        // bottom: distance from bottom of viewport to top of trigger, plus 8px gap
         bottom: window.innerHeight - rect.top + 8,
       },
       arrowStyle: {
@@ -76,7 +73,7 @@ function computePlacement(rect: DOMRect): Placement {
         height: 0,
         borderLeft: "5px solid transparent",
         borderRight: "5px solid transparent",
-        borderTop: "5px solid rgba(255,255,255,0.08)",
+        borderTop: `5px solid ${arrowColor}`,
       },
       isMobile: false,
     };
@@ -95,13 +92,16 @@ function computePlacement(rect: DOMRect): Placement {
       height: 0,
       borderLeft: "5px solid transparent",
       borderRight: "5px solid transparent",
-      borderBottom: "5px solid rgba(255,255,255,0.08)",
+      borderBottom: `5px solid ${arrowColor}`,
     },
     isMobile: false,
   };
 }
 
 export default function InfoTooltip({ termKey, size = "sm" }: Props) {
+  const { theme } = useTheme();
+  const isLight = theme === "light";
+
   // All hooks before any conditional return
   const [open, setOpen] = useState(false);
   const [placement, setPlacement] = useState<Placement | null>(null);
@@ -132,9 +132,10 @@ export default function InfoTooltip({ termKey, size = "sm" }: Props) {
     if (!triggerRef.current) return;
     cancelClose();
     const rect = triggerRef.current.getBoundingClientRect();
-    setPlacement(computePlacement(rect));
+    const arrowColor = isLight ? "#E2E6EF" : "rgba(255,255,255,0.08)";
+    setPlacement(computePlacement(rect, arrowColor));
     setOpen(true);
-  }, [cancelClose]);
+  }, [cancelClose, isLight]);
 
   // Close on Escape
   useEffect(() => {
@@ -216,13 +217,15 @@ export default function InfoTooltip({ termKey, size = "sm" }: Props) {
               aria-live="polite"
               style={{
                 ...placement.panelStyle,
-                background: "rgba(8, 10, 26, 0.97)",
-                backdropFilter: "blur(24px)",
-                WebkitBackdropFilter: "blur(24px)",
-                border: "1px solid rgba(255,255,255,0.10)",
+                background: isLight ? "#FFFFFF" : "rgba(8, 10, 26, 0.97)",
+                backdropFilter: isLight ? "none" : "blur(24px)",
+                WebkitBackdropFilter: isLight ? "none" : "blur(24px)",
+                border: isLight ? "1px solid #E2E6EF" : "1px solid rgba(255,255,255,0.10)",
                 borderRadius: "0.75rem",
                 padding: "1rem",
-                boxShadow: "0 25px 50px rgba(0,0,0,0.5), 0 0 0 1px rgba(56,189,248,0.04)",
+                boxShadow: isLight
+                  ? "0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06)"
+                  : "0 25px 50px rgba(0,0,0,0.5), 0 0 0 1px rgba(56,189,248,0.04)",
               }}
               onMouseEnter={cancelClose}
               onMouseLeave={scheduleClose}
@@ -238,31 +241,31 @@ export default function InfoTooltip({ termKey, size = "sm" }: Props) {
                 <button
                   onClick={doClose}
                   aria-label="Close tooltip"
-                  className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] text-white/30 transition-colors hover:text-white/70"
+                  className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] text-white/30 light:text-slate-400 transition-colors hover:text-white/70 light:hover:text-slate-700"
                 >
                   ✕
                 </button>
               </div>
 
               {/* WHAT */}
-              <p className="mb-1 text-[9px] font-semibold uppercase tracking-wider text-white/30">
+              <p className="mb-1 text-[9px] font-semibold uppercase tracking-wider text-white/30 light:text-slate-400">
                 What is it?
               </p>
-              <p className="mb-3 text-xs leading-relaxed text-white/75">{entry.what}</p>
+              <p className="mb-3 text-xs leading-relaxed text-white/75 light:text-slate-700">{entry.what}</p>
 
               {/* WHY */}
-              <p className="mb-1 text-[9px] font-semibold uppercase tracking-wider text-white/30">
+              <p className="mb-1 text-[9px] font-semibold uppercase tracking-wider text-white/30 light:text-slate-400">
                 Why it matters?
               </p>
-              <p className="mb-3 text-xs leading-relaxed text-white/65">{entry.why}</p>
+              <p className="mb-3 text-xs leading-relaxed text-white/65 light:text-slate-600">{entry.why}</p>
 
               {/* HOW */}
-              <p className="mb-1.5 text-[9px] font-semibold uppercase tracking-wider text-white/30">
+              <p className="mb-1.5 text-[9px] font-semibold uppercase tracking-wider text-white/30 light:text-slate-400">
                 How to read it?
               </p>
               <ul className="mb-3 space-y-1">
                 {entry.how.map((bullet, i) => (
-                  <li key={i} className="flex items-start gap-1.5 text-xs text-white/65">
+                  <li key={i} className="flex items-start gap-1.5 text-xs text-white/65 light:text-slate-600">
                     <span className="mt-0.5 shrink-0 text-[8px] text-neon-blue/50">•</span>
                     <span>{bullet}</span>
                   </li>
@@ -270,12 +273,12 @@ export default function InfoTooltip({ termKey, size = "sm" }: Props) {
               </ul>
 
               {/* Divider + translate */}
-              <div className="mb-2.5 border-t border-white/[0.06]" />
+              <div className="mb-2.5 border-t border-white/[0.06] light:border-slate-200" />
 
               <button
                 onClick={handleTranslate}
                 disabled={translating}
-                className="flex items-center gap-1.5 text-[10px] text-white/35 transition-colors hover:text-neon-blue/70 disabled:pointer-events-none disabled:opacity-50"
+                className="flex items-center gap-1.5 text-[10px] text-white/35 light:text-slate-400 transition-colors hover:text-neon-blue/70 light:hover:text-neon-blue disabled:pointer-events-none disabled:opacity-50"
               >
                 {translating ? (
                   <>
@@ -292,11 +295,11 @@ export default function InfoTooltip({ termKey, size = "sm" }: Props) {
 
               {/* Roman Urdu block — only this sub-block scrolls if long */}
               {urduVisible && urduCache.has(termKey) && (
-                <div className="mt-2.5 rounded-lg border border-white/5 bg-[#071420] p-3" style={{ maxHeight: 160, overflowY: "auto" }}>
-                  <p className="mb-1.5 text-[9px] font-semibold uppercase tracking-wider text-neon-blue/40">
+                <div className="mt-2.5 rounded-lg border border-white/5 light:border-blue-100 bg-[#071420] light:bg-blue-50 p-3" style={{ maxHeight: 160, overflowY: "auto" }}>
+                  <p className="mb-1.5 text-[9px] font-semibold uppercase tracking-wider text-neon-blue/40 light:text-blue-500">
                     Roman Urdu
                   </p>
-                  <p className="whitespace-pre-wrap text-xs leading-relaxed text-white/60">
+                  <p className="whitespace-pre-wrap text-xs leading-relaxed text-white/60 light:text-slate-700">
                     {urduCache.get(termKey)}
                   </p>
                 </div>
@@ -323,7 +326,7 @@ export default function InfoTooltip({ termKey, size = "sm" }: Props) {
           e.stopPropagation();
           open ? doClose() : doOpen();
         }}
-        className={`inline-flex items-center justify-center rounded-full border border-white/20 font-semibold text-white/35 transition-colors hover:border-neon-blue/60 hover:text-neon-blue focus:outline-none focus-visible:ring-1 focus-visible:ring-neon-blue ${btnSize}`}
+        className={`inline-flex items-center justify-center rounded-full border border-white/20 light:border-slate-300 font-semibold text-white/35 light:text-slate-400 transition-colors hover:border-neon-blue/60 hover:text-neon-blue focus:outline-none focus-visible:ring-1 focus-visible:ring-neon-blue ${btnSize}`}
       >
         ?
       </button>
