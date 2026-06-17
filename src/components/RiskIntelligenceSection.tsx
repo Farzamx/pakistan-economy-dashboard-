@@ -94,10 +94,11 @@ interface RiskCardProps {
   result: RiskModelResult;
   ai: AiRiskExplanation;
   confidence: DataConfidence;
+  modelDisplayName: string;
   delay?: number;
 }
 
-function RiskCard({ title, result, ai, confidence, delay = 0 }: RiskCardProps) {
+function RiskCard({ title, result, ai, confidence, modelDisplayName, delay = 0 }: RiskCardProps) {
   const gaugeColor = getRiskGaugeColor(result.riskCategory);
   const categoryClass = getRiskCategoryClass(result.riskCategory);
 
@@ -125,7 +126,7 @@ function RiskCard({ title, result, ai, confidence, delay = 0 }: RiskCardProps) {
               QUANT
             </span>
             <span className="rounded-full border border-neon-blue/20 bg-neon-blue/10 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-widest text-neon-blue/70">
-              AI
+              {modelDisplayName}
             </span>
           </div>
 
@@ -233,6 +234,7 @@ export default function RiskIntelligenceSection({
           result={recession}
           ai={ai.recession}
           confidence={recessionConfidence}
+          modelDisplayName={ai.modelDisplayName}
           delay={0}
         />
         <RiskCard
@@ -240,6 +242,7 @@ export default function RiskIntelligenceSection({
           result={defaultRisk}
           ai={ai.default}
           confidence={defaultConfidence}
+          modelDisplayName={ai.modelDisplayName}
           delay={0.1}
         />
       </div>

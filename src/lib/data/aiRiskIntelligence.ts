@@ -4,10 +4,11 @@
 // This module sends those results to OpenRouter and asks the AI to explain them.
 // The AI is explicitly instructed NOT to modify or generate probabilities.
 //
-// Uses res.text() + JSON.parse() because the nex-agi/nex-n2-pro model prepends
-// leading whitespace before JSON, which breaks Next.js's patched Response.json().
+// Uses the shared failover client — if the primary model fails, it cascades
+// through FALLBACK_CHAIN automatically.
 
 import type { RiskModelResult } from "@/lib/riskModels";
+import { callOpenRouter } from "@/lib/openRouterClient";
 
 export interface AiRiskExplanation {
   explanation: string;  // 2-3 sentence narrative explanation
@@ -18,7 +19,11 @@ export interface AiRiskExplanation {
 export interface AiRiskIntelligence {
   recession: AiRiskExplanation;
   default: AiRiskExplanation;
+  modelUsed: string;
+  modelDisplayName: string;
 }
+
+type RiskContent = Omit<AiRiskIntelligence, "modelUsed" | "modelDisplayName">;
 
 const FALLBACK_RECESSION: AiRiskExplanation = {
   explanation:
@@ -51,6 +56,8 @@ const FALLBACK_DEFAULT: AiRiskExplanation = {
 const FALLBACK: AiRiskIntelligence = {
   recession: FALLBACK_RECESSION,
   default: FALLBACK_DEFAULT,
+  modelUsed: "fallback",
+  modelDisplayName: "Offline",
 };
 
 const REVALIDATE = 60 * 60; // 1h
@@ -92,10 +99,6 @@ Respond ONLY with this JSON (no markdown, no code fences, no explanation outside
 }`;
 }
 
-interface OpenRouterResponse {
-  choices?: { message?: { content?: string } }[];
-}
-
 interface RawExplanation {
   explanation?: unknown;
   keyRisks?: unknown;
@@ -126,7 +129,7 @@ function parseExplanation(raw: RawExplanation, fallback: AiRiskExplanation): AiR
   return { explanation, keyRisks, keyPositives };
 }
 
-function parseResponse(content: string): AiRiskIntelligence {
+function parseResponse(content: string): RiskContent {
   const stripped = content
     .replace(/^```(?:json)?\s*/i, "")
     .replace(/\s*```\s*$/i, "")
@@ -147,34 +150,20 @@ export async function getAiRiskIntelligence(
   recession: RiskModelResult,
   defaultRisk: RiskModelResult,
 ): Promise<AiRiskIntelligence> {
-  const apiKey = process.env.OPENROUTER_API_KEY;
-  if (!apiKey) return FALLBACK;
-
   try {
-    const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "nex-agi/nex-n2-pro:free",
-        messages: [{ role: "user", content: buildPrompt(recession, defaultRisk) }],
-        temperature: 0.2,
-      }),
-      next: { revalidate: REVALIDATE },
-    });
+    const aiResult = await callOpenRouter<RiskContent>(
+      buildPrompt(recession, defaultRisk),
+      parseResponse,
+      { revalidate: REVALIDATE, taskLabel: "Risk Intelligence" },
+    );
 
-    if (!res.ok) return FALLBACK;
+    if (!aiResult) return FALLBACK;
 
-    // Must use res.text() + JSON.parse() — this model prepends whitespace before JSON
-    // which breaks Next.js's patched Response.json() with a SyntaxError.
-    const text = await res.text();
-    const data = JSON.parse(text) as OpenRouterResponse;
-    const content = data.choices?.[0]?.message?.content ?? "";
-    if (!content) return FALLBACK;
-
-    return parseResponse(content);
+    return {
+      ...aiResult.result,
+      modelUsed: aiResult.modelUsed,
+      modelDisplayName: aiResult.modelDisplayName,
+    };
   } catch {
     return FALLBACK;
   }

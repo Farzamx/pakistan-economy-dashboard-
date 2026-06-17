@@ -197,7 +197,7 @@ export default async function Home() {
     makeTickerItem(sbp.policyRate.kpi,     "SBP Rate",  "%",   "Policy Rate"),
   ];
 
-  const [taggedNews, aiAnalysis, aiRisk] = await Promise.all([
+  const [taggedNewsResult, aiAnalysis, aiRisk] = await Promise.all([
     getTaggedNews(newsItems),
     getAiEconomicAnalysis(
     {
@@ -546,7 +546,10 @@ export default async function Home() {
           </div>
         </DashboardSection>
 
-        <NewsIntelligenceSection items={taggedNews.slice(0, 5)} />
+        <NewsIntelligenceSection
+          items={taggedNewsResult.items.slice(0, 5)}
+          modelDisplayName={taggedNewsResult.modelDisplayName}
+        />
       </main>
       <DataSourcesModal kpis={allKpis} />
     </div>

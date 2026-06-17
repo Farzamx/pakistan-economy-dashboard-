@@ -1,6 +1,7 @@
 // AI Economic Intelligence Engine
-// Calls OpenRouter (nex-agi/nex-n2-pro:free) with live indicator data and
-// news headlines, returns a structured economic health assessment.
+// Calls OpenRouter with live indicator data and news headlines, returns a
+// structured economic health assessment. Uses the shared failover client —
+// if the primary model fails, it cascades through FALLBACK_CHAIN automatically.
 //
 // OPENROUTER_API_KEY must be set in .env.local. Without it the function
 // returns safe fallback values so the dashboard never breaks.
@@ -10,6 +11,7 @@
 // on every page request.
 
 import type { NewsItem } from "./news";
+import { callOpenRouter } from "@/lib/openRouterClient";
 
 // Plain-string snapshot of each indicator — easy to serialize for the API route.
 export interface IndicatorSnapshot {
@@ -37,7 +39,11 @@ export interface AiEconomicAnalysis {
   riskLevel: "Low" | "Moderate" | "High";
   summary: string;
   topDrivers: string[];
+  modelUsed: string;
+  modelDisplayName: string;
 }
+
+type AnalysisContent = Omit<AiEconomicAnalysis, "modelUsed" | "modelDisplayName">;
 
 const FALLBACK: AiEconomicAnalysis = {
   economicHealthScore: 55,
@@ -50,6 +56,8 @@ const FALLBACK: AiEconomicAnalysis = {
     "Foreign reserves provide limited import cover amid external pressures",
     "Remittances continue to support the external account balance",
   ],
+  modelUsed: "fallback",
+  modelDisplayName: "Offline",
 };
 
 const REVALIDATE = 60 * 60; // 1h
@@ -99,10 +107,6 @@ Respond ONLY with this JSON (no markdown, no code fences, no explanation):
 }`;
 }
 
-interface OpenRouterResponse {
-  choices?: { message?: { content?: string } }[];
-}
-
 interface RawAnalysis {
   economicHealthScore?: unknown;
   sentiment?: unknown;
@@ -111,7 +115,7 @@ interface RawAnalysis {
   topDrivers?: unknown;
 }
 
-function parseResponse(content: string): AiEconomicAnalysis {
+function parseResponse(content: string): AnalysisContent {
   // Strip markdown code fences if the model wrapped the output
   const stripped = content
     .replace(/^```(?:json)?\s*/i, "")
@@ -156,31 +160,20 @@ export async function getAiEconomicAnalysis(
   indicators: IndicatorSnapshot,
   news: NewsItem[],
 ): Promise<AiEconomicAnalysis> {
-  const apiKey = process.env.OPENROUTER_API_KEY;
-  if (!apiKey) return FALLBACK;
-
   try {
-    const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "nex-agi/nex-n2-pro:free",
-        messages: [{ role: "user", content: buildPrompt(indicators, news) }],
-        temperature: 0.2,
-      }),
-      next: { revalidate: REVALIDATE },
-    });
+    const aiResult = await callOpenRouter<AnalysisContent>(
+      buildPrompt(indicators, news),
+      parseResponse,
+      { revalidate: REVALIDATE, taskLabel: "Economic Health Score" },
+    );
 
-    if (!res.ok) return FALLBACK;
+    if (!aiResult) return FALLBACK;
 
-    const data = (await res.json()) as OpenRouterResponse;
-    const content = data.choices?.[0]?.message?.content ?? "";
-    if (!content) return FALLBACK;
-
-    return parseResponse(content);
+    return {
+      ...aiResult.result,
+      modelUsed: aiResult.modelUsed,
+      modelDisplayName: aiResult.modelDisplayName,
+    };
   } catch {
     return FALLBACK;
   }

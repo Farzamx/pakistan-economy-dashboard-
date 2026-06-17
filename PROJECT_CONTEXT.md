@@ -31,7 +31,7 @@ Generated: 2026-06-17.
 | Styling | **Tailwind CSS v4** + custom CSS variables in `globals.css` |
 | Animations | **Framer Motion v12** (`useReducedMotion`-aware) |
 | Fonts | Geist Sans + Geist Mono (via `next/font/google`) |
-| AI Provider | **OpenRouter** (`nex-agi/nex-n2-pro:free` model) |
+| AI Provider | **OpenRouter** — centralized failover client (`src/lib/openRouterClient.ts`) |
 | Runtime | Node.js (server components + server-side fetch) |
 | Build | `next build` → static export with ISR; `next dev --turbo` for development |
 
@@ -134,9 +134,10 @@ page.tsx (Server Component)
 │   getPakEtfKpi()        → Yahoo Finance → null (if delisted/stale)
 │ ])
 │
-├── Promise.all([          ← PARALLEL (both call OpenRouter)
-│   getTaggedNews(newsItems)       → OpenRouter → TaggedNewsItem[] (first 10 tagged, rest NEUTRAL)
-│   getAiEconomicAnalysis(snapshot, newsItems)  → OpenRouter → AiEconomicAnalysis
+├── Promise.all([          ← PARALLEL (all three call OpenRouter via shared failover client)
+│   getTaggedNews(newsItems)                      → OpenRouter → TaggedNewsResult { items, modelUsed, modelDisplayName }
+│   getAiEconomicAnalysis(snapshot, newsItems)    → OpenRouter → AiEconomicAnalysis (+ modelUsed, modelDisplayName)
+│   getAiRiskIntelligence(recessionResult, defaultResult) → OpenRouter → AiRiskIntelligence (+ modelUsed, modelDisplayName)
 │ ])
 │
 └── JSX assembly
@@ -144,7 +145,8 @@ page.tsx (Server Component)
     ├── <Hero>
     ├── <MarketTicker items={tickerItems}>   ← 14 live values in scrolling bar
     ├── <KpiGrid items={headlineKpis}>       ← GDP, CPI, Reserves, USD/PKR, Remittances
-    ├── <HealthScoreCard {...aiAnalysis}>    ← AI score + sentiment + summary
+    ├── <HealthScoreCard {...aiAnalysis}>    ← AI score + sentiment + summary + model badge
+    ├── <RiskIntelligenceSection ...>        ← Recession % + Sovereign Default % + AI explanation + model badge
     ├── <KpiGrid items={secondaryKpis}>      ← 8 monetary/external indicators
     ├── <KpiGrid items={globalMarketsKpis}> ← Gold, Silver, Brent, WTI, NatGas, DXY, US10Y, Fed Funds
     ├── <KpiGrid items={[pakEtfKpi]}>        ← PAK ETF (conditional on freshness)
@@ -153,7 +155,7 @@ page.tsx (Server Component)
     ├── <KpiGrid items={realEconomyKpis}>   ← Exports, Imports, FDI, REER, LSM, Private Credit, Fiscal Balance
     ├── <DashboardSection> blocks (GDP, Inflation, Core, Monetary Policy, Reserves, FX, Remittances, External)
     ├── <KpiGrid items={liveFxKpis}>         ← USD/EUR/GBP/SAR vs PKR (ExchangeRate-API)
-    ├── <NewsIntelligenceSection items={taggedNews.slice(0,5)}>
+    ├── <NewsIntelligenceSection items={taggedNewsResult.items.slice(0,5)} modelDisplayName={...}>
     └── <DataSourcesModal kpis={allKpis}>   ← floating modal with full audit table
 ```
 
@@ -264,49 +266,102 @@ All external fetches use `next: { revalidate: N }` — Next.js caches responses 
 
 ## 5. AI Integrations
 
-### OpenRouter Setup
-- **Base URL**: `https://openrouter.ai/api/v1/chat/completions`
-- **Auth**: `Authorization: Bearer ${process.env.OPENROUTER_API_KEY}`
-- **Model**: `nex-agi/nex-n2-pro:free`
-- **Both AI functions are called in parallel** via `Promise.all` in `page.tsx`
+### Centralized OpenRouter Failover Client (`src/lib/openRouterClient.ts`)
 
-### CRITICAL: Response Parsing Bug
-The `nex-agi/nex-n2-pro` model prepends hundreds of whitespace/newline characters (streaming reasoning tokens) before its JSON payload. Next.js's patched `Response.json()` throws a `SyntaxError` on this leading whitespace. The fix (applied everywhere):
+All three AI features share a single failover client rather than each making direct OpenRouter calls. This is the production resilience layer.
+
+**Model Fallback Chain** (tried in order):
+| Priority | Model | Role | Why |
+|---|---|---|---|
+| 1 | `nex-agi/nex-n2-pro:free` | Primary | Current model; 262k ctx |
+| 2 | `openai/gpt-oss-120b:free` | Large reasoning backup | Confirmed clean JSON, 3.9s |
+| 3 | `nousresearch/hermes-3-llama-3.1-405b:free` | Structured-output specialist | 405B dense, fine-tuned for JSON |
+| 4 | `openai/gpt-oss-20b:free` | Lightweight backup | Confirmed fast (2.7s), clean JSON |
+
+**Retry triggers** — a model is skipped and the next is tried on any of:
+- HTTP error (any non-200 status, including 429 rate-limit)
+- Empty response body
+- Empty message content
+- `parseContent()` callback throws (invalid JSON, missing required fields)
+- Any network exception (timeout, DNS, etc.)
+
+**Console logging**:
+- `console.warn` — per-model failure with reason and HTTP status
+- `console.log` — on success, includes which model was used
+- `console.error` — if all 4 models fail (hardcoded fallback activates)
+
+**Return type**: `{ result: T, modelUsed: string, modelDisplayName: string } | null`
+- `null` → all models failed; callers return their hardcoded `FALLBACK` object with `modelUsed: "fallback"`, `modelDisplayName: "Offline"`
+
+**`parseContent` callback**: Each AI function passes its own JSON parser as the `parseContent` argument. If the parser throws (e.g., `JSON.parse()` on malformed JSON), the client catches it and tries the next model. This means parse failures trigger model fallback, not just HTTP failures.
+
+**Model display names** (shown as badge in UI):
+```
+"nex-agi/nex-n2-pro:free"                   → "Nex-N2-Pro"
+"openai/gpt-oss-120b:free"                  → "GPT-OSS 120B"
+"nousresearch/hermes-3-llama-3.1-405b:free" → "Hermes 3 405B"
+"openai/gpt-oss-20b:free"                   → "GPT-OSS 20B"
+```
+
+### CRITICAL: Response Parsing Pattern
+The `nex-agi/nex-n2-pro` model prepends hundreds of whitespace/newline characters (streaming reasoning tokens) before its JSON payload. Next.js's patched `Response.json()` throws a `SyntaxError` on this leading whitespace. The centralized client uses the correct pattern:
 ```typescript
-// WRONG — fails silently on nex-agi/nex-n2-pro:
-const data = await res.json();
-
-// CORRECT — handles leading whitespace:
+// CORRECT — handles leading whitespace (applied in openRouterClient.ts):
 const rawText = await res.text();
-const data = JSON.parse(rawText);
+const apiData = JSON.parse(rawText); // outer OpenRouter wrapper
+const content = apiData.choices[0].message.content; // inner AI response
+// parseContent(content) then handles the domain-specific JSON
 ```
 Never revert to `res.json()` for OpenRouter calls.
 
 ### AI Economic Health Score (`src/lib/data/aiEconomicAnalysis.ts`)
 - **Input**: `IndicatorSnapshot` (16 indicator values as formatted strings) + 10 news headlines
-- **Output**: `AiEconomicAnalysis { economicHealthScore: number, sentiment, riskLevel, summary, topDrivers }`
+- **Output**: `AiEconomicAnalysis { economicHealthScore, sentiment, riskLevel, summary, topDrivers, modelUsed, modelDisplayName }`
 - **Prompt**: Asks model to act as senior Pakistan economist; return strict JSON
 - **Revalidation**: 1 hour (`REVALIDATE = 60 * 60`)
-- **Fallback**: Returns hardcoded neutral analysis (score 55, Neutral, Moderate) if API key missing or any error
-- **Display**: `<HealthScoreCard>` — SVG arc gauge + 3 badges (Strong/Moderate/Weak, Bullish/Neutral/Bearish, Low/Moderate/High Risk) + summary + bullet drivers
+- **Fallback**: Returns hardcoded neutral analysis (score 55, Neutral, Moderate, `modelDisplayName: "Offline"`) if API key missing or all models fail
+- **Display**: `<HealthScoreCard>` — SVG arc gauge + 3 badges (Strong/Moderate/Weak, Bullish/Neutral/Bearish, Low/Moderate/High Risk) + summary + bullet drivers + model badge
 - **API route**: `POST /api/ai/economic-intelligence` also exists but is not called by the UI (was created for testing)
+
+### AI Risk Intelligence (`src/lib/data/aiRiskIntelligence.ts`)
+- **Input**: Pre-calculated `RiskModelResult` for recession and sovereign default (from `src/lib/riskModels.ts`)
+- **Output**: `AiRiskIntelligence { recession: AiRiskExplanation, default: AiRiskExplanation, modelUsed, modelDisplayName }`
+- **AI role**: ONLY explains pre-calculated probabilities — explicitly instructed NOT to modify or generate probabilities
+- **Deterministic layer**: `calculateRecessionRisk()` and `calculateDefaultRisk()` in `riskModels.ts` are pure synchronous functions — AI has zero involvement in probability generation
+- **Revalidation**: 1 hour
+- **Fallback**: Returns hardcoded explanations with `modelDisplayName: "Offline"` if all models fail
+- **Display**: `<RiskIntelligenceSection>` — two `RiskCard` components side by side (lg:grid-cols-2)
 
 ### AI News Intelligence (`src/lib/data/intelligence.ts`)
 - **Input**: Up to 10 `NewsItem` objects (the first 10 of the 24 aggregated)
-- **Output**: `IntelligenceTag { sentiment: "Bullish"|"Neutral"|"Bearish", riskLevel: "Low"|"Moderate"|"High", impactScore: -10..+10, reason: string }` per article
+- **Output**: `TaggedNewsResult { items: TaggedNewsItem[], modelUsed, modelDisplayName }`
 - **Strategy**: Single batch OpenRouter call for all 10 articles (one prompt, one JSON array response)
 - **Articles 11–24**: Get `NEUTRAL_TAG` (no AI call — avoids excess API usage)
 - **Page display**: Only `.slice(0, 5)` of tagged articles shown in `<NewsIntelligenceSection>`
 - **Revalidation**: 2 hours
-- **Fallback**: All articles get `NEUTRAL_TAG` if API key missing or any error
-- **Display**: Each news card shows category badge, age, headline, sentiment badge, risk label, impact score badge (green/red), and a one-sentence reason
+- **Fallback**: All articles get `NEUTRAL_TAG` with `modelDisplayName: "Offline"` if all models fail
+- **Display**: Each news card shows category badge, age, headline, sentiment badge, risk label, impact score badge (green/red), and a one-sentence reason; section header shows model badge
 
-### Error Handling
-- Every AI function has a try/catch returning safe fallback values
-- OpenRouter returning non-200: returns fallback
-- JSON parse failure: returns fallback
-- Missing API key: returns fallback immediately (no network call)
-- The page never crashes due to AI failures
+### Error Handling Flow
+```
+callOpenRouter() → for each model in FALLBACK_CHAIN:
+  1. Fetch fails (network/timeout) → warn + try next
+  2. res.status !== 200           → warn + try next (includes 429 rate-limit)
+  3. Body empty                   → warn + try next
+  4. Content empty                → warn + try next
+  5. parseContent() throws        → warn + try next (JSON/parse failure)
+  6. parseContent() succeeds      → log success + return { result, modelUsed, modelDisplayName }
+All 4 fail → error log → return null
+Caller receives null → return hardcoded FALLBACK (modelDisplayName: "Offline")
+Page renders with fallback data — never crashes
+```
+
+### Model Badge UI
+Each AI-powered section shows a badge in place of the former generic "AI" chip:
+- `<HealthScoreCard>` — badge in title row (e.g., "GPT-OSS 120B")
+- `<RiskCard>` (×2) — badge in each card's title row
+- `<NewsIntelligenceSection>` — badge in section heading row
+- When fallback is active: badge shows "Offline"
 
 ---
 
@@ -375,7 +430,7 @@ Keys are read **only** on the server side via `process.env.XXX`. Never pass them
 
 2. **Dawn Business feed unreliability**: `https://www.dawn.com/feeds/business` may return non-business articles or fail silently (returns `[]`). If it fails, Tribune + BBC cover the gap. Monitor the top 5 article quality — if non-economy articles dominate, consider adding a relevance filter or switching to a confirmed economy-specific feed URL.
 
-3. **OpenRouter build timeout**: The `nex-agi/nex-n2-pro:free` model can be slow (reasoning tokens + latency). During `next build`, the page has 60 seconds per attempt (3 attempts). The two OpenRouter calls now run in parallel, which helps, but slow model responses can still cause the build to fall through to attempt 2 or 3. Consider switching to a faster model if build timeouts become frequent.
+3. **nex-agi primary model intermittently slow/unavailable**: The `nex-agi/nex-n2-pro:free` model occasionally fails or is very slow. This is handled gracefully — the centralized failover client automatically cascades to `openai/gpt-oss-120b:free` (confirmed fast and reliable). Check server logs for `[AI/...] Succeeded — model:` to see which model was actually used.
 
 4. **PAK ETF potentially delisted**: `getPakEtfKpi()` returns `null` if Yahoo Finance data is >30 days old. The Financial Markets section gracefully hides the KPI card in that case. The Global X MSCI Pakistan ETF (NYSE: PAK) has had liquidity concerns — if it delist fully, this KPI card disappears permanently.
 
@@ -446,7 +501,7 @@ Keys are read **only** on the server side via `process.env.XXX`. Never pass them
 - [ ] Add `GNEWS_API_KEY` to get Pakistan-specific keyword-filtered news (currently RSS-only)
 - [ ] Verify Dawn business feed URL and add a fallback if it returns non-economy content
 - [ ] Consider adding a content-relevance filter on aggregated articles before AI tagging
-- [ ] Switch from `nex-agi/nex-n2-pro:free` to a more reliable/faster OpenRouter model (the free model's reasoning tokens and latency cause intermittent build timeouts)
+- [x] AI failover: centralized `openRouterClient.ts` with 4-model chain; nex-agi → gpt-oss-120b → hermes-3-405b → gpt-oss-20b (completed)
 - [ ] Remove dev-only endpoints: `/ai-test` page and `/api/ai/test` route
 
 ### New Data / Features
@@ -493,11 +548,13 @@ This is a Next.js 16.2.9 (Turbopack, App Router) dashboard tracking Pakistan's m
 
 **Key env vars**: `SBP_EASYDATA_API_KEY`, `OPENROUTER_API_KEY`, `FRED_API_KEY`, `TWELVEDATA_API_KEY`, `GNEWS_API_KEY` (optional)
 
-**AI layer** (`src/lib/data/`):
-- `aiEconomicAnalysis.ts` → OpenRouter → Economic Health Score (0-100) + sentiment/risk/summary/drivers; 1h ISR
-- `intelligence.ts` → OpenRouter → batch news tagging (sentiment/risk/impactScore/reason per article); 2h ISR
-- Both called in parallel via `Promise.all` in `page.tsx`
-- Model: `nex-agi/nex-n2-pro:free`
+**AI layer** (`src/lib/` + `src/lib/data/`):
+- `openRouterClient.ts` → shared failover client; model chain: nex-agi → gpt-oss-120b → hermes-3-405b → gpt-oss-20b
+- `aiEconomicAnalysis.ts` → Economic Health Score (0-100) + sentiment/risk/summary/drivers; 1h ISR
+- `aiRiskIntelligence.ts` → explains pre-calculated recession + default probabilities; 1h ISR
+- `intelligence.ts` → batch news tagging (sentiment/risk/impactScore/reason per article); 2h ISR
+- All three called in parallel via `Promise.all` in `page.tsx`
+- All return `{ ...result, modelUsed: string, modelDisplayName: string }` (shown as badge in UI)
 - OpenRouter endpoint: `https://openrouter.ai/api/v1/chat/completions`
 
 **Data sources**: SBP EasyData (20 series), World Bank (GDP), FRED (US10Y/FedFunds/Oil), Twelve Data (Gold/Silver/DXY), Yahoo Finance (fallback + PAK ETF), ExchangeRate-API (live PKR FX), BBC/Dawn/Tribune RSS (news), GNews API (news, optional)
@@ -506,6 +563,6 @@ This is a Next.js 16.2.9 (Turbopack, App Router) dashboard tracking Pakistan's m
 
 **Build command**: `npm run build` (clean first: `Remove-Item ".next" -Recurse -Force`)
 
-**Current open issues**: (1) GNews returns 0 results without an API key — news falls back to RSS only, which works fine. (2) Dawn business feed may return non-economy articles — monitor top-5 card quality. (3) OpenRouter build timeouts are intermittent — the two AI calls are now parallelized but the free model is sometimes slow.
+**Current open issues**: (1) GNews returns 0 results without an API key — news falls back to RSS only, which works fine. (2) Dawn business feed may return non-economy articles — monitor top-5 card quality. (3) AI model failures are now handled by the 4-model failover chain — check server logs for `[AI/...]` entries to see which model served each feature.
 
 For full context including all data source series keys, component responsibilities, and the complete development history, read `PROJECT_CONTEXT.md` in the project root.

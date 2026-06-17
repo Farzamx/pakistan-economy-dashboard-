@@ -23,6 +23,7 @@ export default function HealthScoreCard({
   riskLevel,
   summary,
   topDrivers,
+  modelDisplayName,
 }: AiEconomicAnalysis) {
   const status = getHealthStatus(economicHealthScore);
 
@@ -42,7 +43,7 @@ export default function HealthScoreCard({
             Economic Health Score
           </span>
           <span className="rounded-full border border-neon-blue/20 bg-neon-blue/10 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-widest text-neon-blue/70">
-            AI
+            {modelDisplayName}
           </span>
         </div>
 

@@ -2,19 +2,14 @@
 // risk level, impact score, and a one-sentence reason using OpenRouter.
 //
 // Calls are batched (one API call for up to 10 articles) on every ISR cycle.
-// The page itself is cached (1h ISR), so OpenRouter is called at most once/hour.
+// Uses the shared failover client — if the primary model fails, it cascades
+// through FALLBACK_CHAIN automatically.
 //
-// Uses OPENROUTER_API_KEY (same key as the Economic Health Score engine).
-// Without it the layer falls back to neutral/zero-impact metadata.
-//
-// NOTE: res.text() + JSON.parse() is used deliberately instead of res.json().
-// The nex-agi/nex-n2-pro model returns hundreds of leading whitespace/newline
-// characters before the JSON (streaming reasoning tokens), which causes
-// Next.js's patched Response.json() to throw a SyntaxError silently caught
-// by the outer catch block. res.text() + explicit JSON.parse() handles the
-// leading whitespace correctly.
+// getTaggedNews returns TaggedNewsResult (items + model metadata) instead of
+// a plain array so callers can surface which model tagged the articles.
 
 import type { NewsItem } from "./news";
+import { callOpenRouter } from "@/lib/openRouterClient";
 
 export type Sentiment = "Bullish" | "Neutral" | "Bearish";
 export type RiskLevel = "Low" | "Moderate" | "High";
@@ -28,6 +23,12 @@ export interface IntelligenceTag {
 
 export interface TaggedNewsItem extends NewsItem {
   intelligence: IntelligenceTag;
+}
+
+export interface TaggedNewsResult {
+  items: TaggedNewsItem[];
+  modelUsed: string;
+  modelDisplayName: string;
 }
 
 const NEUTRAL_TAG: IntelligenceTag = {
@@ -68,10 +69,6 @@ ${headlines}
 Return ONLY a valid JSON array with ${items.length} objects. No markdown, no code fences, no explanation outside the JSON.`;
 }
 
-interface OpenRouterResponse {
-  choices?: { message?: { content?: string } }[];
-}
-
 interface RawArticleTag {
   sentiment?: unknown;
   riskLevel?: unknown;
@@ -102,38 +99,8 @@ function parseTag(raw: RawArticleTag): IntelligenceTag {
   return { sentiment, riskLevel, impactScore, reason };
 }
 
-async function tagBatchWithOpenRouter(items: NewsItem[]): Promise<IntelligenceTag[]> {
-  const apiKey = process.env.OPENROUTER_API_KEY;
-  if (!apiKey) return items.map(() => NEUTRAL_TAG);
-
-  try {
-    const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "nex-agi/nex-n2-pro:free",
-        messages: [{ role: "user", content: buildBatchPrompt(items) }],
-        temperature: 0.2,
-      }),
-      next: { revalidate: 60 * 60 * 2 }, // 2h — same cadence as news feed
-    });
-
-    if (!res.ok) return items.map(() => NEUTRAL_TAG);
-
-    // Use res.text() + explicit JSON.parse rather than res.json().
-    // This model prepends reasoning tokens as leading whitespace before
-    // the JSON payload. Next.js's patched Response.json() fails on this;
-    // JSON.parse() handles leading whitespace correctly.
-    const rawText = await res.text();
-    if (!rawText.trim()) return items.map(() => NEUTRAL_TAG);
-
-    const data = JSON.parse(rawText) as OpenRouterResponse;
-    const content = data.choices?.[0]?.message?.content ?? "";
-    if (!content) return items.map(() => NEUTRAL_TAG);
-
+function parseBatchContent(items: NewsItem[]): (content: string) => IntelligenceTag[] {
+  return (content: string) => {
     // Strip markdown code fences if the model wrapped the output
     const stripped = content
       .replace(/^```(?:json)?\s*/i, "")
@@ -148,22 +115,56 @@ async function tagBatchWithOpenRouter(items: NewsItem[]): Promise<IntelligenceTa
     return items.map((_, i) =>
       parsed[i] !== undefined ? parseTag(parsed[i]) : NEUTRAL_TAG,
     );
-  } catch {
-    return items.map(() => NEUTRAL_TAG);
-  }
+  };
 }
 
-export async function getTaggedNews(items: NewsItem[]): Promise<TaggedNewsItem[]> {
-  if (items.length === 0) return [];
+async function tagBatchWithOpenRouter(
+  items: NewsItem[],
+): Promise<{ tags: IntelligenceTag[]; modelUsed: string; modelDisplayName: string }> {
+  const BATCH_FALLBACK = {
+    tags: items.map(() => NEUTRAL_TAG),
+    modelUsed: "fallback",
+    modelDisplayName: "Offline",
+  };
+
+  const aiResult = await callOpenRouter<IntelligenceTag[]>(
+    buildBatchPrompt(items),
+    parseBatchContent(items),
+    { revalidate: 60 * 60 * 2, taskLabel: "News Intelligence" }, // 2h cadence
+  );
+
+  if (!aiResult) return BATCH_FALLBACK;
+
+  return {
+    tags: aiResult.result,
+    modelUsed: aiResult.modelUsed,
+    modelDisplayName: aiResult.modelDisplayName,
+  };
+}
+
+export async function getTaggedNews(items: NewsItem[]): Promise<TaggedNewsResult> {
+  const fallbackResult: TaggedNewsResult = {
+    items: items.map((item) => ({ ...item, intelligence: NEUTRAL_TAG })),
+    modelUsed: "fallback",
+    modelDisplayName: "Offline",
+  };
+
+  if (items.length === 0) {
+    return { items: [], modelUsed: "fallback", modelDisplayName: "Offline" };
+  }
 
   try {
     const batch = items.slice(0, 10);
-    const tags = await tagBatchWithOpenRouter(batch);
-    return items.map((item, i) => ({
-      ...item,
-      intelligence: tags[i] ?? NEUTRAL_TAG,
-    }));
+    const { tags, modelUsed, modelDisplayName } = await tagBatchWithOpenRouter(batch);
+    return {
+      items: items.map((item, i) => ({
+        ...item,
+        intelligence: tags[i] ?? NEUTRAL_TAG,
+      })),
+      modelUsed,
+      modelDisplayName,
+    };
   } catch {
-    return items.map((item) => ({ ...item, intelligence: NEUTRAL_TAG }));
+    return fallbackResult;
   }
 }

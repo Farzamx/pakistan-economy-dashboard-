@@ -61,9 +61,10 @@ const gridVariants = {
 
 interface Props {
   items: TaggedNewsItem[];
+  modelDisplayName: string;
 }
 
-export default function NewsIntelligenceSection({ items }: Props) {
+export default function NewsIntelligenceSection({ items, modelDisplayName }: Props) {
   const prefersReducedMotion = useReducedMotion();
 
   return (
@@ -75,9 +76,14 @@ export default function NewsIntelligenceSection({ items }: Props) {
         variants={headingVariants}
         transition={{ duration: 0.6, ease: "easeOut" }}
       >
-        <h2 className="mt-12 text-xl font-semibold text-white sm:text-2xl">
-          News &amp; Intelligence
-        </h2>
+        <div className="mt-12 flex items-center gap-2">
+          <h2 className="text-xl font-semibold text-white sm:text-2xl">
+            News &amp; Intelligence
+          </h2>
+          <span className="rounded-full border border-neon-blue/20 bg-neon-blue/10 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-widest text-neon-blue/70">
+            {modelDisplayName}
+          </span>
+        </div>
         <p className="mt-2 max-w-2xl text-sm text-white/60">
           Latest headlines from Pakistan and global markets, enriched with AI
           sentiment, risk, and economic impact analysis.
