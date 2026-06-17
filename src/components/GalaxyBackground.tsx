@@ -1,7 +1,5 @@
 "use client";
 
-import { useTheme } from "@/components/ThemeProvider";
-
 // ── Dark mode: deterministic stars + nebula blobs ────────────────────────────
 // Pseudo-random generator so star positions are identical on server and client
 // (avoids hydration mismatches that Math.random would cause).
@@ -42,46 +40,48 @@ const NEBULAS = [
   { top: "82%", left: "18%", size: 380, color: "rgba(139, 92, 246, 0.16)", duration: 95, delay: -45 },
 ];
 
+// Both backgrounds are always rendered. CSS (driven by data-theme on <html>,
+// set synchronously by the inline script in layout.tsx before React hydrates)
+// shows the correct one from the very first paint — no React state involved,
+// so server HTML and client HTML are always identical.
 export default function GalaxyBackground() {
-  const { theme } = useTheme();
-
-  // Light mode: static dot-grid via CSS class (defined in globals.css)
-  if (theme === "light") {
-    return <div className="light-bg" aria-hidden="true" />;
-  }
-
-  // Dark mode: animated galaxy
   return (
-    <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none" aria-hidden="true">
-      {NEBULAS.map((nebula, i) => (
-        <div
-          key={i}
-          className="nebula-blob"
-          style={{
-            top: nebula.top,
-            left: nebula.left,
-            width: nebula.size,
-            height: nebula.size,
-            background: nebula.color,
-            animationDuration: `${nebula.duration}s`,
-            animationDelay: `${nebula.delay}s`,
-          }}
-        />
-      ))}
-      {ALL_STARS.map((star, i) => (
-        <span
-          key={i}
-          className="star"
-          style={{
-            top: `${star.top}%`,
-            left: `${star.left}%`,
-            width: `${star.size}px`,
-            height: `${star.size}px`,
-            animationDuration: `${star.duration}s`,
-            animationDelay: `${star.delay}s`,
-          }}
-        />
-      ))}
-    </div>
+    <>
+      {/* Light mode dot-grid — hidden in dark, shown in light */}
+      <div className="light-bg hidden light:block" aria-hidden="true" />
+
+      {/* Dark mode galaxy — shown in dark, hidden in light */}
+      <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none light:hidden" aria-hidden="true">
+        {NEBULAS.map((nebula, i) => (
+          <div
+            key={i}
+            className="nebula-blob"
+            style={{
+              top: nebula.top,
+              left: nebula.left,
+              width: nebula.size,
+              height: nebula.size,
+              background: nebula.color,
+              animationDuration: `${nebula.duration}s`,
+              animationDelay: `${nebula.delay}s`,
+            }}
+          />
+        ))}
+        {ALL_STARS.map((star, i) => (
+          <span
+            key={i}
+            className="star"
+            style={{
+              top: `${star.top}%`,
+              left: `${star.left}%`,
+              width: `${star.size}px`,
+              height: `${star.size}px`,
+              animationDuration: `${star.duration}s`,
+              animationDelay: `${star.delay}s`,
+            }}
+          />
+        ))}
+      </div>
+    </>
   );
 }
