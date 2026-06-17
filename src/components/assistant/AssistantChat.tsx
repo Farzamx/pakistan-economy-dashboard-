@@ -20,6 +20,10 @@ interface Message {
   searchLatencyMs?: number | null;
   sourcesFound?: number;
   modelDisplayName?: string;
+  // Roman Urdu translation (on-demand, cached)
+  translation?: string;
+  translationVisible?: boolean;
+  translating?: boolean;
 }
 
 interface Props {
@@ -168,6 +172,64 @@ function MessageCitations({ citations }: { citations: CitationItem[] }) {
               )}
             </a>
           ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Roman Urdu translation block ──────────────────────────────────────────────
+
+function TranslationSection({
+  msg,
+  msgIndex,
+  onTranslate,
+}: {
+  msg: Message;
+  msgIndex: number;
+  onTranslate: (index: number, text: string) => void;
+}) {
+  const hasTranslation = Boolean(msg.translation);
+  const buttonLabel = msg.translating
+    ? null
+    : hasTranslation
+      ? msg.translationVisible
+        ? "Hide Roman Urdu"
+        : "Show Roman Urdu"
+      : "Translate to Roman Urdu";
+
+  return (
+    <div className="mt-2">
+      <button
+        onClick={() => onTranslate(msgIndex, msg.content)}
+        disabled={msg.translating}
+        className="flex items-center gap-1 text-[10px] text-white/28 hover:text-[#38bdf8]/55 transition-colors disabled:cursor-default"
+        aria-label={buttonLabel ?? "Translating…"}
+      >
+        {msg.translating ? (
+          <>
+            <span
+              className="w-1.5 h-1.5 rounded-full bg-[#38bdf8]/40 flex-shrink-0"
+              style={{ animation: "assistant-dot-pulse 1.4s ease-in-out infinite" }}
+            />
+            <span className="text-white/25">Translating…</span>
+          </>
+        ) : (
+          <>
+            <span className="text-[11px]">🌐</span>
+            <span>{buttonLabel}</span>
+          </>
+        )}
+      </button>
+
+      {msg.translationVisible && msg.translation && (
+        <div className="mt-1.5 rounded-xl px-3 py-2.5 bg-[#071420] border border-[#38bdf8]/10">
+          <p className="text-[9px] font-semibold uppercase tracking-wider text-[#38bdf8]/30 mb-1.5">
+            Roman Urdu
+          </p>
+          <div className="text-[12.5px] text-white/62 space-y-0.5 leading-snug">
+            {renderMarkdown(msg.translation)}
+          </div>
         </div>
       )}
     </div>
@@ -338,6 +400,55 @@ export default function AssistantChat({ context, onClose }: Props) {
     }
   }
 
+  async function translateMessage(msgIndex: number, text: string) {
+    const msg = messages[msgIndex];
+    if (!msg) return;
+
+    // Already translated — toggle visibility without another API call
+    if (msg.translation) {
+      setMessages((prev) =>
+        prev.map((m, i) =>
+          i === msgIndex ? { ...m, translationVisible: !m.translationVisible } : m,
+        ),
+      );
+      return;
+    }
+
+    // Mark as translating
+    setMessages((prev) =>
+      prev.map((m, i) => (i === msgIndex ? { ...m, translating: true } : m)),
+    );
+
+    try {
+      const res = await fetch("/api/assistant/translate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text }),
+      });
+      const data = (await res.json()) as { translation: string };
+      setMessages((prev) =>
+        prev.map((m, i) =>
+          i === msgIndex
+            ? { ...m, translating: false, translation: data.translation, translationVisible: true }
+            : m,
+        ),
+      );
+    } catch {
+      setMessages((prev) =>
+        prev.map((m, i) =>
+          i === msgIndex
+            ? {
+                ...m,
+                translating: false,
+                translation: "[Translation unavailable. Please try again.]",
+                translationVisible: true,
+              }
+            : m,
+        ),
+      );
+    }
+  }
+
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -412,6 +523,13 @@ export default function AssistantChat({ context, onClose }: Props) {
                 <div className="space-y-0.5">{renderMarkdown(msg.content)}</div>
               ) : (
                 <p className="leading-snug">{msg.content}</p>
+              )}
+              {msg.role === "assistant" && msg.content.length > 10 && (
+                <TranslationSection
+                  msg={msg}
+                  msgIndex={i}
+                  onTranslate={translateMessage}
+                />
               )}
               {msg.role === "assistant" && <MessageFooter msg={msg} />}
             </div>
