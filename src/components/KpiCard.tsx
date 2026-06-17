@@ -10,6 +10,7 @@ import {
   FRESHNESS_DOT,
   FRESHNESS_LABEL,
 } from "@/lib/dataFreshness";
+import { useTheme } from "@/components/ThemeProvider";
 
 function TrendArrow({ trend }: { trend: Kpi["trend"] }) {
   const isUp = trend === "up";
@@ -40,6 +41,9 @@ const lightRestGlow  = "0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)";
 const lightHoverGlow = "0 4px 12px rgba(0,0,0,0.10), 0 2px 4px rgba(0,0,0,0.06)";
 
 export default function KpiCard({ title, value, unit, change, trend, glow, source, latestDate, frequency }: Kpi) {
+  const { theme } = useTheme();
+  const isLight = theme === "light";
+
   const trendColor = trend === "up"
     ? "text-emerald-400 light:text-emerald-700"
     : "text-rose-400 light:text-rose-700";
@@ -49,14 +53,13 @@ export default function KpiCard({ title, value, unit, change, trend, glow, sourc
   const freshnessLabel  = FRESHNESS_LABEL[freshnessStatus];
   const displayDate     = formatLatestDate(latestDate, frequency);
 
+  const cardShadow = isLight ? lightRestGlow : restGlow[glow];
+  const cardHoverShadow = isLight ? lightHoverGlow : hoverGlow[glow];
+
   return (
     <motion.div
-      style={{ boxShadow: restGlow[glow] }}
-      whileHover={{ scale: 1.03 }}
-      onHoverStart={(_, info) => {
-        // Glow swap is handled via whileHover style — we annotate for dark only.
-        void info;
-      }}
+      style={{ boxShadow: cardShadow }}
+      whileHover={{ scale: 1.03, boxShadow: cardHoverShadow }}
       transition={{ type: "spring", stiffness: 300, damping: 22 }}
       className="glass-card flex flex-col gap-3 p-6 h-full group"
     >

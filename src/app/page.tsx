@@ -400,10 +400,10 @@ export default async function Home() {
         />
 
         <ViewportFadeIn>
-          <h2 className="mt-12 text-xl font-semibold text-white sm:text-2xl">
+          <h2 className="mt-12 text-xl font-semibold text-white light:text-slate-900 sm:text-2xl">
             Monetary &amp; External Indicators
           </h2>
-          <p className="mt-2 max-w-2xl text-sm text-white/60">
+          <p className="mt-2 max-w-2xl text-sm text-white/60 light:text-slate-500">
             Policy rate, money market yields, core and wholesale prices, and the
             external accounts that shape Pakistan&apos;s financing needs.
           </p>
@@ -412,10 +412,10 @@ export default async function Home() {
 
         <div id="global-markets" className="scroll-mt-8">
           <ViewportFadeIn>
-            <h2 className="mt-12 text-xl font-semibold text-white sm:text-2xl">
+            <h2 className="mt-12 text-xl font-semibold text-white light:text-slate-900 sm:text-2xl">
               Global Markets
             </h2>
-            <p className="mt-2 max-w-2xl text-sm text-white/60">
+            <p className="mt-2 max-w-2xl text-sm text-white/60 light:text-slate-500">
               Precious metals, energy benchmarks, and US rates that drive
               global risk appetite and Pakistan&apos;s import bill.
             </p>
@@ -425,10 +425,10 @@ export default async function Home() {
 
         <div id="financial-markets" className="scroll-mt-8">
           <ViewportFadeIn>
-            <h2 className="mt-12 text-xl font-semibold text-white sm:text-2xl">
+            <h2 className="mt-12 text-xl font-semibold text-white light:text-slate-900 sm:text-2xl">
               Financial Markets
             </h2>
-            <p className="mt-2 max-w-2xl text-sm text-white/60">
+            <p className="mt-2 max-w-2xl text-sm text-white/60 light:text-slate-500">
               Pakistan equity market proxy and bond market yields. Live data via
               Yahoo Finance and SBP EasyData.
             </p>
@@ -438,11 +438,11 @@ export default async function Home() {
           {pakEtfKpiRaw !== null && <KpiGrid items={[pakEtfKpiRaw]} />}
 
           {/* KSE-100 data availability notice */}
-          <div className="mt-6 rounded-xl border border-white/5 bg-white/[0.02] px-5 py-4">
-            <p className="text-xs font-medium uppercase tracking-wide text-white/40">
+          <div className="mt-6 rounded-xl border border-white/5 light:border-slate-200 bg-white/[0.02] light:bg-white px-5 py-4">
+            <p className="text-xs font-medium uppercase tracking-wide text-white/40 light:text-slate-500">
               KSE-100 Live Chart — Data Unavailable
             </p>
-            <p className="mt-2 text-sm text-white/50">
+            <p className="mt-2 text-sm text-white/50 light:text-slate-600">
               Pakistan Stock Exchange (PSX) real-time index data requires a commercial
               data license from PSX. This restriction applies to all free-tier providers
               including TradingView and Yahoo Finance.
@@ -471,11 +471,11 @@ export default async function Home() {
           </div>
 
           {/* Pakistan Bond Market — T-Bill 3M yield trend (24-month SBP data) */}
-          <div className="mt-6 rounded-xl border border-white/5 bg-white/[0.02] p-4">
+          <div className="mt-6 rounded-xl border border-white/5 light:border-slate-200 bg-white/[0.02] light:bg-white p-4">
             <div className="mb-2 flex items-center gap-1.5">
-              <p className="text-xs font-medium text-white/40">
+              <p className="text-xs font-medium text-white/40 light:text-slate-500">
                 Pakistan Bond Market &mdash; T-Bill 3M Yield
-                <span className="text-white/25"> &middot; SBP EasyData, monthly</span>
+                <span className="text-white/25 light:text-slate-400"> &middot; SBP EasyData, monthly</span>
               </p>
               <InfoTooltip termKey="3M T-Bill Yield" size="xs" />
             </div>
@@ -490,10 +490,10 @@ export default async function Home() {
 
         <div id="real-economy" className="scroll-mt-8">
           <ViewportFadeIn>
-            <h2 className="mt-12 text-xl font-semibold text-white sm:text-2xl">
+            <h2 className="mt-12 text-xl font-semibold text-white light:text-slate-900 sm:text-2xl">
               Real Economy &amp; Fiscal
             </h2>
-            <p className="mt-2 max-w-2xl text-sm text-white/60">
+            <p className="mt-2 max-w-2xl text-sm text-white/60 light:text-slate-500">
               Trade flows, investment, competitiveness, industrial output, credit
               expansion, and Pakistan&apos;s fiscal position.
             </p>
@@ -502,11 +502,11 @@ export default async function Home() {
         </div>
 
         <DashboardSection {...getSection("gdp")}>
-          <div className="mt-6 rounded-xl border border-white/5 bg-white/[0.02] p-4">
+          <div className="mt-6 rounded-xl border border-white/5 light:border-slate-200 bg-white/[0.02] light:bg-white p-4">
             <div className="mb-2 flex items-center gap-1.5">
-              <p className="text-xs font-medium text-white/40">
+              <p className="text-xs font-medium text-white/40 light:text-slate-500">
                 Quarterly GDP Growth &mdash; Real GVA
-                <span className="text-white/25"> &middot; SBP EasyData, quarterly</span>
+                <span className="text-white/25 light:text-slate-400"> &middot; SBP EasyData, quarterly</span>
               </p>
               <InfoTooltip termKey="Quarterly GDP Growth (YoY)" size="xs" />
             </div>
@@ -521,9 +521,9 @@ export default async function Home() {
         </DashboardSection>
 
         <DashboardSection {...getSection("inflation")}>
-          <div className="mt-6 rounded-xl border border-white/5 bg-white/[0.02] p-4">
-            <p className="mb-2 text-xs font-medium text-white/40">
-              24-Month Trend <span className="text-white/25">· SBP EasyData, monthly</span>
+          <div className="mt-6 rounded-xl border border-white/5 light:border-slate-200 bg-white/[0.02] light:bg-white p-4">
+            <p className="mb-2 text-xs font-medium text-white/40 light:text-slate-500">
+              24-Month Trend <span className="text-white/25 light:text-slate-400">· SBP EasyData, monthly</span>
             </p>
             <TrendLineChart
               data={sbp.cpiInflation.trend}
@@ -535,9 +535,9 @@ export default async function Home() {
         </DashboardSection>
 
         <DashboardSection {...getSection("price-indices")}>
-          <div className="mt-6 rounded-xl border border-white/5 bg-white/[0.02] p-4">
-            <p className="mb-2 text-xs font-medium text-white/40">
-              24-Month Trend <span className="text-white/25">· SBP EasyData, monthly</span>
+          <div className="mt-6 rounded-xl border border-white/5 light:border-slate-200 bg-white/[0.02] light:bg-white p-4">
+            <p className="mb-2 text-xs font-medium text-white/40 light:text-slate-500">
+              24-Month Trend <span className="text-white/25 light:text-slate-400">· SBP EasyData, monthly</span>
             </p>
             <TrendLineChart
               data={sbp.coreInflation.trend}
@@ -549,9 +549,9 @@ export default async function Home() {
         </DashboardSection>
 
         <DashboardSection {...getSection("monetary-policy")}>
-          <div className="mt-6 rounded-xl border border-white/5 bg-white/[0.02] p-4">
-            <p className="mb-2 text-xs font-medium text-white/40">
-              Recent Trend <span className="text-white/25">· SBP EasyData, as-needed</span>
+          <div className="mt-6 rounded-xl border border-white/5 light:border-slate-200 bg-white/[0.02] light:bg-white p-4">
+            <p className="mb-2 text-xs font-medium text-white/40 light:text-slate-500">
+              Recent Trend <span className="text-white/25 light:text-slate-400">· SBP EasyData, as-needed</span>
             </p>
             <TrendLineChart
               data={sbp.policyRate.trend}
@@ -579,9 +579,9 @@ export default async function Home() {
             ];
           })()}
         >
-          <div className="mt-6 rounded-xl border border-white/5 bg-white/[0.02] p-4">
-            <p className="mb-2 text-xs font-medium text-white/40">
-              24-Month Trend <span className="text-white/25">· SBP EasyData, monthly</span>
+          <div className="mt-6 rounded-xl border border-white/5 light:border-slate-200 bg-white/[0.02] light:bg-white p-4">
+            <p className="mb-2 text-xs font-medium text-white/40 light:text-slate-500">
+              24-Month Trend <span className="text-white/25 light:text-slate-400">· SBP EasyData, monthly</span>
             </p>
             <TrendLineChart
               data={sbp.foreignReserves.trend}
@@ -594,10 +594,10 @@ export default async function Home() {
 
         <div id="live-fx" className="scroll-mt-8">
           <ViewportFadeIn>
-            <h2 className="mt-12 text-xl font-semibold text-white sm:text-2xl">
+            <h2 className="mt-12 text-xl font-semibold text-white light:text-slate-900 sm:text-2xl">
               Live Exchange Rates
             </h2>
-            <p className="mt-2 max-w-2xl text-sm text-white/60">
+            <p className="mt-2 max-w-2xl text-sm text-white/60 light:text-slate-500">
               Current interbank market rates for PKR cross-pairs, updated hourly
               from ExchangeRate-API. Distinct from the SBP monthly-average series
               shown in the historical trend below.
@@ -607,9 +607,9 @@ export default async function Home() {
         </div>
 
         <DashboardSection {...getSection("exchange-rate")}>
-          <div className="mt-6 rounded-xl border border-white/5 bg-white/[0.02] p-4">
-            <p className="mb-2 text-xs font-medium text-white/40">
-              24-Month Trend <span className="text-white/25">· SBP EasyData, monthly</span>
+          <div className="mt-6 rounded-xl border border-white/5 light:border-slate-200 bg-white/[0.02] light:bg-white p-4">
+            <p className="mb-2 text-xs font-medium text-white/40 light:text-slate-500">
+              24-Month Trend <span className="text-white/25 light:text-slate-400">· SBP EasyData, monthly</span>
             </p>
             <TrendLineChart
               data={sbp.usdPkr.trend}
@@ -621,9 +621,9 @@ export default async function Home() {
         </DashboardSection>
 
         <DashboardSection {...getSection("remittances")}>
-          <div className="mt-6 rounded-xl border border-white/5 bg-white/[0.02] p-4">
-            <p className="mb-2 text-xs font-medium text-white/40">
-              24-Month Trend <span className="text-white/25">· SBP EasyData, monthly</span>
+          <div className="mt-6 rounded-xl border border-white/5 light:border-slate-200 bg-white/[0.02] light:bg-white p-4">
+            <p className="mb-2 text-xs font-medium text-white/40 light:text-slate-500">
+              24-Month Trend <span className="text-white/25 light:text-slate-400">· SBP EasyData, monthly</span>
             </p>
             <TrendLineChart
               data={sbp.remittances.trend}
@@ -635,9 +635,9 @@ export default async function Home() {
         </DashboardSection>
 
         <DashboardSection {...getSection("external-sector")}>
-          <div className="mt-6 rounded-xl border border-white/5 bg-white/[0.02] p-4">
-            <p className="mb-2 text-xs font-medium text-white/40">
-              24-Month Trend <span className="text-white/25">· SBP EasyData, monthly</span>
+          <div className="mt-6 rounded-xl border border-white/5 light:border-slate-200 bg-white/[0.02] light:bg-white p-4">
+            <p className="mb-2 text-xs font-medium text-white/40 light:text-slate-500">
+              24-Month Trend <span className="text-white/25 light:text-slate-400">· SBP EasyData, monthly</span>
             </p>
             <TrendLineChart
               data={sbp.tradeBalance.trend}
