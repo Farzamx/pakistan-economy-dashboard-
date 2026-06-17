@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, type Variants } from "framer-motion";
+import { motion } from "framer-motion";
 import type { Kpi } from "@/data/kpiData";
 import AnimatedValue from "@/components/AnimatedValue";
 import InfoTooltip from "@/components/InfoTooltip";
@@ -25,12 +25,6 @@ function TrendArrow({ trend }: { trend: Kpi["trend"] }) {
   );
 }
 
-// Matches the parent KpiGrid's "hidden"/"visible" stagger.
-const cardVariants: Variants = {
-  hidden: { opacity: 0, y: 24 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } },
-};
-
 const restGlow: Record<Kpi["glow"], string> = {
   blue: "0 0 24px rgba(56, 189, 248, 0.25)",
   purple: "0 0 24px rgba(168, 85, 247, 0.25)",
@@ -50,11 +44,10 @@ export default function KpiCard({ title, value, unit, change, trend, glow, sourc
 
   return (
     <motion.div
-      variants={cardVariants}
       style={{ boxShadow: restGlow[glow] }}
       whileHover={{ scale: 1.03, boxShadow: hoverGlow[glow] }}
       transition={{ type: "spring", stiffness: 300, damping: 22 }}
-      className="glass-card flex flex-col gap-3 p-6"
+      className="glass-card flex flex-col gap-3 p-6 h-full"
     >
       <div className="flex items-center gap-1.5">
         <span className="text-sm font-medium text-white/60">{title}</span>
