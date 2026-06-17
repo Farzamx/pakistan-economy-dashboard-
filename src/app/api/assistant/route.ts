@@ -1,7 +1,12 @@
 import { FALLBACK_CHAIN, getModelDisplayName } from "@/lib/openRouterClient";
 import type { DashboardSnapshot } from "@/lib/assistantContext";
 import { classifyQuery, type QueryCategory, type RouterResult } from "@/lib/queryRouter";
-import { searchTavily, type SearchResult, type SearchResponse } from "@/lib/webSearch";
+import {
+  searchTavily,
+  searchTavilyFocused,
+  type SearchResult,
+  type SearchResponse,
+} from "@/lib/webSearch";
 
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 
@@ -24,7 +29,9 @@ interface OpenRouterApiResponse {
 
 export type SourceType =
   | "Dashboard Data"
-  | "External Sources"
+  | "Official Source"     // Tier A Pakistani official or IFI source
+  | "Financial Media"     // Tier B Pakistani financial press
+  | "External Sources"    // Tier C / mixed external
   | "AI Knowledge"
   | "Hybrid Analysis";
 
@@ -94,6 +101,62 @@ function computeConfidence(
   }
 
   return { level: "Low", reason: "AI training knowledge — no live data for this topic" };
+}
+
+// ── Source type (computed from actual search results) ─────────────────────────
+
+const PK_OFFICIAL = new Set([
+  "psx.com.pk", "secp.gov.pk", "sbp.org.pk",
+  "easydata.sbp.org.pk", "pbs.gov.pk", "finance.gov.pk",
+]);
+const IFI_DOMAINS = new Set(["imf.org", "worldbank.org", "oecd.org", "bis.org"]);
+const PK_MEDIA = new Set(["brecorder.com", "dawn.com", "thenews.com.pk", "tribune.com.pk"]);
+
+function computeSourceType(
+  routerResult: RouterResult,
+  search: SearchResponse | null,
+): SourceType {
+  if (!routerResult.needsSearch) {
+    return routerResult.needsDashboard ? "Dashboard Data" : "AI Knowledge";
+  }
+  if (routerResult.needsDashboard && (!search || search.results.length === 0)) {
+    return "Dashboard Data";
+  }
+  if (routerResult.needsDashboard && search && search.results.length > 0) {
+    return "Hybrid Analysis";
+  }
+  const results = search?.results ?? [];
+  const tierA = results.filter((r) => r.tier === "A");
+  const tierB = results.filter((r) => r.tier === "B");
+  if (tierA.some((r) => PK_OFFICIAL.has(r.domain)) || tierA.some((r) => IFI_DOMAINS.has(r.domain))) {
+    return "Official Source";
+  }
+  if (tierB.some((r) => PK_MEDIA.has(r.domain)) && tierA.length === 0) return "Financial Media";
+  return "External Sources";
+}
+
+// Human-readable data source label for the transparency footer.
+const DATA_SOURCE_LABELS: Record<string, string> = {
+  "psx.com.pk": "PSX",
+  "secp.gov.pk": "SECP",
+  "sbp.org.pk": "SBP",
+  "easydata.sbp.org.pk": "SBP EasyData",
+  "pbs.gov.pk": "PBS",
+  "finance.gov.pk": "Ministry of Finance",
+  "imf.org": "IMF",
+  "worldbank.org": "World Bank",
+  "oecd.org": "OECD",
+  "bis.org": "BIS",
+  "federalreserve.gov": "Federal Reserve",
+};
+
+function computeDataSource(search: SearchResponse | null): string | null {
+  const tierA = search?.results.filter((r) => r.tier === "A") ?? [];
+  for (const r of tierA) {
+    const label = DATA_SOURCE_LABELS[r.domain];
+    if (label) return label;
+  }
+  return null;
 }
 
 // ── Prompt Blocks ─────────────────────────────────────────────────────────────
@@ -268,6 +331,22 @@ function buildSystemPrompt(
     blocks.push("");
   }
 
+  // For PSX / live market queries, add specific formatting and fallback message
+  if (routerResult.isLiveMarket) {
+    blocks.push(
+      "LIVE MARKET FORMAT: Structure market answers as:\n" +
+      "- Current Value (only if found in sources — exact figure, not estimate)\n" +
+      "- Daily Change\n" +
+      "- Why It Moved\n" +
+      "- Source\n" +
+      "Maximum 6 bullet points.\n" +
+      "CRITICAL: If you cannot find the current market value in the retrieved sources, say exactly:\n" +
+      "\"I couldn't retrieve the latest market quote at the moment. Please try again in a few minutes.\"\n" +
+      "Do NOT say 'I don't have access to live data.' — use the exact phrase above."
+    );
+    blocks.push("");
+  }
+
   blocks.push(INSTRUCTIONS[routerResult.category]);
   return blocks.join("\n");
 }
@@ -283,9 +362,9 @@ function parseResponse(content: string): ParsedResponse {
     .map((u) => u.trim())
     .filter((u) => u.startsWith("http"));
 
-  // Extract SOURCE line
+  // Extract SOURCE line — new values added alongside legacy ones
   const sourceMatch = content.match(
-    /\nSOURCE:\s*(Dashboard Data|External Sources|AI Knowledge|Hybrid Analysis)/i,
+    /\nSOURCE:\s*(Dashboard Data|Official Source|Financial Media|External Sources|AI Knowledge|Hybrid Analysis)/i,
   );
   const source = (sourceMatch?.[1] as SourceType) ?? "Hybrid Analysis";
 
@@ -364,13 +443,18 @@ export async function POST(request: Request): Promise<Response> {
   );
 
   // ── Step 2: Search (only when classified as needing it) ───────────────────
+  // Use focused search (PSX/SECP/SBP/PBS first) when focusDomains are set.
   let search: SearchResponse | null = null;
   if (routerResult.needsSearch && routerResult.searchQuery) {
-    search = await searchTavily(routerResult.searchQuery);
+    search = routerResult.focusDomains?.length
+      ? await searchTavilyFocused(routerResult.searchQuery, routerResult.focusDomains)
+      : await searchTavily(routerResult.searchQuery);
   }
 
-  // ── Step 3: Confidence (deterministic, before AI) ─────────────────────────
+  // ── Step 3: Confidence + source type (deterministic, before AI) ──────────
   const { level: confidence, reason: confidenceReason } = computeConfidence(routerResult, search);
+  const source = computeSourceType(routerResult, search);
+  const dataSource = computeDataSource(search);
 
   // ── Step 4: Build augmented system prompt ─────────────────────────────────
   const isDetailedMode = detectDetailedMode(message);
@@ -419,14 +503,15 @@ export async function POST(request: Request): Promise<Response> {
         continue;
       }
 
-      const { reply, source, citationUrls } = parseResponse(rawContent);
+      // source is computed server-side (computeSourceType); ignore the AI-written tag
+      const { reply, citationUrls } = parseResponse(rawContent);
       const citations = buildCitationItems(citationUrls, search);
 
       console.log(
-        `[AI/Assistant] Succeeded — model: ${model} | ` +
+        `[AI/Assistant] Succeeded — model: ${model} | source: ${source} | ` +
         `confidence: ${confidence} | ` +
         `sources: ${search?.results.length ?? 0} | ` +
-        `citations: ${citations.length}`,
+        `focus: ${routerResult.focusDomains?.join(",") ?? "none"}`,
       );
 
       return Response.json({
@@ -434,6 +519,7 @@ export async function POST(request: Request): Promise<Response> {
         confidence,
         confidenceReason,
         source,
+        dataSource,
         queryCategory: routerResult.label,
         citations,
         searchPerformed: routerResult.needsSearch,
@@ -455,6 +541,7 @@ export async function POST(request: Request): Promise<Response> {
     confidence: "Low" as ConfidenceLevel,
     confidenceReason: "All AI models failed",
     source: "AI Knowledge" as SourceType,
+    dataSource: null,
     queryCategory: routerResult.label,
     citations: [],
     searchPerformed: routerResult.needsSearch,

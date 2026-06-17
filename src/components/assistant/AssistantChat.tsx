@@ -11,6 +11,7 @@ interface Message {
   content: string;
   // AI-specific metadata
   source?: SourceType;
+  dataSource?: string | null;
   confidence?: ConfidenceLevel;
   confidenceReason?: string;
   queryCategory?: string;
@@ -29,15 +30,17 @@ interface Props {
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const SUGGESTED_QUESTIONS = [
+  "What's the KSE-100 doing today?",
   "What's driving the Economic Health Score?",
-  "What did the IMF say about Pakistan this month?",
+  "What did the SBP announce recently?",
   "Compare our recession risk with IMF forecasts",
-  "Why is oil falling and how does it affect Pakistan?",
   "What is a current account deficit?",
 ];
 
 const SOURCE_COLORS: Record<string, string> = {
   "Dashboard Data":  "text-[#38bdf8]",
+  "Official Source": "text-[#34d399]",   // emerald — official/authoritative
+  "Financial Media": "text-[#a78bfa]",   // purple — trusted press
   "External Sources":"text-[#a78bfa]",
   "AI Knowledge":    "text-[#a855f7]",
   "Hybrid Analysis": "text-[#34d399]",
@@ -204,6 +207,11 @@ function MessageFooter({ msg }: { msg: Message }) {
             <span className={`text-[10px] font-medium ${SOURCE_COLORS[msg.source] ?? "text-white/35"}`}>
               {msg.source}
             </span>
+            {msg.dataSource && (
+              <span className="text-[10px] text-white/30 font-medium">
+                via {msg.dataSource}
+              </span>
+            )}
           </>
         )}
         {msg.modelDisplayName && msg.modelDisplayName !== "Offline" && (
@@ -284,6 +292,7 @@ export default function AssistantChat({ context, onClose }: Props) {
         confidence: ConfidenceLevel;
         confidenceReason: string;
         source: SourceType;
+        dataSource: string | null;
         queryCategory: string;
         citations: CitationItem[];
         searchPerformed: boolean;
@@ -298,6 +307,7 @@ export default function AssistantChat({ context, onClose }: Props) {
           role: "assistant",
           content: data.reply,
           source: data.source,
+          dataSource: data.dataSource,
           confidence: data.confidence,
           confidenceReason: data.confidenceReason,
           queryCategory: data.queryCategory,

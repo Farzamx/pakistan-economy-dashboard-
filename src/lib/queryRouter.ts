@@ -1,7 +1,15 @@
 // Query router for the Pakistan Economic Intelligence Assistant.
 // Classifies every user message into one of 5 categories, determining
 // whether to use DashboardSnapshot, Tavily search, or both.
-// Pure function — no I/O, no side effects.
+// Pure classifier logic — IO only in the imported domain constants.
+
+import {
+  PSX_DOMAINS,
+  SECP_DOMAINS,
+  SBP_DOMAINS,
+  PBS_DOMAINS,
+  IMF_WB_DOMAINS,
+} from "./webSearch";
 
 export type QueryCategory =
   | "dashboard"       // DashboardSnapshot only, no search
@@ -15,12 +23,14 @@ export interface RouterResult {
   needsDashboard: boolean;
   needsSearch: boolean;
   searchQuery: string | null;
-  label: string; // human-readable label shown in the UI
+  focusDomains?: string[];   // search these first (searchTavilyFocused)
+  isLiveMarket?: boolean;    // true for PSX / KSE100 live price queries
+  label: string;
 }
 
 // ── Signal lists ────────────────────────────────────────────────────────────
 
-// Specific dashboard indicator names — these refer to live data, not concepts
+// Specific dashboard indicator names — live data, not concepts
 const DASHBOARD_TERMS: string[] = [
   "health score", "economic health score",
   "recession probability", "recession risk", "recession model",
@@ -43,7 +53,7 @@ const DASHBOARD_TERMS: string[] = [
   "the probability", "dashboard data", "the indicators",
 ];
 
-// "What is A/AN X?" — definitional questions about economic concepts (not live data)
+// "What is A/AN X?" — definitional questions (not live data)
 const CONCEPT_PATTERNS: RegExp[] = [
   /^what is (a |an )/i,
   /^what are (the |some |a few |different )?types/i,
@@ -57,6 +67,40 @@ const CONCEPT_PATTERNS: RegExp[] = [
   /^what.s the difference between/i,
   /^can you explain /i,
   /^could you explain /i,
+];
+
+// PSX / KSE100 stock market signals
+const PSX_SIGNALS: string[] = [
+  "psx", "kse100", "kse-100", "kse 100",
+  "pakistan stock exchange", "karachi stock",
+  "stock market today", "market today", "equity market today",
+  "listed company", "listed stock",
+  "gainers today", "losers today", "top gainers", "top losers",
+  "market summary", "index today", "index level",
+  "psx announcement", "psx data", "psx trading",
+  // common PSX-listed tickers / companies users ask about
+  "hubc", "ogdc", "ppl ", " ppl", "luck ", " luck", "engro",
+  "mpl ", " mpl", "psmc", "ubl ", " ubl", "hbl ", " hbl",
+  "mcb ", " mcb", "nbp ", " nbp",
+  "trading at", "share price", "stock price", "current price of",
+];
+
+// SECP regulatory signals
+const SECP_SIGNALS: string[] = [
+  "secp", "securities and exchange commission",
+  "secp circular", "secp regulation", "secp announcement",
+  "secp press", "secp license", "secp directive",
+  "mutual fund rules", "mutual fund regulation", "mutual fund circular",
+  "asset management company", "amc regulation",
+];
+
+// PBS data release signals (distinct from dashboard "cpi inflation" term)
+const PBS_SIGNALS: string[] = [
+  "pbs report", "pbs data", "pbs release", "pbs announced",
+  "cpi release", "cpi announced", "cpi report",
+  "lsm release", "lsm report", "lsm data",
+  "national accounts release", "qna release",
+  "trade data release", "exports data", "imports data release",
 ];
 
 // Institution news + event signals
@@ -78,6 +122,12 @@ const INSTITUTION_SIGNALS: string[] = [
   "psx announcement", "pakistan stock exchange",
 ];
 
+// SBP-specific focus signals (subset of INSTITUTION_SIGNALS, used for domain targeting)
+const SBP_FOCUS_SIGNALS: string[] = [
+  "sbp announcement", "sbp statement", "sbp governor",
+  "sbp decision", "sbp meeting", "sbp monetary policy",
+];
+
 // Time-sensitivity signals
 const TIME_SIGNALS: string[] = [
   "today", "yesterday", "this week", "last week", "this month",
@@ -86,7 +136,7 @@ const TIME_SIGNALS: string[] = [
   "this quarter", "q1", "q2", "q3", "q4",
 ];
 
-// Asset price movement signals — market news category
+// Asset price movement signals (global commodity/currency)
 const MARKET_MOVEMENT_SIGNALS: string[] = [
   "oil falling", "oil rising", "oil drops", "oil jumps", "oil surges", "oil crashed",
   "why is oil", "oil price today", "crude today", "crude is",
@@ -128,10 +178,25 @@ function matchesAny(q: string, patterns: RegExp[]): boolean {
   return patterns.some((p) => p.test(q));
 }
 
+// Determines which official domain group to focus on based on query content.
+// Returns undefined for general queries (use full domain list).
+function determineFocusDomains(q: string): string[] | undefined {
+  if (hasAny(q, PSX_SIGNALS)) return PSX_DOMAINS;
+  if (hasAny(q, SECP_SIGNALS)) return SECP_DOMAINS;
+  if (hasAny(q, PBS_SIGNALS)) return PBS_DOMAINS;
+  if (hasAny(q, SBP_FOCUS_SIGNALS)) return SBP_DOMAINS;
+  if (q.includes("imf") || q.includes("world bank")) return IMF_WB_DOMAINS;
+  return undefined;
+}
+
 // ── Classifier ───────────────────────────────────────────────────────────────
 
 export function classifyQuery(message: string): RouterResult {
   const q = normalize(message);
+
+  const hasPSXSignal = hasAny(q, PSX_SIGNALS);
+  const hasSECPSignal = hasAny(q, SECP_SIGNALS);
+  const hasPBSSignal = hasAny(q, PBS_SIGNALS);
 
   const hasDashboardTerm = hasAny(q, DASHBOARD_TERMS);
   const isConceptPattern = matchesAny(q, CONCEPT_PATTERNS);
@@ -141,7 +206,48 @@ export function classifyQuery(message: string): RouterResult {
   const hasHybridSignal = hasAny(q, HYBRID_SIGNALS);
   const hasPakistanContext = q.includes("pakistan");
 
-  // ── 1. Hybrid: explicit comparison or cross-source analysis ──────────────
+  // ── 1. PSX / KSE100: stock market and listed company queries ────────────
+  // Route to market_news with PSX-focused domains. These queries need live
+  // web search — the dashboard does not carry KSE100 data.
+  if (hasPSXSignal) {
+    return {
+      category: "market_news",
+      needsDashboard: false,
+      needsSearch: true,
+      searchQuery: buildSearchQuery(message, "market_news", "PSX"),
+      focusDomains: PSX_DOMAINS,
+      isLiveMarket: true,
+      label: "PSX Market Data",
+    };
+  }
+
+  // ── 2. SECP: regulatory / circular queries ───────────────────────────────
+  if (hasSECPSignal) {
+    return {
+      category: "current_events",
+      needsDashboard: false,
+      needsSearch: true,
+      searchQuery: buildSearchQuery(message, "current_events"),
+      focusDomains: SECP_DOMAINS,
+      label: "SECP Regulatory",
+    };
+  }
+
+  // ── 3. PBS-specific data release queries ─────────────────────────────────
+  // Distinct from "what is CPI inflation?" (dashboard) — these ask about
+  // a specific new release from PBS.
+  if (hasPBSSignal) {
+    return {
+      category: "current_events",
+      needsDashboard: true,
+      needsSearch: true,
+      searchQuery: buildSearchQuery(message, "current_events"),
+      focusDomains: PBS_DOMAINS,
+      label: "Economic Release",
+    };
+  }
+
+  // ── 4. Hybrid: explicit comparison or cross-source analysis ─────────────
   if (
     hasHybridSignal ||
     (hasDashboardTerm && hasInstitution) ||
@@ -153,11 +259,12 @@ export function classifyQuery(message: string): RouterResult {
       needsDashboard: true,
       needsSearch: true,
       searchQuery: buildSearchQuery(message, "hybrid"),
+      focusDomains: determineFocusDomains(q),
       label: "Hybrid Analysis",
     };
   }
 
-  // ── 2. Market news: live price move question ─────────────────────────────
+  // ── 5. Market news: global price move ───────────────────────────────────
   if (hasMarketMove) {
     return {
       category: "market_news",
@@ -168,20 +275,19 @@ export function classifyQuery(message: string): RouterResult {
     };
   }
 
-  // ── 3. Current events: institution news or time-gated query ─────────────
+  // ── 6. Current events: institution news or time-gated query ────────────
   if (hasInstitution || (hasTimeSignal && !hasDashboardTerm)) {
     return {
       category: "current_events",
       needsDashboard: false,
       needsSearch: true,
       searchQuery: buildSearchQuery(message, "current_events"),
+      focusDomains: determineFocusDomains(q),
       label: "Current Events",
     };
   }
 
-  // ── 4. Dashboard: specific live indicator question ───────────────────────
-  //    "What is inflation?" (no indefinite article) → dashboard
-  //    "What is a current account deficit?" → captured by concept patterns
+  // ── 7. Dashboard: specific live indicator question ──────────────────────
   if (hasDashboardTerm) {
     return {
       category: "dashboard",
@@ -192,7 +298,7 @@ export function classifyQuery(message: string): RouterResult {
     };
   }
 
-  // ── 5. Concept: definitional / explanatory question ──────────────────────
+  // ── 8. Concept: definitional / explanatory question ─────────────────────
   if (isConceptPattern) {
     return {
       category: "concept",
@@ -203,7 +309,7 @@ export function classifyQuery(message: string): RouterResult {
     };
   }
 
-  // ── 6. Default: Pakistan context → dashboard; generic → concept ──────────
+  // ── 9. Default ──────────────────────────────────────────────────────────
   if (hasPakistanContext) {
     return {
       category: "dashboard",
@@ -225,18 +331,24 @@ export function classifyQuery(message: string): RouterResult {
 
 // ── Search query builder ─────────────────────────────────────────────────────
 
-function buildSearchQuery(message: string, category: QueryCategory): string {
+function buildSearchQuery(
+  message: string,
+  category: QueryCategory,
+  hint?: string,
+): string {
   let q = message.trim();
 
-  // Strip common question prefixes that add no search value
+  // Strip common question prefixes
   q = q.replace(
     /^(tell me about|can you tell me|i want to know about|what about|how about|do you know)\s+/i,
     "",
   );
   q = q.replace(/\?+$/, "").trim();
 
-  // Add Pakistan context for non-global queries
-  if (
+  // For PSX queries, prepend "Pakistan stock market" for better Tavily results
+  if (hint === "PSX" && !q.toLowerCase().includes("pakistan")) {
+    q = `Pakistan stock market ${q}`;
+  } else if (
     category !== "market_news" &&
     !q.toLowerCase().includes("pakistan") &&
     !isGlobalQuery(q)
@@ -244,7 +356,7 @@ function buildSearchQuery(message: string, category: QueryCategory): string {
     q = `Pakistan economy ${q}`;
   }
 
-  // Add current year to boost recency in results
+  // Boost recency
   const year = new Date().getFullYear();
   if (!q.includes(String(year)) && !q.includes(String(year - 1))) {
     q = `${q} ${year}`;
