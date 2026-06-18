@@ -70,7 +70,7 @@ export default function NewsIntelligenceSection({ items, modelDisplayName, newsR
   const prefersReducedMotion = useReducedMotion();
 
   return (
-    <div id="news-intelligence" className="scroll-mt-8">
+    <div id="news-intelligence" className="glass-panel-deep mt-12 scroll-mt-8 p-6 sm:p-8">
       <motion.div
         initial={prefersReducedMotion ? false : "hidden"}
         whileInView="visible"
@@ -78,7 +78,7 @@ export default function NewsIntelligenceSection({ items, modelDisplayName, newsR
         variants={headingVariants}
         transition={{ duration: 0.6, ease: "easeOut" }}
       >
-        <div className="mt-12 flex items-center gap-2">
+        <div className="flex items-center gap-2">
           <h2 className="text-xl font-semibold text-white light:text-slate-900 sm:text-2xl">
             News &amp; Intelligence
           </h2>
