@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import HealthScoreGauge from "@/components/HealthScoreGauge";
 import ViewportFadeIn from "@/components/ViewportFadeIn";
+import InfoTooltip from "@/components/InfoTooltip";
 import {
   getRiskGaugeColor,
   getRiskCategoryClass,
@@ -115,6 +116,7 @@ function RiskCard({ title, result, ai, confidence, modelDisplayName, delay = 0 }
             <span className="text-xs font-semibold uppercase tracking-[0.3em] text-white/40 light:text-slate-500">
               {title}
             </span>
+            <InfoTooltip termKey={title} size="xs" />
             <span className="rounded-full border border-neon-purple/20 bg-neon-purple/10 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-widest text-neon-purple/70">
               QUANT
             </span>

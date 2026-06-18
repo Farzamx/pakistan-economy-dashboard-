@@ -449,6 +449,30 @@ export const TERMINOLOGY: Record<string, TermEntry> = {
     ],
   },
 
+  // ── Risk Intelligence probability cards ────────────────────────────────────
+
+  "Recession Probability": {
+    title: "Recession Probability",
+    what: "A model-estimated probability (0-100%) that Pakistan's economy enters a recession, calculated from 8 weighted live indicators — GDP growth, industrial output, the Rupee, credit growth, inflation, real interest rates, import cover, and the current account.",
+    why: "Rising recession risk means slower growth, job losses, and falling incomes — an early signal to watch before it shows up in headline GDP data.",
+    how: [
+      "Below 20% = Low | 20–39% = Elevated",
+      "40–59% = High | 60%+ = Severe",
+      "Driven most by GDP growth, industrial output (LSM), and Rupee stability",
+    ],
+  },
+
+  "Sovereign Default Probability": {
+    title: "Sovereign Default Probability",
+    what: "A model-estimated probability (0-100%) that Pakistan struggles to meet its external debt obligations, calculated from 5 weighted live indicators — import cover, fiscal balance, current account, the Rupee, and the policy rate.",
+    why: "Higher default risk raises Pakistan's borrowing costs, risks credit-rating downgrades, and can trigger Rupee depreciation and import disruptions.",
+    how: [
+      "Below 20% = Low | 20–39% = Elevated",
+      "40–59% = High | 60%+ = Severe",
+      "Driven most by import cover, fiscal balance, and the current account",
+    ],
+  },
+
   // ── DashboardSection stat labels ──────────────────────────────────────────
 
   "Import Cover": {
