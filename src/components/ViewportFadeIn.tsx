@@ -1,7 +1,8 @@
 "use client";
 
-import { motion, useReducedMotion } from "framer-motion";
+import { motion } from "framer-motion";
 import type { ReactNode } from "react";
+import { useSafeReducedMotion } from "@/hooks/useSafeReducedMotion";
 
 interface Props {
   children: ReactNode;
@@ -17,7 +18,7 @@ interface Props {
  * prefers-reduced-motion enabled.
  */
 export default function ViewportFadeIn({ children, delay = 0, className, y = 40 }: Props) {
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = useSafeReducedMotion();
 
   if (prefersReducedMotion) {
     return <div className={className}>{children}</div>;

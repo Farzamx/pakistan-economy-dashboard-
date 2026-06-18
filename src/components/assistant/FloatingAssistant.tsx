@@ -5,10 +5,10 @@ import {
   animate,
   motion,
   useMotionValue,
-  useReducedMotion,
 } from "framer-motion";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { DashboardSnapshot } from "@/lib/assistantContext";
+import { useSafeReducedMotion } from "@/hooks/useSafeReducedMotion";
 import AssistantAvatar from "./AssistantAvatar";
 import AssistantChat from "./AssistantChat";
 
@@ -104,7 +104,7 @@ function savePosition(pos: { x: number; y: number }): void {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function FloatingAssistant({ context }: Props) {
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = useSafeReducedMotion();
   const [isOpen, setIsOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
 

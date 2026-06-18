@@ -1,7 +1,8 @@
 "use client";
 
-import { motion, useReducedMotion } from "framer-motion";
+import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
+import { useSafeReducedMotion } from "@/hooks/useSafeReducedMotion";
 
 interface Props {
   isOpen: boolean;
@@ -15,7 +16,7 @@ interface Props {
 const SIZE_CLASSES = "w-11 h-11 md:w-[52px] md:h-[52px] lg:w-14 lg:h-14";
 
 export default function AssistantAvatar({ isOpen, onClick }: Props) {
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = useSafeReducedMotion();
   const [isWaving, setIsWaving] = useState(false);
 
   // Wave animation: fires every 12–15s, one-shot, reschedules after completion.

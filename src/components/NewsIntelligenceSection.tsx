@@ -1,8 +1,9 @@
 "use client";
 
-import { motion, useReducedMotion } from "framer-motion";
+import { motion } from "framer-motion";
 import type { TaggedNewsItem } from "@/lib/data/intelligence";
 import InfoTooltip from "@/components/InfoTooltip";
+import { useSafeReducedMotion } from "@/hooks/useSafeReducedMotion";
 
 const CATEGORY_LABELS: Record<string, string> = {
   pakistan: "Pakistan",
@@ -67,7 +68,7 @@ interface Props {
 }
 
 export default function NewsIntelligenceSection({ items, modelDisplayName, newsRefreshedAt, sourceCount }: Props) {
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = useSafeReducedMotion();
 
   return (
     <div id="news-intelligence" className="glass-panel-deep mt-12 scroll-mt-8 p-6 sm:p-8">

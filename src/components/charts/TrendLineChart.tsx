@@ -1,7 +1,8 @@
 "use client";
 
 import { useRef } from "react";
-import { useInView, useReducedMotion } from "framer-motion";
+import { useInView } from "framer-motion";
+import { useSafeReducedMotion } from "@/hooks/useSafeReducedMotion";
 import {
   Area,
   AreaChart,
@@ -36,7 +37,7 @@ export default function TrendLineChart({
 }: TrendLineChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const isInView = useInView(containerRef, { once: true });
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = useSafeReducedMotion();
   const { theme } = useTheme();
 
   const shouldRender = isInView || !!prefersReducedMotion;

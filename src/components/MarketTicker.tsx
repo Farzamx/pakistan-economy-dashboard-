@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useReducedMotion } from "framer-motion";
+import { useSafeReducedMotion } from "@/hooks/useSafeReducedMotion";
 import InfoTooltip from "@/components/InfoTooltip";
 
 export interface TickerItem {
@@ -57,7 +57,7 @@ interface MarketTickerProps {
 
 export default function MarketTicker({ items }: MarketTickerProps) {
   const [paused, setPaused] = useState(false);
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = useSafeReducedMotion();
 
   // Duplicate items for the seamless loop: animation moves -50% of the strip's
   // total width, at which point the second copy aligns exactly with where the
@@ -97,9 +97,15 @@ export default function MarketTicker({ items }: MarketTickerProps) {
             alignItems: "center",
             width: "max-content",
             willChange: "transform",
-            animation: prefersReducedMotion
-              ? "none"
-              : "ticker-scroll 40s linear infinite",
+            // Longhand properties only — mixing the `animation` shorthand
+            // with the `animationPlayState` longhand in one style object
+            // makes React DOM warn ("conflicting property") on any re-render
+            // that changes either value, e.g. when prefersReducedMotion
+            // resolves post-mount.
+            animationName: prefersReducedMotion ? "none" : "ticker-scroll",
+            animationDuration: "40s",
+            animationTimingFunction: "linear",
+            animationIterationCount: "infinite",
             animationPlayState: paused ? "paused" : "running",
           }}
         >

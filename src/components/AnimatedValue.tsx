@@ -1,8 +1,9 @@
 "use client";
 
 import { useRef } from "react";
-import { useInView, useReducedMotion } from "framer-motion";
+import { useInView } from "framer-motion";
 import { useCountUp } from "@/hooks/useCountUp";
+import { useSafeReducedMotion } from "@/hooks/useSafeReducedMotion";
 
 interface Props {
   value: string;
@@ -44,7 +45,7 @@ function formatNumeric(num: number, decimals: number, negative: boolean): string
 export default function AnimatedValue({ value }: Props) {
   const ref = useRef<HTMLSpanElement>(null);
   const isInView = useInView(ref, { once: true });
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = useSafeReducedMotion();
 
   const parsed = parseNumeric(value);
   const shouldPlay = isInView && !prefersReducedMotion && parsed !== null;
