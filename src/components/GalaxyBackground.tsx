@@ -1,11 +1,28 @@
 "use client";
 
 // ── Dark mode: deterministic stars + nebula blobs ────────────────────────────
-// Pseudo-random generator so star positions are identical on server and client
-// (avoids hydration mismatches that Math.random would cause).
-function seededRandom(seed: number) {
-  const x = Math.sin(seed) * 10000;
-  return x - Math.floor(x);
+//
+// Star positions must be bit-identical on the server and the client, or
+// React's hydration will see mismatched `top`/`left` style values.
+//
+// A prior version derived "randomness" from `Math.sin(seed) * 10000`. Math.sin
+// is a transcendental function — the ECMAScript spec does NOT require it to
+// be bit-identical across engines (unlike +, -, *, / which IEEE-754 mandates
+// exactly). Node's V8 (server) and the browser's engine can legitimately
+// disagree in the last bit of a Math.sin result. That tiny difference, after
+// `* 10000` and `Math.floor()`, can flip which integer the floor rounds to
+// right at a boundary — turning 0.0000001 into 0.9999999. That is the exact
+// mechanism that produced mismatched star coordinates during hydration.
+//
+// Fix: hash32 below uses only Math.imul (32-bit integer multiply) and
+// bitwise ops — both exact and platform-independent per spec — plus a final
+// division by 2^32, which is also exact in IEEE-754 (dividing by a power of
+// two never rounds). No transcendental functions, so no possible divergence.
+function hash32(seed: number): number {
+  let t = (seed + 0x6d2b79f5) | 0;
+  t = Math.imul(t ^ (t >>> 15), t | 1);
+  t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+  return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
 }
 
 interface Star {
@@ -18,13 +35,13 @@ interface Star {
 
 function generateStars(count: number, seedOffset: number, minSize: number, maxSize: number): Star[] {
   return Array.from({ length: count }, (_, i) => {
-    const seed = seedOffset + i * 7;
+    const seed = seedOffset + i * 5197; // wide stride — keeps each star's 5 axis seeds isolated
     return {
-      top: seededRandom(seed * 12.9898) * 100,
-      left: seededRandom(seed * 78.233) * 100,
-      size: minSize + seededRandom(seed * 37.719) * (maxSize - minSize),
-      duration: 2.5 + seededRandom(seed * 15.234) * 3.5,
-      delay: -seededRandom(seed * 51.456) * 6,
+      top: hash32(seed) * 100,
+      left: hash32(seed + 1) * 100,
+      size: minSize + hash32(seed + 2) * (maxSize - minSize),
+      duration: 2.5 + hash32(seed + 3) * 3.5,
+      delay: -hash32(seed + 4) * 6,
     };
   });
 }
