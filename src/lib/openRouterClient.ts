@@ -3,23 +3,35 @@
 // route through this shared function rather than calling OpenRouter directly.
 //
 // Failover chain: each model is tried in sequence; a model is skipped on any of:
-//   HTTP error, rate-limit (429), empty body, empty content, invalid JSON from
-//   parseContent, or any thrown exception. Console logs show which model succeeded
-//   and which failed (with reason), so the fallback path is always auditable.
+//   HTTP error, rate-limit (429), timeout, empty body, empty content, invalid JSON
+//   from parseContent, or any thrown exception. Console logs show which model
+//   succeeded and which failed (with reason), so the fallback path is always
+//   auditable.
+//
+// nex-agi/nex-n2-pro:free was removed from the chain (2026-06) — it frequently
+// returned HTTP 429, and with no per-call timeout previously in place, a slow
+// or hanging 429 could burn several seconds before the next model was tried.
+// Ordered by *confirmed* latency (see inline comments) so the fastest reliable
+// model is tried first, in service of the <3s average response time target.
 
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 
-// Ordered fallback chain — primary first, lightweight backup last.
+// Per-model call timeout. If a model doesn't respond within this window (slow,
+// rate-limited without a fast 429, or hanging), abort and move to the next
+// model rather than waiting indefinitely — this is the single biggest lever
+// for cutting tail latency, since one hanging call used to be able to consume
+// most of a 10-12s budget on its own.
+export const MODEL_TIMEOUT_MS = Number(process.env.AI_MODEL_TIMEOUT_MS ?? 6000);
+
+// Ordered fallback chain — fastest confirmed model first, heaviest/largest last.
 // Only models confirmed available on this account are included.
 export const FALLBACK_CHAIN: string[] = [
-  "nex-agi/nex-n2-pro:free",                   // primary: current model, 262k ctx
-  "openai/gpt-oss-120b:free",                  // large reasoning: confirmed clean JSON, 3.9s
-  "nousresearch/hermes-3-llama-3.1-405b:free", // structured-output specialist: 405B dense
-  "openai/gpt-oss-20b:free",                   // lightweight backup: confirmed 2.7s
+  "openai/gpt-oss-20b:free",                   // fastest confirmed: ~2.7s, lightweight
+  "openai/gpt-oss-120b:free",                  // large reasoning: confirmed clean JSON, ~3.9s
+  "nousresearch/hermes-3-llama-3.1-405b:free", // structured-output specialist: 405B dense, slowest — last resort
 ];
 
 const MODEL_DISPLAY_NAMES: Record<string, string> = {
-  "nex-agi/nex-n2-pro:free":                   "Nex-N2-Pro",
   "openai/gpt-oss-120b:free":                  "GPT-OSS 120B",
   "nousresearch/hermes-3-llama-3.1-405b:free": "Hermes 3 405B",
   "openai/gpt-oss-20b:free":                   "GPT-OSS 20B",
@@ -69,6 +81,9 @@ export async function callOpenRouter<T>(
   const { revalidate, temperature = 0.2, taskLabel } = config;
 
   for (const model of FALLBACK_CHAIN) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), MODEL_TIMEOUT_MS);
+    const callStart = Date.now();
     try {
       const res = await fetch(OPENROUTER_URL, {
         method: "POST",
@@ -82,15 +97,17 @@ export async function callOpenRouter<T>(
           temperature,
         }),
         next: { revalidate },
+        signal: controller.signal,
       });
+      clearTimeout(timer);
 
       if (!res.ok) {
-        console.warn(`[AI/${taskLabel}] ${model} — HTTP ${res.status} ${res.statusText}`);
+        console.warn(`[AI/${taskLabel}] ${model} — HTTP ${res.status} ${res.statusText} (${Date.now() - callStart}ms)`);
         continue;
       }
 
-      // Must use res.text() + JSON.parse() — some models (e.g. nex-agi) prepend
-      // whitespace/reasoning tokens before JSON, breaking Next.js's res.json().
+      // Must use res.text() + JSON.parse() — some models prepend whitespace or
+      // reasoning tokens before the JSON body, breaking Next.js's res.json().
       const rawText = await res.text();
       if (!rawText.trim()) {
         console.warn(`[AI/${taskLabel}] ${model} — empty response body`);
@@ -107,11 +124,16 @@ export async function callOpenRouter<T>(
       // parseContent throws on invalid JSON or parse failure → caught below → try next model
       const result = parseContent(content);
 
+      console.log(`[Timing] model response (${taskLabel}): ${Date.now() - callStart}ms — ${model}`);
       console.log(`[AI/${taskLabel}] Succeeded — model: ${model}`);
       return { result, modelUsed: model, modelDisplayName: getModelDisplayName(model) };
     } catch (err) {
-      const reason = err instanceof Error ? err.message : String(err);
-      console.warn(`[AI/${taskLabel}] ${model} — ${reason}`);
+      clearTimeout(timer);
+      const aborted = err instanceof Error && err.name === "AbortError";
+      const reason = aborted
+        ? `timeout after ${MODEL_TIMEOUT_MS}ms`
+        : err instanceof Error ? err.message : String(err);
+      console.warn(`[AI/${taskLabel}] ${model} — ${reason} (${Date.now() - callStart}ms)`);
     }
   }
 

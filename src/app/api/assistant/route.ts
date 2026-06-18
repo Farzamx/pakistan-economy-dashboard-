@@ -1,4 +1,4 @@
-import { FALLBACK_CHAIN, getModelDisplayName } from "@/lib/openRouterClient";
+import { FALLBACK_CHAIN, getModelDisplayName, MODEL_TIMEOUT_MS } from "@/lib/openRouterClient";
 import type { DashboardSnapshot } from "@/lib/assistantContext";
 import { classifyQuery, type QueryCategory, type RouterResult } from "@/lib/queryRouter";
 import {
@@ -7,8 +7,22 @@ import {
   type SearchResult,
   type SearchResponse,
 } from "@/lib/webSearch";
+import { getFresh, getStale, setCache } from "@/lib/memoryCache";
+import { getPakEtfKpi } from "@/lib/data/yfinance";
+import type { Kpi } from "@/data/kpiData";
 
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
+
+// ── Performance configuration ──────────────────────────────────────────────
+// Search results are cached so repeat/similar queries within the TTL skip
+// Tavily entirely, and so a failed/timed-out live search can still fall back
+// to the last good result instead of failing outright (configurable via env).
+const SEARCH_CACHE_TTL_MS = Number(process.env.ASSISTANT_SEARCH_CACHE_TTL_MS ?? 5 * 60 * 1000);
+// Timeout is only increased when there's no cached fallback to lean on — if a
+// stale cache entry exists, fail fast (we have a safety net); if not, this is
+// the only chance to get a real answer, so allow more time.
+const SEARCH_TIMEOUT_WITH_FALLBACK_MS = 2500;
+const SEARCH_TIMEOUT_NO_FALLBACK_MS = 5500;
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -295,11 +309,26 @@ End with: SOURCE: Hybrid Analysis
 CITATIONS: [comma-separated URLs of external sources you cited — leave blank if none]`,
 };
 
+interface PromptFreshness {
+  searchIsStale: boolean;
+  searchAgeMs: number | null;
+  pakEtfFallback: Kpi | null;
+}
+
+function formatAge(ms: number): string {
+  const minutes = Math.round(ms / 60_000);
+  if (minutes < 1) return "under a minute";
+  if (minutes === 1) return "1 minute";
+  if (minutes < 60) return `${minutes} minutes`;
+  return `${Math.round(minutes / 60)} hour(s)`;
+}
+
 function buildSystemPrompt(
   ctx: DashboardSnapshot,
   routerResult: RouterResult,
   search: SearchResponse | null,
   isDetailedMode: boolean,
+  freshness: PromptFreshness,
 ): string {
   const blocks: string[] = [
     "You are the Pakistan Economic Intelligence Assistant — a friendly, plain-English guide to Pakistan's economy.",
@@ -322,6 +351,23 @@ function buildSystemPrompt(
 
   if (search && search.results.length > 0) {
     blocks.push(buildSearchBlock(search.results));
+    if (freshness.searchIsStale && freshness.searchAgeMs !== null) {
+      blocks.push(
+        `NOTE: A live search just failed or timed out. The sources above are from a cached search ` +
+        `result, ${formatAge(freshness.searchAgeMs)} old. Mention briefly that this data may be a few ` +
+        `minutes old rather than presenting it as this instant's live quote.`,
+      );
+    }
+    blocks.push("");
+  } else if (freshness.pakEtfFallback) {
+    const etf = freshness.pakEtfFallback;
+    blocks.push(
+      `NOTE: A live KSE-100 index quote is not available (PSX requires a commercial data license that ` +
+      `this assistant does not have). As a correlated proxy, the Global X MSCI Pakistan ETF (NYSE: PAK) ` +
+      `is currently ${etf.value} ${etf.unit} (${etf.change}). Present this clearly AS A PROXY, not as the ` +
+      `KSE-100 value itself — explain that it tracks the same index and moves similarly, but is not the ` +
+      `index itself.`,
+    );
     blocks.push("");
   } else if (routerResult.needsSearch) {
     blocks.push(
@@ -335,12 +381,12 @@ function buildSystemPrompt(
   if (routerResult.isLiveMarket) {
     blocks.push(
       "LIVE MARKET FORMAT: Structure market answers as:\n" +
-      "- Current Value (only if found in sources — exact figure, not estimate)\n" +
+      "- Current Value (only if found in sources, or the PAK ETF proxy noted above — exact figure, not estimate)\n" +
       "- Daily Change\n" +
       "- Why It Moved\n" +
       "- Source\n" +
       "Maximum 6 bullet points.\n" +
-      "CRITICAL: If you cannot find the current market value in the retrieved sources, say exactly:\n" +
+      "CRITICAL: If NEITHER a search result NOR the PAK ETF proxy is available above, say exactly:\n" +
       "\"I couldn't retrieve the latest market quote at the moment. Please try again in a few minutes.\"\n" +
       "Do NOT say 'I don't have access to live data.' — use the exact phrase above."
     );
@@ -405,6 +451,7 @@ function buildCitationItems(
 // ── Main Handler ───────────────────────────────────────────────────────────────
 
 export async function POST(request: Request): Promise<Response> {
+  const requestStart = Date.now();
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) {
     return Response.json({
@@ -442,13 +489,57 @@ export async function POST(request: Request): Promise<Response> {
     `"${message.slice(0, 70)}${message.length > 70 ? "..." : ""}"`,
   );
 
-  // ── Step 2: Search (only when classified as needing it) ───────────────────
-  // Use focused search (PSX/SECP/SBP/PBS first) when focusDomains are set.
+  // ── Step 2: Search (cache-aware) + PAK ETF fallback fetch — run in parallel ──
+  // The PAK ETF quote (free Yahoo Finance call, not rate-limited) is fetched
+  // concurrently with the Tavily search for live-market queries, rather than
+  // sequentially after search fails — cuts latency on the worst-case path
+  // (KSE-100/PSX queries, which previously chained two slow I/O calls).
   let search: SearchResponse | null = null;
+  let searchIsStale = false;
+  let searchAgeMs: number | null = null;
+  let pakEtfFallback: Kpi | null = null;
+
+  const searchStart = Date.now();
   if (routerResult.needsSearch && routerResult.searchQuery) {
-    search = routerResult.focusDomains?.length
-      ? await searchTavilyFocused(routerResult.searchQuery, routerResult.focusDomains)
-      : await searchTavily(routerResult.searchQuery);
+    const cacheKey = `${routerResult.focusDomains?.join(",") ?? "general"}::${routerResult.searchQuery.toLowerCase()}`;
+    const cached = getFresh<SearchResponse>(cacheKey, SEARCH_CACHE_TTL_MS);
+
+    if (cached) {
+      search = cached.data;
+      searchAgeMs = cached.ageMs;
+      console.log(`[Timing] search: 0ms (cache hit, ${cached.ageMs}ms old)`);
+      if (routerResult.isLiveMarket && search.results.length === 0) {
+        pakEtfFallback = await getPakEtfKpi();
+      }
+    } else {
+      const hasFallback = getStale<SearchResponse>(cacheKey) !== null;
+      const timeoutMs = hasFallback ? SEARCH_TIMEOUT_WITH_FALLBACK_MS : SEARCH_TIMEOUT_NO_FALLBACK_MS;
+
+      const [freshSearch, pakEtfResult] = await Promise.all([
+        routerResult.focusDomains?.length
+          ? searchTavilyFocused(routerResult.searchQuery, routerResult.focusDomains, timeoutMs)
+          : searchTavily(routerResult.searchQuery, timeoutMs),
+        routerResult.isLiveMarket ? getPakEtfKpi() : Promise.resolve<Kpi | null>(null),
+      ]);
+      console.log(`[Timing] search: ${Date.now() - searchStart}ms (budget ${timeoutMs}ms, hadFallback: ${hasFallback})`);
+
+      if (freshSearch && freshSearch.results.length > 0) {
+        search = freshSearch;
+        setCache(cacheKey, freshSearch);
+      } else {
+        const stale = getStale<SearchResponse>(cacheKey);
+        if (stale) {
+          search = stale.data;
+          searchIsStale = true;
+          searchAgeMs = stale.ageMs;
+          console.log(`[Assistant/Cache] search empty/failed — using stale cache (${stale.ageMs}ms old)`);
+        }
+        // Only matters if the cache fallback also came up empty/missing.
+        if (!search || search.results.length === 0) {
+          pakEtfFallback = pakEtfResult;
+        }
+      }
+    }
   }
 
   // ── Step 3: Confidence + source type (deterministic, before AI) ──────────
@@ -458,7 +549,11 @@ export async function POST(request: Request): Promise<Response> {
 
   // ── Step 4: Build augmented system prompt ─────────────────────────────────
   const isDetailedMode = detectDetailedMode(message);
-  const systemPrompt = buildSystemPrompt(context, routerResult, search, isDetailedMode);
+  const systemPrompt = buildSystemPrompt(context, routerResult, search, isDetailedMode, {
+    searchIsStale,
+    searchAgeMs,
+    pakEtfFallback,
+  });
 
   const messages = [
     { role: "system" as const, content: systemPrompt },
@@ -467,8 +562,12 @@ export async function POST(request: Request): Promise<Response> {
     { role: "user" as const, content: message.trim() },
   ];
 
-  // ── Step 5: AI generation via FALLBACK_CHAIN ──────────────────────────────
+  // ── Step 5: AI generation via FALLBACK_CHAIN — timeout-protected ─────────
+  const modelStart = Date.now();
   for (const model of FALLBACK_CHAIN) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), MODEL_TIMEOUT_MS);
+    const callStart = Date.now();
     try {
       const res = await fetch(OPENROUTER_URL, {
         method: "POST",
@@ -483,10 +582,12 @@ export async function POST(request: Request): Promise<Response> {
           max_tokens: isDetailedMode ? 900 : 550,
         }),
         cache: "no-store",
+        signal: controller.signal,
       });
+      clearTimeout(timer);
 
       if (!res.ok) {
-        console.warn(`[AI/Assistant] ${model} — HTTP ${res.status} ${res.statusText}`);
+        console.warn(`[AI/Assistant] ${model} — HTTP ${res.status} ${res.statusText} (${Date.now() - callStart}ms)`);
         continue;
       }
 
@@ -507,6 +608,9 @@ export async function POST(request: Request): Promise<Response> {
       const { reply, citationUrls } = parseResponse(rawContent);
       const citations = buildCitationItems(citationUrls, search);
 
+      const modelMs = Date.now() - modelStart;
+      const totalMs = Date.now() - requestStart;
+      console.log(`[Timing] model response: ${modelMs}ms | total request: ${totalMs}ms`);
       console.log(
         `[AI/Assistant] Succeeded — model: ${model} | source: ${source} | ` +
         `confidence: ${confidence} | ` +
@@ -529,13 +633,15 @@ export async function POST(request: Request): Promise<Response> {
         modelDisplayName: getModelDisplayName(model),
       });
     } catch (err) {
-      const reason = err instanceof Error ? err.message : String(err);
-      console.warn(`[AI/Assistant] ${model} — ${reason}`);
+      clearTimeout(timer);
+      const aborted = err instanceof Error && err.name === "AbortError";
+      const reason = aborted ? `timeout after ${MODEL_TIMEOUT_MS}ms` : err instanceof Error ? err.message : String(err);
+      console.warn(`[AI/Assistant] ${model} — ${reason} (${Date.now() - callStart}ms)`);
     }
   }
 
   // All models failed
-  console.error("[AI/Assistant] All models failed");
+  console.error(`[AI/Assistant] All models failed (total: ${Date.now() - requestStart}ms)`);
   return Response.json({
     reply: "I'm having trouble connecting right now. Please try again in a moment.",
     confidence: "Low" as ConfidenceLevel,

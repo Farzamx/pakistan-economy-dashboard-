@@ -1,6 +1,15 @@
-import { FALLBACK_CHAIN } from "@/lib/openRouterClient";
+import { FALLBACK_CHAIN, MODEL_TIMEOUT_MS } from "@/lib/openRouterClient";
+import { getFresh, setCache } from "@/lib/memoryCache";
 
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
+
+// Translated tooltip content is static (the ~30 TERMINOLOGY entries never
+// change), so the same text gets requested repeatedly across different users
+// and sessions. Caching by exact input text means only the FIRST request for
+// a given tooltip ever calls the LLM — every subsequent request for the same
+// text is free and instant. Configurable via env (default 24h, since the
+// underlying English source text essentially never changes).
+const TRANSLATION_CACHE_TTL_MS = Number(process.env.TRANSLATE_CACHE_TTL_MS ?? 24 * 60 * 60 * 1000);
 
 interface OpenRouterResponse {
   choices?: { message?: { content?: string } }[];
@@ -70,11 +79,6 @@ Standard economic term translations — use these consistently:
 const USER_SUFFIX =
   "\n\n(Translate every single line above into Roman Urdu, including all headings, paragraphs, and bullet points. Do not leave any sentence in English.)";
 
-// Retry reinforcement — appended only when the first attempt from a given
-// model still contained untranslated English (see containsVerbatimEnglishRun).
-const RETRY_SUFFIX =
-  "\n\n(Your previous attempt left some sentences in English. Re-translate the ENTIRE text above again — every heading, every paragraph, every bullet must be Roman Urdu this time.)";
-
 // Strip any preamble the model may accidentally add despite instructions
 function cleanTranslation(text: string): string {
   return text
@@ -83,11 +87,13 @@ function cleanTranslation(text: string): string {
     .trim();
 }
 
-// Detects the exact failure mode reported by users: a heading gets translated
+// Detects the exact failure mode previously reported: a heading gets translated
 // but the body text under it is copied through unchanged. If any run of 6+
 // consecutive words from the original English input appears verbatim in the
-// translation, that run was never translated — flag it so the caller can
-// retry instead of silently returning a mixed-language result.
+// translation, that run was never translated. Logged as a quality signal only
+// — it does NOT trigger a second LLM call (that retry-on-incomplete loop was
+// the main cause of slow translations; the strengthened prompt above is the
+// primary defense now, this is just an observability signal).
 function containsVerbatimEnglishRun(original: string, translated: string, minWords = 6): boolean {
   const normalize = (s: string) =>
     s.toLowerCase().replace(/[^a-z0-9\s]/g, " ").replace(/\s+/g, " ").trim();
@@ -106,6 +112,7 @@ function containsVerbatimEnglishRun(original: string, translated: string, minWor
 // ── Handler ───────────────────────────────────────────────────────────────────
 
 export async function POST(request: Request): Promise<Response> {
+  const requestStart = Date.now();
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) {
     return Response.json({
@@ -125,9 +132,19 @@ export async function POST(request: Request): Promise<Response> {
     return Response.json({ error: "text is required" }, { status: 400 });
   }
 
-  // Single call to a model; returns the cleaned translation, or null on any
-  // failure (HTTP error, empty body, empty content, parse error).
-  async function callModel(model: string, userContent: string): Promise<string | null> {
+  // Cache hit — zero LLM calls, near-instant.
+  const cacheKey = text;
+  const cached = getFresh<string>(cacheKey, TRANSLATION_CACHE_TTL_MS);
+  if (cached) {
+    console.log(`[Timing] translation: ${Date.now() - requestStart}ms (cache hit, ${cached.ageMs}ms old)`);
+    return Response.json({ translation: cached.data });
+  }
+
+  // Single call to a model, timeout-protected; returns the cleaned translation,
+  // or null on any failure (HTTP error, timeout, empty body, empty content).
+  async function callModel(model: string): Promise<string | null> {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), MODEL_TIMEOUT_MS);
     try {
       const res = await fetch(OPENROUTER_URL, {
         method: "POST",
@@ -139,13 +156,15 @@ export async function POST(request: Request): Promise<Response> {
           model,
           messages: [
             { role: "system", content: SYSTEM_PROMPT },
-            { role: "user", content: userContent },
+            { role: "user", content: `${text}${USER_SUFFIX}` },
           ],
           temperature: 0.1,
           max_tokens: 1200,
         }),
         cache: "no-store",
+        signal: controller.signal,
       });
+      clearTimeout(timer);
 
       if (!res.ok) {
         console.warn(`[AI/Translate] ${model} — HTTP ${res.status} ${res.statusText}`);
@@ -167,48 +186,32 @@ export async function POST(request: Request): Promise<Response> {
 
       return cleanTranslation(raw);
     } catch (err) {
-      console.warn(`[AI/Translate] ${model} — ${err instanceof Error ? err.message : String(err)}`);
+      clearTimeout(timer);
+      const aborted = err instanceof Error && err.name === "AbortError";
+      console.warn(`[AI/Translate] ${model} — ${aborted ? `timeout after ${MODEL_TIMEOUT_MS}ms` : err instanceof Error ? err.message : String(err)}`);
       return null;
     }
   }
 
-  // Prefer a fully-translated result over a partially-English one. For each
-  // model: try once, and if the output still contains a verbatim run of the
-  // original English text (the "translated heading, English body" failure
-  // mode), retry that same model once with a corrective reminder before
-  // moving on to the next model in the chain. Keep the first non-null result
-  // as a best-effort fallback in case every model fails the completeness check.
-  let bestAttempt: string | null = null;
-
+  // One call per model, in order, stopping at the first success — no retry-on-
+  // imperfect-quality loop. Model-to-model fallback only happens on a hard
+  // failure (HTTP error, timeout, empty response), so the common case is
+  // exactly one LLM call.
   for (const model of FALLBACK_CHAIN) {
-    const first = await callModel(model, `${text}${USER_SUFFIX}`);
-    if (first === null) continue;
+    const callStart = Date.now();
+    const result = await callModel(model);
+    if (result === null) continue;
 
-    if (!containsVerbatimEnglishRun(text, first)) {
-      console.log(`[AI/Translate] Succeeded — model: ${model} | chars: ${first.length}`);
-      return Response.json({ translation: first });
+    if (containsVerbatimEnglishRun(text, result)) {
+      console.warn(`[AI/Translate] ${model} — output may contain untranslated English (quality signal only, not retried)`);
     }
 
-    bestAttempt = bestAttempt ?? first;
-    console.warn(`[AI/Translate] ${model} — output still contains untranslated English, retrying once`);
-
-    const retry = await callModel(model, `${text}${RETRY_SUFFIX}`);
-    if (retry !== null && !containsVerbatimEnglishRun(text, retry)) {
-      console.log(`[AI/Translate] Succeeded after retry — model: ${model} | chars: ${retry.length}`);
-      return Response.json({ translation: retry });
-    }
-    if (retry !== null) {
-      bestAttempt = retry; // prefer the retry's output — usually closer to complete
-      console.warn(`[AI/Translate] ${model} — retry still incomplete, trying next model`);
-    }
+    setCache(cacheKey, result);
+    console.log(`[Timing] translation: ${Date.now() - requestStart}ms (model call: ${Date.now() - callStart}ms) — ${model}`);
+    return Response.json({ translation: result });
   }
 
-  if (bestAttempt) {
-    console.warn("[AI/Translate] No model produced a fully clean translation — returning best effort");
-    return Response.json({ translation: bestAttempt });
-  }
-
-  console.error("[AI/Translate] All models failed");
+  console.error(`[AI/Translate] All models failed (${Date.now() - requestStart}ms)`);
   return Response.json({
     translation: "[Translation unavailable. Please try again.]",
   });
