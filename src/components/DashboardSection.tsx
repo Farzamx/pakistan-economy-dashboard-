@@ -7,6 +7,9 @@ import InfoTooltip from "@/components/InfoTooltip";
 
 interface DashboardSectionProps extends SectionContent {
   children?: ReactNode;
+  /** Optional small caption + tooltip rendered between the description and the stats grid
+   *  (e.g. to flag that stat values are historical averages, not live quotes). */
+  statsCaption?: ReactNode;
 }
 
 export default function DashboardSection({
@@ -14,6 +17,7 @@ export default function DashboardSection({
   title,
   description,
   stats,
+  statsCaption,
   children,
 }: DashboardSectionProps) {
   return (
@@ -27,6 +31,8 @@ export default function DashboardSection({
     >
       <h2 className="text-xl font-semibold text-white light:text-slate-900 sm:text-2xl">{title}</h2>
       <p className="mt-2 max-w-2xl text-sm text-white/60 light:text-slate-500">{description}</p>
+
+      {statsCaption && <div className="mt-4">{statsCaption}</div>}
 
       <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
         {stats.map((stat) => (

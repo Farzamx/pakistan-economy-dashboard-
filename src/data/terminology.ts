@@ -172,6 +172,17 @@ export const TERMINOLOGY: Record<string, TermEntry> = {
     ],
   },
 
+  "Previous Close / Monthly Average": {
+    title: "Previous Close / Monthly Average",
+    what: "These values are historical averages from SBP and may differ from live market rates shown in the Live FX cards above.",
+    why: "SBP EasyData publishes a monthly average (or previous interbank close) — it lags and smooths out same-day market moves.",
+    how: [
+      "For real-time PKR rates, use the Live Exchange Rates cards above",
+      "This toolkit is for historical trend analysis, not live trading decisions",
+      "Updated monthly when SBP publishes its next data release",
+    ],
+  },
+
   "EUR / PKR": {
     title: "EUR / PKR",
     what: "How many Rupees buy one Euro — updated hourly from live market data.",

@@ -79,12 +79,12 @@ export const sectionData: SectionContent[] = [
     id: "exchange-rate",
     title: "Exchange Rate (PKR)",
     description:
-      "The Pakistani Rupee's performance against major trading-partner currencies, based on interbank closing rates.",
+      "Historical average interbank exchange rates published by SBP. Values represent monthly average or previous closing rates and are not live market quotes.",
+    // Overridden in page.tsx with the live sbp.usdPkr.kpi value. SBP EasyData
+    // only publishes a USD/PKR series — no EUR/GBP/SAR — so this placeholder
+    // is never rendered as-is.
     stats: [
-      { label: "USD / PKR", value: "278.50" },
-      { label: "EUR / PKR", value: "301.20" },
-      { label: "GBP / PKR", value: "352.80" },
-      { label: "SAR / PKR", value: "74.30" },
+      { label: "USD / PKR", value: "—" },
     ],
   },
   {

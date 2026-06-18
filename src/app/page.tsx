@@ -606,10 +606,23 @@ export default async function Home() {
           <KpiGrid items={liveFxKpis} />
         </div>
 
-        <DashboardSection {...getSection("exchange-rate")}>
+        <DashboardSection
+          {...getSection("exchange-rate")}
+          stats={[
+            { label: "USD / PKR", value: `${sbp.usdPkr.kpi.value} PKR` },
+          ]}
+          statsCaption={
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-white/35 light:text-slate-500">
+                Previous Close / Monthly Average
+              </span>
+              <InfoTooltip termKey="Previous Close / Monthly Average" size="xs" />
+            </div>
+          }
+        >
           <div className="mt-6 rounded-xl border border-white/5 light:border-slate-200 bg-white/[0.02] light:bg-white p-4">
             <p className="mb-2 text-xs font-medium text-white/40 light:text-slate-500">
-              24-Month Trend <span className="text-white/25 light:text-slate-400">· SBP EasyData, monthly</span>
+              24-Month Trend <span className="text-white/25 light:text-slate-400">· SBP EasyData — Monthly Average Interbank Rate</span>
             </p>
             <TrendLineChart
               data={sbp.usdPkr.trend}
