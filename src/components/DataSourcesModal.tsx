@@ -8,6 +8,7 @@ import {
   FRESHNESS_DOT,
   FRESHNESS_LABEL,
 } from "@/lib/dataFreshness";
+import { useTheme } from "@/components/ThemeProvider";
 
 interface Props {
   kpis: Kpi[];
@@ -23,6 +24,8 @@ const STATIC_ENTRIES = [
 export default function DataSourcesModal({ kpis }: Props) {
   const [open, setOpen] = useState(false);
   const overlayRef = useRef<HTMLDivElement>(null);
+  const { theme } = useTheme();
+  const isLight = theme === "light";
 
   // Close on Escape
   useEffect(() => {
@@ -52,7 +55,8 @@ export default function DataSourcesModal({ kpis }: Props) {
         Data Sources
       </button>
 
-      {/* Modal overlay */}
+      {/* Modal overlay — backdrop stays the same dim/blur in both themes,
+          matching SettingsModal and PsxComingSoonModal conventions. */}
       {open && (
         <div
           ref={overlayRef}
@@ -64,20 +68,23 @@ export default function DataSourcesModal({ kpis }: Props) {
           aria-label="Data Sources Audit"
         >
           <div
-            className="relative flex max-h-[80vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-white/10 shadow-2xl"
-            style={{ background: "rgba(8, 10, 26, 0.96)", backdropFilter: "blur(24px)" }}
+            className="relative flex max-h-[80vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-white/10 light:border-slate-200 shadow-2xl"
+            style={{
+              background: isLight ? "#FFFFFF" : "rgba(8, 10, 26, 0.96)",
+              backdropFilter: isLight ? "none" : "blur(24px)",
+            }}
           >
             {/* Header */}
-            <div className="flex shrink-0 items-center justify-between border-b border-white/5 px-6 py-4">
+            <div className="flex shrink-0 items-center justify-between border-b border-white/5 light:border-slate-200 px-6 py-4">
               <div>
-                <h2 className="text-base font-semibold text-white">Data Sources</h2>
-                <p className="mt-0.5 text-xs text-white/40">
+                <h2 className="text-base font-semibold text-white light:text-slate-900">Data Sources</h2>
+                <p className="mt-0.5 text-xs text-white/40 light:text-slate-500">
                   All {kpis.length} indicators audited · freshness computed server-side
                 </p>
               </div>
               <button
                 onClick={() => setOpen(false)}
-                className="rounded-lg border border-white/10 px-3 py-1.5 text-xs text-white/50 transition hover:border-white/20 hover:text-white/80"
+                className="rounded-lg border border-white/10 light:border-slate-300 px-3 py-1.5 text-xs text-white/50 light:text-slate-600 transition hover:border-white/20 light:hover:border-slate-400 hover:text-white/80 light:hover:text-slate-900 light:hover:bg-slate-100"
                 aria-label="Close"
               >
                 Close ✕
@@ -85,27 +92,30 @@ export default function DataSourcesModal({ kpis }: Props) {
             </div>
 
             {/* Legend */}
-            <div className="flex shrink-0 items-center gap-4 border-b border-white/5 px-6 py-2.5">
-              <span className="text-[10px] font-medium uppercase tracking-wider text-white/30">Legend</span>
-              <span className="flex items-center gap-1 text-xs text-emerald-400">
+            <div className="flex shrink-0 items-center gap-4 border-b border-white/5 light:border-slate-200 px-6 py-2.5">
+              <span className="text-[10px] font-medium uppercase tracking-wider text-white/30 light:text-slate-400">Legend</span>
+              <span className="flex items-center gap-1 text-xs text-emerald-400 light:text-emerald-700">
                 <span className="text-[8px]">●</span> Current
               </span>
-              <span className="flex items-center gap-1 text-xs text-amber-400">
+              <span className="flex items-center gap-1 text-xs text-amber-400 light:text-amber-600">
                 <span className="text-[8px]">●</span> Delayed
               </span>
-              <span className="flex items-center gap-1 text-xs text-rose-400">
+              <span className="flex items-center gap-1 text-xs text-rose-400 light:text-rose-700">
                 <span className="text-[8px]">●</span> Stale
               </span>
-              <span className="ml-auto text-[10px] text-white/25">
+              <span className="ml-auto text-[10px] text-white/25 light:text-slate-400">
                 Thresholds vary by frequency · Monthly: current ≤60d, delayed ≤90d
               </span>
             </div>
 
             {/* Table — scrollable */}
-            <div className="overflow-y-auto">
+            <div className="overflow-y-auto themed-scrollbar">
               <table className="w-full text-xs">
-                <thead className="sticky top-0 border-b border-white/5" style={{ background: "rgba(8, 10, 26, 0.98)" }}>
-                  <tr className="text-left text-[10px] font-medium uppercase tracking-wider text-white/30">
+                <thead
+                  className="sticky top-0 border-b border-white/5 light:border-slate-200"
+                  style={{ background: isLight ? "#F8FAFC" : "rgba(8, 10, 26, 0.98)" }}
+                >
+                  <tr className="text-left text-[10px] font-medium uppercase tracking-wider text-white/30 light:text-slate-600">
                     <th className="px-6 py-3">Indicator</th>
                     <th className="px-4 py-3">Source</th>
                     <th className="px-4 py-3">Series ID</th>
@@ -114,20 +124,20 @@ export default function DataSourcesModal({ kpis }: Props) {
                     <th className="px-4 py-3">Status</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-white/[0.04]">
+                <tbody className="divide-y divide-white/[0.04] light:divide-slate-100">
                   {kpis.map((kpi, i) => {
                     const status = getFreshnessStatus(kpi.latestDate, kpi.frequency);
                     const dotClass = FRESHNESS_DOT[status];
                     const label = FRESHNESS_LABEL[status];
                     return (
-                      <tr key={`${i}-${kpi.title}`} className="transition hover:bg-white/[0.02]">
-                        <td className="px-6 py-3 font-medium text-white/80">{kpi.title}</td>
-                        <td className="px-4 py-3 text-white/50">{kpi.source ?? "—"}</td>
-                        <td className="px-4 py-3 font-mono text-white/35">{kpi.seriesId ?? "—"}</td>
-                        <td className="px-4 py-3 text-white/50" suppressHydrationWarning>
+                      <tr key={`${i}-${kpi.title}`} className="transition hover:bg-white/[0.02] light:hover:bg-slate-50">
+                        <td className="px-6 py-3 font-medium text-white/80 light:text-slate-800">{kpi.title}</td>
+                        <td className="px-4 py-3 text-white/50 light:text-slate-500">{kpi.source ?? "—"}</td>
+                        <td className="px-4 py-3 font-mono text-white/35 light:text-slate-400">{kpi.seriesId ?? "—"}</td>
+                        <td className="px-4 py-3 text-white/50 light:text-slate-500" suppressHydrationWarning>
                           {kpi.latestDate ? formatLatestDate(kpi.latestDate, kpi.frequency) : "—"}
                         </td>
-                        <td className="px-4 py-3 text-white/50">{kpi.frequency ?? "—"}</td>
+                        <td className="px-4 py-3 text-white/50 light:text-slate-500">{kpi.frequency ?? "—"}</td>
                         <td className="px-4 py-3">
                           {kpi.latestDate ? (
                             <span className={`flex items-center gap-1 ${dotClass}`}>
@@ -135,20 +145,20 @@ export default function DataSourcesModal({ kpis }: Props) {
                               {label}
                             </span>
                           ) : (
-                            <span className="text-white/25">—</span>
+                            <span className="text-white/25 light:text-slate-400">—</span>
                           )}
                         </td>
                       </tr>
                     );
                   })}
                   {STATIC_ENTRIES.map((entry) => (
-                    <tr key={entry.indicator} className="transition hover:bg-white/[0.02]">
-                      <td className="px-6 py-3 font-medium text-white/60">{entry.indicator}</td>
-                      <td className="px-4 py-3 text-white/50">{entry.source}</td>
-                      <td className="px-4 py-3 font-mono text-white/35">{entry.seriesId}</td>
-                      <td className="px-4 py-3 text-white/30">live</td>
-                      <td className="px-4 py-3 text-white/30">As Needed</td>
-                      <td className="px-4 py-3 text-white/25">—</td>
+                    <tr key={entry.indicator} className="transition hover:bg-white/[0.02] light:hover:bg-slate-50">
+                      <td className="px-6 py-3 font-medium text-white/60 light:text-slate-700">{entry.indicator}</td>
+                      <td className="px-4 py-3 text-white/50 light:text-slate-500">{entry.source}</td>
+                      <td className="px-4 py-3 font-mono text-white/35 light:text-slate-400">{entry.seriesId}</td>
+                      <td className="px-4 py-3 text-white/30 light:text-slate-400">live</td>
+                      <td className="px-4 py-3 text-white/30 light:text-slate-400">As Needed</td>
+                      <td className="px-4 py-3 text-white/25 light:text-slate-400">—</td>
                     </tr>
                   ))}
                 </tbody>

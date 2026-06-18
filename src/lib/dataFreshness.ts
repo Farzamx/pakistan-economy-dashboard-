@@ -75,9 +75,9 @@ export function formatLatestDate(
 }
 
 export const FRESHNESS_DOT: Record<FreshnessStatus, string> = {
-  current: "text-emerald-400",
-  delayed: "text-amber-400",
-  stale:   "text-rose-400",
+  current: "text-emerald-400 light:text-emerald-700",
+  delayed: "text-amber-400 light:text-amber-600",
+  stale:   "text-rose-400 light:text-rose-700",
 };
 
 export const FRESHNESS_LABEL: Record<FreshnessStatus, string> = {
