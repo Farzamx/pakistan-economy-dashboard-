@@ -112,17 +112,36 @@ export default function InfoTooltip({ termKey, size = "sm" }: Props) {
   const panelRef = useRef<HTMLDivElement>(null);
   const closeTimerRef = useRef<ReturnType<typeof setTimeout>>(null);
 
-  useEffect(() => setMounted(true), []);
+  // ── DEBUG: mount/unmount (temporary — remove once the close bug is verified fixed) ──
+  useEffect(() => {
+    setMounted(true);
+    console.log(`[InfoTooltip:DEBUG] mounted — termKey="${termKey}"`);
+    return () => console.log(`[InfoTooltip:DEBUG] unmounted — termKey="${termKey}"`);
+  }, [termKey]);
+
+  // ── DEBUG: open/close transitions (temporary) ──
+  const hasOpenedBeforeRef = useRef(false);
+  useEffect(() => {
+    if (open) hasOpenedBeforeRef.current = true;
+    // Skip the initial-mount "closed" log — only log real open->closed transitions.
+    if (!open && !hasOpenedBeforeRef.current) return;
+    console.log(`[InfoTooltip:DEBUG] ${open ? "opened" : "closed"} — termKey="${termKey}"`);
+  }, [open, termKey]);
 
   const cancelClose = useCallback(() => {
     if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
   }, []);
 
   const doClose = useCallback(() => {
+    // Never close while a translation request is in flight — this is the fix
+    // for the bug where clicking "Translate to Roman Urdu" moved focus off the
+    // trigger button, firing onBlur's scheduleClose(), which then closed the
+    // panel ~80ms later regardless of the in-progress fetch.
+    if (translating) return;
     cancelClose();
     setOpen(false);
     setUrduVisible(false);
-  }, [cancelClose]);
+  }, [cancelClose, translating]);
 
   const scheduleClose = useCallback(() => {
     closeTimerRef.current = setTimeout(doClose, 80);
@@ -170,6 +189,7 @@ export default function InfoTooltip({ termKey, size = "sm" }: Props) {
       return;
     }
 
+    console.log(`[InfoTooltip:DEBUG] translation started — termKey="${termKey}"`);
     setTranslating(true);
     const text = [
       `Kya hai?\n${entry.what}`,
@@ -189,6 +209,7 @@ export default function InfoTooltip({ termKey, size = "sm" }: Props) {
       urduCache.set(termKey, "Translation unavailable.");
     }
 
+    console.log(`[InfoTooltip:DEBUG] translation finished — termKey="${termKey}"`);
     setTranslating(false);
     setUrduVisible(true);
   }, [termKey]);
@@ -229,6 +250,7 @@ export default function InfoTooltip({ termKey, size = "sm" }: Props) {
               }}
               onMouseEnter={cancelClose}
               onMouseLeave={scheduleClose}
+              onFocus={cancelClose}
             >
               {/* Arrow (desktop only) */}
               {!placement.isMobile && (
