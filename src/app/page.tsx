@@ -399,6 +399,67 @@ export default async function Home() {
           aiCacheExpiresAt={aiCacheExpiresAt}
         />
 
+        <DashboardSection {...getSection("gdp")}>
+          <div className="mt-6 rounded-xl border border-white/5 light:border-slate-200 bg-white/[0.02] light:bg-white p-4">
+            <div className="mb-2 flex items-center gap-1.5">
+              <p className="text-xs font-medium text-white/40 light:text-slate-500">
+                Quarterly GDP Growth &mdash; Real GVA
+                <span className="text-white/25 light:text-slate-400"> &middot; SBP EasyData, quarterly</span>
+              </p>
+              <InfoTooltip termKey="Quarterly GDP Growth (YoY)" size="xs" />
+            </div>
+            <TrendLineChart
+              data={quarterlyGdp.trend}
+              color="#38bdf8"
+              unit="%"
+              gradientId="quarterlyGdpGradient"
+              xAxisInterval={3}
+            />
+          </div>
+        </DashboardSection>
+
+        <DashboardSection {...getSection("inflation")}>
+          <div className="mt-6 rounded-xl border border-white/5 light:border-slate-200 bg-white/[0.02] light:bg-white p-4">
+            <p className="mb-2 text-xs font-medium text-white/40 light:text-slate-500">
+              24-Month Trend <span className="text-white/25 light:text-slate-400">· SBP EasyData, monthly</span>
+            </p>
+            <TrendLineChart
+              data={sbp.cpiInflation.trend}
+              color="#a855f7"
+              unit="%"
+              gradientId="cpiInflationGradient"
+            />
+          </div>
+        </DashboardSection>
+
+        <DashboardSection {...getSection("price-indices")}>
+          <div className="mt-6 rounded-xl border border-white/5 light:border-slate-200 bg-white/[0.02] light:bg-white p-4">
+            <p className="mb-2 text-xs font-medium text-white/40 light:text-slate-500">
+              24-Month Trend <span className="text-white/25 light:text-slate-400">· SBP EasyData, monthly</span>
+            </p>
+            <TrendLineChart
+              data={sbp.coreInflation.trend}
+              color="#2dd4bf"
+              unit="%"
+              gradientId="coreInflationGradient"
+            />
+          </div>
+        </DashboardSection>
+
+        <DashboardSection {...getSection("monetary-policy")}>
+          <div className="mt-6 rounded-xl border border-white/5 light:border-slate-200 bg-white/[0.02] light:bg-white p-4">
+            <p className="mb-2 text-xs font-medium text-white/40 light:text-slate-500">
+              Recent Trend <span className="text-white/25 light:text-slate-400">· SBP EasyData, as-needed</span>
+            </p>
+            <TrendLineChart
+              data={sbp.policyRate.trend}
+              color="#fbbf24"
+              unit="%"
+              gradientId="policyRateGradient"
+            />
+          </div>
+        </DashboardSection>
+
         <ViewportFadeIn>
           <h2 className="mt-12 text-xl font-semibold text-white light:text-slate-900 sm:text-2xl">
             Monetary &amp; External Indicators
@@ -500,67 +561,6 @@ export default async function Home() {
           </ViewportFadeIn>
           <KpiGrid items={realEconomyKpis} />
         </div>
-
-        <DashboardSection {...getSection("gdp")}>
-          <div className="mt-6 rounded-xl border border-white/5 light:border-slate-200 bg-white/[0.02] light:bg-white p-4">
-            <div className="mb-2 flex items-center gap-1.5">
-              <p className="text-xs font-medium text-white/40 light:text-slate-500">
-                Quarterly GDP Growth &mdash; Real GVA
-                <span className="text-white/25 light:text-slate-400"> &middot; SBP EasyData, quarterly</span>
-              </p>
-              <InfoTooltip termKey="Quarterly GDP Growth (YoY)" size="xs" />
-            </div>
-            <TrendLineChart
-              data={quarterlyGdp.trend}
-              color="#38bdf8"
-              unit="%"
-              gradientId="quarterlyGdpGradient"
-              xAxisInterval={3}
-            />
-          </div>
-        </DashboardSection>
-
-        <DashboardSection {...getSection("inflation")}>
-          <div className="mt-6 rounded-xl border border-white/5 light:border-slate-200 bg-white/[0.02] light:bg-white p-4">
-            <p className="mb-2 text-xs font-medium text-white/40 light:text-slate-500">
-              24-Month Trend <span className="text-white/25 light:text-slate-400">· SBP EasyData, monthly</span>
-            </p>
-            <TrendLineChart
-              data={sbp.cpiInflation.trend}
-              color="#a855f7"
-              unit="%"
-              gradientId="cpiInflationGradient"
-            />
-          </div>
-        </DashboardSection>
-
-        <DashboardSection {...getSection("price-indices")}>
-          <div className="mt-6 rounded-xl border border-white/5 light:border-slate-200 bg-white/[0.02] light:bg-white p-4">
-            <p className="mb-2 text-xs font-medium text-white/40 light:text-slate-500">
-              24-Month Trend <span className="text-white/25 light:text-slate-400">· SBP EasyData, monthly</span>
-            </p>
-            <TrendLineChart
-              data={sbp.coreInflation.trend}
-              color="#2dd4bf"
-              unit="%"
-              gradientId="coreInflationGradient"
-            />
-          </div>
-        </DashboardSection>
-
-        <DashboardSection {...getSection("monetary-policy")}>
-          <div className="mt-6 rounded-xl border border-white/5 light:border-slate-200 bg-white/[0.02] light:bg-white p-4">
-            <p className="mb-2 text-xs font-medium text-white/40 light:text-slate-500">
-              Recent Trend <span className="text-white/25 light:text-slate-400">· SBP EasyData, as-needed</span>
-            </p>
-            <TrendLineChart
-              data={sbp.policyRate.trend}
-              color="#fbbf24"
-              unit="%"
-              gradientId="policyRateGradient"
-            />
-          </div>
-        </DashboardSection>
 
         <DashboardSection
           {...getSection("reserves")}

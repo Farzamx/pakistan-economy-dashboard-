@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import SettingsModal from "@/components/SettingsModal";
+import PsxComingSoonModal from "@/components/PsxComingSoonModal";
 
 const NAV_ITEMS = [
   { label: "Overview",        href: "#overview" },
@@ -24,6 +25,46 @@ const NAV_ITEMS = [
 
 export default function Sidebar() {
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [psxOpen, setPsxOpen] = useState(false);
+  const [activeHref, setActiveHref] = useState<string>(NAV_ITEMS[0].href);
+
+  // Scroll-spy: highlights whichever section is currently in view. A thin
+  // detection band near the top of the viewport (via rootMargin) decides
+  // which section "counts" as current. When two adjacent sections both
+  // straddle that band during a fast scroll, the one furthest down the
+  // page (last in document order) wins — matching downward scroll intent.
+  useEffect(() => {
+    const ids = NAV_ITEMS.map((item) => item.href.slice(1));
+    const sections = ids
+      .map((id) => document.getElementById(id))
+      .filter((el): el is HTMLElement => el !== null);
+
+    if (sections.length === 0) return;
+
+    const visible = new Set<string>();
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            visible.add(entry.target.id);
+          } else {
+            visible.delete(entry.target.id);
+          }
+        }
+        for (let i = ids.length - 1; i >= 0; i--) {
+          if (visible.has(ids[i])) {
+            setActiveHref(`#${ids[i]}`);
+            break;
+          }
+        }
+      },
+      { rootMargin: "-10% 0px -80% 0px", threshold: 0 },
+    );
+
+    sections.forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
+  }, []);
 
   return (
     <>
@@ -41,17 +82,40 @@ export default function Sidebar() {
 
         {/* Navigation */}
         <nav className="flex flex-col gap-1">
-          {NAV_ITEMS.map((item) => (
-            <motion.a
-              key={item.label}
-              href={item.href}
-              whileHover={{ x: 4 }}
-              transition={{ type: "spring", stiffness: 400, damping: 25 }}
-              className="rounded-lg px-4 py-2.5 text-sm font-medium text-white/50 light:text-slate-500 transition-colors hover:bg-white/5 light:hover:bg-slate-100 hover:text-white light:hover:text-slate-900"
-            >
-              {item.label}
-            </motion.a>
-          ))}
+          {NAV_ITEMS.map((item) => {
+            const isActive = activeHref === item.href;
+            return (
+              <motion.a
+                key={item.label}
+                href={item.href}
+                aria-current={isActive ? "true" : undefined}
+                whileHover={{ x: 4 }}
+                transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                className={`rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors ${
+                  isActive
+                    ? "border-neon-blue/25 bg-neon-blue/10 text-white light:text-slate-900"
+                    : "border-transparent text-white/50 light:text-slate-500 hover:bg-white/5 light:hover:bg-slate-100 hover:text-white light:hover:text-slate-900"
+                }`}
+              >
+                {item.label}
+              </motion.a>
+            );
+          })}
+
+          {/* PSX — opens "Coming Soon" modal, not a nav link */}
+          <motion.button
+            type="button"
+            onClick={() => setPsxOpen(true)}
+            whileHover={{ x: 4 }}
+            transition={{ type: "spring", stiffness: 400, damping: 25 }}
+            className="flex w-full items-center gap-2 rounded-lg border border-transparent px-4 py-2.5 text-sm font-medium text-white/50 light:text-slate-500 transition-colors hover:bg-white/5 light:hover:bg-slate-100 hover:text-white light:hover:text-slate-900"
+          >
+            <svg className="h-3.5 w-3.5 opacity-60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 17l5-5 4 4 6-7" />
+              <path d="M14 9h5v5" />
+            </svg>
+            PSX
+          </motion.button>
 
           {/* Settings — opens modal, not a nav link */}
           <motion.button
@@ -59,7 +123,7 @@ export default function Sidebar() {
             onClick={() => setSettingsOpen(true)}
             whileHover={{ x: 4 }}
             transition={{ type: "spring", stiffness: 400, damping: 25 }}
-            className="flex w-full items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium text-white/50 light:text-slate-500 transition-colors hover:bg-white/5 light:hover:bg-slate-100 hover:text-white light:hover:text-slate-900"
+            className="flex w-full items-center gap-2 rounded-lg border border-transparent px-4 py-2.5 text-sm font-medium text-white/50 light:text-slate-500 transition-colors hover:bg-white/5 light:hover:bg-slate-100 hover:text-white light:hover:text-slate-900"
           >
             <svg className="h-3.5 w-3.5 opacity-60" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
               <circle cx="8" cy="8" r="2.5" />
@@ -76,6 +140,7 @@ export default function Sidebar() {
       </aside>
 
       <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      <PsxComingSoonModal open={psxOpen} onClose={() => setPsxOpen(false)} />
     </>
   );
 }
