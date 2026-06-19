@@ -10,7 +10,78 @@ export interface KnowledgeEntry {
   answer: string;
 }
 
-export const KNOWLEDGE_BASE: KnowledgeEntry[] = [
+// ── Alias generation ─────────────────────────────────────────────────────────
+//
+// Rather than hand-typing 10-30 phrasing variants per entry, every entry's
+// alias list is the union of a small number of hand-curated, entry-specific
+// phrases (covering anything a template can't predict — synonyms, related
+// terms, Pakistan-specific phrasing) plus a large, mechanically generated set
+// of standard question/definition templates applied to the entry's core
+// term(s). This is what lets the knowledge base scale to thousands of
+// entries with tens of thousands of aliases without writing each one by hand
+// — and it guarantees consistency (every topic gets the same phrasing
+// coverage) rather than uneven, ad-hoc lists.
+
+const DEFINITION_TEMPLATES: ((t: string) => string)[] = [
+  (t) => `what is ${t}`,
+  (t) => `what are ${t}`,
+  (t) => `define ${t}`,
+  (t) => `explain ${t}`,
+  (t) => `${t} meaning`,
+  (t) => `${t} definition`,
+  (t) => `tell me about ${t}`,
+  (t) => `what does ${t} mean`,
+  (t) => `can you explain ${t}`,
+  (t) => `what is the meaning of ${t}`,
+  (t) => `${t} explained`,
+  (t) => `${t} explained simply`,
+  (t) => `${t} in simple words`,
+  (t) => `${t} in simple terms`,
+  (t) => `how do you define ${t}`,
+  (t) => `how do economists define ${t}`,
+  (t) => `give me a simple explanation of ${t}`,
+  (t) => `what's ${t}`,
+  (t) => `${t} basics`,
+  (t) => `understanding ${t}`,
+  (t) => `${t} for beginners`,
+  (t) => `can you tell me what ${t} is`,
+  (t) => `i want to know about ${t}`,
+  (t) => `${t} for dummies`,
+  (t) => `quick explanation of ${t}`,
+];
+
+/** Generates the full template-based alias set for one or more core terms (e.g. ["gdp", "gross domestic product"]), plus any hand-curated extras. */
+function buildAliases(coreTerms: string[], extra: string[] = []): string[] {
+  const generated = coreTerms.flatMap((t) => DEFINITION_TEMPLATES.map((tmpl) => tmpl(t)));
+  return Array.from(new Set([...extra, ...generated]));
+}
+
+function normalizeForDedup(s: string): string {
+  return s.toLowerCase().replace(/[^\w\s]/g, " ").replace(/\s+/g, " ").trim();
+}
+
+/**
+ * Detects entries phrased as a plain definitional question ("what is X",
+ * "define X", "X meaning", ...) and extracts X, so existing hand-authored
+ * entries can be auto-expanded with the full template set. Entries phrased
+ * as comparisons ("X vs Y"), "why"/"how" questions, or anything else that
+ * doesn't match cleanly are left untouched rather than guessing — a missed
+ * expansion is harmless, a wrong one could create a misleading alias.
+ */
+function extractCoreTerm(aliases: string[]): string | null {
+  for (const a of aliases) {
+    const lower = a.toLowerCase().trim();
+    let m = lower.match(/^(?:what is|what are|define|explain)\s+(.+)$/);
+    if (m) return m[1].replace(/\?$/, "").trim();
+    m = lower.match(/^what does\s+(.+?)\s+mean\??$/);
+    if (m) return m[1].trim();
+    m = lower.match(/^(.+?)\s+(?:meaning|definition)$/);
+    if (m) return m[1].trim();
+  }
+  return null;
+}
+
+const HAND_AUTHORED: KnowledgeEntry[] = [
   // ── GDP ──────────────────────────────────────────────────────────────────
   {
     id: "gdp-what-is",
@@ -50,7 +121,7 @@ export const KNOWLEDGE_BASE: KnowledgeEntry[] = [
   },
   {
     id: "gdp-vs-gnp",
-    aliases: ["gdp vs gnp", "difference between gdp and gnp", "what is gnp"],
+    aliases: ["gdp vs gnp", "difference between gdp and gnp", "gdp compared to gnp", "is gdp the same as gnp"],
     category: "GDP",
     answer: "GDP measures output produced within a country's borders, regardless of who produces it. GNP (Gross National Product) measures output produced by a country's citizens and companies, regardless of where in the world it happens.",
   },
@@ -338,7 +409,7 @@ export const KNOWLEDGE_BASE: KnowledgeEntry[] = [
   },
   {
     id: "cpi-urban-vs-rural",
-    aliases: ["urban vs rural cpi pakistan", "rural cpi pakistan"],
+    aliases: ["urban vs rural cpi pakistan", "rural cpi pakistan", "urban cpi vs rural cpi pakistan", "does cpi differ between urban and rural pakistan"],
     category: "CPI",
     answer: "Pakistan publishes separate urban and rural CPI indices alongside the combined national CPI, since spending patterns and price exposure differ between cities and rural areas.",
   },
@@ -596,7 +667,7 @@ export const KNOWLEDGE_BASE: KnowledgeEntry[] = [
   },
   {
     id: "sbp-open-market-operations",
-    aliases: ["what are open market operations", "sbp omo meaning"],
+    aliases: buildAliases(["open market operations", "omo"], ["sbp omo meaning"]),
     category: "SBP",
     answer: "Open Market Operations (OMOs) are how SBP injects or withdraws liquidity from the banking system by buying or selling government securities, keeping short-term market rates aligned with the policy rate.",
   },
@@ -1146,7 +1217,7 @@ export const KNOWLEDGE_BASE: KnowledgeEntry[] = [
   },
   {
     id: "remittances-seasonal-patterns",
-    aliases: ["why do remittances spike during ramadan", "remittances eid pattern"],
+    aliases: ["why do remittances spike during ramadan", "remittances eid pattern", "why do remittances spike during eid", "remittances seasonal pattern pakistan"],
     category: "Remittances",
     answer: "Remittances typically spike around Ramadan and Eid as overseas workers send extra money home for religious holidays and family celebrations.",
   },
@@ -1176,7 +1247,7 @@ export const KNOWLEDGE_BASE: KnowledgeEntry[] = [
   },
   {
     id: "remittances-vs-fdi",
-    aliases: ["remittances vs fdi pakistan", "remittances bigger than fdi"],
+    aliases: ["remittances vs fdi pakistan", "remittances bigger than fdi", "which is bigger remittances or fdi pakistan"],
     category: "Remittances",
     answer: "Remittances to Pakistan are many times larger than foreign direct investment inflows, making household-level diaspora support a far bigger external financing source than corporate investment.",
   },
@@ -1362,7 +1433,7 @@ export const KNOWLEDGE_BASE: KnowledgeEntry[] = [
   },
   {
     id: "gov-debt-sustainability",
-    aliases: ["what is debt sustainability", "is pakistan debt sustainable"],
+    aliases: buildAliases(["debt sustainability"], ["is pakistan debt sustainable"]),
     category: "Government Debt",
     answer: "Debt sustainability refers to whether a country can keep servicing its debt without needing repeated restructuring or default — judged by debt-to-GDP trends, growth rates, and interest costs relative to revenue.",
   },
@@ -1660,7 +1731,7 @@ export const KNOWLEDGE_BASE: KnowledgeEntry[] = [
   },
   {
     id: "yield-curve-inverted",
-    aliases: ["what is an inverted yield curve", "inverted yield curve meaning"],
+    aliases: buildAliases(["inverted yield curve", "yield curve inversion"], ["what does an inverted yield curve mean"]),
     category: "Yield Curves",
     answer: "An inverted yield curve occurs when short-term yields exceed long-term yields, often signaling markets expect future rate cuts — historically a watched (though imperfect) recession predictor.",
   },
@@ -2104,13 +2175,13 @@ export const KNOWLEDGE_BASE: KnowledgeEntry[] = [
   },
   {
     id: "banking-interbank-market",
-    aliases: ["what is the interbank market", "interbank lending meaning"],
+    aliases: buildAliases(["interbank market"], ["interbank lending meaning"]),
     category: "Banking",
     answer: "The interbank market is where banks lend to and borrow from each other (usually overnight) to manage short-term liquidity needs — KIBOR is derived from rates in this market.",
   },
   {
     id: "banking-correspondent-banking",
-    aliases: ["what is correspondent banking", "correspondent banking pakistan challenges"],
+    aliases: buildAliases(["correspondent banking"], ["correspondent banking pakistan challenges"]),
     category: "Banking",
     answer: "Correspondent banking relationships allow domestic banks to access international payment networks through partner banks abroad — Pakistan has faced some de-risking challenges in maintaining these relationships due to compliance concerns.",
   },
@@ -2252,7 +2323,7 @@ export const KNOWLEDGE_BASE: KnowledgeEntry[] = [
   },
   {
     id: "world-bank-ifc",
-    aliases: ["what is ifc world bank", "international finance corporation meaning"],
+    aliases: buildAliases(["ifc", "international finance corporation"], []),
     category: "World Bank",
     answer: "The International Finance Corporation (IFC) is the World Bank Group's private-sector investment arm, providing financing directly to private companies and projects in developing countries rather than to governments.",
   },
@@ -2308,7 +2379,7 @@ export const KNOWLEDGE_BASE: KnowledgeEntry[] = [
   },
   {
     id: "macro-aggregate-demand",
-    aliases: ["what is aggregate demand", "aggregate demand meaning"],
+    aliases: ["what is aggregate demand", "aggregate demand meaning", "aggregate demand vs aggregate supply"],
     category: "Macroeconomics",
     answer: "Aggregate demand is the total demand for goods and services in an economy at a given price level, combining consumption, investment, government spending, and net exports.",
   },
@@ -2412,7 +2483,7 @@ export const KNOWLEDGE_BASE: KnowledgeEntry[] = [
   },
   {
     id: "investing-dollar-cost-averaging",
-    aliases: ["what is dollar cost averaging", "rupee cost averaging meaning"],
+    aliases: buildAliases(["dollar cost averaging", "rupee cost averaging"], ["dca investing strategy"]),
     category: "Investing Basics",
     answer: "Dollar (or Rupee) cost averaging means investing a fixed amount at regular intervals regardless of price, which smooths out the impact of market volatility over time compared to investing a lump sum all at once.",
   },
@@ -2442,7 +2513,7 @@ export const KNOWLEDGE_BASE: KnowledgeEntry[] = [
   },
   {
     id: "investing-emergency-fund",
-    aliases: ["what is an emergency fund", "why have an emergency fund before investing"],
+    aliases: buildAliases(["emergency fund"], ["why have an emergency fund before investing", "how much should an emergency fund be"]),
     category: "Investing Basics",
     answer: "An emergency fund is readily accessible cash savings (often 3-6 months of expenses) kept aside before investing, so unexpected costs don't force you to sell investments at a bad time.",
   },
@@ -2472,7 +2543,7 @@ export const KNOWLEDGE_BASE: KnowledgeEntry[] = [
   },
   {
     id: "investing-beginners-pakistan",
-    aliases: ["how to start investing in pakistan", "beginner investing guide pakistan"],
+    aliases: ["how to start investing in pakistan", "beginner investing guide pakistan", "how do i start investing with little money pakistan", "best way to start investing in pakistan"],
     category: "Investing Basics",
     answer: "Beginners in Pakistan typically start with a savings account or money market mutual fund for safety, then consider PSX stocks or diversified mutual funds once comfortable with risk, ideally after building an emergency fund first.",
   },
@@ -2702,7 +2773,7 @@ export const KNOWLEDGE_BASE: KnowledgeEntry[] = [
   },
   {
     id: "reserves-net-vs-gross",
-    aliases: ["net reserves vs gross reserves", "what is net international reserves"],
+    aliases: ["net reserves vs gross reserves", "what is net international reserves", "usable reserves meaning pakistan"],
     category: "Foreign Reserves",
     answer: "Gross reserves are total foreign currency holdings. Net (or net international) reserves subtract short-term foreign currency liabilities, often giving a more accurate picture of a country's true external buffer.",
   },
@@ -3108,7 +3179,7 @@ export const KNOWLEDGE_BASE: KnowledgeEntry[] = [
   },
   {
     id: "exchange-rate-real-vs-nominal",
-    aliases: ["real exchange rate vs nominal exchange rate", "nominal exchange rate meaning"],
+    aliases: ["real exchange rate vs nominal exchange rate", "nominal exchange rate meaning", "what is a real exchange rate"],
     category: "Exchange Rates",
     answer: "The nominal exchange rate is the simple market quote (like USD/PKR). The real exchange rate adjusts this for relative inflation between countries, giving a better sense of true competitiveness.",
   },
@@ -3150,8 +3221,3241 @@ export const KNOWLEDGE_BASE: KnowledgeEntry[] = [
   },
 ];
 
+// ── Phase 2 expansion: new topics ───────────────────────────────────────────
+// Each entry below uses buildAliases() for broad template coverage plus a
+// handful of hand-curated extras for phrasing a template can't predict.
+const NEW_ENTRIES: KnowledgeEntry[] = [
+  // ── Crypto ───────────────────────────────────────────────────────────────
+  {
+    id: "crypto-bitcoin-what-is",
+    aliases: buildAliases(["bitcoin", "btc"], ["what is cryptocurrency bitcoin", "who created bitcoin"]),
+    category: "Crypto",
+    answer: "Bitcoin is a decentralized digital currency that runs on a public ledger (the blockchain) without a central bank or single administrator, created in 2009 by the pseudonymous Satoshi Nakamoto. It can be sent peer-to-peer without an intermediary like a bank.",
+  },
+  {
+    id: "crypto-bitcoin-how-works",
+    aliases: buildAliases(["how bitcoin works", "how does bitcoin transaction work"]),
+    category: "Crypto",
+    answer: "Bitcoin transactions are broadcast to a global network of computers (nodes), verified by miners solving cryptographic puzzles, and permanently recorded on the blockchain — a shared, tamper-resistant ledger that everyone on the network can verify.",
+  },
+  {
+    id: "crypto-bitcoin-mining",
+    aliases: buildAliases(["bitcoin mining", "crypto mining"], ["how does bitcoin mining work", "what do bitcoin miners do"]),
+    category: "Crypto",
+    answer: "Bitcoin mining is the process of using computing power to solve complex puzzles that validate transactions and add new blocks to the blockchain. Miners are rewarded with newly created Bitcoin and transaction fees for their work.",
+  },
+  {
+    id: "crypto-bitcoin-halving",
+    aliases: buildAliases(["bitcoin halving"], ["what is the bitcoin halving event"]),
+    category: "Crypto",
+    answer: "Bitcoin halving is a pre-programmed event (roughly every four years) that cuts the reward miners receive for validating blocks in half, slowing the rate of new Bitcoin creation and reinforcing its capped 21 million coin supply.",
+  },
+  {
+    id: "crypto-bitcoin-pakistan-legal",
+    aliases: ["is bitcoin legal in pakistan", "is cryptocurrency legal in pakistan", "can i buy bitcoin in pakistan", "crypto regulation pakistan", "sbp stance on cryptocurrency", "is crypto banned in pakistan"],
+    category: "Crypto",
+    answer: "Cryptocurrency is not officially recognized as legal tender in Pakistan, and SBP has historically warned against its use, though the government has explored regulatory frameworks for digital assets. Always check the latest SBP and SECP guidance before transacting.",
+  },
+  {
+    id: "crypto-bitcoin-volatility",
+    aliases: buildAliases(["bitcoin volatility", "crypto volatility"], ["why is bitcoin price so volatile"]),
+    category: "Crypto",
+    answer: "Bitcoin and other cryptocurrencies are known for large, rapid price swings, driven by relatively thin liquidity compared to traditional markets, speculative trading, regulatory news, and shifting investor sentiment.",
+  },
+  {
+    id: "crypto-ethereum-what-is",
+    aliases: buildAliases(["ethereum", "eth"], ["what is ether cryptocurrency"]),
+    category: "Crypto",
+    answer: "Ethereum is a decentralized blockchain platform that supports smart contracts — self-executing code — enabling applications beyond simple payments, such as decentralized finance (DeFi) and NFTs. Its native currency is Ether (ETH).",
+  },
+  {
+    id: "crypto-ethereum-vs-bitcoin",
+    aliases: ["ethereum vs bitcoin", "difference between ethereum and bitcoin", "eth vs btc", "is ethereum better than bitcoin"],
+    category: "Crypto",
+    answer: "Bitcoin was designed primarily as a digital currency and store of value. Ethereum was designed as a programmable platform supporting smart contracts and decentralized applications, with Ether used to pay for computation on the network.",
+  },
+  {
+    id: "crypto-smart-contracts",
+    aliases: buildAliases(["smart contract", "smart contracts"], ["how do smart contracts work"]),
+    category: "Crypto",
+    answer: "A smart contract is self-executing code stored on a blockchain that automatically carries out agreed terms when conditions are met, without needing a third party to enforce the agreement.",
+  },
+  {
+    id: "crypto-ethereum-gas-fees",
+    aliases: buildAliases(["gas fees", "ethereum gas fees"], ["why are ethereum fees so high"]),
+    category: "Crypto",
+    answer: "Gas fees are the transaction costs paid to process operations on the Ethereum network, varying with network congestion — more demand for block space means higher fees, similar to a real-time auction for computing resources.",
+  },
+  {
+    id: "crypto-proof-of-stake",
+    aliases: buildAliases(["proof of stake", "proof of work"], ["proof of stake vs proof of work"]),
+    category: "Crypto",
+    answer: "Proof of Work (used by Bitcoin) secures a blockchain through energy-intensive computational puzzles. Proof of Stake (used by Ethereum since 2022) instead has validators lock up ('stake') cryptocurrency as collateral to validate transactions, using far less energy.",
+  },
+  {
+    id: "crypto-stablecoin-what-is",
+    aliases: buildAliases(["stablecoin", "stablecoins"], ["what is a stablecoin cryptocurrency"]),
+    category: "Crypto",
+    answer: "A stablecoin is a cryptocurrency designed to maintain a stable value, typically pegged 1:1 to a fiat currency like the US Dollar, by holding reserves or using algorithmic mechanisms — used to reduce the volatility common in other cryptocurrencies.",
+  },
+  {
+    id: "crypto-stablecoin-types",
+    aliases: ["types of stablecoins", "fiat backed vs crypto backed stablecoin", "algorithmic stablecoin meaning"],
+    category: "Crypto",
+    answer: "Stablecoins are generally backed by fiat currency reserves (like USDC, USDT), backed by other crypto assets held as over-collateral, or algorithmically managed by smart contracts that adjust supply to maintain the peg.",
+  },
+  {
+    id: "crypto-stablecoin-why-use",
+    aliases: ["why use stablecoins", "benefits of stablecoins"],
+    category: "Crypto",
+    answer: "Stablecoins let crypto users move value, trade, or earn yield without exiting the crypto ecosystem entirely, while avoiding the sharp price swings of assets like Bitcoin or Ethereum.",
+  },
+  {
+    id: "crypto-stablecoin-risks",
+    aliases: ["stablecoin risks", "are stablecoins safe", "stablecoin depegging"],
+    category: "Crypto",
+    answer: "Stablecoin risks include the issuer not actually holding sufficient reserves, regulatory uncertainty, and 'depegging' — losing the 1:1 value relationship during periods of market stress, as has happened to several stablecoins historically.",
+  },
+  {
+    id: "crypto-staking-what-is",
+    aliases: buildAliases(["staking", "crypto staking"], ["what does staking mean in crypto"]),
+    category: "Crypto",
+    answer: "Staking means locking up cryptocurrency to help validate transactions on a Proof-of-Stake blockchain, in return for earning rewards — similar in spirit to earning interest on a deposit, but with different risks.",
+  },
+  {
+    id: "crypto-staking-how-works",
+    aliases: ["how does staking work", "how do i stake crypto"],
+    category: "Crypto",
+    answer: "Stakers lock their tokens with a validator (or run their own validator node), which participates in confirming transactions. In return, stakers earn a share of newly issued tokens or transaction fees, proportional to their stake.",
+  },
+  {
+    id: "crypto-staking-risks",
+    aliases: ["staking risks", "is staking crypto safe", "staking lock up period risk"],
+    category: "Crypto",
+    answer: "Staking risks include price volatility of the staked asset, lock-up periods that prevent quick withdrawal, validator/platform failure ('slashing'), and smart contract risk if staking through a third-party platform.",
+  },
+  {
+    id: "crypto-defi-what-is",
+    aliases: buildAliases(["defi", "decentralized finance"], ["what does defi stand for"]),
+    category: "Crypto",
+    answer: "DeFi (Decentralized Finance) refers to financial services — lending, borrowing, trading, earning interest — built on blockchain networks using smart contracts, operating without traditional banks or brokers as intermediaries.",
+  },
+  {
+    id: "crypto-defi-vs-traditional",
+    aliases: ["defi vs traditional finance", "defi vs banks"],
+    category: "Crypto",
+    answer: "Traditional finance relies on banks and regulated intermediaries to manage accounts, lending, and trading. DeFi automates these functions through smart contracts, offering more open access but with less regulatory protection and higher technical risk.",
+  },
+  {
+    id: "crypto-defi-risks",
+    aliases: ["defi risks", "is defi safe"],
+    category: "Crypto",
+    answer: "DeFi risks include smart contract bugs/exploits, lack of regulatory protection if something goes wrong, extreme price volatility of underlying tokens, and the complexity of safely managing private keys and wallets.",
+  },
+  {
+    id: "crypto-blockchain-what-is",
+    aliases: buildAliases(["blockchain"], ["what does blockchain mean", "how is blockchain different from a database"]),
+    category: "Crypto",
+    answer: "A blockchain is a distributed, tamper-resistant digital ledger that records transactions across many computers, with each new 'block' of data cryptographically linked to the previous one, making past records extremely difficult to alter.",
+  },
+  {
+    id: "crypto-blockchain-vs-bitcoin",
+    aliases: ["blockchain vs bitcoin", "is blockchain the same as bitcoin"],
+    category: "Crypto",
+    answer: "Bitcoin is one application built on blockchain technology. Blockchain itself is the broader underlying technology, which can be used for many purposes beyond cryptocurrency, like supply chain tracking or digital identity.",
+  },
+  {
+    id: "crypto-blockchain-use-cases",
+    aliases: ["blockchain use cases", "what is blockchain used for"],
+    category: "Crypto",
+    answer: "Beyond cryptocurrency, blockchain technology is used for supply chain tracking, digital identity verification, cross-border payments, tokenizing real-world assets, and recording ownership of digital items like NFTs.",
+  },
+  {
+    id: "crypto-wallet-what-is",
+    aliases: buildAliases(["crypto wallet", "cryptocurrency wallet"], ["what is a digital wallet for crypto"]),
+    category: "Crypto",
+    answer: "A crypto wallet is software or hardware that stores the private keys needed to access and manage cryptocurrency on the blockchain. It doesn't store the coins themselves — it stores the keys that prove ownership and authorize transactions.",
+  },
+  {
+    id: "crypto-wallet-hot-vs-cold",
+    aliases: ["hot wallet vs cold wallet", "what is a hot wallet", "what is a cold wallet"],
+    category: "Crypto",
+    answer: "A hot wallet is connected to the internet (convenient but more vulnerable to hacking). A cold wallet stores keys offline (like a hardware device), offering much stronger security for long-term holdings at the cost of convenience.",
+  },
+  {
+    id: "crypto-wallet-custodial",
+    aliases: ["custodial vs non-custodial wallet", "what is a custodial wallet"],
+    category: "Crypto",
+    answer: "A custodial wallet (like on an exchange) means a third party holds your private keys on your behalf. A non-custodial wallet means you alone control your private keys — more responsibility, but no reliance on a third party's solvency or security.",
+  },
+  {
+    id: "crypto-wallet-security",
+    aliases: ["how to secure a crypto wallet", "crypto wallet security tips"],
+    category: "Crypto",
+    answer: "Securing a crypto wallet typically involves using a hardware (cold) wallet for significant holdings, never sharing your private key or seed phrase, enabling two-factor authentication on exchange accounts, and being wary of phishing attempts.",
+  },
+  {
+    id: "crypto-nft-what-is",
+    aliases: buildAliases(["nft", "non fungible token"], ["what does nft stand for"]),
+    category: "Crypto",
+    answer: "An NFT (Non-Fungible Token) is a unique digital certificate of ownership recorded on a blockchain, often associated with digital art, collectibles, or other unique digital/physical assets — unlike cryptocurrencies, each NFT is distinct and not interchangeable.",
+  },
+  {
+    id: "crypto-exchange-what-is",
+    aliases: buildAliases(["crypto exchange", "cryptocurrency exchange"], ["how do crypto exchanges work"]),
+    category: "Crypto",
+    answer: "A crypto exchange is a platform where users can buy, sell, and trade cryptocurrencies, either through a centralized company (CEX) that holds custody of funds, or a decentralized exchange (DEX) that operates via smart contracts without a central custodian.",
+  },
+  {
+    id: "crypto-market-cap",
+    aliases: buildAliases(["crypto market cap", "cryptocurrency market capitalization"], ["how is crypto market cap calculated"]),
+    category: "Crypto",
+    answer: "Cryptocurrency market capitalization is calculated by multiplying a coin's current price by its total circulating supply, used to gauge the relative size of different cryptocurrencies.",
+  },
+
+  // ── Investing: Valuation Ratios & Metrics ───────────────────────────────
+  {
+    id: "investing-pe-ratio-what-is",
+    aliases: buildAliases(["pe ratio", "price to earnings ratio", "p e ratio"], ["what does pe ratio mean in stocks"]),
+    category: "Investing Basics",
+    answer: "The P/E (Price-to-Earnings) ratio divides a company's share price by its earnings per share, showing how much investors are willing to pay for each rupee (or dollar) of a company's profit — a common, quick valuation gauge.",
+  },
+  {
+    id: "investing-pe-ratio-calculate",
+    aliases: ["how to calculate pe ratio", "pe ratio formula"],
+    category: "Investing Basics",
+    answer: "P/E ratio = Share Price ÷ Earnings Per Share (EPS). For example, a stock trading at 100 with an EPS of 10 has a P/E ratio of 10, meaning investors are paying 10 times the company's annual per-share earnings.",
+  },
+  {
+    id: "investing-pe-ratio-high-vs-low",
+    aliases: ["high pe ratio vs low pe ratio", "is a high pe ratio good or bad", "what is a good pe ratio"],
+    category: "Investing Basics",
+    answer: "A high P/E often suggests investors expect strong future growth (or that a stock is overvalued). A low P/E can suggest a stock is undervalued, or that the market has low growth expectations — context and industry comparison matter more than the number alone.",
+  },
+  {
+    id: "investing-pe-ratio-limitations",
+    aliases: ["pe ratio limitations", "problems with pe ratio"],
+    category: "Investing Basics",
+    answer: "P/E ratios can be distorted by one-off accounting items, don't account for debt levels, and aren't comparable across very different industries — analysts often use it alongside other metrics like P/B, EV/EBITDA, or DCF valuation.",
+  },
+  {
+    id: "investing-eps-what-is",
+    aliases: buildAliases(["eps", "earnings per share"], ["what does eps mean in stocks"]),
+    category: "Investing Basics",
+    answer: "EPS (Earnings Per Share) is a company's net profit divided by its number of outstanding shares, showing how much profit is attributable to each individual share — a key input for the P/E ratio and overall profitability analysis.",
+  },
+  {
+    id: "investing-eps-calculate",
+    aliases: ["how is eps calculated", "eps formula"],
+    category: "Investing Basics",
+    answer: "EPS = Net Profit ÷ Number of Outstanding Shares. A company earning 100 million profit with 10 million shares outstanding has an EPS of 10.",
+  },
+  {
+    id: "investing-eps-diluted",
+    aliases: ["eps vs diluted eps", "what is diluted eps"],
+    category: "Investing Basics",
+    answer: "Basic EPS uses the current number of outstanding shares. Diluted EPS accounts for the potential impact of convertible securities, stock options, or warrants if they were all converted into shares — diluted EPS is always equal to or lower than basic EPS.",
+  },
+  {
+    id: "investing-roe-what-is",
+    aliases: buildAliases(["roe", "return on equity"], ["what does roe mean"]),
+    category: "Investing Basics",
+    answer: "ROE (Return on Equity) measures how efficiently a company generates profit from shareholders' equity, calculated as Net Profit divided by Shareholders' Equity — a key gauge of management's effectiveness at using investor capital.",
+  },
+  {
+    id: "investing-roe-calculate",
+    aliases: ["how to calculate roe", "roe formula", "what is a good roe"],
+    category: "Investing Basics",
+    answer: "ROE = Net Profit ÷ Shareholders' Equity, usually expressed as a percentage. ROE above 15-20% is often considered strong, though what counts as 'good' varies significantly by industry.",
+  },
+  {
+    id: "investing-roa-what-is",
+    aliases: buildAliases(["roa", "return on assets"], ["what does roa mean"]),
+    category: "Investing Basics",
+    answer: "ROA (Return on Assets) measures how efficiently a company generates profit from its total assets, calculated as Net Profit divided by Total Assets — useful for comparing efficiency across capital-intensive businesses like banks.",
+  },
+  {
+    id: "investing-roa-vs-roe",
+    aliases: ["roa vs roe", "difference between roa and roe"],
+    category: "Investing Basics",
+    answer: "ROE measures returns relative to shareholders' equity alone, while ROA measures returns relative to ALL assets (including those funded by debt) — a company with high debt can have a much higher ROE than ROA.",
+  },
+  {
+    id: "investing-dcf-what-is",
+    aliases: buildAliases(["dcf", "discounted cash flow"], ["what does dcf stand for"]),
+    category: "Investing Basics",
+    answer: "DCF (Discounted Cash Flow) is a valuation method that estimates an investment's worth by projecting its future cash flows and discounting them back to today's value using a required rate of return.",
+  },
+  {
+    id: "investing-dcf-how-works",
+    aliases: ["how does dcf work", "dcf valuation method"],
+    category: "Investing Basics",
+    answer: "A DCF model forecasts a company's future free cash flows over several years, then discounts each year's cash flow back to present value using a discount rate (often the weighted average cost of capital), summing them to estimate intrinsic value.",
+  },
+  {
+    id: "investing-dcf-limitations",
+    aliases: ["dcf limitations", "problems with dcf valuation"],
+    category: "Investing Basics",
+    answer: "DCF valuations are highly sensitive to assumptions about growth rates and the discount rate used — small changes in these inputs can produce dramatically different valuations, making DCF more useful for framing a range than a precise number.",
+  },
+  {
+    id: "investing-npv-what-is",
+    aliases: buildAliases(["npv", "net present value"], ["what does npv mean"]),
+    category: "Investing Basics",
+    answer: "NPV (Net Present Value) is the difference between the present value of an investment's expected cash inflows and the present value of its cash outflows — a positive NPV suggests an investment is expected to add value.",
+  },
+  {
+    id: "investing-npv-calculate",
+    aliases: ["how to calculate npv", "npv formula"],
+    category: "Investing Basics",
+    answer: "NPV is calculated by discounting each period's expected cash flow back to today's value using a chosen discount rate, then summing them and subtracting the initial investment cost.",
+  },
+  {
+    id: "investing-irr-what-is",
+    aliases: buildAliases(["irr", "internal rate of return"], ["what does irr mean"]),
+    category: "Investing Basics",
+    answer: "IRR (Internal Rate of Return) is the discount rate at which an investment's NPV equals zero — essentially, the annualized rate of return the investment is expected to generate.",
+  },
+  {
+    id: "investing-irr-vs-npv",
+    aliases: ["irr vs npv", "difference between irr and npv", "irr vs roi"],
+    category: "Investing Basics",
+    answer: "NPV gives a dollar/rupee value of expected profit. IRR gives a percentage rate of return. Both are used together in capital budgeting decisions — NPV is generally considered more reliable when comparing investments of different sizes.",
+  },
+  {
+    id: "investing-risk-what-is",
+    aliases: buildAliases(["investment risk", "financial risk"], ["what is risk in investing"]),
+    category: "Investing Basics",
+    answer: "Investment risk is the chance that an investment's actual return will differ from its expected return, including the possibility of losing some or all of the invested capital.",
+  },
+  {
+    id: "investing-return-what-is",
+    aliases: buildAliases(["investment return", "rate of return"], ["what is return in investing"]),
+    category: "Investing Basics",
+    answer: "Investment return is the gain or loss generated on an investment relative to the amount invested, usually expressed as a percentage, and can come from price appreciation, dividends, or interest.",
+  },
+  {
+    id: "investing-market-order-vs-limit",
+    aliases: buildAliases(["market order", "limit order"], ["market order vs limit order", "what is a stop loss order"]),
+    category: "Investing Basics",
+    answer: "A market order executes immediately at the best available price. A limit order only executes at a specified price or better. A stop-loss order automatically sells a position if it falls to a set price, limiting downside risk.",
+  },
+  {
+    id: "investing-bid-ask-spread",
+    aliases: buildAliases(["bid ask spread", "bid price vs ask price"], ["what is the spread in trading"]),
+    category: "Investing Basics",
+    answer: "The bid price is what buyers are willing to pay; the ask price is what sellers are willing to accept. The bid-ask spread is the difference between them, and a narrower spread generally indicates a more liquid, actively traded security.",
+  },
+
+  // ── PSX mechanics ────────────────────────────────────────────────────────
+  {
+    id: "psx-market-cap-general",
+    aliases: buildAliases(["market capitalization", "market cap"], ["how is market cap calculated", "what does market cap mean for a stock"]),
+    category: "PSX",
+    answer: "Market capitalization is a company's total share price multiplied by its number of outstanding shares — it represents the total market value of a company's equity and is used to classify companies as large-cap, mid-cap, or small-cap.",
+  },
+  {
+    id: "psx-free-float-general",
+    aliases: buildAliases(["free float", "free float shares"], ["what does free float mean in stock market"]),
+    category: "PSX",
+    answer: "Free float refers to the portion of a company's shares that are freely available for public trading, excluding shares held by founders, government, or strategic/locked-in investors — indices like KSE-100 weight companies by free-float market cap, not total shares.",
+  },
+  {
+    id: "psx-dividends-general",
+    aliases: buildAliases(["dividend", "dividends"], ["what is a dividend", "how do dividends work", "dividend yield meaning stocks"]),
+    category: "PSX",
+    answer: "A dividend is a portion of a company's profit distributed to shareholders, usually in cash, as a reward for holding the stock. Dividend yield is the annual dividend per share divided by the current share price.",
+  },
+  {
+    id: "psx-dividend-types",
+    aliases: ["cash dividend vs stock dividend", "interim dividend vs final dividend"],
+    category: "PSX",
+    answer: "A cash dividend pays shareholders in cash; a stock dividend issues additional shares instead. An interim dividend is declared during the financial year, while a final dividend is declared after annual results and approved by shareholders.",
+  },
+  {
+    id: "psx-bonus-shares-what-are",
+    aliases: buildAliases(["bonus shares", "bonus issue"], ["what does bonus shares mean", "how do bonus shares work"]),
+    category: "PSX",
+    answer: "Bonus shares are additional shares a company issues to existing shareholders for free, in proportion to their current holdings (e.g., a 1:5 bonus issue gives 1 new share for every 5 held), typically funded from retained earnings rather than cash.",
+  },
+  {
+    id: "psx-bonus-shares-effect",
+    aliases: ["do bonus shares increase wealth", "bonus shares vs dividend", "effect of bonus shares on share price"],
+    category: "PSX",
+    answer: "Bonus shares increase the number of shares an investor holds but proportionally reduce the share price (since the company's total value is unchanged) — they don't directly create new wealth, but can signal management confidence and improve trading liquidity.",
+  },
+  {
+    id: "psx-bonus-shares-tax",
+    aliases: ["are bonus shares taxed in pakistan", "bonus shares tax treatment pakistan"],
+    category: "PSX",
+    answer: "In Pakistan, bonus shares issued by companies have historically been subject to specific tax treatment under the Income Tax Ordinance — rules have changed over time, so investors should check current FBR guidance before assuming tax-free status.",
+  },
+  {
+    id: "psx-rights-shares-what-are",
+    aliases: buildAliases(["rights shares", "rights issue"], ["what does rights issue mean", "how do rights shares work"]),
+    category: "PSX",
+    answer: "A rights issue gives existing shareholders the right (not obligation) to buy additional new shares, usually at a discount to the market price, in proportion to their current holding — used by companies to raise fresh capital.",
+  },
+  {
+    id: "psx-rights-shares-decision",
+    aliases: ["should i subscribe to rights shares", "what happens if i dont subscribe to rights issue"],
+    category: "PSX",
+    answer: "Shareholders who don't subscribe to a rights issue see their percentage ownership diluted as new shares are issued to other participants; some companies allow renouncing/selling rights entitlements to other investors instead.",
+  },
+  {
+    id: "psx-rights-vs-bonus",
+    aliases: ["rights shares vs bonus shares", "difference between rights issue and bonus issue"],
+    category: "PSX",
+    answer: "Bonus shares are issued free of cost from retained earnings. Rights shares are offered for purchase (usually at a discount) and raise fresh capital for the company — bonus shares don't raise new money, rights issues do.",
+  },
+  {
+    id: "psx-ipo-process",
+    aliases: buildAliases(["ipo", "initial public offering"], ["how does an ipo work", "ipo process pakistan"]),
+    category: "PSX",
+    answer: "An IPO (Initial Public Offering) is when a private company sells shares to the public for the first time, becoming a publicly listed company. In Pakistan, this involves SECP approval, a prospectus, and typically a combination of book-building and fixed-price subscription.",
+  },
+  {
+    id: "psx-ipo-oversubscription",
+    aliases: buildAliases(["ipo oversubscription", "ipo book building"], ["what does ipo oversubscribed mean"]),
+    category: "PSX",
+    answer: "An IPO is 'oversubscribed' when investor demand for shares exceeds the number being offered, often leading to pro-rata allotment. Book-building is the process of gauging institutional investor demand to help set the final IPO price.",
+  },
+  {
+    id: "psx-trading-basics-account",
+    aliases: buildAliases(["how to start trading on psx", "psx trading account"], ["how to open a brokerage account in pakistan"]),
+    category: "PSX",
+    answer: "To trade on PSX, you open an account with a SECP-licensed broker, complete CDC (Central Depository Company) sub-account registration for holding shares electronically, fund the account, and then place buy/sell orders through the broker's trading platform.",
+  },
+  {
+    id: "psx-trading-basics-lot-size",
+    aliases: ["psx minimum lot size", "can i buy one share on psx"],
+    category: "PSX",
+    answer: "PSX generally allows trading in board lots, though odd-lot trading for smaller quantities is also supported on most platforms — minimums and lot conventions can vary slightly by broker and instrument.",
+  },
+  {
+    id: "psx-trading-basics-order-types",
+    aliases: ["psx order types", "good till cancelled order meaning"],
+    category: "PSX",
+    answer: "PSX trading platforms typically support market orders (execute immediately), limit orders (execute at a specified price), and day or good-till-cancelled (GTC) order durations, similar to other modern exchanges.",
+  },
+  {
+    id: "psx-trading-basics-settlement-risk",
+    aliases: ["psx settlement risk", "what happens if a trade fails to settle"],
+    category: "PSX",
+    answer: "PSX trades settle through NCCPL on a T+2 basis. Settlement risk (the chance a counterparty fails to deliver shares or payment) is mitigated through NCCPL's clearing and guarantee mechanisms.",
+  },
+
+  // ── Bonds: face value, callable/putable ─────────────────────────────────
+  {
+    id: "bonds-face-value-what-is",
+    aliases: buildAliases(["face value", "par value", "face value of a bond"], ["what does face value mean in bonds"]),
+    category: "Bonds",
+    answer: "Face value (or par value) is the amount a bond will be worth at maturity, and the amount on which coupon interest is calculated — it's not necessarily what an investor pays, since bonds can trade above or below face value in the secondary market.",
+  },
+  {
+    id: "bonds-face-value-vs-market-price",
+    aliases: ["face value vs market price bond", "why does bond price differ from face value"],
+    category: "Bonds",
+    answer: "A bond's market price fluctuates with interest rates and credit perception, while its face value stays fixed. A bond trading above face value is at a 'premium'; below face value is at a 'discount.'",
+  },
+  {
+    id: "bonds-callable-what-are",
+    aliases: buildAliases(["callable bond", "callable bonds"], ["what does callable bond mean"]),
+    category: "Bonds",
+    answer: "A callable bond gives the ISSUER the right to repay (redeem) the bond before its maturity date, usually after a set period — typically used when the issuer expects interest rates to fall, allowing them to refinance more cheaply later.",
+  },
+  {
+    id: "bonds-callable-investor-risk",
+    aliases: ["callable bond risk for investors", "why do callable bonds pay higher yield"],
+    category: "Bonds",
+    answer: "Callable bonds carry 'call risk' for investors — if rates fall, the issuer may redeem the bond early, forcing the investor to reinvest at lower prevailing rates. To compensate for this risk, callable bonds typically offer a higher yield than non-callable equivalents.",
+  },
+  {
+    id: "bonds-putable-what-are",
+    aliases: buildAliases(["putable bond", "putable bonds", "put bond"], ["what does putable bond mean"]),
+    category: "Bonds",
+    answer: "A putable bond gives the INVESTOR the right to sell the bond back to the issuer before maturity at a predetermined price — the opposite of a callable bond, giving the holder protection if interest rates rise or credit quality worsens.",
+  },
+  {
+    id: "bonds-putable-vs-callable",
+    aliases: ["putable vs callable bonds", "difference between callable and putable bonds"],
+    category: "Bonds",
+    answer: "A callable bond benefits the issuer (who can redeem early if it's favorable to them). A putable bond benefits the investor (who can demand early repayment if it's favorable to them) — putable bonds typically offer a lower yield since the option favors the buyer.",
+  },
+
+  // ── Banking: deposits, loans, credit risk ───────────────────────────────
+  {
+    id: "banking-deposits-what-are",
+    aliases: buildAliases(["bank deposit", "deposits"], ["what is a bank deposit", "types of bank deposits pakistan"]),
+    category: "Banking",
+    answer: "A bank deposit is money placed into a bank account, which the bank can then lend out to others while paying the depositor interest. Common types include current accounts (no/low interest, fully liquid), savings accounts, and fixed/term deposits.",
+  },
+  {
+    id: "banking-deposits-fixed-vs-savings",
+    aliases: ["fixed deposit vs savings account", "term deposit meaning pakistan"],
+    category: "Banking",
+    answer: "A savings account offers easy access to funds with modest interest. A fixed (term) deposit locks funds for a set period in exchange for a higher, guaranteed interest rate, with penalties for early withdrawal.",
+  },
+  {
+    id: "banking-loans-what-are",
+    aliases: buildAliases(["bank loan", "loans"], ["what is a loan", "types of bank loans pakistan"]),
+    category: "Banking",
+    answer: "A bank loan is borrowed money that must be repaid with interest over an agreed period. Common types include personal loans, mortgages (house finance), auto loans, and business/working capital loans.",
+  },
+  {
+    id: "banking-loans-secured-vs-unsecured",
+    aliases: ["secured loan vs unsecured loan", "collateral meaning loan"],
+    category: "Banking",
+    answer: "A secured loan is backed by collateral (an asset the bank can claim if you default), typically offering lower interest rates. An unsecured loan has no collateral backing and usually carries higher interest rates to compensate for the bank's added risk.",
+  },
+  {
+    id: "banking-credit-risk-what-is",
+    aliases: buildAliases(["credit risk"], ["what is credit risk in banking", "default risk meaning loan"]),
+    category: "Banking",
+    answer: "Credit risk is the risk that a borrower fails to repay a loan as agreed, causing a loss for the lender. Banks manage credit risk through credit checks, collateral requirements, diversification, and loan provisioning.",
+  },
+  {
+    id: "banking-credit-risk-assessment",
+    aliases: ["how do banks assess credit risk", "credit score meaning"],
+    category: "Banking",
+    answer: "Banks assess credit risk using factors like income, repayment history, existing debt levels, collateral value, and credit bureau data, often summarized into a credit score that influences loan approval and pricing.",
+  },
+  {
+    id: "banking-credit-risk-provisioning",
+    aliases: ["loan loss provisioning meaning", "what is provisioning against npls"],
+    category: "Banking",
+    answer: "Loan loss provisioning is money a bank sets aside in advance to cover expected losses from loans that may not be repaid, directly reducing reported profit but cushioning the bank's balance sheet against bad debts.",
+  },
+
+  // ── Mutual Funds: asset allocation ──────────────────────────────────────
+  {
+    id: "mutual-funds-asset-allocation-what-are",
+    aliases: buildAliases(["asset allocation fund", "balanced fund"], ["what is an asset allocation fund"]),
+    category: "Mutual Funds",
+    answer: "An asset allocation (or balanced) fund invests across multiple asset classes — typically a mix of equities, fixed income, and money market instruments — with the fund manager adjusting the mix based on market conditions, offering built-in diversification.",
+  },
+  {
+    id: "mutual-funds-asset-allocation-vs-equity",
+    aliases: ["asset allocation fund vs equity fund", "balanced fund vs pure equity fund"],
+    category: "Mutual Funds",
+    answer: "An equity fund invests almost entirely in stocks, carrying higher risk and higher potential return. An asset allocation fund spreads investments across stocks, bonds, and cash, generally offering a smoother, lower-volatility return profile.",
+  },
+
+  // ── SBP: liquidity, reserve requirements, currency management ──────────
+  {
+    id: "sbp-liquidity-what-is",
+    aliases: buildAliases(["banking system liquidity", "money market liquidity"], ["what is liquidity in banking system pakistan"]),
+    category: "SBP",
+    answer: "Banking system liquidity refers to the amount of readily available cash/reserves banks hold to meet withdrawal demands and settle obligations. SBP manages system-wide liquidity through tools like open market operations to keep short-term rates near its policy target.",
+  },
+  {
+    id: "sbp-liquidity-shortage",
+    aliases: ["liquidity shortage banking system", "what happens when banks face a liquidity crunch"],
+    category: "SBP",
+    answer: "A liquidity shortage occurs when banks collectively don't have enough readily available funds to meet demand, pushing up short-term interbank rates — SBP responds by injecting liquidity through reverse repo operations or other tools.",
+  },
+  {
+    id: "sbp-liquidity-injection-mop-up",
+    aliases: ["liquidity injection meaning", "liquidity mop up meaning"],
+    category: "SBP",
+    answer: "A liquidity injection is when SBP adds funds to the banking system (e.g., via reverse repo) to ease a shortage. A liquidity 'mop-up' is the opposite — SBP withdraws excess funds (via repo) to prevent rates from falling too far below target.",
+  },
+  {
+    id: "sbp-reserve-requirements-what-are",
+    aliases: buildAliases(["reserve requirement", "cash reserve requirement"], ["what is crr cash reserve ratio", "what is slr statutory liquidity ratio"]),
+    category: "SBP",
+    answer: "Reserve requirements are the minimum percentage of deposits banks must hold in reserve (rather than lend out) — the Cash Reserve Requirement (CRR) must be held with SBP, while the Statutory Liquidity Requirement (SLR) can include approved liquid assets like government securities.",
+  },
+  {
+    id: "sbp-reserve-requirements-purpose",
+    aliases: ["why do reserve requirements exist", "purpose of cash reserve ratio"],
+    category: "SBP",
+    answer: "Reserve requirements ensure banks maintain a buffer to meet depositor withdrawals and give the central bank a tool to influence how much money banks can lend — raising requirements tightens lending capacity; lowering them eases it.",
+  },
+  {
+    id: "sbp-currency-management-what-is",
+    aliases: buildAliases(["currency management", "currency issuance"], ["who prints pakistani currency", "how is currency supply managed"]),
+    category: "SBP",
+    answer: "Currency management refers to SBP's responsibility for issuing and managing the supply of Pakistani Rupee banknotes and coins, ensuring enough currency is in circulation to meet the economy's needs while supporting overall monetary policy goals.",
+  },
+  {
+    id: "sbp-currency-management-printing-inflation",
+    aliases: ["does printing money cause inflation", "currency printing and inflation pakistan"],
+    category: "SBP",
+    answer: "Printing significantly more currency than the economy's real output growth justifies can fuel inflation, since more money chasing the same amount of goods pushes prices up — this is why SBP's lending to the government is legally restricted.",
+  },
+  {
+    id: "sbp-monetary-policy-general",
+    aliases: buildAliases(["monetary policy"], ["what is monetary policy", "monetary policy tools"]),
+    category: "SBP",
+    answer: "Monetary policy is a central bank's use of tools — primarily interest rates, but also reserve requirements and open market operations — to influence inflation, employment, and overall economic activity.",
+  },
+  {
+    id: "sbp-monetary-policy-expansionary-contractionary",
+    aliases: ["expansionary vs contractionary monetary policy", "what is expansionary monetary policy", "what is contractionary monetary policy"],
+    category: "SBP",
+    answer: "Expansionary monetary policy lowers interest rates or increases money supply to stimulate growth. Contractionary monetary policy raises rates or reduces money supply to cool inflation — SBP has used the latter aggressively during Pakistan's recent inflation crises.",
+  },
+
+  // ── General Economics: supply, demand, productivity, unemployment ──────
+  {
+    id: "econ-supply-what-is",
+    aliases: buildAliases(["supply", "economic supply"], ["what is supply in economics", "law of supply"]),
+    category: "Macroeconomics",
+    answer: "Supply is the total quantity of a good or service that producers are willing and able to sell at a given price. The law of supply states that, generally, higher prices encourage producers to supply more.",
+  },
+  {
+    id: "econ-demand-what-is",
+    aliases: buildAliases(["demand", "economic demand"], ["what is demand in economics", "law of demand"]),
+    category: "Macroeconomics",
+    answer: "Demand is the total quantity of a good or service that buyers are willing and able to purchase at a given price. The law of demand states that, generally, higher prices reduce the quantity demanded.",
+  },
+  {
+    id: "econ-supply-and-demand",
+    aliases: ["supply and demand explained", "how supply and demand determine price", "what is equilibrium price"],
+    category: "Macroeconomics",
+    answer: "Supply and demand interact to determine market price: when demand exceeds supply, prices rise; when supply exceeds demand, prices fall. The point where supply and demand curves meet is the equilibrium price.",
+  },
+  {
+    id: "econ-supply-demand-shifts",
+    aliases: ["what shifts the supply curve", "what shifts the demand curve"],
+    category: "Macroeconomics",
+    answer: "The demand curve shifts due to changes in income, preferences, or prices of related goods. The supply curve shifts due to changes in production costs, technology, or the number of suppliers in the market.",
+  },
+  {
+    id: "econ-productivity-what-is",
+    aliases: buildAliases(["productivity", "economic productivity"], ["what is labor productivity", "why does productivity matter"]),
+    category: "Macroeconomics",
+    answer: "Productivity measures output produced per unit of input (commonly per worker or per hour worked). Rising productivity is a key driver of long-term economic growth and higher living standards, since more can be produced without using more resources.",
+  },
+  {
+    id: "econ-productivity-pakistan",
+    aliases: ["pakistan labor productivity", "why is productivity low in pakistan"],
+    category: "Macroeconomics",
+    answer: "Pakistan's labor productivity growth has historically lagged regional peers, often attributed to underinvestment in education and skills, energy reliability issues, and a large informal sector with limited access to modern technology and capital.",
+  },
+  {
+    id: "econ-unemployment-what-is",
+    aliases: buildAliases(["unemployment"], ["what is unemployment", "unemployment rate meaning"]),
+    category: "Macroeconomics",
+    answer: "Unemployment refers to people actively seeking work who cannot find a job. The unemployment rate is the percentage of the labor force that is unemployed, one of the most closely watched economic indicators globally.",
+  },
+  {
+    id: "econ-unemployment-pakistan",
+    aliases: ["pakistan unemployment rate", "youth unemployment rate pakistan"],
+    category: "Macroeconomics",
+    answer: "Pakistan's unemployment and underemployment, particularly among youth, remains a significant economic challenge, with the formal economy struggling to absorb the country's fast-growing working-age population.",
+  },
+  {
+    id: "econ-money-supply-general",
+    aliases: buildAliases(["money supply"], ["what is money supply", "m0 m1 m2 m3 meaning"]),
+    category: "Macroeconomics",
+    answer: "Money supply is the total amount of money circulating in an economy, typically measured in tiers: M0/M1 (physical cash and instantly accessible deposits), M2 (M1 plus savings deposits), and M3 (M2 plus larger, less liquid deposits).",
+  },
+  {
+    id: "econ-money-supply-and-inflation",
+    aliases: ["money supply and inflation relationship", "quantity theory of money"],
+    category: "Macroeconomics",
+    answer: "The quantity theory of money suggests that, all else equal, a faster-growing money supply relative to economic output leads to higher inflation — a key reason central banks track and try to manage money supply growth.",
+  },
+
+  // ── Pakistan: Budget, Taxation, ADB ──────────────────────────────────────
+  {
+    id: "pk-budget-what-is",
+    aliases: buildAliases(["federal budget", "pakistan budget"], ["what is the pakistan federal budget", "when is pakistan budget announced"]),
+    category: "Pakistan Economy",
+    answer: "Pakistan's federal budget is the government's annual financial plan, outlining expected revenue and planned spending for the fiscal year (July to June), presented to Parliament typically in early June.",
+  },
+  {
+    id: "pk-budget-deficit-financing",
+    aliases: ["how is budget deficit financed pakistan", "budget deficit meaning"],
+    category: "Pakistan Economy",
+    answer: "A budget deficit (when spending exceeds revenue) is financed through domestic borrowing (T-Bills, PIBs, Sukuk) and external borrowing (multilateral/bilateral loans, Eurobonds) — this is essentially the same concept as the fiscal deficit.",
+  },
+  {
+    id: "pk-budget-revenue-vs-expenditure",
+    aliases: ["budget revenue vs expenditure", "tax revenue vs non-tax revenue pakistan"],
+    category: "Pakistan Economy",
+    answer: "Government revenue includes tax revenue (income tax, sales tax, customs duty) and non-tax revenue (like SBP profits or petroleum levy). Expenditure includes current spending (debt servicing, defense, salaries) and development spending (infrastructure, social programs).",
+  },
+  {
+    id: "pk-budget-supplementary",
+    aliases: ["what is a supplementary budget", "mini budget pakistan meaning"],
+    category: "Pakistan Economy",
+    answer: "A supplementary (or 'mini') budget is an additional set of fiscal measures introduced mid-year, often to meet IMF program conditions or address an unexpected revenue shortfall, typically involving new taxes or spending cuts.",
+  },
+  {
+    id: "pk-taxation-what-is",
+    aliases: buildAliases(["taxation in pakistan", "pakistan tax system"], ["how does taxation work in pakistan"]),
+    category: "Pakistan Economy",
+    answer: "Pakistan's tax system includes direct taxes (income tax on individuals/companies) and indirect taxes (sales tax/GST, customs duty, federal excise duty), collected primarily by the Federal Board of Revenue (FBR), alongside provincial tax collection.",
+  },
+  {
+    id: "pk-taxation-income-tax",
+    aliases: buildAliases(["income tax pakistan"], ["how is income tax calculated in pakistan", "income tax slabs pakistan"]),
+    category: "Pakistan Economy",
+    answer: "Income tax in Pakistan is charged on individuals' and companies' taxable income using progressive tax slabs (higher income, higher rate for individuals), with the Federal Board of Revenue (FBR) responsible for collection and enforcement.",
+  },
+  {
+    id: "pk-taxation-sales-tax",
+    aliases: buildAliases(["sales tax pakistan", "gst pakistan"], ["what is general sales tax pakistan"]),
+    category: "Pakistan Economy",
+    answer: "Sales tax (General Sales Tax/GST) in Pakistan is an indirect tax charged on the sale of most goods and some services, collected at the point of sale and ultimately borne by the end consumer, with rates varying by category.",
+  },
+  {
+    id: "pk-taxation-withholding",
+    aliases: buildAliases(["withholding tax pakistan"], ["what is withholding tax"]),
+    category: "Pakistan Economy",
+    answer: "Withholding tax is tax deducted at the source of a transaction (like on salary, bank transactions, or contractor payments) by the paying party, who then deposits it with FBR on the taxpayer's behalf, advance against their final tax liability.",
+  },
+  {
+    id: "pk-taxation-filer-non-filer",
+    aliases: ["filer vs non-filer pakistan", "what is an active taxpayer list pakistan"],
+    category: "Pakistan Economy",
+    answer: "A 'filer' is someone registered and appearing on FBR's Active Taxpayers List by filing tax returns. Non-filers typically face higher withholding tax rates on various transactions (like banking and property) as an incentive to formally register.",
+  },
+  {
+    id: "pk-adb-what-is",
+    aliases: buildAliases(["asian development bank", "adb"], ["what does adb do in pakistan"]),
+    category: "World Bank",
+    answer: "The Asian Development Bank (ADB) is a regional multilateral development bank that provides loans, grants, and technical assistance to Pakistan and other Asian/Pacific countries for infrastructure, energy, and social sector projects.",
+  },
+  {
+    id: "pk-adb-vs-world-bank",
+    aliases: ["adb vs world bank", "difference between adb and world bank"],
+    category: "World Bank",
+    answer: "Both ADB and the World Bank provide development financing to Pakistan, but ADB focuses specifically on Asia and the Pacific region, while the World Bank operates globally — Pakistan often receives complementary financing from both for similar sectors.",
+  },
+  {
+    id: "pk-adb-pakistan-projects",
+    aliases: ["adb projects in pakistan", "adb loans to pakistan"],
+    category: "World Bank",
+    answer: "ADB has financed numerous projects in Pakistan across energy, transport, water, and urban infrastructure, typically through long-term concessional or market-based loans depending on the project and financing window.",
+  },
+  {
+    id: "pk-adb-outlook-reports",
+    aliases: ["adb pakistan economic outlook", "asian development outlook pakistan"],
+    category: "World Bank",
+    answer: "ADB publishes periodic economic outlook reports (like the Asian Development Outlook) covering Pakistan's growth, inflation, and fiscal projections, similar in purpose to IMF and World Bank country assessments.",
+  },
+
+  // ── General finance literacy ─────────────────────────────────────────────
+  {
+    id: "finance-stock-what-is",
+    aliases: buildAliases(["stock", "share"], ["what is a stock", "what is a share", "stock vs share difference"]),
+    category: "Investing Basics",
+    answer: "A stock (or share) represents a unit of ownership in a company. Owning shares entitles you to a proportional claim on the company's assets and profits, and often a vote on major corporate decisions.",
+  },
+  {
+    id: "finance-equity-what-is",
+    aliases: buildAliases(["equity", "shareholders equity"], ["what is equity in finance", "what does equity mean"]),
+    category: "Investing Basics",
+    answer: "Equity generally refers to ownership value — in a company, shareholders' equity is total assets minus total liabilities, representing what would be left for owners if all debts were paid off.",
+  },
+  {
+    id: "finance-asset-what-is",
+    aliases: buildAliases(["asset", "financial asset"], ["what is an asset in finance"]),
+    category: "Investing Basics",
+    answer: "An asset is anything of economic value that a person or company owns or controls, expected to provide future benefit — examples include cash, stocks, property, and equipment.",
+  },
+  {
+    id: "finance-liability-what-is",
+    aliases: buildAliases(["liability", "liabilities"], ["what is a liability in finance"]),
+    category: "Investing Basics",
+    answer: "A liability is an obligation owed to another party, typically involving future payment of money, goods, or services — examples include loans, bonds payable, and accounts payable.",
+  },
+  {
+    id: "finance-balance-sheet-what-is",
+    aliases: buildAliases(["balance sheet"], ["what is a balance sheet", "how to read a balance sheet"]),
+    category: "Investing Basics",
+    answer: "A balance sheet is a financial statement showing a company's assets, liabilities, and shareholders' equity at a specific point in time, following the equation: Assets = Liabilities + Equity.",
+  },
+  {
+    id: "finance-income-statement-what-is",
+    aliases: buildAliases(["income statement", "profit and loss statement"], ["what is an income statement", "what is a p&l statement"]),
+    category: "Investing Basics",
+    answer: "An income statement (or profit and loss statement) shows a company's revenue, expenses, and resulting net profit or loss over a specific period, such as a quarter or fiscal year.",
+  },
+  {
+    id: "finance-cash-flow-statement-what-is",
+    aliases: buildAliases(["cash flow statement"], ["what is a cash flow statement", "operating cash flow meaning"]),
+    category: "Investing Basics",
+    answer: "A cash flow statement tracks the actual cash moving in and out of a business across operating, investing, and financing activities — distinct from the income statement, which can include non-cash items like depreciation.",
+  },
+  {
+    id: "finance-working-capital-what-is",
+    aliases: buildAliases(["working capital"], ["what is working capital", "working capital formula"]),
+    category: "Investing Basics",
+    answer: "Working capital is current assets minus current liabilities, measuring a company's short-term liquidity — its ability to cover near-term obligations using assets that can be converted to cash quickly.",
+  },
+  {
+    id: "finance-leverage-what-is",
+    aliases: buildAliases(["leverage", "financial leverage"], ["what is leverage in finance", "what is leverage trading"]),
+    category: "Investing Basics",
+    answer: "Leverage means using borrowed money to increase the potential return of an investment. It magnifies both gains and losses — a company or investor with high leverage carries more financial risk.",
+  },
+  {
+    id: "finance-collateral-what-is",
+    aliases: buildAliases(["collateral"], ["what is collateral in finance", "what is collateral for a loan"]),
+    category: "Investing Basics",
+    answer: "Collateral is an asset a borrower pledges to a lender as security for a loan — if the borrower defaults, the lender can seize the collateral to recover some or all of the outstanding amount.",
+  },
+  {
+    id: "finance-amortization-what-is",
+    aliases: buildAliases(["amortization"], ["what is amortization", "amortization schedule meaning"]),
+    category: "Investing Basics",
+    answer: "Amortization refers to gradually paying off a loan through scheduled, regular payments of principal and interest, or to spreading the cost of an intangible asset over its useful life in accounting.",
+  },
+  {
+    id: "finance-depreciation-accounting-what-is",
+    aliases: ["what is depreciation in accounting", "depreciation vs amortization"],
+    category: "Investing Basics",
+    answer: "Depreciation is the accounting practice of spreading the cost of a tangible asset (like machinery or a vehicle) over its useful life. Amortization is the equivalent concept applied to intangible assets like patents or loans.",
+  },
+  {
+    id: "finance-goodwill-what-is",
+    aliases: buildAliases(["goodwill"], ["what is goodwill in accounting"]),
+    category: "Investing Basics",
+    answer: "Goodwill is an intangible asset that arises when a company acquires another business for more than the fair value of its identifiable net assets, reflecting factors like brand value, customer relationships, and reputation.",
+  },
+  {
+    id: "finance-index-fund-what-is",
+    aliases: buildAliases(["index fund"], ["what is an index fund", "index fund vs etf"]),
+    category: "Mutual Funds",
+    answer: "An index fund is a fund designed to track the performance of a specific market index (like KSE-100), holding the same (or representative) securities in similar proportions, typically at low cost due to passive management.",
+  },
+  {
+    id: "finance-hedge-fund-what-is",
+    aliases: buildAliases(["hedge fund"], ["what is a hedge fund", "hedge fund vs mutual fund"]),
+    category: "Investing Basics",
+    answer: "A hedge fund is a pooled investment vehicle, typically for sophisticated/institutional investors, that uses a wider range of strategies (leverage, derivatives, short-selling) than traditional mutual funds, aiming for absolute returns regardless of market direction.",
+  },
+  {
+    id: "finance-private-equity-what-is",
+    aliases: buildAliases(["private equity"], ["what is private equity", "private equity vs venture capital"]),
+    category: "Investing Basics",
+    answer: "Private equity involves investing directly in private companies (or taking public companies private), typically to restructure and improve operations before eventually selling for a profit — distinct from venture capital, which focuses on early-stage startups.",
+  },
+  {
+    id: "finance-venture-capital-what-is",
+    aliases: buildAliases(["venture capital", "vc funding"], ["what is venture capital", "what is an angel investor"]),
+    category: "Investing Basics",
+    answer: "Venture capital is funding provided to early-stage, high-growth-potential startups in exchange for equity. Angel investors are typically wealthy individuals who provide even earlier-stage funding, often before formal VC rounds.",
+  },
+  {
+    id: "finance-short-selling-what-is",
+    aliases: buildAliases(["short selling", "shorting a stock"], ["what is short selling", "how does short selling work"]),
+    category: "Investing Basics",
+    answer: "Short selling means borrowing shares and selling them, betting the price will fall so you can buy them back later at a lower price and return them, pocketing the difference — it carries theoretically unlimited risk if the price rises instead.",
+  },
+  {
+    id: "finance-margin-call-what-is",
+    aliases: buildAliases(["margin call"], ["what is a margin call", "what triggers a margin call"]),
+    category: "Investing Basics",
+    answer: "A margin call happens when an investor's leveraged position loses enough value that their broker demands additional funds (or collateral) to maintain the position, or the broker will close it out to limit further losses.",
+  },
+  {
+    id: "finance-volatility-what-is",
+    aliases: buildAliases(["volatility", "market volatility"], ["what is volatility in stocks"]),
+    category: "Investing Basics",
+    answer: "Volatility measures how much an asset's price fluctuates over time. Higher volatility means larger, more frequent price swings (more risk and more potential reward); lower volatility means more stable, predictable price behavior.",
+  },
+  {
+    id: "finance-beta-what-is",
+    aliases: buildAliases(["beta", "stock beta"], ["what is beta in finance", "what does a stock's beta mean"]),
+    category: "Investing Basics",
+    answer: "Beta measures a stock's volatility relative to the overall market. A beta of 1 means it moves in line with the market; above 1 means more volatile than the market; below 1 means less volatile.",
+  },
+  {
+    id: "finance-alpha-what-is",
+    aliases: buildAliases(["alpha", "investment alpha"], ["what is alpha in investing"]),
+    category: "Investing Basics",
+    answer: "Alpha measures an investment's performance relative to a benchmark index, after adjusting for risk. Positive alpha means an investment or fund manager outperformed the benchmark; negative alpha means underperformance.",
+  },
+  {
+    id: "finance-benchmark-what-is",
+    aliases: buildAliases(["benchmark", "investment benchmark"], ["what is a benchmark index"]),
+    category: "Investing Basics",
+    answer: "A benchmark is a standard (often a market index like KSE-100) against which an investment's or fund's performance is measured, helping investors judge whether a manager added value relative to simply buying the broader market.",
+  },
+  {
+    id: "finance-liquidity-general",
+    aliases: buildAliases(["liquidity", "financial liquidity"], ["what is liquidity in finance"]),
+    category: "Investing Basics",
+    answer: "Liquidity refers to how quickly and easily an asset can be converted to cash without significantly affecting its price. Cash is the most liquid asset; real estate and private business stakes are relatively illiquid.",
+  },
+  {
+    id: "finance-solvency-what-is",
+    aliases: buildAliases(["solvency"], ["what is solvency", "solvency vs liquidity"]),
+    category: "Investing Basics",
+    answer: "Solvency is a company's ability to meet its long-term debt obligations and continue operating, distinct from liquidity (short-term cash availability) — a company can be liquid but insolvent, or solvent but temporarily illiquid.",
+  },
+
+  // ── Pakistan-specific economic terms ─────────────────────────────────────
+  {
+    id: "pk-econ-fatf-what-is",
+    aliases: buildAliases(["fatf", "financial action task force"], ["what is fatf grey list", "pakistan fatf history"]),
+    category: "Pakistan Economy",
+    answer: "FATF (Financial Action Task Force) is a global watchdog setting standards against money laundering and terror financing. Pakistan was placed on FATF's 'grey list' for several years (requiring enhanced monitoring) before being removed after completing an action plan.",
+  },
+  {
+    id: "pk-econ-devaluation-vs-depreciation",
+    aliases: ["devaluation vs depreciation", "what is currency devaluation"],
+    category: "Exchange Rates",
+    answer: "Depreciation is a market-driven fall in a currency's value under a floating exchange rate. Devaluation is a deliberate, official downward adjustment of a currency's value, typically under a fixed or managed exchange rate regime.",
+  },
+  {
+    id: "pk-econ-hot-money-what-is",
+    aliases: buildAliases(["hot money"], ["what is hot money in economics"]),
+    category: "Pakistan Economy",
+    answer: "'Hot money' refers to short-term, fast-moving capital flows (like portfolio investment in bonds or stocks) that can enter or exit a country quickly chasing high returns, in contrast to longer-term, stickier FDI.",
+  },
+  {
+    id: "pk-econ-dutch-disease-what-is",
+    aliases: buildAliases(["dutch disease"], ["what is dutch disease economics"]),
+    category: "Macroeconomics",
+    answer: "Dutch disease describes how a resource boom (like a surge in oil or gas exports) can cause currency appreciation that hurts the competitiveness of a country's other export sectors, paradoxically weakening the broader economy.",
+  },
+  {
+    id: "pk-econ-dollarization-what-is",
+    aliases: buildAliases(["dollarization"], ["what is dollarization of an economy"]),
+    category: "Pakistan Economy",
+    answer: "Dollarization is when residents and businesses increasingly use US Dollars (instead of local currency) for savings or transactions, often during periods of high local inflation or currency instability, which can erode confidence in the domestic currency further.",
+  },
+  {
+    id: "pk-econ-austerity-what-is",
+    aliases: buildAliases(["austerity", "austerity measures"], ["what is austerity economics", "imf austerity pakistan"]),
+    category: "Pakistan Economy",
+    answer: "Austerity refers to government policies that cut spending and/or raise taxes to reduce a fiscal deficit, often required under IMF programs — while aimed at restoring fiscal stability, austerity can slow growth and is often politically unpopular.",
+  },
+  {
+    id: "pk-econ-brain-drain-what-is",
+    aliases: buildAliases(["brain drain"], ["what is brain drain pakistan"]),
+    category: "Pakistan Economy",
+    answer: "Brain drain refers to skilled professionals emigrating from Pakistan for better opportunities abroad — while remittances from this diaspora benefit the economy, the loss of skilled talent can also hurt domestic productivity and innovation.",
+  },
+  {
+    id: "pk-econ-sifc-what-is",
+    aliases: buildAliases(["sifc", "special investment facilitation council"], ["what does sifc do pakistan"]),
+    category: "Pakistan Economy",
+    answer: "The Special Investment Facilitation Council (SIFC) is a Pakistani government body created to fast-track foreign investment, particularly from Gulf states, in sectors like agriculture, mining, and energy by reducing bureaucratic hurdles.",
+  },
+  {
+    id: "pk-econ-petrodollar-what-is",
+    aliases: buildAliases(["petrodollar"], ["what is a petrodollar"]),
+    category: "Pakistan Economy",
+    answer: "'Petrodollars' refers to US Dollar revenues earned by oil-exporting nations, often recycled into global financial markets or, in Pakistan's case, received as bilateral deposits and investment from Gulf oil exporters.",
+  },
+
+  // ── Macroeconomics depth ─────────────────────────────────────────────────
+  {
+    id: "macro-terms-of-trade-what-is",
+    aliases: buildAliases(["terms of trade"], ["what are terms of trade economics"]),
+    category: "Trade Balance",
+    answer: "Terms of trade is the ratio of a country's export prices to its import prices. Improving terms of trade mean a country earns more per unit exported relative to what it pays per unit imported — a tailwind for the trade balance and currency.",
+  },
+  {
+    id: "macro-balance-of-payments-what-is",
+    aliases: buildAliases(["balance of payments", "bop"], ["what is balance of payments"]),
+    category: "Current Account",
+    answer: "The balance of payments is a complete record of all economic transactions between a country and the rest of the world, made up of the current account (trade, income, transfers) and the financial/capital account (investment flows, loans, reserves).",
+  },
+  {
+    id: "macro-output-gap-what-is",
+    aliases: buildAliases(["output gap"], ["what is the output gap economics"]),
+    category: "Macroeconomics",
+    answer: "The output gap is the difference between an economy's actual output and its potential output (what it could produce at full employment without overheating) — a positive gap suggests overheating risk; a negative gap suggests slack/recession risk.",
+  },
+
+  // ── Investing depth: DCA, asset classes ─────────────────────────────────
+  {
+    id: "investing-rule-of-72",
+    aliases: buildAliases(["rule of 72"], ["what is the rule of 72"]),
+    category: "Investing Basics",
+    answer: "The Rule of 72 is a quick estimate for how long an investment takes to double: divide 72 by the annual rate of return. At a 12% annual return, an investment would roughly double in 6 years (72 ÷ 12).",
+  },
+  {
+    id: "investing-dividend-reinvestment",
+    aliases: buildAliases(["dividend reinvestment"], ["what is a dividend reinvestment plan"]),
+    category: "Investing Basics",
+    answer: "Dividend reinvestment means using cash dividends received to automatically buy more shares of the same investment, rather than taking the cash — this compounds returns over time by increasing the number of shares you own.",
+  },
+  {
+    id: "investing-diversification-deep",
+    aliases: ["why is diversification important", "how many stocks for diversification"],
+    category: "Investing Basics",
+    answer: "Diversification spreads investments across different assets, sectors, or geographies so that poor performance in one area doesn't disproportionately hurt the overall portfolio — it reduces unsystematic (company/sector-specific) risk, though it can't eliminate broad market risk.",
+  },
+  {
+    id: "investing-time-horizon-what-is",
+    aliases: buildAliases(["investment time horizon"], ["what is investment time horizon", "why does time horizon matter investing"]),
+    category: "Investing Basics",
+    answer: "Investment time horizon is how long you plan to hold an investment before needing the money. Longer horizons generally allow for taking on more risk (like equities), since there's more time to recover from short-term volatility.",
+  },
+
+  // ── Banking depth ─────────────────────────────────────────────────────────
+  {
+    id: "banking-base-rate-what-is",
+    aliases: buildAliases(["base rate banking"], ["what is base rate in banking pakistan"]),
+    category: "Banking",
+    answer: "Pakistan's banking sector uses a Karachi Interbank Offered Rate (KIBOR)-based pricing benchmark for most floating-rate loans, where the bank charges KIBOR plus a spread reflecting the borrower's credit risk.",
+  },
+  {
+    id: "banking-interest-rate-spread-what-is",
+    aliases: buildAliases(["interest rate spread", "bank spread"], ["what is interest rate spread banking"]),
+    category: "Banking",
+    answer: "Interest rate spread is the difference between the rate a bank charges on loans and the rate it pays on deposits — a core driver of bank profitability, sometimes also called the net interest margin when expressed relative to earning assets.",
+  },
+  {
+    id: "banking-islamic-vs-conventional",
+    aliases: ["islamic banking vs conventional banking", "how is islamic banking different from regular banking"],
+    category: "Banking",
+    answer: "Conventional banking is built around interest (riba) on loans and deposits. Islamic banking instead uses profit-and-loss sharing and asset-backed structures (like Murabaha, Ijarah, and Musharakah) to avoid interest while still providing similar financial services.",
+  },
+  {
+    id: "banking-car-deep",
+    aliases: ["why do banks need capital adequacy ratio", "car ratio meaning banking pakistan"],
+    category: "Banking",
+    answer: "The Capital Adequacy Ratio (CAR) measures a bank's capital relative to its risk-weighted assets, acting as a buffer against unexpected losses. SBP sets minimum CAR requirements (aligned with Basel standards) to keep the banking system resilient.",
+  },
+  {
+    id: "banking-adr-deep",
+    aliases: ["what does adr ratio mean banking", "advance to deposit ratio explained"],
+    category: "Banking",
+    answer: "The Advance-to-Deposit Ratio (ADR) measures how much of a bank's deposits are lent out as advances/loans. A low ADR suggests banks are parking funds in safer government securities rather than lending to the private sector.",
+  },
+
+  // ── Trade, remittances, FDI depth ───────────────────────────────────────
+  {
+    id: "trade-export-composition-pakistan",
+    aliases: ["what does pakistan export the most", "pakistan top exports", "pakistan export composition"],
+    category: "Exports",
+    answer: "Pakistan's exports are heavily concentrated in textiles and apparel (around half of total exports), followed by rice, leather goods, surgical instruments, and sports goods — a narrower export base than regional peers like Bangladesh or Vietnam.",
+  },
+  {
+    id: "trade-import-composition-pakistan",
+    aliases: ["what does pakistan import the most", "pakistan top imports", "pakistan import composition"],
+    category: "Imports",
+    answer: "Pakistan's largest import categories are petroleum and energy products, machinery, raw materials for industry (like cotton and chemicals), and palm oil — energy imports are especially sensitive to global oil price swings.",
+  },
+  {
+    id: "trade-it-exports-pakistan",
+    aliases: buildAliases(["pakistan it exports", "freelance exports pakistan"], ["how big are pakistan it exports"]),
+    category: "Exports",
+    answer: "Pakistan's IT and IT-enabled services exports (software development, freelancing, BPO) have grown into a meaningful and fast-growing foreign exchange earner, though still much smaller than textile exports in absolute terms.",
+  },
+  {
+    id: "remittances-top-source-countries",
+    aliases: ["where do pakistan remittances come from", "top countries sending remittances to pakistan"],
+    category: "Remittances",
+    answer: "The largest sources of remittances to Pakistan are Saudi Arabia, the UAE, the United Kingdom, and the United States, reflecting the size of the Pakistani diaspora and migrant labor force in those countries.",
+  },
+  {
+    id: "remittances-hundi-hawala",
+    aliases: buildAliases(["hundi", "hawala"], ["what is hundi hawala system"]),
+    category: "Remittances",
+    answer: "Hundi/Hawala is an informal, unofficial money transfer system used to move funds outside regulated banking/exchange company channels — its use diverts remittance flows away from official channels, understating reported figures and bypassing SBP-monitored forex inflows.",
+  },
+  {
+    id: "remittances-roshan-digital-account",
+    aliases: buildAliases(["roshan digital account"], ["what is roshan digital account"]),
+    category: "Remittances",
+    answer: "Roshan Digital Account is an SBP initiative letting Non-Resident Pakistanis open and operate Pakistani bank accounts digitally from abroad, used to channel remittances and investment (including in Naya Pakistan Certificates) through formal banking channels.",
+  },
+  {
+    id: "fdi-pakistan-top-sectors",
+    aliases: ["which sectors get the most fdi pakistan", "fdi sectors pakistan"],
+    category: "FDI",
+    answer: "Pakistan's FDI has historically concentrated in power/energy, financial services, oil & gas exploration, telecom, and more recently, sectors prioritized by the Special Investment Facilitation Council like mining and agriculture.",
+  },
+
+  // ── Foreign reserves & government debt depth ────────────────────────────
+  {
+    id: "reserves-swap-lines",
+    aliases: buildAliases(["currency swap line"], ["what is a central bank swap line", "china pakistan swap line"]),
+    category: "Foreign Reserves",
+    answer: "A currency swap line is an agreement between two central banks to exchange currencies, giving a country temporary access to foreign currency liquidity without depleting its own reserves — Pakistan has used renewable swap arrangements with China's central bank.",
+  },
+  {
+    id: "debt-rollover-risk",
+    aliases: buildAliases(["debt rollover risk"], ["what is rollover risk in debt"]),
+    category: "Government Debt",
+    answer: "Rollover risk is the risk that a borrower won't be able to refinance (roll over) maturing debt with new borrowing on acceptable terms — a major concern for Pakistan given its reliance on short-term domestic debt and bilateral foreign deposits.",
+  },
+
+  // ── IMF & World Bank depth ────────────────────────────────────────────────
+  {
+    id: "imf-tranche-what-is",
+    aliases: buildAliases(["imf tranche"], ["what is an imf loan tranche"]),
+    category: "IMF",
+    answer: "An IMF loan tranche is a portion of the total approved loan amount disbursed at a time, released after the IMF Executive Board confirms a country has met agreed performance criteria and structural benchmarks for that review period.",
+  },
+  {
+    id: "imf-staff-level-agreement-what-is",
+    aliases: buildAliases(["staff level agreement", "sla imf"], ["what is an imf staff level agreement"]),
+    category: "IMF",
+    answer: "A Staff-Level Agreement (SLA) is a preliminary agreement between IMF staff and a country's government on program terms, which must still be approved by the IMF's Executive Board before any loan tranche is actually disbursed.",
+  },
+  {
+    id: "worldbank-ida-what-is",
+    aliases: buildAliases(["ida", "international development association"], ["what is ida world bank"]),
+    category: "World Bank",
+    answer: "The International Development Association (IDA) is the World Bank's arm that provides low-interest loans and grants to the world's poorest countries — Pakistan has historically received significant financing through IDA alongside market-rate IBRD lending.",
+  },
+  {
+    id: "worldbank-ibrd-what-is",
+    aliases: buildAliases(["ibrd"], ["what is ibrd world bank", "ida vs ibrd"]),
+    category: "World Bank",
+    answer: "The International Bank for Reconstruction and Development (IBRD) is the World Bank's main lending arm for middle-income countries, offering loans at near-market rates, in contrast to IDA's concessional (low-interest/grant) financing for poorer countries.",
+  },
+  {
+    id: "worldbank-cpf-what-is",
+    aliases: buildAliases(["country partnership framework"], ["what is a world bank country partnership framework"]),
+    category: "World Bank",
+    answer: "A Country Partnership Framework (CPF) is the World Bank's multi-year strategy document outlining its priorities and planned support for a specific country, like Pakistan, aligned with the country's own development goals.",
+  },
+
+  // ── Inflation, CPI, WPI, SPI depth ──────────────────────────────────────
+  {
+    id: "inflation-mom-vs-yoy",
+    aliases: ["month over month vs year over year inflation", "mom inflation vs yoy inflation"],
+    category: "Inflation",
+    answer: "Month-over-month (MoM) inflation compares prices to the immediately preceding month, capturing the most recent momentum. Year-over-year (YoY) inflation compares to the same month a year earlier, smoothing out seasonal effects but reacting more slowly to recent trends.",
+  },
+  {
+    id: "wpi-what-is-deep",
+    aliases: ["wpi vs cpi pakistan", "wholesale price index meaning"],
+    category: "CPI",
+    answer: "The Wholesale Price Index (WPI) tracks price changes at the wholesale/producer level, before goods reach consumers. CPI tracks prices consumers actually pay at retail. WPI often moves before CPI, acting as a leading indicator for future consumer inflation.",
+  },
+  {
+    id: "spi-what-is-deep",
+    aliases: ["sensitive price indicator meaning", "how often is spi released pakistan"],
+    category: "CPI",
+    answer: "The Sensitive Price Indicator (SPI) is released weekly by PBS, tracking prices of essential daily-use items for lower-income households — it's a faster, narrower gauge than monthly CPI, often used to track near-term affordability pressure.",
+  },
+  {
+    id: "cpi-basket-what-is",
+    aliases: buildAliases(["cpi basket", "consumer basket"], ["what is the cpi basket of goods"]),
+    category: "CPI",
+    answer: "The CPI basket is the fixed set of goods and services (and their relative weights) that statistical agencies track to measure inflation, designed to represent typical household consumption patterns, periodically updated/rebased to stay representative.",
+  },
+
+  // ── KIBOR & exchange rate depth ──────────────────────────────────────────
+  {
+    id: "kibor-tenors-deep",
+    aliases: ["kibor 1 month vs 3 month vs 6 month", "different kibor tenors explained"],
+    category: "KIBOR",
+    answer: "KIBOR is quoted across multiple tenors (1-month, 3-month, 6-month, 1-year), reflecting the rate for interbank borrowing of that specific duration — 6-month KIBOR is most commonly used as the benchmark for floating-rate corporate loans in Pakistan.",
+  },
+  {
+    id: "kibor-vs-policy-rate-deep",
+    aliases: ["why is kibor different from policy rate", "kibor policy rate spread"],
+    category: "KIBOR",
+    answer: "KIBOR usually trades close to but not identical to the SBP policy rate, with the spread reflecting banking system liquidity conditions, credit risk perceptions among banks, and near-term rate expectations.",
+  },
+  {
+    id: "fx-interbank-vs-open-market-rate",
+    aliases: ["interbank rate vs open market rate pkr", "why does open market dollar rate differ from interbank"],
+    category: "Exchange Rates",
+    answer: "The interbank rate is what banks trade currency at among themselves, generally considered the 'official' reference rate. The open market rate is what currency exchange companies offer the public — the two can diverge, especially during periods of forex shortage or capital controls.",
+  },
+  {
+    id: "fx-real-effective-exchange-rate-deep",
+    aliases: ["what does reer above 100 mean", "reer overvalued undervalued pakistan"],
+    category: "Exchange Rates",
+    answer: "A REER (Real Effective Exchange Rate) reading above 100 suggests the Rupee may be overvalued relative to its trading partners (adjusted for inflation differentials), which can hurt export competitiveness; a reading below 100 suggests potential undervaluation.",
+  },
+
+  // ── Bonds/Sukuk/T-Bills depth ────────────────────────────────────────────
+  {
+    id: "tbill-auction-process",
+    aliases: ["how does t-bill auction work pakistan", "t-bill cut off yield meaning"],
+    category: "Treasury Bills",
+    answer: "SBP conducts periodic T-Bill auctions where banks and primary dealers submit competitive bids. The 'cut-off yield' is the highest accepted yield that clears the government's target borrowing amount, determining the rate for that auction's successful bidders.",
+  },
+  {
+    id: "sukuk-vs-conventional-bond-deep",
+    aliases: ["sukuk vs bond legal structure", "why are sukuk asset-backed"],
+    category: "Sukuk",
+    answer: "A conventional bond is a debt instrument paying interest. A Sukuk represents partial ownership in an underlying tangible asset or business venture, with returns generated from that asset's profit or rental income rather than interest, to comply with Islamic finance principles.",
+  },
+  {
+    id: "bonds-yield-vs-coupon-deep",
+    aliases: ["yield vs coupon rate bond", "why does bond yield change but coupon stays fixed"],
+    category: "Bonds",
+    answer: "A bond's coupon rate is fixed at issuance and doesn't change. Its yield (yield to maturity) fluctuates as the bond's market price moves — when price falls, yield rises, and vice versa, since yield reflects the return relative to the current price paid, not the face value.",
+  },
+
+  // ── Practical / conversational investing queries ────────────────────────
+  {
+    id: "practical-best-investment-pakistan",
+    aliases: ["best investment in pakistan", "where should i invest my money in pakistan"],
+    category: "Investing Basics",
+    answer: "There's no single 'best' investment — it depends on your risk tolerance, time horizon, and goals. Common options in Pakistan include PSX stocks/mutual funds (higher risk/return), government securities like T-Bills/PIBs/Sukuk (lower risk), real estate, and gold, each with different liquidity and risk profiles.",
+  },
+  {
+    id: "practical-is-gold-good-investment-pakistan",
+    aliases: ["is gold a good investment in pakistan", "should i invest in gold pakistan"],
+    category: "Investing Basics",
+    answer: "Gold is often used as a hedge against inflation and currency depreciation, both relevant concerns in Pakistan historically, but it doesn't generate income (no dividends or interest) and its price can be volatile in the short term.",
+  },
+  {
+    id: "practical-real-estate-vs-stocks-pakistan",
+    aliases: ["real estate vs stocks pakistan", "is real estate better than stock market in pakistan"],
+    category: "Investing Basics",
+    answer: "Real estate in Pakistan is popular for its perceived stability and tangible nature but is illiquid and has high transaction costs. Stocks/mutual funds are more liquid, easier to diversify, and historically more transparent in pricing, but carry higher short-term volatility.",
+  },
+  {
+    id: "practical-how-to-save-money-inflation",
+    aliases: ["how to protect savings from inflation pakistan", "how to save money during high inflation"],
+    category: "Investing Basics",
+    answer: "Protecting savings from inflation typically means avoiding letting cash sit idle in low-yield accounts, and considering instruments whose returns can outpace inflation over time, such as Sukuk, PIBs, or diversified investment funds — appropriate choices depend on individual risk tolerance and time horizon.",
+  },
+
+  // ── Financial literacy depth ─────────────────────────────────────────────
+  {
+    id: "finance-time-value-of-money",
+    aliases: buildAliases(["time value of money"], ["what is time value of money", "why is a rupee today worth more than a rupee tomorrow"]),
+    category: "Investing Basics",
+    answer: "Time value of money is the principle that a sum of money today is worth more than the same sum in the future, because today's money can be invested to earn a return — it's the foundation behind concepts like NPV, IRR, and discounting.",
+  },
+  {
+    id: "finance-opportunity-cost",
+    aliases: buildAliases(["opportunity cost"], ["what is opportunity cost in economics"]),
+    category: "Macroeconomics",
+    answer: "Opportunity cost is the value of the next-best alternative you give up when making a choice — for example, the opportunity cost of keeping money in a low-interest savings account is the higher return you could have earned elsewhere.",
+  },
+  {
+    id: "finance-sunk-cost",
+    aliases: buildAliases(["sunk cost", "sunk cost fallacy"], ["what is sunk cost fallacy"]),
+    category: "Investing Basics",
+    answer: "A sunk cost is money already spent that cannot be recovered. The sunk cost fallacy is the mistake of letting past, irrecoverable spending influence current decisions, rather than judging a decision purely on its future costs and benefits.",
+  },
+  {
+    id: "finance-real-vs-nominal-returns",
+    aliases: ["real return vs nominal return", "inflation adjusted return meaning"],
+    category: "Investing Basics",
+    answer: "Nominal return is the raw percentage gain on an investment before adjusting for inflation. Real return subtracts inflation from the nominal return, showing the actual increase in purchasing power — a 12% nominal return during 15% inflation is actually a negative real return.",
+  },
+  {
+    id: "finance-budgeting-basics",
+    aliases: buildAliases(["budgeting", "personal budgeting"], ["what is the 50 30 20 budgeting rule"]),
+    category: "Investing Basics",
+    answer: "Personal budgeting means planning how income will be allocated across spending and saving. The 50/30/20 rule is one common guideline: roughly 50% of income to needs, 30% to wants, and 20% to savings/debt repayment.",
+  },
+
+  // ── Retirement & insurance ────────────────────────────────────────────────
+  {
+    id: "retirement-provident-fund-pakistan",
+    aliases: buildAliases(["provident fund pakistan"], ["what is a provident fund"]),
+    category: "Investing Basics",
+    answer: "A provident fund is a retirement savings scheme where both employee and employer contribute a portion of salary regularly, with the accumulated balance (often plus interest/profit) paid out to the employee upon retirement or leaving the job.",
+  },
+  {
+    id: "retirement-eobi-what-is",
+    aliases: buildAliases(["eobi", "employees old age benefits institution"], ["what is eobi pakistan"]),
+    category: "Investing Basics",
+    answer: "EOBI (Employees' Old-Age Benefits Institution) is Pakistan's federal social security scheme providing old-age pensions, survivor's pensions, and disability benefits to registered private-sector employees, funded by mandatory employer contributions.",
+  },
+  {
+    id: "retirement-pension-fund-pakistan",
+    aliases: buildAliases(["voluntary pension scheme pakistan", "pension fund"], ["what is a voluntary pension scheme"]),
+    category: "Mutual Funds",
+    answer: "Pakistan's Voluntary Pension System (VPS) lets individuals invest in SECP-regulated pension funds during their working years, accessing tax credits, with the accumulated balance available (with rules) starting at retirement age.",
+  },
+  {
+    id: "retirement-gratuity-what-is",
+    aliases: buildAliases(["gratuity"], ["what is gratuity pakistan", "how is gratuity calculated"]),
+    category: "Investing Basics",
+    answer: "Gratuity is a lump-sum payment many employers in Pakistan owe employees upon completing a minimum service period (commonly linked to length of service and last drawn salary), separate from provident fund or EOBI benefits.",
+  },
+  {
+    id: "insurance-term-life-what-is",
+    aliases: buildAliases(["term life insurance"], ["what is term insurance"]),
+    category: "Investing Basics",
+    answer: "Term life insurance provides pure death-benefit coverage for a fixed period at a relatively low premium, with no investment/savings component — if the insured survives the term, no payout is made, unlike investment-linked insurance products.",
+  },
+  {
+    id: "insurance-takaful-what-is",
+    aliases: buildAliases(["takaful"], ["what is takaful insurance"]),
+    category: "Investing Basics",
+    answer: "Takaful is Shariah-compliant insurance, structured as mutual risk-sharing among participants rather than a conventional insurer-insured contract involving interest or speculative elements prohibited in Islamic finance.",
+  },
+
+  // ── Pakistan structural & digital finance topics ─────────────────────────
+  {
+    id: "pk-credit-rating-what-is",
+    aliases: buildAliases(["sovereign credit rating", "pakistan credit rating"], ["what is a credit rating", "moody's fitch s&p pakistan rating"]),
+    category: "Pakistan Economy",
+    answer: "A sovereign credit rating, issued by agencies like Moody's, Fitch, and S&P, assesses a country's ability and willingness to repay its debt. A rating upgrade signals improving creditworthiness (cheaper future borrowing); a downgrade signals the opposite.",
+  },
+  {
+    id: "pk-credit-rating-upgrade-downgrade",
+    aliases: ["what does a credit rating upgrade mean", "what does a credit rating downgrade mean"],
+    category: "Pakistan Economy",
+    answer: "A credit rating upgrade typically lowers a country's future borrowing costs and signals improved investor confidence. A downgrade raises borrowing costs and can trigger capital outflows, as some institutional investors are restricted from holding below-threshold-rated debt.",
+  },
+  {
+    id: "pk-cbdc-what-is",
+    aliases: buildAliases(["cbdc", "central bank digital currency"], ["what is sbp digital currency plan"]),
+    category: "SBP",
+    answer: "A Central Bank Digital Currency (CBDC) is a digital form of a country's official currency, issued and backed directly by the central bank — unlike cryptocurrency, a CBDC is centralized and represents a direct liability of the central bank, similar to physical cash.",
+  },
+  {
+    id: "pk-raast-what-is",
+    aliases: buildAliases(["raast"], ["what is raast payment system"]),
+    category: "SBP",
+    answer: "Raast is Pakistan's instant, free, person-to-person digital payment system developed by SBP, enabling real-time fund transfers between bank accounts and mobile wallets using just a mobile number or ID.",
+  },
+  {
+    id: "pk-microfinance-what-is",
+    aliases: buildAliases(["microfinance", "microfinance bank"], ["what is microfinance pakistan"]),
+    category: "Banking",
+    answer: "Microfinance refers to small loans and basic financial services provided to low-income individuals and small businesses who typically lack access to conventional banking, aimed at promoting financial inclusion.",
+  },
+  {
+    id: "pk-branchless-banking-what-is",
+    aliases: buildAliases(["branchless banking", "mobile wallet pakistan"], ["what is branchless banking"]),
+    category: "Banking",
+    answer: "Branchless banking allows people to access basic financial services (deposits, transfers, bill payments) through mobile phones and agent networks rather than visiting a physical bank branch, significantly expanding financial access in underserved areas.",
+  },
+
+  // ── PSX depth: book value, payout ratio, circuit breakers ────────────────
+  {
+    id: "psx-book-value-per-share",
+    aliases: buildAliases(["book value per share"], ["what is book value per share", "price to book ratio meaning"]),
+    category: "PSX",
+    answer: "Book value per share is a company's total shareholders' equity divided by its number of outstanding shares, representing the accounting net worth per share. The Price-to-Book (P/B) ratio compares market price to this book value.",
+  },
+  {
+    id: "psx-dividend-payout-ratio",
+    aliases: buildAliases(["dividend payout ratio"], ["what is dividend payout ratio"]),
+    category: "PSX",
+    answer: "Dividend payout ratio is the percentage of net profit a company distributes to shareholders as dividends, rather than retaining for reinvestment — calculated as total dividends paid divided by net profit.",
+  },
+  {
+    id: "psx-circuit-breaker-what-is",
+    aliases: buildAliases(["circuit breaker psx", "trading halt"], ["what is a circuit breaker stock market"]),
+    category: "PSX",
+    answer: "A circuit breaker is an automatic trading halt triggered when a stock's (or the broader index's) price moves beyond a set percentage limit in a single session, designed to curb panic-driven trading and give the market a pause to reassess.",
+  },
+
+  // ── GDP & sectoral depth ──────────────────────────────────────────────────
+  {
+    id: "gdp-sectoral-breakdown",
+    aliases: ["agriculture industry services share of gdp pakistan", "which sector contributes most to pakistan gdp"],
+    category: "GDP",
+    answer: "Pakistan's GDP is conventionally broken into three broad sectors: agriculture, industry (manufacturing, construction, mining), and services — services typically contribute the largest share of GDP, while agriculture remains disproportionately important for employment.",
+  },
+  {
+    id: "gdp-factor-cost-vs-market-price",
+    aliases: buildAliases(["gdp at factor cost", "gdp at market price"], ["gdp factor cost vs market price difference"]),
+    category: "GDP",
+    answer: "GDP at factor cost measures output value excluding indirect taxes and including subsidies. GDP at market price adds back indirect taxes and subtracts subsidies, reflecting what consumers actually pay — most headline GDP figures reported are at market price.",
+  },
+  {
+    id: "gdp-provisional-vs-final-estimates",
+    aliases: ["provisional gdp estimate vs final estimate pakistan", "why does pakistan gdp get revised"],
+    category: "GDP",
+    answer: "GDP figures are typically first released as provisional estimates based on incomplete data, then revised (sometimes more than once) as more complete data on agriculture, industry, and services becomes available — revisions can meaningfully change the initially reported growth rate.",
+  },
+  {
+    id: "gdp-base-year-what-is",
+    aliases: buildAliases(["gdp base year", "rebasing gdp"], ["what does gdp base year mean", "why does pakistan rebase gdp"]),
+    category: "GDP",
+    answer: "The GDP base year is the reference year used to calculate real (inflation-adjusted) GDP and weight different sectors. Rebasing — updating to a more recent base year — better reflects the current structure of the economy and is done periodically by statistical agencies.",
+  },
+  {
+    id: "gdp-large-scale-manufacturing-lsm-deep",
+    aliases: ["how is lsm related to gdp", "lsm index pakistan meaning"],
+    category: "Quarterly GDP",
+    answer: "The Large-Scale Manufacturing (LSM) Index tracks monthly output from major industrial sectors and is one of the most timely available proxies for industrial activity, often used to gauge GDP momentum before official quarterly GDP data is released.",
+  },
+
+  // ── Mutual funds & ETF depth ─────────────────────────────────────────────
+  {
+    id: "mutual-funds-expense-ratio-what-is",
+    aliases: buildAliases(["expense ratio", "fund management fee"], ["what is expense ratio mutual fund"]),
+    category: "Mutual Funds",
+    answer: "The expense ratio is the annual fee a fund charges, expressed as a percentage of assets under management, covering management fees and operating costs — it's deducted directly from fund returns, so lower expense ratios leave more return for investors.",
+  },
+  {
+    id: "mutual-funds-open-end-vs-closed-end",
+    aliases: buildAliases(["open end fund vs closed end fund"], ["what is an open end mutual fund", "what is a closed end mutual fund"]),
+    category: "Mutual Funds",
+    answer: "An open-end fund continuously issues and redeems units at NAV, so the fund's size grows or shrinks with investor flows. A closed-end fund issues a fixed number of units that then trade on an exchange, with its market price potentially diverging from NAV.",
+  },
+  {
+    id: "mutual-funds-nav-calculation-deep",
+    aliases: ["how is nav calculated mutual fund", "nav per unit formula"],
+    category: "Mutual Funds",
+    answer: "NAV (Net Asset Value) per unit is calculated as (Total Fund Assets − Total Liabilities) ÷ Number of Units Outstanding, typically calculated and published daily.",
+  },
+  {
+    id: "mutual-funds-redemption-process",
+    aliases: ["how to redeem mutual fund units pakistan", "mutual fund redemption process"],
+    category: "Mutual Funds",
+    answer: "Redeeming mutual fund units means selling them back to the fund (rather than to another investor), typically processed at the next calculated NAV, with proceeds paid out within a few business days depending on the fund's terms.",
+  },
+  {
+    id: "mutual-funds-money-market-features",
+    aliases: ["money market fund features pakistan", "what does a money market fund invest in"],
+    category: "Mutual Funds",
+    answer: "A money market fund invests in very short-term, low-risk instruments like T-Bills, commercial paper, and short-term bank deposits, prioritizing capital preservation and liquidity over high returns — often used as a parking place for cash.",
+  },
+  {
+    id: "mutual-funds-income-fund-features",
+    aliases: ["income fund features pakistan", "what does an income fund invest in"],
+    category: "Mutual Funds",
+    answer: "An income fund primarily invests in fixed-income instruments like PIBs, corporate bonds, and Sukuk, aiming for steady income and moderate capital growth with lower volatility than pure equity funds.",
+  },
+  {
+    id: "etf-tracking-error-what-is",
+    aliases: buildAliases(["tracking error etf"], ["what is tracking error in etf"]),
+    category: "ETFs",
+    answer: "Tracking error measures how closely an ETF's returns follow its underlying benchmark index — a low tracking error means the ETF closely mirrors the index it's designed to track; a high tracking error suggests larger deviations.",
+  },
+  {
+    id: "etf-vs-mutual-fund-deep",
+    aliases: ["etf vs mutual fund liquidity difference", "why are etfs usually cheaper than mutual funds"],
+    category: "ETFs",
+    answer: "ETFs trade on an exchange throughout the day like stocks, generally have lower expense ratios due to passive management, and offer intraday liquidity. Traditional mutual funds are priced once daily at NAV and often involve more active management at higher cost.",
+  },
+
+  // ── Ratios & macro schools of thought ─────────────────────────────────────
+  {
+    id: "ratio-debt-to-gdp-deep",
+    aliases: ["why does debt to gdp ratio matter", "what is a sustainable debt to gdp ratio"],
+    category: "Government Debt",
+    answer: "The debt-to-GDP ratio compares total government debt to the size of the economy, used to gauge debt sustainability — there's no universal 'safe' threshold, but rapidly rising ratios alongside high debt servicing costs are generally viewed as a warning sign.",
+  },
+  {
+    id: "ratio-current-ratio-what-is",
+    aliases: buildAliases(["current ratio"], ["what is current ratio in finance"]),
+    category: "Investing Basics",
+    answer: "The current ratio measures a company's ability to cover short-term liabilities with short-term assets, calculated as Current Assets ÷ Current Liabilities — a ratio above 1 suggests adequate short-term liquidity.",
+  },
+  {
+    id: "ratio-quick-ratio-what-is",
+    aliases: buildAliases(["quick ratio", "acid test ratio"], ["what is quick ratio in finance"]),
+    category: "Investing Basics",
+    answer: "The quick ratio (acid-test ratio) is a stricter liquidity measure than the current ratio, excluding inventory from current assets, since inventory can be harder to quickly convert to cash.",
+  },
+  {
+    id: "ratio-debt-to-equity-what-is",
+    aliases: buildAliases(["debt to equity ratio"], ["what is debt to equity ratio"]),
+    category: "Investing Basics",
+    answer: "The debt-to-equity ratio compares a company's total debt to its shareholders' equity, indicating how much of the business is financed by borrowing versus owner capital — higher ratios indicate more financial leverage and risk.",
+  },
+  {
+    id: "macro-keynesian-economics-what-is",
+    aliases: buildAliases(["keynesian economics"], ["what is keynesian economics"]),
+    category: "Macroeconomics",
+    answer: "Keynesian economics argues that government spending and monetary policy can actively manage aggregate demand to smooth business cycles, especially advocating for fiscal stimulus during recessions when private demand is weak.",
+  },
+  {
+    id: "macro-monetarism-what-is",
+    aliases: buildAliases(["monetarism"], ["what is monetarism economics"]),
+    category: "Macroeconomics",
+    answer: "Monetarism emphasizes controlling the growth of money supply as the primary tool for managing inflation and the economy, associated with economist Milton Friedman, contrasting with Keynesian emphasis on fiscal policy.",
+  },
+  {
+    id: "macro-supply-side-economics",
+    aliases: buildAliases(["supply side economics"], ["what is supply side economics"]),
+    category: "Macroeconomics",
+    answer: "Supply-side economics focuses on policies that boost the economy's productive capacity — like tax cuts, deregulation, and investment incentives — arguing these encourage production, investment, and job creation more effectively than demand-side stimulus.",
+  },
+  {
+    id: "macro-income-inequality-gini",
+    aliases: buildAliases(["gini coefficient", "income inequality"], ["what is gini coefficient", "how is income inequality measured"]),
+    category: "Macroeconomics",
+    answer: "The Gini coefficient measures income or wealth inequality within a population, ranging from 0 (perfect equality) to 1 (perfect inequality) — it's a widely used summary statistic for comparing inequality across countries and over time.",
+  },
+  {
+    id: "macro-hdi-what-is",
+    aliases: buildAliases(["hdi", "human development index"], ["what is human development index"]),
+    category: "Macroeconomics",
+    answer: "The Human Development Index (HDI), published by the UNDP, combines life expectancy, education, and per capita income into a single score measuring a country's overall human development, beyond just economic output.",
+  },
+
+  // ── SBP corridor & market infrastructure bodies ──────────────────────────
+  {
+    id: "sbp-interest-rate-corridor",
+    aliases: buildAliases(["interest rate corridor"], ["what is sbp interest rate corridor", "ceiling rate floor rate sbp"]),
+    category: "SBP",
+    answer: "SBP's interest rate corridor sets a ceiling (rate on its lending facility to banks) and a floor (rate on its deposit facility) around the policy rate, keeping short-term interbank rates anchored close to the target policy rate.",
+  },
+  {
+    id: "sbp-discount-rate-vs-policy-rate",
+    aliases: ["discount rate vs policy rate pakistan", "is discount rate the same as policy rate"],
+    category: "SBP",
+    answer: "Pakistan previously used the term 'discount rate' for its key policy benchmark; SBP now formally refers to it as the 'policy rate,' which serves as the target for short-term money market rates and the basis for the interest rate corridor.",
+  },
+  {
+    id: "secp-what-is",
+    aliases: buildAliases(["secp", "securities and exchange commission of pakistan"], ["what does secp do"]),
+    category: "PSX",
+    answer: "SECP (Securities and Exchange Commission of Pakistan) is the regulator overseeing capital markets, listed companies, mutual funds, insurance, and non-bank financial institutions in Pakistan, distinct from SBP which regulates banks and monetary policy.",
+  },
+  {
+    id: "nccpl-what-is",
+    aliases: buildAliases(["nccpl", "national clearing company"], ["what does nccpl do"]),
+    category: "PSX",
+    answer: "NCCPL (National Clearing Company of Pakistan Limited) provides clearing and settlement services for PSX trades, acting as the central counterparty that guarantees trade settlement between buyers and sellers.",
+  },
+  {
+    id: "cdc-what-is",
+    aliases: buildAliases(["cdc", "central depository company"], ["what does cdc do pakistan"]),
+    category: "PSX",
+    answer: "CDC (Central Depository Company) holds shares electronically on behalf of investors, eliminating the need for physical share certificates and enabling fast, secure transfer of ownership when trades settle.",
+  },
+
+  // ── Sukuk structures depth ────────────────────────────────────────────────
+  {
+    id: "sukuk-ijarah-what-is",
+    aliases: buildAliases(["ijarah sukuk", "gop ijarah sukuk"], ["what is ijarah sukuk"]),
+    category: "Sukuk",
+    answer: "Ijarah Sukuk are structured around a lease (Ijarah) arrangement, where certificate holders effectively own a share in a leased asset and earn rental income from it — Pakistan's government regularly issues GoP Ijarah Sukuk backed by state assets.",
+  },
+  {
+    id: "sukuk-musharakah-what-is",
+    aliases: buildAliases(["sukuk al musharakah", "musharakah sukuk"], ["what is musharakah sukuk"]),
+    category: "Sukuk",
+    answer: "Sukuk al-Musharakah are structured as a partnership, where certificate holders share in the profits and losses of an underlying business venture or project, rather than earning a fixed rental or interest-like return.",
+  },
+  {
+    id: "sukuk-energy-pakistan",
+    aliases: buildAliases(["energy sukuk pakistan"], ["what is energy sukuk"]),
+    category: "Sukuk",
+    answer: "Pakistan has issued Sukuk specifically backed by state-owned energy assets (like hydropower or transmission infrastructure) to raise Shariah-compliant domestic financing for the government, often used to help address circular debt.",
+  },
+
+  // ── Investing: passive vs active, advisors ───────────────────────────────
+  {
+    id: "investing-passive-vs-active",
+    aliases: buildAliases(["passive investing vs active investing"], ["what is passive investing", "what is active investing"]),
+    category: "Investing Basics",
+    answer: "Active investing involves a manager trying to outperform the market through stock selection and timing. Passive investing simply aims to replicate a market index's return at low cost — research consistently shows few active managers beat their benchmark over the long run, net of fees.",
+  },
+  {
+    id: "investing-robo-advisor-what-is",
+    aliases: buildAliases(["robo advisor"], ["what is a robo advisor"]),
+    category: "Investing Basics",
+    answer: "A robo-advisor is an automated, algorithm-driven investment platform that builds and manages a diversified portfolio for an investor based on their goals and risk tolerance, typically at lower cost than a traditional human financial advisor.",
+  },
+  {
+    id: "investing-financial-advisor-vs-portfolio-manager",
+    aliases: ["financial advisor vs portfolio manager", "what does a financial advisor do"],
+    category: "Investing Basics",
+    answer: "A financial advisor typically provides broad guidance on budgeting, goals, and product selection. A portfolio/fund manager actively makes day-to-day investment decisions for a fund or discretionary account on behalf of clients.",
+  },
+
+  // ── Forex: convertibility & controls ──────────────────────────────────────
+  {
+    id: "fx-current-account-convertibility",
+    aliases: buildAliases(["current account convertibility"], ["what is current account convertibility"]),
+    category: "Exchange Rates",
+    answer: "Current account convertibility means a currency can be freely exchanged for trade and current transactions (imports/exports, remittances, travel) without restriction — Pakistan maintains current account convertibility under IMF Article VIII commitments.",
+  },
+  {
+    id: "fx-capital-account-convertibility",
+    aliases: buildAliases(["capital account convertibility"], ["what is capital account convertibility"]),
+    category: "Exchange Rates",
+    answer: "Capital account convertibility means a currency can be freely exchanged for investment and capital flows (like buying foreign stocks/bonds or repatriating profits) without restriction — Pakistan, like many developing economies, maintains some capital controls rather than full convertibility.",
+  },
+  {
+    id: "fx-exchange-controls-what-are",
+    aliases: buildAliases(["exchange controls", "capital controls"], ["what are exchange controls"]),
+    category: "Exchange Rates",
+    answer: "Exchange/capital controls are government restrictions on the flow of foreign currency in or out of a country, used to preserve scarce foreign reserves or limit destabilizing capital flight, though they can also discourage foreign investment.",
+  },
+
+  // ── PSX: margin trading, leverage products ───────────────────────────────
+  {
+    id: "psx-margin-trading-system",
+    aliases: buildAliases(["margin trading system psx", "mts pakistan"], ["what is margin trading system psx"]),
+    category: "PSX",
+    answer: "The Margin Trading System (MTS) lets PSX investors borrow funds from a financier to buy additional shares using their existing portfolio as collateral, amplifying both potential gains and losses compared to trading with cash alone.",
+  },
+  {
+    id: "psx-short-selling-rules",
+    aliases: ["short selling rules on psx", "can you short sell on psx"],
+    category: "PSX",
+    answer: "PSX permits regulated short selling only on eligible securities through approved mechanisms, subject to SECP rules designed to prevent settlement failures — it's more restricted than short selling in many developed markets.",
+  },
+
+  // ── Technical analysis basics ────────────────────────────────────────────
+  {
+    id: "ta-technical-vs-fundamental",
+    aliases: buildAliases(["technical analysis", "fundamental analysis"], ["technical analysis vs fundamental analysis"]),
+    category: "Investing Basics",
+    answer: "Fundamental analysis evaluates a company's intrinsic value using financial statements, earnings, and economic conditions. Technical analysis instead studies historical price and volume charts/patterns to forecast likely future price movements.",
+  },
+  {
+    id: "ta-candlestick-chart-what-is",
+    aliases: buildAliases(["candlestick chart"], ["what is a candlestick chart"]),
+    category: "Investing Basics",
+    answer: "A candlestick chart displays a security's open, high, low, and closing prices for a given period as a single 'candle,' widely used in technical analysis to visualize price action and trading patterns.",
+  },
+  {
+    id: "ta-moving-average-what-is",
+    aliases: buildAliases(["moving average"], ["what is a moving average in trading"]),
+    category: "Investing Basics",
+    answer: "A moving average smooths out price data by averaging it over a set period (e.g., 50-day or 200-day), helping traders identify the underlying trend direction by filtering out short-term noise.",
+  },
+  {
+    id: "ta-support-resistance-what-is",
+    aliases: buildAliases(["support and resistance"], ["what is support and resistance in trading"]),
+    category: "Investing Basics",
+    answer: "Support is a price level where a stock has historically tended to stop falling and bounce back up. Resistance is a price level where it has tended to stop rising — both are used by technical traders to anticipate potential turning points.",
+  },
+  {
+    id: "ta-rsi-what-is",
+    aliases: buildAliases(["rsi", "relative strength index"], ["what is rsi indicator"]),
+    category: "Investing Basics",
+    answer: "The Relative Strength Index (RSI) is a momentum indicator measuring the speed and magnitude of recent price changes on a 0-100 scale, commonly used to identify potentially overbought (above 70) or oversold (below 30) conditions.",
+  },
+
+  // ── Tax depth: capital gains, dividends, zakat ───────────────────────────
+  {
+    id: "tax-capital-gains-pakistan",
+    aliases: buildAliases(["capital gains tax pakistan", "cgt pakistan"], ["how is capital gains tax calculated on stocks pakistan"]),
+    category: "Pakistan Economy",
+    answer: "Capital Gains Tax (CGT) in Pakistan applies to profits from selling assets like PSX shares or property, with the rate often depending on the holding period (shorter holding periods can attract higher rates) — current rates and rules should be confirmed with FBR guidance.",
+  },
+  {
+    id: "tax-dividend-tax-pakistan",
+    aliases: buildAliases(["dividend tax pakistan"], ["how are dividends taxed in pakistan"]),
+    category: "Pakistan Economy",
+    answer: "Dividend income in Pakistan is generally subject to withholding tax at the time of payment, with rates that can vary depending on the recipient's filer status and the paying company's sector — current rates should be confirmed with FBR guidance.",
+  },
+  {
+    id: "tax-zakat-on-investments",
+    aliases: buildAliases(["zakat on investments", "zakat on shares"], ["how is zakat calculated on stocks"]),
+    category: "Investing Basics",
+    answer: "Zakat is generally calculated as 2.5% of qualifying wealth held for a lunar year above a minimum threshold (nisab), including the market value of held shares and savings — specific treatment of different asset types can vary by scholarly interpretation.",
+  },
+
+  // ── Economic indicators: PMI, confidence, leading/lagging ───────────────
+  {
+    id: "econ-pmi-what-is",
+    aliases: buildAliases(["pmi", "purchasing managers index"], ["what is pmi economic indicator"]),
+    category: "Macroeconomics",
+    answer: "The Purchasing Managers' Index (PMI) is a survey-based indicator of business activity in manufacturing or services, with readings above 50 indicating expansion and below 50 indicating contraction — a closely watched, timely gauge of economic momentum.",
+  },
+  {
+    id: "econ-consumer-confidence-index",
+    aliases: buildAliases(["consumer confidence index"], ["what is consumer confidence index"]),
+    category: "Macroeconomics",
+    answer: "The Consumer Confidence Index measures how optimistic or pessimistic consumers feel about the economy and their own finances, used as a leading indicator since confident consumers tend to spend more, supporting growth.",
+  },
+  {
+    id: "econ-business-confidence-index",
+    aliases: buildAliases(["business confidence index"], ["what is business confidence index"]),
+    category: "Macroeconomics",
+    answer: "The Business Confidence Index gauges sentiment among business leaders about current and future economic conditions, often correlating with future investment and hiring decisions.",
+  },
+
+  // ── Pakistan: SEZs & informal economy ────────────────────────────────────
+  {
+    id: "pk-sez-deep",
+    aliases: ["what are special economic zones pakistan", "sez incentives pakistan"],
+    category: "Pakistan Economy",
+    answer: "Special Economic Zones (SEZs) in Pakistan offer tax holidays, duty exemptions, and streamlined regulations to attract domestic and foreign investment into designated industrial areas, often linked to CPEC-related industrial cooperation.",
+  },
+  {
+    id: "pk-documentation-drive-what-is",
+    aliases: buildAliases(["documentation of the economy"], ["what is fbr documentation drive"]),
+    category: "Pakistan Economy",
+    answer: "Documentation of the economy refers to government efforts (often via FBR) to bring informal/undocumented economic activity into the formal, tax-registered system — typically through stricter banking transaction rules, point-of-sale integration, and incentives for registration.",
+  },
+
+  // ── Investing: style/category comparisons ───────────────────────────────
+  {
+    id: "investing-blue-chip-what-is",
+    aliases: buildAliases(["blue chip stock"], ["what is a blue chip stock"]),
+    category: "Investing Basics",
+    answer: "A blue-chip stock refers to shares of a large, well-established, financially stable company with a long track record, generally considered lower-risk than smaller or newer listed companies.",
+  },
+  {
+    id: "investing-penny-stock-what-is",
+    aliases: buildAliases(["penny stock"], ["what is a penny stock"]),
+    category: "Investing Basics",
+    answer: "A penny stock is a low-priced, often small-cap and thinly-traded share, frequently associated with higher volatility, lower liquidity, and greater risk of manipulation compared to established large-cap stocks.",
+  },
+  {
+    id: "investing-defensive-vs-cyclical",
+    aliases: buildAliases(["defensive stocks vs cyclical stocks"], ["what are defensive stocks", "what are cyclical stocks"]),
+    category: "Investing Basics",
+    answer: "Defensive stocks (like utilities or consumer staples) tend to hold up relatively well during economic downturns since demand for their products stays stable. Cyclical stocks (like autos or steel) tend to rise and fall more closely with the broader economic cycle.",
+  },
+
+  // ── Derivatives & hedging basics ─────────────────────────────────────────
+  {
+    id: "finance-derivatives-what-are",
+    aliases: buildAliases(["derivatives", "financial derivatives"], ["what are derivatives in finance"]),
+    category: "Investing Basics",
+    answer: "Derivatives are financial contracts whose value is based on (derived from) an underlying asset, such as a stock, bond, currency, or commodity — common types include options, futures, and forwards, used for hedging or speculation.",
+  },
+  {
+    id: "finance-options-what-are",
+    aliases: buildAliases(["options trading", "stock options"], ["what are options in trading"]),
+    category: "Investing Basics",
+    answer: "An option gives the holder the right (not obligation) to buy (call option) or sell (put option) an underlying asset at a specified price within a set time period, in exchange for paying a premium.",
+  },
+  {
+    id: "finance-futures-vs-forwards",
+    aliases: buildAliases(["futures vs forwards", "futures contract"], ["what is a futures contract"]),
+    category: "Investing Basics",
+    answer: "A futures contract is a standardized agreement to buy/sell an asset at a set price on a future date, traded on an exchange with daily settlement. A forward contract is a similar but customized, privately negotiated agreement, typically traded over-the-counter.",
+  },
+  {
+    id: "finance-hedging-what-is",
+    aliases: buildAliases(["hedging"], ["what is hedging in finance"]),
+    category: "Investing Basics",
+    answer: "Hedging means taking an offsetting position to reduce the risk of adverse price movements in an existing investment or exposure — for example, an exporter might hedge currency risk using a forward contract to lock in a future exchange rate.",
+  },
+
+  // ── Banking: correspondent banking & cross-border ────────────────────────
+  {
+    id: "banking-nostro-vostro-accounts",
+    aliases: buildAliases(["nostro account", "vostro account"], ["what is a nostro vostro account"]),
+    category: "Banking",
+    answer: "A Nostro account is a bank's account held in a foreign currency at a bank abroad ('our account with you'). A Vostro account is the same relationship from the other bank's perspective ('your account with us') — both facilitate international transactions and remittances.",
+  },
+  {
+    id: "banking-swift-what-is",
+    aliases: buildAliases(["swift", "swift code"], ["what is a swift code"]),
+    category: "Banking",
+    answer: "SWIFT is a global messaging network banks use to securely communicate payment instructions for international transfers. A SWIFT/BIC code uniquely identifies a specific bank when sending or receiving an international wire transfer.",
+  },
+
+  // ── Global market classification ─────────────────────────────────────────
+  {
+    id: "econ-emerging-market-what-is",
+    aliases: buildAliases(["emerging market"], ["what is an emerging market economy"]),
+    category: "Macroeconomics",
+    answer: "An emerging market is a developing economy that has made progress toward more advanced market structures and institutions but hasn't yet reached the income, liquidity, and regulatory standards of fully developed markets.",
+  },
+  {
+    id: "econ-frontier-market-what-is",
+    aliases: buildAliases(["frontier market"], ["what is a frontier market", "is pakistan a frontier market"]),
+    category: "Macroeconomics",
+    answer: "A frontier market is an even less developed and less liquid market than an emerging market, typically smaller and riskier for foreign investors — index providers like MSCI periodically classify and reclassify countries, including Pakistan, between frontier and emerging market status.",
+  },
+  {
+    id: "econ-msci-classification-what-is",
+    aliases: buildAliases(["msci classification"], ["what is msci index classification"]),
+    category: "Macroeconomics",
+    answer: "MSCI (Morgan Stanley Capital International) classifies countries' stock markets as developed, emerging, or frontier based on economic development, market size/liquidity, and accessibility for foreign investors — its classification heavily influences global index-fund investment flows into a country.",
+  },
+
+  // ── Pakistan agriculture & key sectors ───────────────────────────────────
+  {
+    id: "pk-agriculture-support-price",
+    aliases: buildAliases(["minimum support price pakistan", "wheat support price"], ["what is minimum support price"]),
+    category: "Pakistan Economy",
+    answer: "A minimum/support price is a government-guaranteed floor price for key crops like wheat, intended to protect farmer incomes from price crashes, though it can also distort planting decisions and burden public procurement budgets.",
+  },
+  {
+    id: "pk-textile-sector-importance",
+    aliases: ["why is textile sector important for pakistan", "textile sector contribution to pakistan economy"],
+    category: "Exports",
+    answer: "Textiles are Pakistan's largest manufacturing sector and largest export earner, built on the country's cotton production base, making the sector highly sensitive to cotton crop output, energy costs, and global demand conditions.",
+  },
+
+  // ── Trade policy basics ──────────────────────────────────────────────────
+  {
+    id: "trade-fta-what-is",
+    aliases: buildAliases(["free trade agreement", "fta"], ["what is a free trade agreement"]),
+    category: "Trade Balance",
+    answer: "A Free Trade Agreement (FTA) is a treaty between two or more countries that reduces or eliminates tariffs and trade barriers on goods/services traded between them, aiming to boost bilateral trade volumes.",
+  },
+  {
+    id: "trade-tariff-what-is",
+    aliases: buildAliases(["tariff", "customs duty"], ["what is a tariff in trade"]),
+    category: "Imports",
+    answer: "A tariff (customs duty) is a tax imposed on imported (or sometimes exported) goods, used either to raise government revenue or to protect domestic industries by making imports more expensive relative to local products.",
+  },
+  {
+    id: "trade-dumping-what-is",
+    aliases: buildAliases(["dumping trade", "anti dumping duty"], ["what is dumping in international trade"]),
+    category: "Trade Balance",
+    answer: "Dumping occurs when a company exports a product at a price lower than what it charges in its home market (or below production cost), often to gain market share abroad. Importing countries can impose anti-dumping duties to offset this unfair pricing advantage.",
+  },
+  {
+    id: "trade-customs-union-what-is",
+    aliases: buildAliases(["customs union"], ["what is a customs union"]),
+    category: "Trade Balance",
+    answer: "A customs union is a trade bloc where member countries eliminate tariffs among themselves and adopt a common external tariff on imports from non-members, going a step further than a typical free trade agreement.",
+  },
+
+  // ── Energy sector & SOEs ─────────────────────────────────────────────────
+  {
+    id: "pk-ipp-capacity-payments",
+    aliases: buildAliases(["independent power producer", "ipp capacity payments"], ["what are capacity payments pakistan"]),
+    category: "Pakistan Economy",
+    answer: "Independent Power Producers (IPPs) are privately-owned electricity generation companies that sell power to the national grid under long-term contracts. Capacity payments are fixed payments IPPs receive for being available to generate, regardless of how much electricity is actually used — a major driver of Pakistan's circular debt.",
+  },
+  {
+    id: "pk-privatization-what-is",
+    aliases: buildAliases(["privatization", "soe privatization pakistan"], ["what is privatization", "why does pakistan privatize state companies"]),
+    category: "Pakistan Economy",
+    answer: "Privatization is transferring ownership of a state-owned enterprise (SOE) to private investors, often pursued to reduce the fiscal burden of loss-making SOEs, improve efficiency, and raise one-time proceeds for the government.",
+  },
+  {
+    id: "pk-soe-what-is",
+    aliases: buildAliases(["soe", "state owned enterprise"], ["what is a state owned enterprise"]),
+    category: "Pakistan Economy",
+    answer: "A State-Owned Enterprise (SOE) is a company owned and controlled by the government, such as a national airline or power utility — many of Pakistan's SOEs have historically run at a loss, requiring ongoing budget subsidies.",
+  },
+
+  // ── IMF/SDR depth ─────────────────────────────────────────────────────────
+  {
+    id: "imf-sdr-what-is",
+    aliases: buildAliases(["sdr", "special drawing rights"], ["what is special drawing rights"]),
+    category: "IMF",
+    answer: "Special Drawing Rights (SDR) are a supplementary international reserve asset created by the IMF, whose value is based on a basket of major currencies — member countries can use allocated SDRs to supplement their official reserves or exchange them for hard currency.",
+  },
+  {
+    id: "imf-surveillance-vs-lending",
+    aliases: ["imf surveillance vs lending role", "what is imf article iv consultation"],
+    category: "IMF",
+    answer: "Beyond lending, the IMF conducts regular 'surveillance' of member economies, including Article IV consultations — periodic assessments of a country's economic health and policies, even for countries with no active loan program.",
+  },
+
+  // ── Crypto: adoption & comparisons ───────────────────────────────────────
+  {
+    id: "crypto-vs-gold-hedge",
+    aliases: ["crypto vs gold as inflation hedge", "is bitcoin a better hedge than gold"],
+    category: "Crypto",
+    answer: "Gold has a centuries-long track record as a store of value with lower volatility. Bitcoin is sometimes called 'digital gold' and has shown long-term appreciation, but with dramatically higher short-term volatility and a much shorter track record.",
+  },
+  {
+    id: "crypto-p2p-trading-what-is",
+    aliases: buildAliases(["p2p crypto trading", "peer to peer crypto trading"], ["what is p2p trading crypto"]),
+    category: "Crypto",
+    answer: "Peer-to-peer (P2P) crypto trading lets buyers and sellers transact directly with each other (often via an escrow-style platform) rather than through a centralized exchange's order book, commonly used in markets with banking restrictions on crypto.",
+  },
+  {
+    id: "crypto-ico-what-is",
+    aliases: buildAliases(["ico", "initial coin offering"], ["what is an ico crypto"]),
+    category: "Crypto",
+    answer: "An Initial Coin Offering (ICO) is a fundraising method where a crypto project sells new tokens to early investors/backers, similar in spirit to an IPO but typically with far less regulatory oversight and higher risk.",
+  },
+  {
+    id: "crypto-airdrop-what-is",
+    aliases: buildAliases(["crypto airdrop"], ["what is a crypto airdrop"]),
+    category: "Crypto",
+    answer: "A crypto airdrop is a free distribution of tokens to wallet addresses, often used by new projects to bootstrap a user base, reward early adopters, or decentralize token ownership.",
+  },
+
+  // ── PSX index methodology depth ──────────────────────────────────────────
+  {
+    id: "psx-all-share-index-what-is",
+    aliases: buildAliases(["psx all share index"], ["what is the all share index psx"]),
+    category: "PSX",
+    answer: "The PSX All Share Index tracks the price performance of every eligible listed company on the exchange, offering a broader market gauge than the more widely-quoted KSE-100, which only includes the 100 largest, most liquid companies.",
+  },
+  {
+    id: "kse100-index-methodology-deep",
+    aliases: ["how is kse100 index calculated", "kse 100 free float weighting methodology"],
+    category: "KSE-100",
+    answer: "KSE-100 is a free-float market capitalization-weighted index, meaning each company's influence on the index level is based on its market value of publicly tradable shares (excluding locked-in/strategic holdings), reviewed and rebalanced periodically.",
+  },
+  {
+    id: "psx-sector-indices-what-are",
+    aliases: buildAliases(["psx sector indices"], ["what are sector indices psx"]),
+    category: "PSX",
+    answer: "PSX publishes sector-specific indices (like banking, cement, or oil & gas) tracking the performance of companies within a particular industry, useful for analyzing sector-level trends separately from the broad market.",
+  },
+
+  // ── Risk types ────────────────────────────────────────────────────────────
+  {
+    id: "finance-systematic-vs-unsystematic-risk",
+    aliases: buildAliases(["systematic risk vs unsystematic risk"], ["what is systematic risk", "what is unsystematic risk"]),
+    category: "Investing Basics",
+    answer: "Systematic risk affects the entire market (like a recession or interest rate hike) and can't be diversified away. Unsystematic risk is specific to a single company or sector and can be reduced through diversification.",
+  },
+  {
+    id: "finance-market-risk-vs-credit-risk",
+    aliases: ["market risk vs credit risk vs liquidity risk", "what is operational risk in finance"],
+    category: "Investing Basics",
+    answer: "Market risk is exposure to broad price movements; credit risk is exposure to a borrower defaulting; liquidity risk is the risk of being unable to buy/sell quickly without a price impact; operational risk arises from internal failures, like system errors or fraud.",
+  },
+
+  // ── GDP per capita & nowcasting depth ────────────────────────────────────
+  {
+    id: "gdp-per-capita-ppp-deep",
+    aliases: ["gdp per capita ppp meaning", "pakistan gdp per capita ppp vs nominal"],
+    category: "GDP",
+    answer: "GDP per capita on a Purchasing Power Parity (PPP) basis adjusts for differences in local cost of living, generally showing a higher figure for Pakistan than nominal (market exchange rate) GDP per capita, since prices for many goods/services are lower locally.",
+  },
+  {
+    id: "gdp-nowcasting-what-is",
+    aliases: buildAliases(["gdp nowcasting"], ["what is gdp nowcasting"]),
+    category: "Quarterly GDP",
+    answer: "GDP nowcasting uses timely, high-frequency proxy data (like LSM output, electricity consumption, or import volumes) to estimate current-quarter GDP growth before official statistics are released weeks or months later.",
+  },
+
+  // ── Banking: Basel & liquidity standards ─────────────────────────────────
+  {
+    id: "banking-basel-iii-what-is",
+    aliases: buildAliases(["basel iii", "basel accord"], ["what is basel iii banking standard"]),
+    category: "Banking",
+    answer: "Basel III is a set of international banking regulatory standards (developed by the Basel Committee) covering capital adequacy, stress testing, and liquidity requirements, adopted by SBP to keep Pakistani banks resilient to financial shocks.",
+  },
+  {
+    id: "banking-liquidity-coverage-ratio",
+    aliases: buildAliases(["liquidity coverage ratio", "lcr banking"], ["what is liquidity coverage ratio"]),
+    category: "Banking",
+    answer: "The Liquidity Coverage Ratio (LCR) requires banks to hold enough high-quality liquid assets to survive a 30-day severe stress scenario, a key Basel III requirement aimed at preventing short-term liquidity crises.",
+  },
+
+  // ── Fiscal federalism & ESG ───────────────────────────────────────────────
+  {
+    id: "pk-18th-amendment-fiscal",
+    aliases: buildAliases(["18th amendment fiscal devolution"], ["what is 18th amendment economic impact"]),
+    category: "Pakistan Economy",
+    answer: "Pakistan's 18th Constitutional Amendment (2010) devolved many spending responsibilities (like health and education) to the provinces while increasing their share of federal tax revenue under the NFC Award, significantly reshaping fiscal federalism.",
+  },
+  {
+    id: "investing-esg-what-is",
+    aliases: buildAliases(["esg investing", "esg"], ["what is esg investing", "what does esg stand for"]),
+    category: "Investing Basics",
+    answer: "ESG (Environmental, Social, and Governance) investing evaluates companies not just on financial metrics but also on environmental impact, social practices, and governance quality, used by some investors to screen or score potential investments.",
+  },
+  {
+    id: "investing-reit-what-is",
+    aliases: buildAliases(["reit", "real estate investment trust"], ["what is a reit pakistan"]),
+    category: "Investing Basics",
+    answer: "A REIT (Real Estate Investment Trust) pools investor money to buy and manage income-generating real estate, with units traded similarly to a closed-end fund — it lets investors gain real estate exposure without directly owning or managing property.",
+  },
+  {
+    id: "investing-holding-vs-operating-company",
+    aliases: ["holding company vs operating company", "what is a holding company"],
+    category: "Investing Basics",
+    answer: "An operating company directly runs a business producing goods or services. A holding company instead owns controlling stakes in other companies (subsidiaries) without itself conducting day-to-day operations.",
+  },
+
+  // ── Recession & default depth ────────────────────────────────────────────
+  {
+    id: "macro-recession-technical-definition",
+    aliases: ["technical definition of recession", "two consecutive quarters of negative growth recession"],
+    category: "Macroeconomics",
+    answer: "A commonly cited rule of thumb defines a recession as two consecutive quarters of negative real GDP growth, though many official bodies (like the US NBER) use a broader assessment including employment, income, and production data rather than this single rule alone.",
+  },
+  {
+    id: "macro-recession-vs-depression",
+    aliases: ["recession vs depression economics", "what is an economic depression"],
+    category: "Macroeconomics",
+    answer: "A recession is a significant, broad decline in economic activity lasting more than a few months. A depression is a much more severe, prolonged, and deeper downturn — the term is reserved for historically extreme episodes like the 1930s Great Depression.",
+  },
+  {
+    id: "debt-sovereign-default-what-happens",
+    aliases: ["what happens when a country defaults on debt", "sovereign default consequences"],
+    category: "Government Debt",
+    answer: "A sovereign default occurs when a government fails to make scheduled debt payments. Consequences typically include credit rating downgrades, loss of market access for new borrowing, currency depreciation, and often a need to negotiate debt restructuring with creditors.",
+  },
+  {
+    id: "debt-default-vs-restructuring",
+    aliases: ["default vs restructuring debt", "is debt restructuring the same as default"],
+    category: "Government Debt",
+    answer: "A default is failing to make a payment as originally contracted. Restructuring is a negotiated change to debt terms (often to avoid or resolve a default) — a 'distressed' restructuring imposing losses on creditors can sometimes itself be classified as a default by rating agencies.",
+  },
+
+  // ── Market microstructure ────────────────────────────────────────────────
+  {
+    id: "finance-order-book-what-is",
+    aliases: buildAliases(["order book trading"], ["what is an order book in trading"]),
+    category: "Investing Basics",
+    answer: "An order book is a real-time list of buy and sell orders for a security at different price levels, showing market depth — how much volume is available to trade near the current price.",
+  },
+  {
+    id: "finance-market-depth-what-is",
+    aliases: buildAliases(["market depth"], ["what is market depth trading"]),
+    category: "Investing Basics",
+    answer: "Market depth refers to how much buy/sell volume exists at various price levels in the order book — a market with greater depth can absorb larger trades without significantly moving the price.",
+  },
+
+  // ── KMI-30 / Shariah screening depth ─────────────────────────────────────
+  {
+    id: "kmi30-debt-screening-ratio",
+    aliases: ["kmi-30 debt to asset screening ratio", "shariah compliant debt threshold pakistan"],
+    category: "KMI-30",
+    answer: "Shariah screening for KMI-30 eligibility typically caps interest-bearing debt relative to total assets at a set threshold (commonly around 30-37%, depending on the screening methodology), alongside business-activity and income-purification checks.",
+  },
+  {
+    id: "kmi30-non-compliant-income-threshold",
+    aliases: ["kmi-30 non-compliant income threshold", "how much non-shariah income is allowed"],
+    category: "KMI-30",
+    answer: "Shariah screening typically allows a small percentage (often around 5%) of a company's total revenue to come from incidental non-compliant activity before it's excluded from a Shariah-compliant index — any such income must still be 'purified' via charitable donation.",
+  },
+
+  // ── NBFCs, leasing, modaraba ──────────────────────────────────────────────
+  {
+    id: "pk-nbfc-what-is",
+    aliases: buildAliases(["nbfc", "non bank financial company"], ["what is an nbfc pakistan"]),
+    category: "Banking",
+    answer: "A Non-Bank Financial Company (NBFC) provides financial services like leasing, investment finance, or asset management without holding a full banking license, regulated by SECP rather than SBP in Pakistan.",
+  },
+  {
+    id: "pk-modaraba-what-is",
+    aliases: buildAliases(["modaraba"], ["what is a modaraba pakistan"]),
+    category: "Banking",
+    answer: "A Modaraba is a Shariah-compliant business vehicle where one party provides capital and another provides management expertise, sharing profits per a pre-agreed ratio (and capital losses borne by the financier) — a distinct Islamic finance structure regulated in Pakistan.",
+  },
+  {
+    id: "pk-leasing-company-what-is",
+    aliases: buildAliases(["leasing company pakistan"], ["what does a leasing company do"]),
+    category: "Banking",
+    answer: "A leasing company finances the use of equipment or vehicles by purchasing the asset and renting it to a business or individual over time, often as an alternative to a conventional bank loan for acquiring fixed assets.",
+  },
+
+  // ── National income & mutual fund structure ──────────────────────────────
+  {
+    id: "macro-gni-what-is",
+    aliases: buildAliases(["gni", "gross national income"], ["what is gni vs gdp vs gnp"]),
+    category: "GDP",
+    answer: "Gross National Income (GNI) is GDP plus net income received from abroad (like remittances and investment income) minus similar payments made to non-residents — conceptually very close to GNP, and often used interchangeably with it.",
+  },
+  {
+    id: "mutual-funds-aum-what-is",
+    aliases: buildAliases(["aum", "assets under management"], ["what does aum mean mutual fund"]),
+    category: "Mutual Funds",
+    answer: "Assets Under Management (AUM) is the total market value of all investments a fund or asset manager oversees on behalf of clients — a key indicator of a fund management company's scale.",
+  },
+  {
+    id: "mutual-funds-trustee-custodian-roles",
+    aliases: ["what is a trustee in a mutual fund", "what is a custodian bank mutual fund"],
+    category: "Mutual Funds",
+    answer: "A mutual fund's Asset Management Company (AMC) makes investment decisions, while an independent trustee/custodian (often a bank) holds the fund's actual assets in safekeeping, providing a layer of investor protection by separating fund management from asset custody.",
+  },
+
+  // ── PSX settlement & trading status depth ────────────────────────────────
+  {
+    id: "psx-t-plus-settlement-deep",
+    aliases: ["what does t+2 settlement mean psx", "when issued trading meaning"],
+    category: "PSX",
+    answer: "T+2 settlement means a trade executed today is finalized (shares and funds exchanged) two business days later. 'When-issued' trading allows trading securities like bonus shares before they're formally credited to accounts, ahead of their official listing.",
+  },
+  {
+    id: "psx-trading-suspension-what-is",
+    aliases: buildAliases(["trading suspension psx"], ["why would psx suspend trading in a stock"]),
+    category: "PSX",
+    answer: "PSX or SECP can suspend trading in a company's shares — for example, due to failure to submit required financial disclosures, a pending corporate action, or a regulatory investigation — pausing all buying and selling until the issue is resolved.",
+  },
+
+  // ── Insurance basics (general) ───────────────────────────────────────────
+  {
+    id: "insurance-health-insurance-what-is",
+    aliases: buildAliases(["health insurance"], ["what is health insurance"]),
+    category: "Investing Basics",
+    answer: "Health insurance covers medical expenses in exchange for regular premium payments, protecting against the financial impact of unexpected illness or injury — coverage scope, network hospitals, and exclusions vary significantly by policy.",
+  },
+  {
+    id: "insurance-motor-insurance-pakistan",
+    aliases: buildAliases(["motor insurance pakistan", "car insurance pakistan"], ["what is motor insurance"]),
+    category: "Investing Basics",
+    answer: "Motor insurance in Pakistan typically comes in two main forms: third-party liability (covering damage to others, sometimes mandatory) and comprehensive coverage (also covering damage to the insured's own vehicle).",
+  },
+
+  // ── Macro: real rates, safe havens ───────────────────────────────────────
+  {
+    id: "macro-real-vs-nominal-interest-rate",
+    aliases: ["real interest rate vs nominal interest rate", "fisher equation explained"],
+    category: "Interest Rates",
+    answer: "The nominal interest rate is the stated rate before adjusting for inflation. The real interest rate subtracts expected inflation from the nominal rate (the Fisher equation), reflecting the actual increase in purchasing power a lender or saver earns.",
+  },
+  {
+    id: "finance-safe-haven-asset-what-is",
+    aliases: buildAliases(["safe haven asset"], ["what is a safe haven asset"]),
+    category: "Investing Basics",
+    answer: "A safe-haven asset (like gold, the US Dollar, or government bonds of stable economies) is expected to retain or increase in value during periods of market turmoil, as investors seek shelter from riskier assets.",
+  },
+  {
+    id: "macro-structural-reform-what-is",
+    aliases: buildAliases(["structural reform"], ["what is structural reform economics"]),
+    category: "Macroeconomics",
+    answer: "Structural reforms are policy changes aimed at improving an economy's long-term efficiency and growth potential — examples include tax reform, energy sector restructuring, SOE privatization, and improving business regulations, frequently tied to IMF program conditions in Pakistan.",
+  },
+
+  // ── Crypto: technical depth ──────────────────────────────────────────────
+  {
+    id: "crypto-layer1-vs-layer2",
+    aliases: buildAliases(["layer 1 vs layer 2 blockchain"], ["what is a layer 2 blockchain"]),
+    category: "Crypto",
+    answer: "A Layer 1 blockchain (like Bitcoin or Ethereum) is the base network itself. Layer 2 solutions are built on top of a Layer 1 to improve speed and reduce transaction costs, while still relying on the underlying Layer 1 for final security and settlement.",
+  },
+  {
+    id: "crypto-vasp-what-is",
+    aliases: buildAliases(["vasp", "virtual asset service provider"], ["what is a vasp crypto"]),
+    category: "Crypto",
+    answer: "A Virtual Asset Service Provider (VASP) is a business — like a crypto exchange or wallet provider — that facilitates transactions or custody of virtual assets on behalf of customers, increasingly subject to anti-money-laundering regulation under FATF standards.",
+  },
+
+  // ── Pakistan: subsidies ──────────────────────────────────────────────────
+  {
+    id: "pk-fertilizer-subsidy-what-is",
+    aliases: buildAliases(["fertilizer subsidy pakistan"], ["what is fertilizer subsidy"]),
+    category: "Pakistan Economy",
+    answer: "Fertilizer subsidies reduce the cost farmers pay for fertilizer (often through subsidized gas pricing for fertilizer manufacturers or direct price support), aimed at supporting agricultural output and food affordability, at a cost to the federal/provincial budget.",
+  },
+  {
+    id: "pk-electricity-tariff-subsidy",
+    aliases: buildAliases(["electricity subsidy pakistan", "tariff differential subsidy"], ["what is tariff differential subsidy"]),
+    category: "Pakistan Economy",
+    answer: "The Tariff Differential Subsidy covers the gap between the actual cost of generating/supplying electricity and the lower rate charged to certain consumer categories (like agricultural or lower-usage residential users), funded through the federal budget.",
+  },
+
+  // ── Cost of living & price comparisons ───────────────────────────────────
+  {
+    id: "econ-cost-of-living-index",
+    aliases: buildAliases(["cost of living index"], ["what is a cost of living index"]),
+    category: "Inflation",
+    answer: "A cost of living index measures the relative cost of maintaining a certain standard of living across different cities or countries, accounting for prices of housing, food, transport, and other typical expenses.",
+  },
+
+  // ── Dividends mechanics & index rebalancing ──────────────────────────────
+  {
+    id: "psx-ex-dividend-date-what-is",
+    aliases: buildAliases(["ex dividend date"], ["what is ex dividend date"]),
+    category: "PSX",
+    answer: "The ex-dividend date is the cutoff after which a buyer of a stock is no longer entitled to the most recently declared dividend — you must own the shares before this date to qualify for the payout.",
+  },
+  {
+    id: "psx-book-closure-what-is",
+    aliases: buildAliases(["book closure date psx"], ["what is book closure in stock market"]),
+    category: "PSX",
+    answer: "Book closure is the period during which a company temporarily freezes its share register to finalize the list of shareholders entitled to dividends, bonus shares, or voting rights at an upcoming corporate action.",
+  },
+  {
+    id: "investing-dividend-aristocrats-what-are",
+    aliases: buildAliases(["dividend aristocrats"], ["what are dividend aristocrats"]),
+    category: "Investing Basics",
+    answer: "Dividend aristocrats are companies with a long, consistent history of increasing their dividend payouts year after year, often viewed by income-focused investors as a sign of financial stability and shareholder-friendly management.",
+  },
+  {
+    id: "etf-index-rebalancing-what-is",
+    aliases: buildAliases(["index rebalancing"], ["what is index rebalancing"]),
+    category: "ETFs",
+    answer: "Index rebalancing is the periodic process of adjusting an index's constituent companies and their weights to reflect current market capitalization, free float, and eligibility criteria — index-tracking ETFs and funds must then trade to match the updated composition.",
+  },
+
+  // ── Trade strategy & development economics ───────────────────────────────
+  {
+    id: "trade-import-substitution-vs-export-led",
+    aliases: ["import substitution vs export led growth", "what is import substitution industrialization"],
+    category: "Trade Balance",
+    answer: "Import substitution industrialization aims to reduce reliance on imports by building domestic production behind protective tariffs. Export-led growth instead focuses on building competitive industries to sell into global markets — many fast-growing Asian economies favored the latter strategy.",
+  },
+  {
+    id: "trade-gsp-plus-what-is",
+    aliases: buildAliases(["gsp plus", "gsp+ status"], ["what is gsp plus status pakistan"]),
+    category: "Exports",
+    answer: "GSP+ (Generalized Scheme of Preferences Plus) is a European Union trade scheme granting Pakistan preferential, largely duty-free access to EU markets for many export categories, conditional on compliance with international conventions on human rights, labor, and governance.",
+  },
+  {
+    id: "macro-infant-industry-argument",
+    aliases: buildAliases(["infant industry argument"], ["what is the infant industry argument"]),
+    category: "Macroeconomics",
+    answer: "The infant industry argument holds that new, developing domestic industries need temporary tariff protection from established foreign competitors until they become efficient and competitive enough to survive on their own.",
+  },
+
+  // ── Banking concentration & crypto slang ─────────────────────────────────
+  {
+    id: "banking-too-big-to-fail",
+    aliases: buildAliases(["too big to fail"], ["what does too big to fail mean banking"]),
+    category: "Banking",
+    answer: "'Too big to fail' describes a financial institution so large and interconnected that its collapse could seriously destabilize the broader financial system, often leading governments to intervene/bail it out rather than allow a disorderly failure.",
+  },
+  {
+    id: "crypto-altcoin-what-is",
+    aliases: buildAliases(["altcoin"], ["what is an altcoin"]),
+    category: "Crypto",
+    answer: "An altcoin refers to any cryptocurrency other than Bitcoin — the term encompasses everything from major projects like Ethereum to thousands of smaller, less established tokens.",
+  },
+  {
+    id: "crypto-meme-coin-what-is",
+    aliases: buildAliases(["meme coin"], ["what is a meme coin"]),
+    category: "Crypto",
+    answer: "A meme coin is a cryptocurrency created largely around internet jokes or social media trends rather than underlying technology or utility, typically characterized by extreme speculation and very high volatility.",
+  },
+
+  // ── International bond issuance ───────────────────────────────────────────
+  {
+    id: "bonds-eurobond-what-is",
+    aliases: buildAliases(["eurobond", "eurobond pakistan"], ["what is a eurobond"]),
+    category: "Bonds",
+    answer: "A Eurobond is a bond issued by a government or company in a currency other than its own (commonly US Dollars), sold to international investors — Pakistan periodically issues Eurobonds to raise foreign currency financing, with pricing reflecting its sovereign credit rating.",
+  },
+  {
+    id: "bonds-panda-bond-what-is",
+    aliases: buildAliases(["panda bond"], ["what is a panda bond"]),
+    category: "Bonds",
+    answer: "A Panda Bond is a Renminbi-denominated bond issued by a foreign entity in China's domestic bond market, an avenue some countries (including Pakistan, exploring this option) use to diversify their foreign currency financing sources beyond US Dollar markets.",
+  },
+  {
+    id: "bonds-sukuk-eurobond-what-is",
+    aliases: buildAliases(["international sukuk", "sukuk eurobond"], ["what is an international sukuk issuance"]),
+    category: "Sukuk",
+    answer: "An international Sukuk is a Shariah-compliant bond-equivalent issued in foreign markets (typically US Dollar-denominated) to international investors, allowing a government to raise foreign currency financing through an Islamic-compliant structure rather than a conventional Eurobond.",
+  },
+  {
+    id: "bonds-inflation-linked-what-are",
+    aliases: buildAliases(["inflation linked bond", "inflation indexed bond"], ["what is an inflation linked bond"]),
+    category: "Bonds",
+    answer: "An inflation-linked bond adjusts its principal or coupon payments based on a measure of inflation (like CPI), protecting investors' real (inflation-adjusted) returns — distinct from standard fixed-rate bonds, whose nominal payments don't adjust for rising prices.",
+  },
+
+  // ── Human capital & development depth ────────────────────────────────────
+  {
+    id: "worldbank-human-capital-index",
+    aliases: buildAliases(["human capital index"], ["what is the human capital index"]),
+    category: "World Bank",
+    answer: "The World Bank's Human Capital Index estimates the productivity of a country's future workforce based on health and education outcomes for children born today, used as a benchmark for long-term development planning.",
+  },
+  {
+    id: "macro-education-spending-gdp",
+    aliases: ["education spending as percentage of gdp pakistan", "why is pakistan education spending low"],
+    category: "Pakistan Economy",
+    answer: "Pakistan's public spending on education as a share of GDP has historically lagged regional and international benchmarks, frequently cited by economists as a constraint on long-term human capital development and productivity growth.",
+  },
+  {
+    id: "macro-health-spending-gdp",
+    aliases: ["health spending as percentage of gdp pakistan", "pakistan public health expenditure"],
+    category: "Pakistan Economy",
+    answer: "Public health expenditure in Pakistan as a share of GDP has also historically been relatively low compared to international benchmarks, a factor often linked to weaker health outcomes and higher out-of-pocket healthcare costs for households.",
+  },
+
+  // ── Quarterly GDP & CPI regional depth ───────────────────────────────────
+  {
+    id: "quarterly-gdp-provisional-revision-deep",
+    aliases: ["why does quarterly gdp get revised pakistan", "provisional quarterly gdp accuracy"],
+    category: "Quarterly GDP",
+    answer: "Quarterly GDP estimates are typically provisional, based on partial-year data and proxy indicators like LSM output, and are revised — sometimes significantly — once more complete annual data on agriculture and services becomes available.",
+  },
+
+  // ── Neobanks & remittance seasonality ────────────────────────────────────
+  {
+    id: "pk-digital-bank-what-is",
+    aliases: buildAliases(["digital bank", "neobank"], ["what is a digital only bank pakistan"]),
+    category: "Banking",
+    answer: "A digital bank (neobank) operates without traditional physical branches, offering banking services entirely through mobile apps and online platforms — SBP has licensed digital bank operators in Pakistan as part of broader financial inclusion efforts.",
+  },
+
+  // ── Livestock & agriculture depth ────────────────────────────────────────
+  {
+    id: "pk-livestock-sector-importance",
+    aliases: ["livestock sector contribution to pakistan gdp", "why is livestock important for pakistan economy"],
+    category: "Pakistan Economy",
+    answer: "Livestock is one of the largest sub-sectors within Pakistan's agriculture sector, contributing significantly to rural incomes and GDP through milk, meat, and related production, often exceeding crop sub-sector contribution in recent years.",
+  },
+  {
+    id: "pk-agriculture-gdp-share-trend",
+    aliases: ["agriculture share of pakistan gdp over time", "is pakistan agriculture share declining"],
+    category: "Pakistan Economy",
+    answer: "Agriculture's share of Pakistan's GDP has gradually declined over recent decades as services and industry have grown faster, a typical pattern of structural transformation seen in many developing economies, even though agriculture remains vital for employment.",
+  },
+
+  // ── Macro: J-curve effect ─────────────────────────────────────────────────
+  {
+    id: "macro-j-curve-effect",
+    aliases: buildAliases(["j curve effect"], ["what is the j curve effect currency"]),
+    category: "Exchange Rates",
+    answer: "The J-curve effect describes how a currency devaluation can initially worsen the trade balance (as import costs rise faster than export volumes adjust) before eventually improving it as exporters gain competitiveness and import demand falls — named for the J-shaped path the trade balance traces over time.",
+  },
+
+  // ── Investing: warrants, convertibles, preference shares ────────────────
+  {
+    id: "investing-warrant-what-is",
+    aliases: buildAliases(["stock warrant", "warrant finance"], ["what is a warrant in finance"]),
+    category: "Investing Basics",
+    answer: "A warrant gives the holder the right to buy a company's stock at a specified price before a set expiration date, similar to a call option but typically issued directly by the company itself (which creates new shares when exercised, unlike most options).",
+  },
+  {
+    id: "investing-convertible-bond-what-is",
+    aliases: buildAliases(["convertible bond"], ["what is a convertible bond"]),
+    category: "Bonds",
+    answer: "A convertible bond can be converted into a predetermined number of the issuing company's shares, giving investors fixed-income safety with the potential upside of equity participation if the stock performs well.",
+  },
+  {
+    id: "investing-preference-shares-what-are",
+    aliases: buildAliases(["preference shares", "preferred stock"], ["what are preference shares"]),
+    category: "Investing Basics",
+    answer: "Preference shares typically pay a fixed dividend and rank ahead of ordinary shares in claims on assets/dividends, but usually carry no voting rights — a hybrid between debt and equity in terms of risk and return characteristics.",
+  },
+
+  // ── Trade finance & sovereign wealth ──────────────────────────────────────
+  {
+    id: "trade-letter-of-credit-what-is",
+    aliases: buildAliases(["letter of credit"], ["what is a letter of credit"]),
+    category: "Imports",
+    answer: "A letter of credit is a bank's guarantee of payment to an exporter on behalf of an importer, used to reduce trade risk in international transactions — the exporter ships goods confident that payment is assured once agreed conditions (like shipping documents) are met.",
+  },
+  {
+    id: "finance-sovereign-wealth-fund-what-is",
+    aliases: buildAliases(["sovereign wealth fund"], ["what is a sovereign wealth fund"]),
+    category: "Macroeconomics",
+    answer: "A sovereign wealth fund is a state-owned investment fund, often built from surplus reserves or commodity export revenues, used to invest in financial assets — Pakistan established a sovereign wealth fund structure to consolidate and invest stakes in select state assets.",
+  },
+
+  // ── PSX: foreign investment access ───────────────────────────────────────
+  {
+    id: "psx-foreign-portfolio-investment",
+    aliases: buildAliases(["foreign portfolio investment psx"], ["how do foreign investors invest in psx"]),
+    category: "PSX",
+    answer: "Foreign investors can access PSX-listed shares through a Special Convertible Rupee Account (SCRA), which allows seamless conversion and repatriation of investment proceeds in foreign currency, simplifying entry and exit for international portfolio investment.",
+  },
+  {
+    id: "psx-scra-what-is",
+    aliases: buildAliases(["scra", "special convertible rupee account"], ["what is scra account pakistan"]),
+    category: "PSX",
+    answer: "A Special Convertible Rupee Account (SCRA) is a bank account structure that lets foreign investors bring in foreign currency, convert it to invest in Pakistani securities, and later repatriate proceeds back to foreign currency without separate regulatory approval each time.",
+  },
+
+  // ── Demographics ──────────────────────────────────────────────────────────
+  {
+    id: "pk-demographic-dividend-what-is",
+    aliases: buildAliases(["demographic dividend pakistan"], ["what is demographic dividend"]),
+    category: "Pakistan Economy",
+    answer: "A demographic dividend refers to the economic growth potential that arises when a country has a large, growing working-age population relative to dependents — realizing this potential for Pakistan depends on creating enough jobs, education, and skills to productively employ its young population.",
+  },
+  {
+    id: "pk-population-growth-rate",
+    aliases: buildAliases(["pakistan population growth rate"], ["why is pakistan population growth high"]),
+    category: "Pakistan Economy",
+    answer: "Pakistan has one of the higher population growth rates in the region, which strains public services and infrastructure but also fuels its demographic dividend potential if matched with adequate education and job creation.",
+  },
+
+  // ── Fiscal rules & inflation targeting ───────────────────────────────────
+  {
+    id: "pk-frdl-act-what-is",
+    aliases: buildAliases(["fiscal responsibility and debt limitation act", "frdl act"], ["what is frdl act pakistan"]),
+    category: "Fiscal Deficit",
+    answer: "The Fiscal Responsibility and Debt Limitation (FRDL) Act sets legal targets and ceilings for Pakistan's fiscal deficit and public debt levels, intended to enforce fiscal discipline over time, though actual outcomes have often exceeded these legislated limits.",
+  },
+  {
+    id: "pk-budget-deficit-gdp-target",
+    aliases: ["fiscal deficit target as percentage of gdp pakistan", "what is a sustainable fiscal deficit level"],
+    category: "Fiscal Deficit",
+    answer: "Pakistan's annual budget typically sets a fiscal deficit target expressed as a percentage of GDP, often guided or constrained by IMF program commitments — actual outturns can deviate from targets due to revenue shortfalls or unplanned spending.",
+  },
+  {
+    id: "sbp-inflation-targeting-framework",
+    aliases: buildAliases(["inflation targeting framework"], ["what is inflation targeting monetary policy"]),
+    category: "SBP",
+    answer: "Inflation targeting is a monetary policy framework where a central bank sets and communicates a specific inflation goal, then adjusts interest rates to steer actual inflation toward that target over time, aiming to anchor inflation expectations.",
+  },
+  {
+    id: "sbp-exchange-rate-anchor",
+    aliases: buildAliases(["exchange rate anchor"], ["what is an exchange rate anchor monetary policy"]),
+    category: "SBP",
+    answer: "An exchange rate anchor is a monetary policy approach where a country fixes or closely manages its currency to a stable foreign currency to import that currency's price stability, an alternative to inflation targeting that Pakistan has used at various points historically.",
+  },
+
+  // ── Demographics & urbanization ──────────────────────────────────────────
+  {
+    id: "pk-dependency-ratio-what-is",
+    aliases: buildAliases(["dependency ratio"], ["what is dependency ratio economics"]),
+    category: "Pakistan Economy",
+    answer: "The dependency ratio measures the proportion of dependents (children and elderly) relative to the working-age population — a falling dependency ratio, as Pakistan's working-age share grows, is a key driver behind its demographic dividend potential.",
+  },
+  {
+    id: "pk-urbanization-rate-what-is",
+    aliases: buildAliases(["urbanization rate pakistan"], ["why is urbanization important for pakistan economy"]),
+    category: "Pakistan Economy",
+    answer: "Urbanization — the share of population living in cities — tends to correlate with higher productivity and services-sector growth, though rapid, unplanned urbanization in Pakistan has also strained housing, infrastructure, and municipal services.",
+  },
+
+  // ── Trade & bank finance instruments ──────────────────────────────────────
+  {
+    id: "trade-bank-guarantee-what-is",
+    aliases: buildAliases(["bank guarantee"], ["what is a bank guarantee"]),
+    category: "Banking",
+    answer: "A bank guarantee is a bank's commitment to cover a customer's payment obligation to a third party if the customer fails to pay, commonly used in trade and large contracts to reduce counterparty risk.",
+  },
+  {
+    id: "trade-export-financing-what-is",
+    aliases: buildAliases(["export refinance scheme", "export financing pakistan"], ["what is export refinance scheme sbp"]),
+    category: "SBP",
+    answer: "SBP's Export Refinance Scheme provides exporters with financing at concessional rates to support pre- and post-shipment working capital needs, intended to boost export competitiveness by lowering financing costs.",
+  },
+
+  // ── Alternative financing & crypto governance ────────────────────────────
+  {
+    id: "finance-crowdfunding-what-is",
+    aliases: buildAliases(["crowdfunding"], ["what is crowdfunding"]),
+    category: "Investing Basics",
+    answer: "Crowdfunding raises small amounts of money from a large number of people, typically via online platforms, to fund a business, project, or cause — equity crowdfunding lets backers receive ownership stakes in return for their contribution.",
+  },
+  {
+    id: "finance-p2p-lending-what-is",
+    aliases: buildAliases(["peer to peer lending", "p2p lending"], ["what is p2p lending"]),
+    category: "Investing Basics",
+    answer: "Peer-to-peer (P2P) lending platforms connect individual borrowers directly with individual lenders, bypassing traditional banks — lenders earn interest while borrowers may access credit at potentially better terms than conventional channels.",
+  },
+  {
+    id: "crypto-dao-what-is",
+    aliases: buildAliases(["dao", "decentralized autonomous organization"], ["what is a dao crypto"]),
+    category: "Crypto",
+    answer: "A DAO (Decentralized Autonomous Organization) is an organization governed by rules encoded in smart contracts and member voting on the blockchain, rather than by a traditional centralized management structure.",
+  },
+  {
+    id: "crypto-regulatory-sandbox-what-is",
+    aliases: buildAliases(["regulatory sandbox"], ["what is a regulatory sandbox fintech"]),
+    category: "Crypto",
+    answer: "A regulatory sandbox lets fintech or crypto firms test new products under relaxed regulatory conditions and close supervisory oversight, helping regulators like SBP or SECP understand and shape rules for emerging financial technology before wider market rollout.",
+  },
+
+  // ── Crypto wallet security depth ─────────────────────────────────────────
+  {
+    id: "crypto-seed-phrase-what-is",
+    aliases: buildAliases(["seed phrase", "private key crypto"], ["what is a crypto seed phrase", "what is a private key in crypto"]),
+    category: "Crypto",
+    answer: "A seed phrase is a sequence of words that generates and can restore access to a crypto wallet's private keys — anyone with your seed phrase can fully control your funds, so it must be kept offline and never shared.",
+  },
+
+  // ── Islamic banking deposit products ──────────────────────────────────────
+  {
+    id: "banking-mudarabah-savings-what-is",
+    aliases: buildAliases(["mudarabah savings account"], ["what is a mudarabah based savings account"]),
+    category: "Banking",
+    answer: "A Mudarabah-based savings account is an Islamic banking deposit product where the depositor (Rab-ul-Maal) provides funds and the bank (Mudarib) invests them in Shariah-compliant activities, sharing the resulting profit per a pre-agreed ratio instead of paying fixed interest.",
+  },
+  {
+    id: "banking-murabaha-what-is",
+    aliases: buildAliases(["murabaha financing"], ["what is murabaha in islamic banking"]),
+    category: "Banking",
+    answer: "Murabaha is an Islamic financing structure where a bank purchases an asset a customer wants and resells it to them at a disclosed markup, paid in installments — used as a Shariah-compliant alternative to a conventional interest-bearing loan.",
+  },
+
+  // ── World Bank financing instruments ──────────────────────────────────────
+  {
+    id: "worldbank-pforr-what-is",
+    aliases: buildAliases(["program for results", "pforr"], ["what is program for results financing"]),
+    category: "World Bank",
+    answer: "Program-for-Results (PforR) is a World Bank financing instrument that disburses funds based on a borrowing country achieving specific, verified results (rather than against individual expenditures), aimed at strengthening institutional capacity and accountability.",
+  },
+
+  // ── Currency basket & trade-weighted measures ────────────────────────────
+  {
+    id: "fx-trade-weighted-exchange-rate",
+    aliases: buildAliases(["trade weighted exchange rate", "nominal effective exchange rate"], ["what is nominal effective exchange rate"]),
+    category: "Exchange Rates",
+    answer: "A trade-weighted (nominal effective) exchange rate measures a currency's value against a basket of trading-partner currencies, weighted by trade volume — giving a more complete competitiveness picture than tracking a single bilateral rate like USD/PKR alone.",
+  },
+
+  // ── Investment performance measurement ────────────────────────────────────
+  {
+    id: "investing-holding-period-return",
+    aliases: buildAliases(["holding period return"], ["what is holding period return"]),
+    category: "Investing Basics",
+    answer: "Holding period return is the total return earned on an investment over the entire time it was held, including both price appreciation and any income like dividends, expressed as a percentage of the original investment.",
+  },
+  {
+    id: "investing-annualized-return-what-is",
+    aliases: buildAliases(["annualized return", "cagr"], ["what is cagr", "compound annual growth rate"]),
+    category: "Investing Basics",
+    answer: "Annualized return (often expressed as CAGR — Compound Annual Growth Rate) converts a total return earned over multiple years into an equivalent constant yearly growth rate, making it easier to compare investments held for different lengths of time.",
+  },
+
+  // ── PSX corporate governance ──────────────────────────────────────────────
+  {
+    id: "psx-agm-egm-what-are",
+    aliases: buildAliases(["agm", "egm", "annual general meeting"], ["what is an agm", "what is an egm"]),
+    category: "PSX",
+    answer: "An AGM (Annual General Meeting) is a company's required yearly meeting where shareholders approve financial statements, dividends, and director elections. An EGM (Extraordinary General Meeting) is called separately to address urgent or special matters outside the regular AGM cycle.",
+  },
+  {
+    id: "psx-proxy-voting-what-is",
+    aliases: buildAliases(["proxy voting shares"], ["what is proxy voting shareholders"]),
+    category: "PSX",
+    answer: "Proxy voting lets a shareholder who cannot attend a company meeting in person authorize another person to vote on their behalf, ensuring their shares' voting rights are still exercised.",
+  },
+
+  // ── Pakistan: textile competitiveness ────────────────────────────────────
+  {
+    id: "pk-textile-competitiveness-regional",
+    aliases: ["pakistan textile competitiveness vs bangladesh", "why is bangladesh textile exports bigger than pakistan"],
+    category: "Exports",
+    answer: "Pakistan's textile exports have grown more slowly than regional competitors like Bangladesh and Vietnam in recent decades, often attributed to higher energy costs, lower investment in value-added garment manufacturing, and policy/tariff disadvantages in some key export markets.",
+  },
+
+  // ── PSX: stock splits & trading mechanics ────────────────────────────────
+  {
+    id: "psx-stock-split-what-is",
+    aliases: buildAliases(["stock split"], ["what is a stock split", "stock split vs bonus shares"]),
+    category: "PSX",
+    answer: "A stock split divides each existing share into multiple shares (e.g., a 2-for-1 split), proportionally reducing the price per share without changing total market value — distinct from a bonus issue, though both increase share count for shareholders without raising new capital.",
+  },
+  {
+    id: "psx-trading-session-timing",
+    aliases: buildAliases(["psx trading hours", "psx trading session"], ["when does psx open and close"]),
+    category: "PSX",
+    answer: "PSX trading sessions run on business days during set hours set by the exchange, typically including a pre-open session for price discovery followed by continuous regular trading — exact timings can vary seasonally and should be confirmed via the official PSX trading calendar.",
+  },
+  {
+    id: "psx-dividend-yield-trap",
+    aliases: buildAliases(["dividend yield trap"], ["what is a dividend trap stocks", "why is a very high dividend yield risky"]),
+    category: "PSX",
+    answer: "A dividend yield trap is when a stock's yield looks unusually high mainly because its share price has fallen sharply (not because the dividend grew), often signaling underlying business trouble and a real risk that the dividend gets cut.",
+  },
+
+  // ── Market efficiency & arbitrage ────────────────────────────────────────
+  {
+    id: "investing-efficient-market-hypothesis",
+    aliases: buildAliases(["efficient market hypothesis", "emh"], ["what is the efficient market hypothesis"]),
+    category: "Investing Basics",
+    answer: "The Efficient Market Hypothesis holds that asset prices already reflect all available information, implying it's very difficult to consistently 'beat the market' through stock-picking or timing — a key argument in favor of passive, index-based investing.",
+  },
+  {
+    id: "investing-random-walk-theory",
+    aliases: buildAliases(["random walk theory"], ["what is random walk theory investing"]),
+    category: "Investing Basics",
+    answer: "Random walk theory argues that short-term price movements are essentially unpredictable and resemble a random pattern, implying past price patterns (the basis of much technical analysis) have limited power to predict future prices.",
+  },
+  {
+    id: "finance-arbitrage-what-is",
+    aliases: buildAliases(["arbitrage"], ["what is arbitrage in finance"]),
+    category: "Investing Basics",
+    answer: "Arbitrage means simultaneously buying and selling the same (or equivalent) asset in different markets to profit from a temporary price difference, with minimal risk — arbitrage opportunities tend to be small and quickly closed by other market participants.",
+  },
+
+  // ── Banking: loan classification & facilities ────────────────────────────
+  {
+    id: "banking-loan-classification-categories",
+    aliases: buildAliases(["loan classification banking"], ["what is substandard doubtful loss loan classification"]),
+    category: "Banking",
+    answer: "SBP prudential regulations classify loans by repayment performance — typically categories like 'Substandard,' 'Doubtful,' and 'Loss' for overdue accounts — determining how much provisioning a bank must hold against each loan.",
+  },
+  {
+    id: "banking-overdraft-running-finance",
+    aliases: buildAliases(["overdraft facility", "running finance"], ["what is an overdraft facility", "what is running finance pakistan"]),
+    category: "Banking",
+    answer: "An overdraft (or running finance) facility lets a business or individual withdraw more than their account balance, up to an approved limit, paying interest only on the amount actually utilized — commonly used to manage short-term working capital gaps.",
+  },
+
+  // ── Crypto: market correlation ───────────────────────────────────────────
+  {
+    id: "crypto-correlation-stock-market",
+    aliases: ["does bitcoin correlate with stock market", "crypto correlation with stocks"],
+    category: "Crypto",
+    answer: "Bitcoin and other major cryptocurrencies have at times shown meaningful price correlation with risk assets like tech stocks, especially during periods of broad market stress, challenging the idea that crypto always acts as an uncorrelated diversifier.",
+  },
+
+  // ── Monetary policy: unconventional tools ────────────────────────────────
+  {
+    id: "macro-quantitative-easing-what-is",
+    aliases: buildAliases(["quantitative easing", "qe"], ["what is quantitative easing"]),
+    category: "Macroeconomics",
+    answer: "Quantitative Easing (QE) is when a central bank creates new money to buy financial assets (typically government bonds), aiming to lower long-term interest rates and inject liquidity when conventional rate cuts alone aren't enough to stimulate the economy.",
+  },
+  {
+    id: "macro-helicopter-money-what-is",
+    aliases: buildAliases(["helicopter money"], ["what is helicopter money economics"]),
+    category: "Macroeconomics",
+    answer: "Helicopter money refers to a central bank directly distributing newly created money to the public or government to spend, bypassing the banking/lending system entirely — a more direct, controversial alternative to QE for stimulating demand.",
+  },
+  {
+    id: "macro-negative-interest-rates",
+    aliases: buildAliases(["negative interest rates"], ["what are negative interest rates"]),
+    category: "Interest Rates",
+    answer: "Negative interest rates mean depositors effectively pay to hold money with a bank (or a bond investor accepts a guaranteed loss if held to maturity) — an unconventional policy some advanced-economy central banks have used to push spending and lending during very weak demand.",
+  },
+  {
+    id: "macro-currency-war-what-is",
+    aliases: buildAliases(["currency war"], ["what is a currency war"]),
+    category: "Exchange Rates",
+    answer: "A currency war describes a situation where multiple countries competitively devalue or weaken their currencies to boost export competitiveness, which can escalate into retaliatory measures and broader trade tension.",
+  },
+
+  // ── Forex: black market & capital flight ─────────────────────────────────
+  {
+    id: "fx-black-market-rate-what-is",
+    aliases: buildAliases(["black market exchange rate", "kerb market rate"], ["what is the kerb dollar rate pakistan"]),
+    category: "Exchange Rates",
+    answer: "A black market (or 'kerb') exchange rate is an unofficial, often illegal rate at which currency trades outside regulated banking and exchange company channels, typically emerging when official rates are misaligned with market reality or capital controls are tight.",
+  },
+  {
+    id: "pk-capital-flight-what-is",
+    aliases: buildAliases(["capital flight"], ["what is capital flight economics"]),
+    category: "Pakistan Economy",
+    answer: "Capital flight is the rapid outflow of money and assets from a country, usually triggered by political instability, currency depreciation fears, or loss of confidence in the economy — it can worsen reserve and currency pressure during a crisis.",
+  },
+  {
+    id: "pk-petroleum-levy-what-is",
+    aliases: buildAliases(["petroleum levy pakistan"], ["what is petroleum levy"]),
+    category: "Pakistan Economy",
+    answer: "The Petroleum Levy is a fixed per-liter tax the Pakistani government charges on petroleum products, an important and relatively easy-to-collect source of non-tax federal revenue, though it adds directly to pump prices for consumers.",
+  },
+  {
+    id: "macro-currency-board-what-is",
+    aliases: buildAliases(["currency board system"], ["what is a currency board"]),
+    category: "Exchange Rates",
+    answer: "A currency board is a strict monetary arrangement where a country's currency is fully backed by and fixed to a foreign reserve currency, removing the central bank's discretion to print money independently — a more rigid alternative to a managed float or simple peg.",
+  },
+
+  // ── Bond market terminology ───────────────────────────────────────────────
+  {
+    id: "bonds-basis-point-what-is",
+    aliases: buildAliases(["basis point", "bps"], ["what is a basis point"]),
+    category: "Bonds",
+    answer: "A basis point (bps) is one-hundredth of one percentage point (0.01%) — used in finance to describe small changes in interest rates or yields precisely, e.g., a rate cut 'of 100 basis points' means a 1 percentage point cut.",
+  },
+  {
+    id: "bonds-rating-outlook-what-is",
+    aliases: buildAliases(["credit rating outlook"], ["what does a positive negative stable rating outlook mean"]),
+    category: "Government Debt",
+    answer: "A credit rating outlook (positive, negative, or stable) signals the rating agency's view on the likely DIRECTION of a future rating change, even before an actual upgrade or downgrade occurs — a 'negative outlook' suggests a downgrade may be coming if trends don't improve.",
+  },
+
+  // ── Banking: AML/KYC & financial system structure ────────────────────────
+  {
+    id: "banking-kyc-what-is",
+    aliases: buildAliases(["kyc", "know your customer"], ["what is kyc banking"]),
+    category: "Banking",
+    answer: "KYC (Know Your Customer) refers to the identity verification and due diligence procedures banks must perform on customers when opening accounts or processing large transactions, required under anti-money-laundering regulations.",
+  },
+  {
+    id: "banking-aml-what-is",
+    aliases: buildAliases(["aml", "anti money laundering"], ["what is aml banking"]),
+    category: "Banking",
+    answer: "AML (Anti-Money Laundering) refers to the laws, regulations, and procedures designed to prevent criminally-obtained funds from being disguised as legitimate income through the financial system.",
+  },
+  {
+    id: "finance-financial-intermediary-what-is",
+    aliases: buildAliases(["financial intermediary"], ["what is a financial intermediary"]),
+    category: "Banking",
+    answer: "A financial intermediary (like a bank, mutual fund, or insurance company) connects savers/investors with borrowers/businesses needing capital, channeling funds through the economy more efficiently than direct lending between individuals.",
+  },
+  {
+    id: "banking-shadow-banking-what-is",
+    aliases: buildAliases(["shadow banking"], ["what is shadow banking"]),
+    category: "Banking",
+    answer: "Shadow banking refers to credit intermediation activities (like lending) conducted by non-bank entities outside traditional, heavily-regulated banking — it can fill credit gaps but is also less transparent and less subject to safety-net protections like deposit insurance.",
+  },
+
+  // ── Core economic principles ─────────────────────────────────────────────
+  {
+    id: "econ-comparative-advantage-what-is",
+    aliases: buildAliases(["comparative advantage"], ["what is comparative advantage"]),
+    category: "Macroeconomics",
+    answer: "Comparative advantage is the ability to produce a good or service at a lower OPPORTUNITY cost than another producer — the foundational argument for why countries (or individuals) gain from specializing and trading, even if one party is better at producing everything in absolute terms.",
+  },
+  {
+    id: "econ-absolute-advantage-what-is",
+    aliases: buildAliases(["absolute advantage"], ["what is absolute advantage", "comparative advantage vs absolute advantage"]),
+    category: "Macroeconomics",
+    answer: "Absolute advantage means being able to produce more of a good using the same resources than another producer. Comparative advantage (opportunity cost-based) is what actually determines whether trade is mutually beneficial, not absolute advantage alone.",
+  },
+  {
+    id: "econ-economies-of-scale-what-is",
+    aliases: buildAliases(["economies of scale"], ["what are economies of scale"]),
+    category: "Macroeconomics",
+    answer: "Economies of scale occur when a company's average cost per unit falls as production volume increases, due to spreading fixed costs over more output, bulk purchasing power, and specialization — a key driver of why larger firms can often compete on price.",
+  },
+  {
+    id: "econ-creative-destruction-what-is",
+    aliases: buildAliases(["creative destruction"], ["what is creative destruction economics"]),
+    category: "Macroeconomics",
+    answer: "Creative destruction, a term from economist Joseph Schumpeter, describes how innovation continuously destroys older industries and business models while creating new ones — a core driver of long-run economic growth and productivity, despite short-term job and capital losses.",
+  },
+  {
+    id: "econ-monopoly-what-is",
+    aliases: buildAliases(["monopoly"], ["what is a monopoly economics"]),
+    category: "Macroeconomics",
+    answer: "A monopoly exists when a single firm dominates an entire market with no close competitors, giving it significant pricing power — often subject to special regulation since it can lead to higher prices and reduced output compared to competitive markets.",
+  },
+  {
+    id: "econ-oligopoly-what-is",
+    aliases: buildAliases(["oligopoly"], ["what is an oligopoly"]),
+    category: "Macroeconomics",
+    answer: "An oligopoly is a market dominated by a small number of large firms, where each firm's decisions (on price, output) significantly affect and are affected by its rivals' actions — common in capital-intensive industries like cement or telecom.",
+  },
+  {
+    id: "econ-perfect-competition-what-is",
+    aliases: buildAliases(["perfect competition"], ["what is perfect competition economics"]),
+    category: "Macroeconomics",
+    answer: "Perfect competition is a theoretical market structure with many small firms selling identical products, no single firm able to influence price, and free entry/exit — used mainly as an economic benchmark, since few real-world markets fully match it.",
+  },
+  {
+    id: "econ-public-good-what-is",
+    aliases: buildAliases(["public good"], ["what is a public good economics"]),
+    category: "Macroeconomics",
+    answer: "A public good (like national defense or street lighting) is non-excludable (can't stop people from using it) and non-rivalrous (one person's use doesn't reduce availability for others) — markets tend to under-provide public goods, which is why governments typically fund them.",
+  },
+  {
+    id: "econ-externality-what-is",
+    aliases: buildAliases(["externality", "negative externality"], ["what is an externality economics"]),
+    category: "Macroeconomics",
+    answer: "An externality is a cost or benefit affecting a third party not directly involved in a transaction — pollution from a factory (negative externality) is a classic example, often used to justify taxes, subsidies, or regulation to correct market outcomes.",
+  },
+  {
+    id: "econ-moral-hazard-what-is",
+    aliases: buildAliases(["moral hazard"], ["what is moral hazard economics"]),
+    category: "Macroeconomics",
+    answer: "Moral hazard occurs when a party takes on more risk because they don't bear the full consequences of that risk, often because someone else (like an insurer or the government) will absorb losses — a key concern behind 'too big to fail' bank bailouts.",
+  },
+  {
+    id: "econ-adverse-selection-what-is",
+    aliases: buildAliases(["adverse selection"], ["what is adverse selection economics"]),
+    category: "Macroeconomics",
+    answer: "Adverse selection occurs when one party in a transaction has more information than the other, leading to a market skewed toward higher-risk participants — classically seen in insurance, where people most likely to claim are also most likely to seek coverage.",
+  },
+
+  // ── Market cycles & sentiment ─────────────────────────────────────────────
+  {
+    id: "investing-bull-market-what-is",
+    aliases: buildAliases(["bull market"], ["what is a bull market"]),
+    category: "Investing Basics",
+    answer: "A bull market describes a sustained period of rising prices across a market or index, typically accompanied by investor optimism and economic growth — there's no single official threshold, but a 20%+ rise from a recent low is a commonly cited rule of thumb.",
+  },
+  {
+    id: "investing-bear-market-what-is",
+    aliases: buildAliases(["bear market"], ["what is a bear market"]),
+    category: "Investing Basics",
+    answer: "A bear market describes a sustained period of falling prices, conventionally defined as a 20%+ decline from a recent peak, usually accompanied by pessimism and often (though not always) coinciding with a broader economic slowdown.",
+  },
+  {
+    id: "investing-market-correction-what-is",
+    aliases: buildAliases(["market correction"], ["what is a stock market correction"]),
+    category: "Investing Basics",
+    answer: "A market correction is a decline of roughly 10-20% from a recent high — smaller and typically shorter-lived than a bear market, often viewed as a normal, healthy pullback after a period of strong gains rather than a sign of deeper economic trouble.",
+  },
+  {
+    id: "investing-market-crash-what-is",
+    aliases: buildAliases(["market crash", "stock market crash"], ["what is a market crash"]),
+    category: "Investing Basics",
+    answer: "A market crash is a sudden, severe, and rapid decline in asset prices, typically over days rather than months, often triggered by panic selling, a major shock event, or the bursting of a speculative bubble.",
+  },
+
+  // ── Behavioral economics ─────────────────────────────────────────────────
+  {
+    id: "behavioral-loss-aversion-what-is",
+    aliases: buildAliases(["loss aversion"], ["what is loss aversion behavioral economics"]),
+    category: "Investing Basics",
+    answer: "Loss aversion is the behavioral tendency to feel the pain of a loss roughly twice as strongly as the pleasure of an equivalent gain, which can lead investors to hold losing investments too long or sell winners too early.",
+  },
+  {
+    id: "behavioral-anchoring-bias-what-is",
+    aliases: buildAliases(["anchoring bias"], ["what is anchoring bias investing"]),
+    category: "Investing Basics",
+    answer: "Anchoring bias is the tendency to rely too heavily on an initial reference point (like a stock's purchase price or a past high) when making decisions, even when that reference point is no longer relevant to current value.",
+  },
+  {
+    id: "behavioral-herd-behavior-what-is",
+    aliases: buildAliases(["herd behavior", "herd mentality investing"], ["what is herd behavior in markets"]),
+    category: "Investing Basics",
+    answer: "Herd behavior describes investors following the crowd's actions rather than their own independent analysis, which can amplify market bubbles on the way up and panic selling on the way down.",
+  },
+  {
+    id: "behavioral-confirmation-bias-what-is",
+    aliases: buildAliases(["confirmation bias"], ["what is confirmation bias investing"]),
+    category: "Investing Basics",
+    answer: "Confirmation bias is the tendency to seek out and favor information that confirms existing beliefs while ignoring contradicting evidence — in investing, this can mean ignoring warning signs about a stock you already own or believe in.",
+  },
+
+  // ── Liquidity trap & unemployment types ──────────────────────────────────
+  {
+    id: "macro-liquidity-trap-what-is",
+    aliases: buildAliases(["liquidity trap"], ["what is a liquidity trap economics"]),
+    category: "Macroeconomics",
+    answer: "A liquidity trap occurs when interest rates are already very low (near zero) but people still prefer holding cash over spending or investing, making further rate cuts ineffective at stimulating the economy — a scenario where unconventional tools like QE are often considered instead.",
+  },
+  {
+    id: "macro-unemployment-structural-frictional-cyclical",
+    aliases: ["structural unemployment vs frictional vs cyclical", "what is frictional unemployment", "what is structural unemployment", "what is cyclical unemployment"],
+    category: "Macroeconomics",
+    answer: "Frictional unemployment is short-term, from people between jobs. Structural unemployment arises from a mismatch between workers' skills and available jobs. Cyclical unemployment rises and falls with the business cycle, driven by overall demand in the economy.",
+  },
+
+  // ── Banking infrastructure ────────────────────────────────────────────────
+  {
+    id: "banking-clearing-house-what-is",
+    aliases: buildAliases(["clearing house"], ["what is a clearing house finance"]),
+    category: "Banking",
+    answer: "A clearing house is an intermediary that settles transactions between buyers and sellers (or between banks), guaranteeing trades and reducing counterparty risk by acting as the central counterparty for all parties involved.",
+  },
+
+  // ── Investing strategy ────────────────────────────────────────────────────
+  {
+    id: "investing-lump-sum-vs-dca",
+    aliases: ["lump sum investing vs dollar cost averaging", "is it better to invest lump sum or gradually"],
+    category: "Investing Basics",
+    answer: "Investing a lump sum immediately has historically outperformed dollar-cost averaging more often than not (since markets tend to rise over time), but DCA can reduce regret and the psychological impact of bad timing — the right choice depends on risk tolerance, not just expected returns.",
+  },
+
+  // ── Game theory ───────────────────────────────────────────────────────────
+  {
+    id: "econ-game-theory-what-is",
+    aliases: buildAliases(["game theory"], ["what is game theory economics"]),
+    category: "Macroeconomics",
+    answer: "Game theory studies how rational decision-makers' choices affect and are affected by each other's strategies — used in economics to analyze competition between firms, central bank policy credibility, and trade negotiations.",
+  },
+  {
+    id: "econ-nash-equilibrium-what-is",
+    aliases: buildAliases(["nash equilibrium"], ["what is nash equilibrium"]),
+    category: "Macroeconomics",
+    answer: "A Nash equilibrium is a situation in game theory where no participant can improve their outcome by changing only their own strategy, given what everyone else is doing — each player's choice is already their best response to the others'.",
+  },
+
+  // ── Crypto: market manipulation ──────────────────────────────────────────
+  {
+    id: "crypto-wash-trading-what-is",
+    aliases: buildAliases(["wash trading"], ["what is wash trading crypto"]),
+    category: "Crypto",
+    answer: "Wash trading is artificially inflating trading volume by simultaneously buying and selling the same asset (often through linked accounts) to create a false impression of demand or liquidity — illegal in regulated markets and a known issue on some crypto exchanges.",
+  },
+
+  // ── Historical monetary systems ──────────────────────────────────────────
+  {
+    id: "macro-gold-standard-what-is",
+    aliases: buildAliases(["gold standard"], ["what is the gold standard monetary system"]),
+    category: "Macroeconomics",
+    answer: "The gold standard was a monetary system where a currency's value was directly linked to a fixed quantity of gold, limiting a government's ability to print money freely — most countries, including the US, abandoned it by the early 1970s in favor of fiat currency.",
+  },
+  {
+    id: "macro-bretton-woods-what-is",
+    aliases: buildAliases(["bretton woods system"], ["what was the bretton woods agreement"]),
+    category: "Macroeconomics",
+    answer: "The Bretton Woods system (1944-1971) pegged major currencies to the US Dollar, which was itself convertible to gold, and established the IMF and World Bank — it collapsed in 1971 when the US ended Dollar-gold convertibility, ushering in today's floating exchange rate era.",
+  },
+
+  // ── Personal finance: mortgages, annuities, insurance products ──────────
+  {
+    id: "finance-mortgage-what-is",
+    aliases: buildAliases(["mortgage", "house finance pakistan"], ["what is a mortgage loan"]),
+    category: "Banking",
+    answer: "A mortgage (house finance) is a long-term loan secured against property, where the lender can repossess the property if the borrower fails to repay — in Pakistan, both conventional mortgages and Shariah-compliant Ijarah/Diminishing Musharakah-based house financing are available.",
+  },
+  {
+    id: "finance-ijarah-housing-finance",
+    aliases: buildAliases(["diminishing musharakah", "ijarah home financing"], ["what is diminishing musharakah house finance"]),
+    category: "Banking",
+    answer: "Diminishing Musharakah is a common Islamic home financing structure where the bank and customer jointly own the property, with the customer's ownership share gradually increasing through periodic payments until they own it outright, paying rent on the bank's remaining share rather than interest.",
+  },
+  {
+    id: "finance-annuity-what-is",
+    aliases: buildAliases(["annuity"], ["what is an annuity"]),
+    category: "Investing Basics",
+    answer: "An annuity is a financial product that pays out a regular income stream, typically in retirement, in exchange for an upfront lump sum or series of payments made earlier — designed to provide predictable income for a set period or for life.",
+  },
+
+  // ── Fiscal policy tools & taxes ───────────────────────────────────────────
+  {
+    id: "macro-laffer-curve-what-is",
+    aliases: buildAliases(["laffer curve"], ["what is the laffer curve"]),
+    category: "Macroeconomics",
+    answer: "The Laffer Curve illustrates the theoretical relationship between tax rates and total tax revenue, suggesting that beyond a certain point, higher tax rates can actually reduce total revenue by discouraging economic activity — used to argue for and against tax cuts depending on where an economy sits on the curve.",
+  },
+  {
+    id: "macro-balanced-budget-what-is",
+    aliases: buildAliases(["balanced budget"], ["what is a balanced budget"]),
+    category: "Fiscal Deficit",
+    answer: "A balanced budget means government revenue exactly equals (or exceeds) government spending in a given period, with no fiscal deficit — relatively rare for Pakistan's federal budget historically, which has typically run a deficit.",
+  },
+  {
+    id: "tax-windfall-tax-what-is",
+    aliases: buildAliases(["windfall tax"], ["what is a windfall tax"]),
+    category: "Pakistan Economy",
+    answer: "A windfall tax is a one-off or temporary tax on companies that have earned unusually high, often externally-driven profits (such as banks benefiting from high interest rates or energy firms from price spikes), aimed at capturing some of that unearned gain for public revenue.",
+  },
+  {
+    id: "tax-carbon-tax-what-is",
+    aliases: buildAliases(["carbon tax"], ["what is a carbon tax"]),
+    category: "Macroeconomics",
+    answer: "A carbon tax charges businesses or consumers for the carbon emissions associated with fuel use or production, aiming to incentivize lower-emission choices by making polluting activities more expensive.",
+  },
+  {
+    id: "tax-wealth-tax-what-is",
+    aliases: buildAliases(["wealth tax"], ["what is a wealth tax"]),
+    category: "Pakistan Economy",
+    answer: "A wealth tax is levied on an individual's total net assets (rather than income), periodically proposed in Pakistan as a way to broaden the tax base toward asset-rich segments of the population, though never implemented at scale to date.",
+  },
+  {
+    id: "tax-double-taxation-treaty",
+    aliases: buildAliases(["double taxation treaty", "double taxation"], ["what is a double taxation avoidance agreement"]),
+    category: "Pakistan Economy",
+    answer: "A double taxation treaty is a bilateral agreement between two countries ensuring income isn't taxed twice — once in the country where it's earned and again in the taxpayer's home country — Pakistan has such treaties with numerous countries to support cross-border trade and investment.",
+  },
+  {
+    id: "tax-transfer-pricing-what-is",
+    aliases: buildAliases(["transfer pricing"], ["what is transfer pricing tax"]),
+    category: "Pakistan Economy",
+    answer: "Transfer pricing refers to the prices charged between related companies (like a multinational's local subsidiary and its foreign parent) for goods, services, or loans — tax authorities scrutinize these prices to prevent profit-shifting that artificially reduces taxable income in higher-tax jurisdictions.",
+  },
+
+  // ── Corporate finance metrics ────────────────────────────────────────────
+  {
+    id: "finance-free-cash-flow-what-is",
+    aliases: buildAliases(["free cash flow", "fcf"], ["what is free cash flow"]),
+    category: "Investing Basics",
+    answer: "Free Cash Flow (FCF) is the cash a company generates from operations after subtracting capital expenditures — representing money genuinely available to pay dividends, reduce debt, or reinvest, often considered a cleaner profitability gauge than accounting net profit.",
+  },
+  {
+    id: "finance-ebitda-what-is",
+    aliases: buildAliases(["ebitda"], ["what is ebitda", "what does ebitda stand for"]),
+    category: "Investing Basics",
+    answer: "EBITDA (Earnings Before Interest, Taxes, Depreciation, and Amortization) is a profitability measure that strips out financing and accounting decisions, often used to compare operating performance across companies with different debt levels or capital structures.",
+  },
+  {
+    id: "finance-margins-gross-operating-net",
+    aliases: ["gross margin vs operating margin vs net margin", "what is gross profit margin", "what is operating margin", "what is net profit margin"],
+    category: "Investing Basics",
+    answer: "Gross margin is revenue minus cost of goods sold, divided by revenue. Operating margin further subtracts operating expenses. Net margin subtracts everything, including interest and taxes — each progressively narrower measure of profitability per rupee of sales.",
+  },
+  {
+    id: "finance-working-capital-cycle",
+    aliases: buildAliases(["working capital cycle", "cash conversion cycle"], ["what is the cash conversion cycle"]),
+    category: "Investing Basics",
+    answer: "The working capital (cash conversion) cycle measures how long it takes a company to convert investments in inventory and other resources into cash from sales — a shorter cycle generally means more efficient use of capital.",
+  },
+  {
+    id: "finance-inventory-turnover-what-is",
+    aliases: buildAliases(["inventory turnover"], ["what is inventory turnover ratio"]),
+    category: "Investing Basics",
+    answer: "Inventory turnover measures how many times a company sells and replaces its inventory over a period — calculated as cost of goods sold divided by average inventory, with higher turnover generally indicating stronger sales or efficient inventory management.",
+  },
+  {
+    id: "finance-receivables-payables-what-are",
+    aliases: ["accounts receivable vs accounts payable", "what is accounts receivable", "what is accounts payable"],
+    category: "Investing Basics",
+    answer: "Accounts receivable is money owed TO a company by its customers for goods/services already delivered. Accounts payable is money a company owes TO its own suppliers — both are key working-capital management metrics.",
+  },
+  {
+    id: "finance-swot-analysis-what-is",
+    aliases: buildAliases(["swot analysis"], ["what is a swot analysis"]),
+    category: "Investing Basics",
+    answer: "A SWOT analysis evaluates a company's Strengths, Weaknesses, Opportunities, and Threats — a simple framework analysts and investors use alongside financial metrics to assess a business's competitive position.",
+  },
+
+  // ── Digital & gig economy ─────────────────────────────────────────────────
+  {
+    id: "pk-digital-economy-what-is",
+    aliases: buildAliases(["digital economy pakistan"], ["what is the digital economy"]),
+    category: "Pakistan Economy",
+    answer: "The digital economy refers to economic activity built around digital technology — e-commerce, digital payments, IT services, and online freelancing — an increasingly significant and fast-growing component of Pakistan's broader economy and export earnings.",
+  },
+  {
+    id: "pk-gig-economy-what-is",
+    aliases: buildAliases(["gig economy"], ["what is the gig economy"]),
+    category: "Pakistan Economy",
+    answer: "The gig economy refers to short-term, flexible, often platform-based work (like ride-hailing, freelancing, or delivery services) rather than traditional permanent employment — a growing segment of Pakistan's urban labor market, particularly among younger workers.",
+  },
+  {
+    id: "pk-ecommerce-growth-what-is",
+    aliases: buildAliases(["e-commerce pakistan", "online shopping growth pakistan"], ["how big is pakistan e-commerce market"]),
+    category: "Pakistan Economy",
+    answer: "Pakistan's e-commerce sector has grown rapidly alongside rising smartphone and internet penetration, digital payment adoption, and platforms enabling small businesses to sell online — though cash-on-delivery still dominates many transactions relative to fully digital payment.",
+  },
+  {
+    id: "pk-payment-gateway-what-is",
+    aliases: buildAliases(["payment gateway"], ["what is a payment gateway"]),
+    category: "Banking",
+    answer: "A payment gateway is the technology that securely processes online card or digital payments between a customer, merchant, and their respective banks, authorizing and settling transactions for e-commerce and digital services.",
+  },
+
+  // ── Corporate structure & M&A ─────────────────────────────────────────────
+  {
+    id: "finance-merger-vs-acquisition",
+    aliases: buildAliases(["merger", "acquisition"], ["what is a merger", "what is an acquisition", "merger vs acquisition difference"]),
+    category: "Investing Basics",
+    answer: "A merger combines two companies into a single new entity, typically by mutual agreement. An acquisition is when one company buys and absorbs another, which may continue operating under the acquirer or be fully integrated.",
+  },
+  {
+    id: "finance-hostile-takeover-what-is",
+    aliases: buildAliases(["hostile takeover"], ["what is a hostile takeover"]),
+    category: "Investing Basics",
+    answer: "A hostile takeover is an acquisition attempt that proceeds without the approval of the target company's board/management, often pursued by buying shares directly from shareholders or replacing the board through a proxy fight.",
+  },
+  {
+    id: "finance-leveraged-buyout-what-is",
+    aliases: buildAliases(["leveraged buyout", "lbo"], ["what is a leveraged buyout"]),
+    category: "Investing Basics",
+    answer: "A leveraged buyout (LBO) is an acquisition financed largely through borrowed money, using the acquired company's own assets and future cash flows as collateral — common in private equity deals, amplifying both potential returns and risk.",
+  },
+  {
+    id: "finance-joint-venture-what-is",
+    aliases: buildAliases(["joint venture"], ["what is a joint venture"]),
+    category: "Investing Basics",
+    answer: "A joint venture is a business arrangement where two or more companies pool resources to pursue a specific project or business activity, sharing ownership, risks, and profits, while remaining otherwise independent companies.",
+  },
+  {
+    id: "finance-multinational-corporation-what-is",
+    aliases: buildAliases(["multinational corporation", "mnc"], ["what is a multinational company"]),
+    category: "FDI",
+    answer: "A multinational corporation (MNC) operates production facilities, sales offices, or subsidiaries in multiple countries beyond its home market, often a major source of FDI and technology transfer for host countries like Pakistan.",
+  },
+  {
+    id: "finance-conglomerate-what-is",
+    aliases: buildAliases(["conglomerate"], ["what is a business conglomerate"]),
+    category: "Investing Basics",
+    answer: "A conglomerate is a large corporation made up of several distinct, often unrelated businesses operating under one corporate umbrella, aiming to diversify risk across different industries rather than specializing in one.",
+  },
+  {
+    id: "finance-outsourcing-offshoring-what-are",
+    aliases: ["outsourcing vs offshoring", "what is business process outsourcing"],
+    category: "Pakistan Economy",
+    answer: "Outsourcing means hiring an external company to perform a business function, which may or may not be in another country. Offshoring specifically means relocating that function abroad — Pakistan's growing BPO and IT-services exports are largely built on offshored work from foreign clients.",
+  },
+  {
+    id: "finance-vertical-horizontal-integration",
+    aliases: ["vertical integration vs horizontal integration", "what is vertical integration business", "what is horizontal integration business"],
+    category: "Investing Basics",
+    answer: "Vertical integration means a company expands into different stages of its own supply chain (like a textile firm also owning cotton farms). Horizontal integration means acquiring or merging with competitors at the same stage of production.",
+  },
+  {
+    id: "finance-franchise-business-model",
+    aliases: buildAliases(["franchise business model"], ["what is a franchise business"]),
+    category: "Investing Basics",
+    answer: "A franchise model lets an independent owner operate a business using an established company's brand, systems, and support, in exchange for franchise fees and ongoing royalties — a common way to scale retail and food businesses without the franchisor directly funding every new location.",
+  },
+
+  // ── Startup financing & private markets ──────────────────────────────────
+  {
+    id: "finance-startup-funding-stages",
+    aliases: ["seed funding vs series a vs series b", "what is a seed funding round", "startup funding stages explained"],
+    category: "Investing Basics",
+    answer: "Startups typically raise capital in stages: pre-seed/seed (early validation), Series A (initial scaling, usually after product-market fit), and subsequent Series B/C rounds (further growth), each round generally at a higher valuation as the business de-risks.",
+  },
+  {
+    id: "finance-bootstrapping-what-is",
+    aliases: buildAliases(["bootstrapping a business"], ["what does bootstrapping mean startup"]),
+    category: "Investing Basics",
+    answer: "Bootstrapping means building and growing a business using personal savings and reinvested revenue rather than external investment, retaining full ownership and control at the cost of slower growth and limited capital.",
+  },
+  {
+    id: "finance-venture-debt-what-is",
+    aliases: buildAliases(["venture debt"], ["what is venture debt financing"]),
+    category: "Investing Basics",
+    answer: "Venture debt is loan financing extended to early-stage, venture-backed startups (often alongside equity rounds), letting founders raise growth capital without further diluting ownership as much as an additional equity round would.",
+  },
+  {
+    id: "finance-unicorn-startup-what-is",
+    aliases: buildAliases(["unicorn startup"], ["what is a unicorn company"]),
+    category: "Investing Basics",
+    answer: "A 'unicorn' is a privately-held startup valued at $1 billion or more — a term used to highlight how rare such high valuations are among early-stage companies.",
+  },
+  {
+    id: "finance-incubator-accelerator-what-are",
+    aliases: ["business incubator vs accelerator", "what is a startup incubator", "what is a startup accelerator"],
+    category: "Investing Basics",
+    answer: "An incubator supports early-stage startups over a longer, more open-ended period with mentorship, space, and resources. An accelerator runs a fixed-term, intensive program (often 3-6 months) culminating in a pitch event, usually in exchange for a small equity stake.",
+  },
+  {
+    id: "finance-private-placement-what-is",
+    aliases: buildAliases(["private placement"], ["what is a private placement shares"]),
+    category: "PSX",
+    answer: "A private placement is the sale of shares or debt directly to a select group of investors (rather than the general public), typically faster and less regulatory-intensive than a public offering like an IPO.",
+  },
+  {
+    id: "finance-tender-offer-delisting",
+    aliases: ["what is a tender offer for shares", "what is delisting from stock exchange"],
+    category: "PSX",
+    answer: "A tender offer is a public bid to buy a large block of a company's shares directly from shareholders, often at a premium, sometimes used to take a company private. Delisting removes a company's shares from exchange trading entirely, ending public trading in that stock.",
+  },
+
+  // ── Retail banking essentials ────────────────────────────────────────────
+  {
+    id: "banking-credit-debit-card-difference",
+    aliases: ["credit card vs debit card", "what is a credit card", "what is a debit card", "what is a prepaid card"],
+    category: "Banking",
+    answer: "A debit card draws directly from your existing bank account balance. A credit card lets you borrow up to an approved limit, repaid later (with interest if not paid in full by the due date). A prepaid card is loaded with a fixed amount in advance and isn't linked to a bank account or credit line.",
+  },
+  {
+    id: "banking-cheque-demand-draft-pay-order",
+    aliases: ["what is a cheque", "what is a demand draft", "what is a pay order", "demand draft vs pay order difference"],
+    category: "Banking",
+    answer: "A cheque is a written instruction to pay from your own account, which can bounce if funds are insufficient. A demand draft and pay order are both bank-guaranteed instruments (pre-paid by the purchaser) used for secure payments, with a demand draft typically used for payments across different cities/branches and a pay order for local payments.",
+  },
+  {
+    id: "banking-online-internet-banking",
+    aliases: buildAliases(["online banking", "internet banking"], ["what is internet banking"]),
+    category: "Banking",
+    answer: "Online (internet) banking lets customers manage accounts, transfer funds, and pay bills through a bank's website or app rather than visiting a branch — a foundational layer that digital wallets and branchless banking have built upon in Pakistan.",
+  },
+  {
+    id: "banking-loan-grace-period-what-is",
+    aliases: buildAliases(["loan grace period"], ["what is a grace period on a loan"]),
+    category: "Banking",
+    answer: "A grace period is a set window after a payment due date during which a borrower can still pay without penalty or being reported as late — terms vary by lender and loan type.",
+  },
+  {
+    id: "banking-guarantor-co-signer-what-is",
+    aliases: buildAliases(["loan guarantor", "co-signer"], ["what is a guarantor for a loan"]),
+    category: "Banking",
+    answer: "A guarantor (or co-signer) agrees to repay a loan if the primary borrower defaults, providing the lender extra security — commonly required when a borrower has limited credit history or collateral.",
+  },
+  {
+    id: "banking-debt-consolidation-what-is",
+    aliases: buildAliases(["debt consolidation"], ["what is debt consolidation"]),
+    category: "Banking",
+    answer: "Debt consolidation combines multiple existing debts into a single new loan, ideally at a lower interest rate or with simpler, more manageable repayment terms.",
+  },
+  {
+    id: "banking-credit-limit-what-is",
+    aliases: buildAliases(["credit limit"], ["what is a credit limit"]),
+    category: "Banking",
+    answer: "A credit limit is the maximum amount a lender allows a borrower to use on a credit card or line of credit, based on factors like income, credit history, and existing debt obligations.",
+  },
+  {
+    id: "banking-amortizing-loan-balloon-payment",
+    aliases: ["amortizing loan vs balloon payment", "what is a balloon payment loan"],
+    category: "Banking",
+    answer: "An amortizing loan has equal periodic payments that gradually pay down both principal and interest until fully repaid. A balloon payment loan has smaller regular payments followed by one large lump-sum payment due at the end of the term.",
+  },
+
+  // ── Corporate actions & takeover defenses ────────────────────────────────
+  {
+    id: "psx-share-buyback-what-is",
+    aliases: buildAliases(["share buyback", "stock buyback", "treasury stock"], ["what is a share buyback"]),
+    category: "PSX",
+    answer: "A share buyback is when a company repurchases its own shares from the market, reducing the number of shares outstanding (which can boost EPS) and returning cash to remaining shareholders. Repurchased shares held by the company (rather than retired) are called treasury stock.",
+  },
+  {
+    id: "finance-spin-off-what-is",
+    aliases: buildAliases(["corporate spin off"], ["what is a spin off company"]),
+    category: "Investing Basics",
+    answer: "A spin-off occurs when a company separates part of its business into a new, independent publicly-traded company, with existing shareholders typically receiving shares in the new entity — often done to let the market value a specific business unit more accurately.",
+  },
+  {
+    id: "finance-takeover-defenses-what-are",
+    aliases: ["what is a poison pill defense", "what is a white knight defense", "takeover defense tactics"],
+    category: "Investing Basics",
+    answer: "A 'poison pill' lets existing shareholders buy additional discounted shares to dilute a hostile acquirer's stake. A 'white knight' is a friendlier acquirer a target company seeks out as a preferable alternative to a hostile bidder.",
+  },
+  {
+    id: "psx-investor-protection-fund",
+    aliases: buildAliases(["investor protection fund psx"], ["what is the investor protection fund"]),
+    category: "PSX",
+    answer: "An Investor Protection Fund compensates retail investors for losses arising from a broker's default or failure (within defined limits), adding a layer of safety to the PSX trading and settlement system.",
+  },
+
+  // ── Trade policy & bond pricing extras ───────────────────────────────────
+  {
+    id: "trade-sanctions-embargo-what-are",
+    aliases: buildAliases(["economic sanctions", "trade embargo"], ["what are economic sanctions"]),
+    category: "Trade Balance",
+    answer: "Economic sanctions are restrictions (like trade bans, asset freezes, or financial restrictions) imposed by one country or bloc on another, usually for political or security reasons. A trade embargo is a more complete ban on trade with a specific country.",
+  },
+  {
+    id: "trade-protectionism-what-is",
+    aliases: buildAliases(["protectionism", "trade protectionism"], ["what is protectionism economics"]),
+    category: "Trade Balance",
+    answer: "Protectionism refers to government policies — like tariffs, quotas, and subsidies — that shield domestic industries from foreign competition, often at the cost of higher prices for consumers and potential retaliation from trading partners.",
+  },
+  {
+    id: "trade-bloc-what-is",
+    aliases: buildAliases(["trade bloc"], ["what is a regional trade bloc"]),
+    category: "Trade Balance",
+    answer: "A trade bloc is a group of countries that agree to reduce trade barriers among themselves, ranging from simple free trade agreements to deeper customs unions or common markets with shared external trade policy.",
+  },
+  {
+    id: "bonds-clean-vs-dirty-price",
+    aliases: ["clean price vs dirty price bond", "what is accrued interest on a bond"],
+    category: "Bonds",
+    answer: "A bond's 'clean' price excludes accrued interest since the last coupon payment. The 'dirty' (or full) price includes that accrued interest — the dirty price is what a buyer actually pays when purchasing a bond between coupon dates.",
+  },
+  {
+    id: "bonds-current-yield-what-is",
+    aliases: buildAliases(["current yield bond"], ["what is current yield on a bond", "current yield vs yield to maturity"]),
+    category: "Bonds",
+    answer: "Current yield is a bond's annual coupon payment divided by its current market price — a simpler measure than yield to maturity, since it ignores the gain or loss from holding the bond until it matures at face value.",
+  },
+  {
+    id: "finance-credit-default-swap-what-is",
+    aliases: buildAliases(["credit default swap", "cds"], ["what is a credit default swap"]),
+    category: "Bonds",
+    answer: "A Credit Default Swap (CDS) is a derivative contract that acts like insurance against a bond issuer defaulting — the buyer pays a periodic premium, and the seller pays out if the underlying borrower defaults, used to hedge or speculate on credit risk.",
+  },
+
+  // ── Options pricing & macro aggregates ───────────────────────────────────
+  {
+    id: "finance-call-put-option-what-are",
+    aliases: ["what is a call option", "what is a put option", "call option vs put option"],
+    category: "Investing Basics",
+    answer: "A call option gives the right to BUY an asset at a set price before expiration, profitable if the price rises above that level. A put option gives the right to SELL at a set price, profitable if the price falls below it.",
+  },
+  {
+    id: "finance-options-premium-what-is",
+    aliases: buildAliases(["options premium"], ["what is an option premium"]),
+    category: "Investing Basics",
+    answer: "An option's premium is the price paid by the buyer to the seller (writer) for the rights the option contract grants, influenced by factors like the underlying asset's price, volatility, and time remaining until expiration.",
+  },
+  {
+    id: "macro-circular-flow-of-income",
+    aliases: buildAliases(["circular flow of income"], ["what is the circular flow model economics"]),
+    category: "Macroeconomics",
+    answer: "The circular flow of income model illustrates how money moves through an economy between households, businesses, and government — households supply labor and receive wages, spending that income on goods/services, which generates revenue that flows back to businesses as costs and profits.",
+  },
+
+  // ── External buffers ──────────────────────────────────────────────────────
+  {
+    id: "pk-current-account-deficit-causes",
+    aliases: ["main causes of current account deficit pakistan", "why does pakistan run a current account deficit"],
+    category: "Current Account",
+    answer: "Pakistan's current account deficit is typically driven by a structurally large energy import bill, a narrow export base unable to fully offset imports, and periods of strong domestic demand pulling in more imports — partly offset by remittance inflows.",
+  },
+  {
+    id: "pk-fiscal-year-dates",
+    aliases: buildAliases(["pakistan fiscal year"], ["when does pakistan fiscal year start and end"]),
+    category: "Pakistan Economy",
+    answer: "Pakistan's fiscal year runs from July 1 to June 30, the period covered by the annual federal budget, government revenue/expenditure reporting, and most official economic statistics.",
+  },
+  {
+    id: "pk-tax-amnesty-scheme-what-is",
+    aliases: buildAliases(["tax amnesty scheme pakistan"], ["what is a tax amnesty scheme"]),
+    category: "Pakistan Economy",
+    answer: "A tax amnesty scheme lets individuals or businesses declare previously undisclosed assets or income by paying a reduced penalty rate, aiming to broaden the formal tax base — Pakistan has periodically offered such schemes, though their long-term effectiveness at growing sustained tax revenue is debated among economists.",
+  },
+  {
+    id: "pk-export-processing-zone-deep",
+    aliases: buildAliases(["export processing zone", "epz pakistan"], ["what is an export processing zone"]),
+    category: "Exports",
+    answer: "An Export Processing Zone (EPZ) is a designated industrial area offering tax incentives and simplified customs procedures specifically for businesses producing goods for export, distinct from a broader Special Economic Zone which can also serve the domestic market.",
+  },
+];
+
+// ── Collision-free alias merge ──────────────────────────────────────────────
+// 1. Seed `claimed` with every alias already on every entry (hand-authored +
+//    new), so generated aliases can never silently steal a phrase that
+//    already canonically belongs to a different entry.
+// 2. For hand-authored entries phrased as a plain definition, auto-expand
+//    with the full template set, skipping any candidate already claimed.
+const claimed = new Set<string>();
+for (const entry of [...HAND_AUTHORED, ...NEW_ENTRIES]) {
+  for (const alias of entry.aliases) claimed.add(normalizeForDedup(alias));
+}
+
+function expandHandAuthored(entries: KnowledgeEntry[]): KnowledgeEntry[] {
+  return entries.map((entry) => {
+    const core = extractCoreTerm(entry.aliases);
+    if (!core) return entry;
+    const added: string[] = [];
+    for (const tmpl of DEFINITION_TEMPLATES) {
+      const candidate = tmpl(core);
+      const norm = normalizeForDedup(candidate);
+      if (!claimed.has(norm)) {
+        claimed.add(norm);
+        added.push(candidate);
+      }
+    }
+    return added.length > 0 ? { ...entry, aliases: [...entry.aliases, ...added] } : entry;
+  });
+}
+
+export const KNOWLEDGE_BASE: KnowledgeEntry[] = [
+  ...expandHandAuthored(HAND_AUTHORED),
+  ...NEW_ENTRIES,
+];
+
 /** Total number of curated knowledge base entries (for reporting/telemetry). */
 export const KNOWLEDGE_BASE_COUNT = KNOWLEDGE_BASE.length;
+
+/** Total number of aliases across all entries (for reporting/telemetry). */
+export const KNOWLEDGE_BASE_ALIAS_COUNT = KNOWLEDGE_BASE.reduce((sum, e) => sum + e.aliases.length, 0);
 
 /** Distinct categories covered, in first-seen order. */
 export const KNOWLEDGE_BASE_CATEGORIES: string[] = Array.from(
