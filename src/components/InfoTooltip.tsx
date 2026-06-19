@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { TERMINOLOGY } from "@/data/terminology";
+import { TOOLKIT_TRANSLATIONS } from "@/data/toolkitTranslations";
 import { useTheme } from "@/components/ThemeProvider";
 
 // Session-level cache: termKey → Roman Urdu formatted string
@@ -188,6 +189,17 @@ export default function InfoTooltip({ termKey, size = "sm" }: Props) {
       setUrduVisible(v => !v);
       return;
     }
+
+    // Pre-translated static cache — checked before any network call. Eliminates
+    // the AI translation request entirely for every term already covered.
+    const cached = TOOLKIT_TRANSLATIONS[termKey];
+    if (cached) {
+      console.log(`[Translation Cache] HIT — termKey="${termKey}"`);
+      urduCache.set(termKey, cached.romanUrdu);
+      setUrduVisible(true);
+      return;
+    }
+    console.log(`[Translation Cache] MISS — termKey="${termKey}"`);
 
     console.log(`[InfoTooltip:DEBUG] translation started — termKey="${termKey}"`);
     setTranslating(true);
