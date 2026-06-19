@@ -29,6 +29,7 @@ const SERIES_IDS = {
   naturalGas: "DHHNGSP", // Henry Hub Natural Gas Spot Price
   us10y: "DGS10", // Market Yield on U.S. Treasury Securities at 10-Year Constant Maturity
   fedFunds: "DFF", // Federal Funds Effective Rate
+  usCpi: "CPIAUCSL", // CPI for All Urban Consumers — fetched with units=pc1 for YoY % directly
 } as const;
 
 interface FredObservation {
@@ -193,5 +194,87 @@ export async function getFedFundsKpi(): Promise<Kpi> {
     return buildKpi(series, "Fed Funds Rate", "%", "purple", 2, SERIES_IDS.fedFunds);
   } catch {
     return fallbackFedFundsKpi;
+  }
+}
+
+// --- Comparisons feature: historical series ---------------------------------
+// FRED has decades of history for every series below (verified live: DFF
+// since 1954, CPIAUCSL since 1947, DGS10 since 1962) — far more than the
+// 10-year window requested. Each fetcher below asks FRED to do the
+// resampling/transformation server-side (monthly aggregation, YoY % change)
+// rather than reimplementing that math from raw daily data.
+
+export interface FredHistoryPoint {
+  /** "YYYY-MM-DD" */
+  date: string;
+  value: number;
+}
+
+async function fetchFredHistory(
+  seriesId: string,
+  startDate: string,
+  extraParams: Record<string, string> = {},
+): Promise<FredHistoryPoint[]> {
+  const apiKey = process.env.FRED_API_KEY;
+  if (!apiKey) throw new Error("FRED_API_KEY is not set");
+
+  const params = new URLSearchParams({
+    series_id: seriesId,
+    api_key: apiKey,
+    file_type: "json",
+    observation_start: startDate,
+    sort_order: "asc",
+    ...extraParams,
+  });
+
+  const response = await fetch(`${FRED_BASE_URL}?${params.toString()}`, {
+    next: { revalidate: REVALIDATE_SECONDS },
+  });
+  if (!response.ok) {
+    throw new Error(`FRED API returned ${response.status} for ${seriesId}`);
+  }
+
+  const json = (await response.json()) as FredResponse;
+  return json.observations
+    .filter((obs) => obs.value !== "." && obs.value !== "")
+    .map((obs) => ({ date: obs.date, value: Number(obs.value) }))
+    .filter((point) => Number.isFinite(point.value));
+}
+
+/** US Federal Funds effective rate, resampled to monthly end-of-period, since `startDate`. */
+export async function getFedFundsHistory(startDate = "2016-01-01"): Promise<FredHistoryPoint[] | null> {
+  try {
+    return await fetchFredHistory(SERIES_IDS.fedFunds, startDate, {
+      frequency: "m",
+      aggregation_method: "eop",
+    });
+  } catch {
+    return null;
+  }
+}
+
+/** US 10-Year Treasury constant maturity yield, resampled to monthly end-of-period, since `startDate`. */
+export async function getUs10yHistory(startDate = "2016-01-01"): Promise<FredHistoryPoint[] | null> {
+  try {
+    return await fetchFredHistory(SERIES_IDS.us10y, startDate, {
+      frequency: "m",
+      aggregation_method: "eop",
+    });
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * US CPI inflation, year-over-year %, since `startDate`. Uses FRED's
+ * `units=pc1` transform (percent change from a year ago, computed
+ * server-side by FRED from the underlying CPIAUCSL index) rather than
+ * computing YoY % manually from index levels.
+ */
+export async function getUsCpiInflationHistory(startDate = "2016-01-01"): Promise<FredHistoryPoint[] | null> {
+  try {
+    return await fetchFredHistory(SERIES_IDS.usCpi, startDate, { units: "pc1" });
+  } catch {
+    return null;
   }
 }

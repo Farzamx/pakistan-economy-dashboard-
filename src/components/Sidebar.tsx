@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import SettingsModal from "@/components/SettingsModal";
 import PsxComingSoonModal from "@/components/PsxComingSoonModal";
@@ -24,6 +26,7 @@ const NAV_ITEMS = [
 ];
 
 export default function Sidebar() {
+  const pathname = usePathname();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [psxOpen, setPsxOpen] = useState(false);
   const [activeHref, setActiveHref] = useState<string>(NAV_ITEMS[0].href);
@@ -82,6 +85,26 @@ export default function Sidebar() {
 
         {/* Navigation */}
         <nav className="flex flex-col gap-1">
+          {/* Comparisons — a real route, not a same-page anchor, so it gets
+              its own Link + usePathname active-state check instead of the
+              scroll-spy logic the homepage anchors use. */}
+          <motion.div whileHover={{ x: 4 }} transition={{ type: "spring", stiffness: 400, damping: 25 }}>
+            <Link
+              href="/comparisons"
+              aria-current={pathname?.startsWith("/comparisons") ? "true" : undefined}
+              className={`flex items-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors ${
+                pathname?.startsWith("/comparisons")
+                  ? "border-neon-purple/25 bg-neon-purple/10 text-white light:text-slate-900"
+                  : "border-transparent text-white/50 light:text-slate-500 hover:bg-white/5 light:hover:bg-slate-100 hover:text-white light:hover:text-slate-900"
+              }`}
+            >
+              <svg className="h-3.5 w-3.5 opacity-60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M8 6v12M16 6v12M4 10l4-4 4 4M20 14l-4 4-4-4" />
+              </svg>
+              Comparisons
+            </Link>
+          </motion.div>
+
           {NAV_ITEMS.map((item) => {
             const isActive = activeHref === item.href;
             return (

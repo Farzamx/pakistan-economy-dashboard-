@@ -169,3 +169,62 @@ export async function getPakEtfKpi(): Promise<Kpi | null> {
     return buildYfKpi(price, prevClose, updatedAt, "Pakistan ETF (NYSE: PAK)", "$", "blue", 2, "PAK");
   } catch { return null; }
 }
+
+// --- Comparisons feature: historical series ---------------------------------
+// Same free, keyless v8/finance/chart endpoint as the snapshot quotes above,
+// just with a wider `range`/`interval` instead of `range=2d` — Yahoo Finance
+// supports this for the same symbols with no separate access tier. Verified
+// live: GC=F (gold futures) returns ~10 years of monthly closes (2016-07 to
+// present) under range=10y&interval=1mo.
+
+export interface YfHistoryPoint {
+  /** "YYYY-MM-DD" */
+  date: string;
+  close: number;
+}
+
+export async function fetchYfHistory(
+  symbol: string,
+  range: "1y" | "3y" | "5y" | "10y" | "max",
+  interval: "1d" | "1wk" | "1mo",
+): Promise<YfHistoryPoint[]> {
+  const encoded = encodeURIComponent(symbol);
+  const res = await fetch(`${YF_BASE}/${encoded}?interval=${interval}&range=${range}`, {
+    headers: { "User-Agent": "Mozilla/5.0" },
+    next: { revalidate: REVALIDATE },
+  });
+  if (!res.ok) throw new Error(`Yahoo Finance HTTP ${res.status} for ${symbol} history`);
+
+  const json = (await res.json()) as {
+    chart: {
+      result: Array<{
+        timestamp: number[];
+        indicators: { quote: Array<{ close: (number | null)[] }> };
+      }> | null;
+      error: { description: string } | null;
+    };
+  };
+  const result = json.chart.result?.[0];
+  if (!result) throw new Error(`Yahoo Finance no history result for ${symbol}`);
+
+  const { timestamp, indicators } = result;
+  const closes = indicators.quote[0]?.close ?? [];
+
+  const points: YfHistoryPoint[] = [];
+  for (let i = 0; i < timestamp.length; i++) {
+    const close = closes[i];
+    if (close === null || close === undefined || !Number.isFinite(close)) continue;
+    points.push({ date: new Date(timestamp[i] * 1000).toISOString().slice(0, 10), close });
+  }
+  if (points.length === 0) throw new Error(`Yahoo Finance returned no usable closes for ${symbol}`);
+  return points;
+}
+
+/** Gold futures (GC=F) monthly closes, up to 10 years of history. */
+export async function getGoldHistory(): Promise<YfHistoryPoint[] | null> {
+  try {
+    return await fetchYfHistory(YF_SYMBOLS.gold, "10y", "1mo");
+  } catch {
+    return null;
+  }
+}

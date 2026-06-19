@@ -1,0 +1,100 @@
+"use client";
+
+import { useMemo, useState } from "react";
+import {
+  calculatePerformance,
+  type AssetTimelinePoint,
+} from "@/lib/comparisons/performanceCalculator";
+
+interface PerformanceCalculatorProps {
+  timeline: AssetTimelinePoint[];
+}
+
+function formatPkr(n: number): string {
+  return n.toLocaleString("en-PK", { maximumFractionDigits: 0 });
+}
+
+function formatKeyLabel(key: string): string {
+  const [year, month] = key.split("-");
+  const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  return `${MONTHS[Number(month) - 1]} ${year}`;
+}
+
+export default function PerformanceCalculator({ timeline }: PerformanceCalculatorProps) {
+  // Offer one start-date option per year (Jan of each year with data) plus
+  // the earliest available month, to keep the dropdown short rather than
+  // listing all ~120 months.
+  const startOptions = useMemo(() => {
+    const byYear = new Map<string, string>();
+    for (const point of timeline) {
+      const year = point.key.slice(0, 4);
+      if (!byYear.has(year)) byYear.set(year, point.key);
+    }
+    return Array.from(byYear.values());
+  }, [timeline]);
+
+  const [startKey, setStartKey] = useState(startOptions[0] ?? "");
+
+  const results = useMemo(
+    () => (startKey ? calculatePerformance(timeline, startKey) : []),
+    [timeline, startKey],
+  );
+
+  if (startOptions.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="glass-card flex flex-col gap-5 rounded-2xl p-6">
+      <div>
+        <h3 className="text-base font-semibold text-[var(--text-primary)]">
+          Performance Calculator
+        </h3>
+        <p className="mt-1 text-sm text-[var(--text-muted)]">
+          If PKR 100,000 had been invested on the selected date, how would each asset have performed by now?
+        </p>
+      </div>
+
+      <div className="flex items-center gap-3">
+        <label htmlFor="perf-start-date" className="text-sm text-[var(--text-secondary)]">
+          Starting from:
+        </label>
+        <select
+          id="perf-start-date"
+          value={startKey}
+          onChange={(e) => setStartKey(e.target.value)}
+          className="rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-1.5 text-sm text-[var(--text-primary)]"
+        >
+          {startOptions.map((key) => (
+            <option key={key} value={key}>
+              {formatKeyLabel(key)}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {results.length === 0 ? (
+        <p className="text-sm text-[var(--text-muted)]">No overlapping data for the selected start date.</p>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-3">
+          {results.map((r) => (
+            <div key={r.asset} className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4">
+              <p className="text-sm font-medium text-[var(--text-primary)]">{r.label}</p>
+              <p className="mt-2 text-2xl font-semibold text-[var(--text-primary)]">
+                {formatPkr(r.endValue)} <span className="text-xs font-normal text-[var(--text-muted)]">PKR</span>
+              </p>
+              <p className={`mt-1 text-sm font-medium ${r.returnPct >= 0 ? "text-emerald-400" : "text-red-400"}`}>
+                {r.returnPct >= 0 ? "+" : ""}{r.returnPct.toFixed(1)}%
+              </p>
+              <p className="mt-2 text-[11px] leading-relaxed text-[var(--text-muted)]">{r.methodology}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <p className="text-[11px] text-[var(--text-muted)]">
+        KSE-100 (Pakistan stock market) is not included — no historical KSE-100 data source is available to this dashboard, and a proxy return shouldn&apos;t be presented as the index itself.
+      </p>
+    </div>
+  );
+}

@@ -745,3 +745,59 @@ export async function getAllSbpIndicators(): Promise<Record<SbpIndicatorKey, Sbp
     return acc;
   }, {} as Record<SbpIndicatorKey, SbpIndicatorResult>);
 }
+
+// --- Full-history access (Comparisons feature) ------------------------------
+// getSbpIndicator()/getAllSbpIndicators() above intentionally cap their .trend
+// at HISTORY_DISPLAY_POINTS (24) for the homepage's compact charts. The
+// underlying fetch already pulls the full series since HISTORY_START_DATE
+// (2016-01-01 — confirmed against SBP EasyData's own "Available Since"
+// metadata to be at or near each series' actual earliest observation, not an
+// arbitrarily short window). getSbpIndicatorHistory() exposes that full,
+// un-sliced series for comparison charts that need 5-10 years of history.
+
+export interface SbpHistoryPoint {
+  /** Raw "YYYY-MM-DD" observation date, for precise cross-series alignment. */
+  date: string;
+  value: number;
+}
+
+export interface SbpIndicatorHistory {
+  /** Oldest -> newest, full available history, already unit-converted. */
+  points: SbpHistoryPoint[];
+  meta: SbpMeta;
+}
+
+/**
+ * Fetches a single SBP indicator's complete available history (not capped
+ * at 24 points), for comparison charts. Falls back to whatever short-label
+ * trend the static fallback snapshot carries if the live API is unreachable
+ * — that fallback isn't date-keyed, so cross-series alignment degrades
+ * gracefully rather than fabricating dates for it.
+ */
+export async function getSbpIndicatorHistory(key: SbpIndicatorKey): Promise<SbpIndicatorHistory> {
+  const config = CONFIGS[key];
+  try {
+    const series = await fetchSbpSeries(config.seriesKey, config.revalidate);
+    return {
+      points: series.history.map((p) => ({
+        date: p.date,
+        value: Number(config.toTrendValue(p.value).toFixed(4)),
+      })),
+      meta: {
+        source: "SBP EasyData",
+        seriesKey: series.seriesKey,
+        seriesName: series.seriesName,
+        unit: series.unit,
+        frequency: config.frequency,
+        observationDate: series.latestDate,
+        lastUpdated: series.lastUpdated,
+      },
+    };
+  } catch {
+    const fb = config.fallback;
+    return {
+      points: fb.trend.map((p) => ({ date: p.month, value: p.value })),
+      meta: { ...fb.meta, source: "SBP EasyData" },
+    };
+  }
+}

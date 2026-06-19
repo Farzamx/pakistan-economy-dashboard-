@@ -1,9 +1,9 @@
 import type { TrendPoint } from "@/components/charts/TrendLineChart";
 import { fallbackGdpKpi, type Kpi } from "@/data/kpiData";
 
-// All indicators are read for Pakistan from the free, keyless World Bank API:
-// https://api.worldbank.org/v2/country/PAK/indicator/{code}?format=json&mrv=10
-const WORLD_BANK_BASE_URL = "https://api.worldbank.org/v2/country/PAK/indicator";
+// All indicators are read from the free, keyless World Bank API:
+// https://api.worldbank.org/v2/country/{ISO3}/indicator/{code}?format=json&mrv=10
+const WORLD_BANK_BASE_URL = "https://api.worldbank.org/v2/country";
 
 // World Bank annual indicators are refreshed a few times a year at most —
 // re-fetching once a day is more than enough.
@@ -12,7 +12,13 @@ const REVALIDATE_SECONDS = 60 * 60 * 24;
 const INDICATORS = {
   gdpGrowth: "NY.GDP.MKTP.KD.ZG",
   population: "SP.POP.TOTL",
+  agricultureValueAddedPct: "NV.AGR.TOTL.ZS",
+  industryValueAddedPct: "NV.IND.TOTL.ZS",
+  servicesValueAddedPct: "NV.SRV.TOTL.ZS",
 } as const;
+
+/** ISO-3 country codes used by the comparisons feature for international GDP growth comparisons. */
+export type WorldBankCountryCode = "PAK" | "IND" | "BGD";
 
 interface WorldBankObservation {
   date: string;
@@ -31,12 +37,16 @@ export interface IndicatorSeries {
   history: TrendPoint[];
 }
 
-async function fetchIndicator(code: string): Promise<IndicatorSeries> {
-  const url = `${WORLD_BANK_BASE_URL}/${code}?format=json&mrv=10`;
+async function fetchIndicator(
+  code: string,
+  countryCode: WorldBankCountryCode = "PAK",
+  mostRecentValues = 10,
+): Promise<IndicatorSeries> {
+  const url = `${WORLD_BANK_BASE_URL}/${countryCode}/indicator/${code}?format=json&mrv=${mostRecentValues}`;
   const response = await fetch(url, { next: { revalidate: REVALIDATE_SECONDS } });
 
   if (!response.ok) {
-    throw new Error(`World Bank API returned ${response.status} for ${code}`);
+    throw new Error(`World Bank API returned ${response.status} for ${code} (${countryCode})`);
   }
 
   const json = (await response.json()) as WorldBankResponse;
@@ -113,6 +123,54 @@ export async function getGdpKpi(): Promise<Kpi> {
 export async function getPopulation(): Promise<IndicatorSeries | null> {
   try {
     return await fetchIndicator(INDICATORS.population);
+  } catch {
+    return null;
+  }
+}
+
+// --- Comparisons feature: international GDP growth + sector composition ---
+
+/**
+ * Annual real GDP growth (% YoY) for Pakistan, India, or Bangladesh, with up
+ * to ~30 years of history (World Bank's `mrv` parameter — same free, keyless
+ * endpoint already used for the headline GDP Growth KPI). Returns null on
+ * failure rather than fabricating a fallback series, since unlike the
+ * single-headline KPI there's no pre-vetted static snapshot for India/
+ * Bangladesh to fall back to.
+ */
+export async function getGdpGrowthHistory(
+  countryCode: WorldBankCountryCode,
+): Promise<IndicatorSeries | null> {
+  try {
+    return await fetchIndicator(INDICATORS.gdpGrowth, countryCode, 30);
+  } catch {
+    return null;
+  }
+}
+
+export interface GdpSectorComposition {
+  agriculture: IndicatorSeries;
+  industry: IndicatorSeries;
+  services: IndicatorSeries;
+}
+
+/**
+ * Pakistan's GDP composition by sector (agriculture / industry / services,
+ * each as % of GDP), up to ~30 years of annual history. Used as the
+ * Comparisons feature's substitute for stock-market "sector performance"
+ * (Banking/Cement/Oil & Gas/etc.), which has no available data source in
+ * this project — see the Phase 1 feasibility audit. This is a genuinely
+ * different metric (economic structure, not equity returns) and is labeled
+ * as such everywhere it's shown.
+ */
+export async function getGdpSectorComposition(): Promise<GdpSectorComposition | null> {
+  try {
+    const [agriculture, industry, services] = await Promise.all([
+      fetchIndicator(INDICATORS.agricultureValueAddedPct, "PAK", 30),
+      fetchIndicator(INDICATORS.industryValueAddedPct, "PAK", 30),
+      fetchIndicator(INDICATORS.servicesValueAddedPct, "PAK", 30),
+    ]);
+    return { agriculture, industry, services };
   } catch {
     return null;
   }
