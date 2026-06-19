@@ -10,6 +10,7 @@ import {
 import { getFresh, getStale, setCache } from "@/lib/memoryCache";
 import { getPakEtfKpi } from "@/lib/data/yfinance";
 import type { Kpi } from "@/data/kpiData";
+import { searchKnowledgeBase } from "@/lib/knowledgeBaseSearch";
 
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 
@@ -488,6 +489,36 @@ export async function POST(request: Request): Promise<Response> {
     `search: ${routerResult.needsSearch} | ` +
     `"${message.slice(0, 70)}${message.length > 70 ? "..." : ""}"`,
   );
+
+  // ── Step 1.5: Local knowledge base — checked before any network call. ────
+  // A hit answers instantly with zero Tavily/OpenRouter cost. Only queries
+  // that don't need live dashboard data are eligible — dashboard/hybrid
+  // categories must still reflect current indicator values, never a static
+  // canned answer.
+  if (!routerResult.needsDashboard) {
+    const kbMatch = searchKnowledgeBase(message);
+    if (kbMatch) {
+      console.log(
+        `[Knowledge Base] HIT — id: ${kbMatch.entry.id} | type: ${kbMatch.matchType} | ` +
+        `score: ${kbMatch.score.toFixed(2)} | total: ${Date.now() - requestStart}ms`,
+      );
+      return Response.json({
+        reply: kbMatch.entry.answer,
+        confidence: "High" as ConfidenceLevel,
+        confidenceReason: `Answered from local knowledge base (${kbMatch.entry.category})`,
+        source: "AI Knowledge" as SourceType,
+        dataSource: null,
+        queryCategory: "Knowledge Base",
+        citations: [],
+        searchPerformed: false,
+        searchLatencyMs: null,
+        sourcesFound: 0,
+        modelUsed: "knowledge-base",
+        modelDisplayName: "Knowledge Base",
+      });
+    }
+    console.log(`[Knowledge Base] MISS — "${message.slice(0, 70)}${message.length > 70 ? "..." : ""}"`);
+  }
 
   // ── Step 2: Search (cache-aware) + PAK ETF fallback fetch — run in parallel ──
   // The PAK ETF quote (free Yahoo Finance call, not rate-limited) is fetched
