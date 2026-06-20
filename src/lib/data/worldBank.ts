@@ -1,5 +1,6 @@
 import type { TrendPoint } from "@/components/charts/TrendLineChart";
 import { fallbackGdpKpi, type Kpi } from "@/data/kpiData";
+import { dedupeInFlight, getFresh, setCache } from "@/lib/memoryCache";
 
 // All indicators are read from the free, keyless World Bank API:
 // https://api.worldbank.org/v2/country/{ISO3}/indicator/{code}?format=json&mrv=10
@@ -137,12 +138,27 @@ export async function getPopulation(): Promise<IndicatorSeries | null> {
  * failure rather than fabricating a fallback series, since unlike the
  * single-headline KPI there's no pre-vetted static snapshot for India/
  * Bangladesh to fall back to.
+ *
+ * Memoized (memoryCache.ts, TTL = REVALIDATE_SECONDS, same window the
+ * underlying fetch() already uses) so Pakistan's GDP growth series — used by
+ * both the India and Bangladesh comparisons in the same /comparisons render
+ * — is fetched once per country, not once per comparison. Only successful
+ * results are cached; a transient failure is never "frozen" as null for the
+ * full TTL, so the next call still retries live.
  */
 export async function getGdpGrowthHistory(
   countryCode: WorldBankCountryCode,
 ): Promise<IndicatorSeries | null> {
+  const cacheKey = `worldbank-gdp-growth-history:${countryCode}`;
+  const cached = getFresh<IndicatorSeries>(cacheKey, REVALIDATE_SECONDS * 1000);
+  if (cached) return cached.data;
+
   try {
-    return await fetchIndicator(INDICATORS.gdpGrowth, countryCode, 30);
+    return await dedupeInFlight(cacheKey, async () => {
+      const result = await fetchIndicator(INDICATORS.gdpGrowth, countryCode, 30);
+      setCache(cacheKey, result);
+      return result;
+    });
   } catch {
     return null;
   }
@@ -164,13 +180,21 @@ export interface GdpSectorComposition {
  * as such everywhere it's shown.
  */
 export async function getGdpSectorComposition(): Promise<GdpSectorComposition | null> {
+  const cacheKey = "worldbank-gdp-sector-composition";
+  const cached = getFresh<GdpSectorComposition>(cacheKey, REVALIDATE_SECONDS * 1000);
+  if (cached) return cached.data;
+
   try {
-    const [agriculture, industry, services] = await Promise.all([
-      fetchIndicator(INDICATORS.agricultureValueAddedPct, "PAK", 30),
-      fetchIndicator(INDICATORS.industryValueAddedPct, "PAK", 30),
-      fetchIndicator(INDICATORS.servicesValueAddedPct, "PAK", 30),
-    ]);
-    return { agriculture, industry, services };
+    return await dedupeInFlight(cacheKey, async () => {
+      const [agriculture, industry, services] = await Promise.all([
+        fetchIndicator(INDICATORS.agricultureValueAddedPct, "PAK", 30),
+        fetchIndicator(INDICATORS.industryValueAddedPct, "PAK", 30),
+        fetchIndicator(INDICATORS.servicesValueAddedPct, "PAK", 30),
+      ]);
+      const result = { agriculture, industry, services };
+      setCache(cacheKey, result);
+      return result;
+    });
   } catch {
     return null;
   }

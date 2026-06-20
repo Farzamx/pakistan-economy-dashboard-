@@ -7,6 +7,7 @@
 // Revalidates every hour — Yahoo Finance updates intraday.
 
 import type { Kpi } from "@/data/kpiData";
+import { dedupeInFlight, getFresh, setCache } from "@/lib/memoryCache";
 
 const YF_BASE = "https://query1.finance.yahoo.com/v8/finance/chart";
 const REVALIDATE = 60 * 60; // 1h
@@ -221,9 +222,23 @@ export async function fetchYfHistory(
 }
 
 /** Gold futures (GC=F) monthly closes, up to 10 years of history. */
+/**
+ * Memoized (memoryCache.ts, TTL = REVALIDATE, same window the underlying
+ * fetch() already uses) — gold-vs-usd-pkr, gold-vs-treasury-bills, and the
+ * performance calculator all reference this same series independently
+ * within one render of /comparisons.
+ */
 export async function getGoldHistory(): Promise<YfHistoryPoint[] | null> {
+  const cacheKey = "yfinance-gold-history";
+  const cached = getFresh<YfHistoryPoint[]>(cacheKey, REVALIDATE * 1000);
+  if (cached) return cached.data;
+
   try {
-    return await fetchYfHistory(YF_SYMBOLS.gold, "10y", "1mo");
+    return await dedupeInFlight(cacheKey, async () => {
+      const result = await fetchYfHistory(YF_SYMBOLS.gold, "10y", "1mo");
+      setCache(cacheKey, result);
+      return result;
+    });
   } catch {
     return null;
   }

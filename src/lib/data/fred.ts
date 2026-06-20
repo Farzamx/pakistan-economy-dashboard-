@@ -12,6 +12,7 @@ import {
   getYfUs10yKpi,
   getYfWtiKpi,
 } from "./yfinance";
+import { dedupeInFlight, getFresh, setCache } from "@/lib/memoryCache";
 
 // All series are read from the St. Louis Fed's FRED API:
 // https://api.stlouisfed.org/fred/series/observations?series_id=...&api_key=...
@@ -241,24 +242,46 @@ async function fetchFredHistory(
     .filter((point) => Number.isFinite(point.value));
 }
 
-/** US Federal Funds effective rate, resampled to monthly end-of-period, since `startDate`. */
+/**
+ * US Federal Funds effective rate, resampled to monthly end-of-period, since
+ * `startDate`. Memoized (memoryCache.ts, TTL = REVALIDATE_SECONDS, same
+ * window the underlying fetch() already uses) — shared by every comparison
+ * that references it instead of each independently re-fetching. Only
+ * successful results are cached; failures always retry live.
+ */
 export async function getFedFundsHistory(startDate = "2016-01-01"): Promise<FredHistoryPoint[] | null> {
+  const cacheKey = `fred-fedfunds-history:${startDate}`;
+  const cached = getFresh<FredHistoryPoint[]>(cacheKey, REVALIDATE_SECONDS * 1000);
+  if (cached) return cached.data;
+
   try {
-    return await fetchFredHistory(SERIES_IDS.fedFunds, startDate, {
-      frequency: "m",
-      aggregation_method: "eop",
+    return await dedupeInFlight(cacheKey, async () => {
+      const result = await fetchFredHistory(SERIES_IDS.fedFunds, startDate, {
+        frequency: "m",
+        aggregation_method: "eop",
+      });
+      setCache(cacheKey, result);
+      return result;
     });
   } catch {
     return null;
   }
 }
 
-/** US 10-Year Treasury constant maturity yield, resampled to monthly end-of-period, since `startDate`. */
+/** US 10-Year Treasury constant maturity yield, resampled to monthly end-of-period, since `startDate`. Memoized — see getFedFundsHistory. */
 export async function getUs10yHistory(startDate = "2016-01-01"): Promise<FredHistoryPoint[] | null> {
+  const cacheKey = `fred-us10y-history:${startDate}`;
+  const cached = getFresh<FredHistoryPoint[]>(cacheKey, REVALIDATE_SECONDS * 1000);
+  if (cached) return cached.data;
+
   try {
-    return await fetchFredHistory(SERIES_IDS.us10y, startDate, {
-      frequency: "m",
-      aggregation_method: "eop",
+    return await dedupeInFlight(cacheKey, async () => {
+      const result = await fetchFredHistory(SERIES_IDS.us10y, startDate, {
+        frequency: "m",
+        aggregation_method: "eop",
+      });
+      setCache(cacheKey, result);
+      return result;
     });
   } catch {
     return null;
@@ -269,11 +292,19 @@ export async function getUs10yHistory(startDate = "2016-01-01"): Promise<FredHis
  * US CPI inflation, year-over-year %, since `startDate`. Uses FRED's
  * `units=pc1` transform (percent change from a year ago, computed
  * server-side by FRED from the underlying CPIAUCSL index) rather than
- * computing YoY % manually from index levels.
+ * computing YoY % manually from index levels. Memoized — see getFedFundsHistory.
  */
 export async function getUsCpiInflationHistory(startDate = "2016-01-01"): Promise<FredHistoryPoint[] | null> {
+  const cacheKey = `fred-uscpi-history:${startDate}`;
+  const cached = getFresh<FredHistoryPoint[]>(cacheKey, REVALIDATE_SECONDS * 1000);
+  if (cached) return cached.data;
+
   try {
-    return await fetchFredHistory(SERIES_IDS.usCpi, startDate, { units: "pc1" });
+    return await dedupeInFlight(cacheKey, async () => {
+      const result = await fetchFredHistory(SERIES_IDS.usCpi, startDate, { units: "pc1" });
+      setCache(cacheKey, result);
+      return result;
+    });
   } catch {
     return null;
   }

@@ -1,6 +1,7 @@
 import type { TrendPoint } from "@/components/charts/TrendLineChart";
 import type { Kpi } from "@/data/kpiData";
 import type { DataFrequency } from "@/lib/dataFreshness";
+import { dedupeInFlight, getFresh, setCache } from "@/lib/memoryCache";
 import {
   fallbackCoreInflation,
   fallbackCpiInflation,
@@ -773,8 +774,30 @@ export interface SbpIndicatorHistory {
  * trend the static fallback snapshot carries if the live API is unreachable
  * — that fallback isn't date-keyed, so cross-series alignment degrades
  * gracefully rather than fabricating dates for it.
+ *
+ * Memoized via the project's existing in-memory TTL cache (memoryCache.ts —
+ * already used by the assistant/translate routes) so the several Comparisons
+ * pages/cards that reference the same indicator (e.g. USD/PKR appears in 3
+ * different comparisons plus the performance calculator, all fetched within
+ * one render of /comparisons) share one fetch instead of each independently
+ * re-fetching it. The TTL is `config.revalidate` — the exact same per-
+ * indicator window (24h monthly / 6h as-needed) already used for this
+ * series' own `fetch()` call, so no indicator's revalidation window changes.
  */
 export async function getSbpIndicatorHistory(key: SbpIndicatorKey): Promise<SbpIndicatorHistory> {
+  const config = CONFIGS[key];
+  const cacheKey = `sbp-indicator-history:${key}`;
+  const cached = getFresh<SbpIndicatorHistory>(cacheKey, config.revalidate * 1000);
+  if (cached) return cached.data;
+
+  return dedupeInFlight(cacheKey, async () => {
+    const result = await fetchSbpIndicatorHistoryUncached(key);
+    setCache(cacheKey, result);
+    return result;
+  });
+}
+
+async function fetchSbpIndicatorHistoryUncached(key: SbpIndicatorKey): Promise<SbpIndicatorHistory> {
   const config = CONFIGS[key];
   try {
     const series = await fetchSbpSeries(config.seriesKey, config.revalidate);

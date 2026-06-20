@@ -32,3 +32,30 @@ export function getStale<T>(key: string): { data: T; ageMs: number } | null {
 export function setCache<T>(key: string, data: T): void {
   store.set(key, { data, timestamp: Date.now() });
 }
+
+// In-flight request coalescing ("singleflight"). A TTL cache alone only
+// catches *sequential* repeat calls — it can't help with calls that arrive
+// concurrently (e.g. Promise.all over several comparisons that each need
+// the same underlying series), since they all check the cache before any
+// of them has resolved and populated it. This tracks promises that are
+// still pending so concurrent callers for the same key share one
+// in-flight request instead of each starting their own.
+const inFlight = new Map<string, Promise<unknown>>();
+
+/**
+ * Runs `fn()` for `key`, but if a call for the same `key` is already in
+ * flight, returns that same promise instead of starting a second one.
+ * Pair with getFresh/setCache for full dedup: check getFresh first (catches
+ * sequential repeats within the TTL), then wrap the actual fetch in
+ * dedupeInFlight (catches concurrent repeats while the first is pending).
+ */
+export function dedupeInFlight<T>(key: string, fn: () => Promise<T>): Promise<T> {
+  const existing = inFlight.get(key) as Promise<T> | undefined;
+  if (existing) return existing;
+
+  const promise = fn().finally(() => {
+    inFlight.delete(key);
+  });
+  inFlight.set(key, promise);
+  return promise;
+}
