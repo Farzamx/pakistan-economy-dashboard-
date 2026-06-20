@@ -71,10 +71,16 @@ export default function CustomComparisonBuilder() {
             id="custom-series-a"
             value={aId}
             onChange={(e) => setAId(e.target.value as SeriesProviderId)}
-            className="rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-1.5 text-sm text-[var(--text-primary)]"
+            className="rounded-lg border border-[var(--border)] bg-[var(--space-700)] px-3 py-1.5 text-sm text-[var(--text-primary)]"
           >
             {ALL_SERIES_OPTIONS.map((opt) => (
-              <option key={opt.id} value={opt.id}>{opt.label}</option>
+              <option
+                key={opt.id}
+                value={opt.id}
+                className="bg-[var(--space-700)] text-[var(--text-primary)] checked:bg-[var(--neon-blue)] checked:text-[var(--background)] checked:font-semibold"
+              >
+                {opt.label}
+              </option>
             ))}
           </select>
         </div>
@@ -84,10 +90,16 @@ export default function CustomComparisonBuilder() {
             id="custom-series-b"
             value={bId}
             onChange={(e) => setBId(e.target.value as SeriesProviderId)}
-            className="rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-1.5 text-sm text-[var(--text-primary)]"
+            className="rounded-lg border border-[var(--border)] bg-[var(--space-700)] px-3 py-1.5 text-sm text-[var(--text-primary)]"
           >
             {ALL_SERIES_OPTIONS.map((opt) => (
-              <option key={opt.id} value={opt.id}>{opt.label}</option>
+              <option
+                key={opt.id}
+                value={opt.id}
+                className="bg-[var(--space-700)] text-[var(--text-primary)] checked:bg-[var(--neon-blue)] checked:text-[var(--background)] checked:font-semibold"
+              >
+                {opt.label}
+              </option>
             ))}
           </select>
         </div>

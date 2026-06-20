@@ -49,9 +49,9 @@ export default function SectorCompositionChart({ data }: SectorCompositionChartP
   const legendColor = isLight ? "rgba(0, 0, 0, 0.65)" : "rgba(255, 255, 255, 0.65)";
 
   return (
-    <div ref={containerRef} style={{ minHeight: 280 }}>
+    <div ref={containerRef} style={{ minHeight: 320 }}>
       {shouldRender && (
-        <ResponsiveContainer width="100%" height={280}>
+        <ResponsiveContainer width="100%" height={320}>
           <LineChart data={data} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} vertical={false} />
             <XAxis

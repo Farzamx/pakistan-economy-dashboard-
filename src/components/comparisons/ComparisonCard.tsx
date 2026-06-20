@@ -68,7 +68,7 @@ export default function ComparisonCard({
       </div>
 
       {hasError && (
-        <div className="flex h-[280px] flex-col items-center justify-center gap-2 rounded-xl border border-red-500/15 bg-red-500/[0.04] text-center">
+        <div className="flex h-[320px] flex-col items-center justify-center gap-2 rounded-xl border border-red-500/15 bg-red-500/[0.04] text-center">
           <p className="text-sm font-medium text-red-400">Data unavailable right now</p>
           <p className="max-w-xs text-xs text-[var(--text-muted)]">
             One of the live sources for this comparison didn&apos;t respond. No estimated or cached values are shown in its place.
@@ -77,7 +77,7 @@ export default function ComparisonCard({
       )}
 
       {isEmpty && (
-        <div className="flex h-[280px] items-center justify-center rounded-xl border border-[var(--border)] bg-[var(--surface)]">
+        <div className="flex h-[320px] items-center justify-center rounded-xl border border-[var(--border)] bg-[var(--surface)]">
           <p className="text-sm text-[var(--text-muted)]">No overlapping data in this time range.</p>
         </div>
       )}

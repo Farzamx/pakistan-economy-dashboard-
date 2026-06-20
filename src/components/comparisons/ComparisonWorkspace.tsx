@@ -77,19 +77,26 @@ export default function ComparisonWorkspace({
               <p className="text-sm text-[var(--text-muted)]">{group.description}</p>
             </div>
 
-            <div className="grid gap-5 sm:grid-cols-2">
-              {groupBundles.map((bundle) => (
-                <ComparisonCard
-                  key={bundle.def.slug}
-                  def={bundle.def}
-                  merged={bundle.merged}
-                  sourceA={bundle.sourceA}
-                  sourceB={bundle.sourceB}
-                  hasError={bundle.hasError}
-                  timeRange={timeRange}
-                  chartMode={chartMode}
-                />
-              ))}
+            <div className="grid gap-6 sm:grid-cols-2">
+              {groupBundles.map((bundle, i) => {
+                // An odd card count leaves the last card alone in its row
+                // with sm:grid-cols-2 — give it the full row instead of a
+                // dangling empty cell next to it.
+                const isLastOfOdd = groupBundles.length % 2 === 1 && i === groupBundles.length - 1;
+                return (
+                  <div key={bundle.def.slug} className={isLastOfOdd ? "sm:col-span-2" : undefined}>
+                    <ComparisonCard
+                      def={bundle.def}
+                      merged={bundle.merged}
+                      sourceA={bundle.sourceA}
+                      sourceB={bundle.sourceB}
+                      hasError={bundle.hasError}
+                      timeRange={timeRange}
+                      chartMode={chartMode}
+                    />
+                  </div>
+                );
+              })}
               {isSectorGroup && sectorWindowed && (
                 <div className="glass-card flex flex-col gap-4 rounded-2xl p-5 sm:col-span-2">
                   <div>
@@ -101,7 +108,7 @@ export default function ComparisonWorkspace({
                 </div>
               )}
               {isSectorGroup && !sectorWindowed && (
-                <div className="glass-card flex h-[280px] items-center justify-center rounded-2xl p-5 text-center sm:col-span-2">
+                <div className="glass-card flex h-[320px] items-center justify-center rounded-2xl p-5 text-center sm:col-span-2">
                   <p className="text-sm text-[var(--text-muted)]">GDP sector composition data is unavailable right now.</p>
                 </div>
               )}

@@ -73,10 +73,14 @@ export default function PerformanceCalculator({ timeline }: PerformanceCalculato
           id="perf-start-date"
           value={startKey}
           onChange={(e) => setStartKey(e.target.value)}
-          className="rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-1.5 text-sm text-[var(--text-primary)]"
+          className="rounded-lg border border-[var(--border)] bg-[var(--space-700)] px-3 py-1.5 text-sm text-[var(--text-primary)]"
         >
           {startOptions.map((key) => (
-            <option key={key} value={key}>
+            <option
+              key={key}
+              value={key}
+              className="bg-[var(--space-700)] text-[var(--text-primary)] checked:bg-[var(--neon-blue)] checked:text-[var(--background)] checked:font-semibold"
+            >
               {formatKeyLabel(key)}
             </option>
           ))}

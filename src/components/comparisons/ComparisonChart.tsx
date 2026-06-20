@@ -60,9 +60,9 @@ export default function ComparisonChart({ data, seriesA, seriesB, mode }: Compar
   const formattedData = data.map((d) => ({ ...d, label: formatKeyLabel(d.key) }));
 
   return (
-    <div ref={containerRef} style={{ minHeight: 280 }} data-testid="comparison-chart">
+    <div ref={containerRef} style={{ minHeight: 320 }} data-testid="comparison-chart">
       {shouldRender && (
-        <ResponsiveContainer width="100%" height={280}>
+        <ResponsiveContainer width="100%" height={320}>
           <ComposedChart data={formattedData} margin={{ top: 8, right: sameAxis ? 8 : 16, left: -16, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} vertical={false} />
             <XAxis
