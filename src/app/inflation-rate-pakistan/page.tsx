@@ -62,6 +62,8 @@ export default async function InflationRatePage() {
         },
       ]}
       relatedLinks={relatedSeoLinks(SLUG, [
+        "weekly-inflation-pakistan",
+        "pakistan-food-inflation",
         "pakistan-interest-rate",
         "pakistan-economic-indicators",
         "gdp-growth-pakistan",

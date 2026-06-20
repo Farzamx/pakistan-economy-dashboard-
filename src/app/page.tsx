@@ -33,6 +33,7 @@ import { getTaggedNews } from "@/lib/data/intelligence";
 import { getDxyKpi, getGoldKpi, getSilverKpi } from "@/lib/data/metals";
 import { getNews } from "@/lib/data/news";
 import { getPakEtfKpi } from "@/lib/data/yfinance";
+import { getSpiHistory } from "@/lib/data/spi";
 import {
   calculateRecessionRisk,
   calculateDefaultRisk,
@@ -66,7 +67,7 @@ function getSection(id: string) {
 }
 
 export default async function Home() {
-  const [gdpKpi, sbp, goldKpi, silverKpi, brentKpi, wtiKpi, naturalGasKpi, dxyKpi, us10yKpi, fedFundsKpi, newsItems, fxRates, pakEtfKpiRaw, quarterlyGdp] =
+  const [gdpKpi, sbp, goldKpi, silverKpi, brentKpi, wtiKpi, naturalGasKpi, dxyKpi, us10yKpi, fedFundsKpi, newsItems, fxRates, pakEtfKpiRaw, quarterlyGdp, spi] =
     await Promise.all([
       getGdpKpi(),
       getAllSbpIndicators(),
@@ -82,9 +83,28 @@ export default async function Home() {
       getFxRates(),
       getPakEtfKpi(),
       getQuarterlyGdpKpi(),
+      getSpiHistory(),
     ]);
 
   const pakEtfKpi = pakEtfKpiRaw ?? fallbackPakEtfKpi;
+
+  // Weekly SPI has no static fallback (see spi.ts) — the card simply
+  // doesn't render if the live fetch/parse fails, same as the PAK ETF card.
+  const spiLatest = spi?.points[spi.points.length - 1] ?? null;
+  const spiKpi: Kpi | null = spiLatest
+    ? {
+        title: "Weekly Inflation (SPI)",
+        value: spiLatest.value.toFixed(2),
+        unit: "Index",
+        change: `${spiLatest.wowPct >= 0 ? "+" : ""}${spiLatest.wowPct.toFixed(2)}% WoW · ${spiLatest.yoyPct >= 0 ? "+" : ""}${spiLatest.yoyPct.toFixed(2)}% YoY`,
+        trend: spiLatest.wowPct >= 0 ? "up" : "down",
+        glow: "purple",
+        source: "PBS",
+        seriesId: "SPI Combined (2015-16=100)",
+        latestDate: spiLatest.date,
+        frequency: "Weekly",
+      }
+    : null;
 
   // ── Quantitative risk model inputs ────────────────────────────────────────
   // Compute USD/PKR YoY change from the 24-month trend array (index −13 = 12mo ago)
@@ -319,6 +339,7 @@ export default async function Home() {
     sbp.policyRate.kpi,
     sbp.coreInflation.kpi,
     sbp.wpiInflation.kpi,
+    ...(spiKpi ? [spiKpi] : []),
     sbp.tbillYield3m.kpi,
     sbp.pibYield3y.kpi,
     sbp.currentAccount.kpi,

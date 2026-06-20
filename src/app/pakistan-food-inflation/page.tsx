@@ -92,6 +92,7 @@ export default async function FoodInflationPage() {
       ]}
       relatedLinks={relatedSeoLinks(SLUG, [
         "inflation-rate-pakistan",
+        "weekly-inflation-pakistan",
         "pakistan-interest-rate",
         "pakistan-economic-indicators",
       ])}

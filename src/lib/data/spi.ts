@@ -1,0 +1,158 @@
+import * as XLSX from "xlsx";
+import { dedupeInFlight, getFresh, setCache } from "@/lib/memoryCache";
+
+// Pakistan Bureau of Statistics — Weekly Sensitive Price Indicator (SPI),
+// base 2015-16=100, "Combined" expenditure group (all quintiles).
+//
+// PBS publishes a new report every Friday at https://www.pbs.gov.pk/, as a
+// WordPress post titled "Weekly Sensitive Price Indicator (SPI) for the
+// week ended on DD-MM-YYYY", with a real .xlsx "Report" file attached.
+//
+// The .xlsx filename convention has changed at least twice historically
+// (confirmed by directly probing older URLs — two plausible historical
+// filenames both returned an HTML page disguised as a 200 response, not a
+// real file), so this deliberately never constructs a URL from a date
+// formula. Instead it discovers the current file from PBS's own official,
+// unauthenticated WordPress REST API
+// (https://www.pbs.gov.pk/wp-json/wp/v2/posts), which returns the latest
+// post's content as structured JSON — the only HTML touched is a small,
+// stable regex pulling the .xlsx href out of that JSON's `content.rendered`
+// field. No numbers are ever scraped from a page; every value comes from
+// parsing the real .xlsx file with the same `xlsx` library used elsewhere
+// in this project (quarterlyGdp.ts, externalDebt.ts).
+const PBS_API_BASE = "https://www.pbs.gov.pk/wp-json/wp/v2/posts";
+const PBS_SEARCH_QUERY = "Sensitive Price Indicator";
+
+// SPI is published once a week, always on Friday. A 12h window means the
+// dashboard picks up a new Friday release within at most half a day, and
+// otherwise makes at most two checks a day against PBS — appropriately
+// conservative for an indicator that only ever changes once a week.
+const REVALIDATE_WEEKLY_SECONDS = 60 * 60 * 12;
+const FETCH_TIMEOUT_MS = 10_000;
+
+export interface SpiPoint {
+  /** "YYYY-MM-DD", week-ended date. */
+  date: string;
+  /** Combined SPI index, base 2015-16=100. */
+  value: number;
+  /** % change vs the previous week, as published by PBS. */
+  wowPct: number;
+  /** % change vs the corresponding week a year earlier, as published by PBS. */
+  yoyPct: number;
+}
+
+export interface SpiResult {
+  /** Oldest -> newest. PBS embeds roughly the trailing 10 weeks in each report — there is no separate multi-year archive file. */
+  points: SpiPoint[];
+  source: "PBS";
+}
+
+interface WpPost {
+  title: { rendered: string };
+  content: { rendered: string };
+  date: string;
+}
+
+async function discoverLatestSpiReportUrl(): Promise<string> {
+  const params = new URLSearchParams({
+    search: PBS_SEARCH_QUERY,
+    per_page: "1",
+    orderby: "date",
+    order: "desc",
+  });
+  const res = await fetch(`${PBS_API_BASE}?${params.toString()}`, {
+    next: { revalidate: REVALIDATE_WEEKLY_SECONDS },
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+  });
+  if (!res.ok) throw new Error(`PBS WordPress API returned ${res.status}`);
+
+  const posts = (await res.json()) as WpPost[];
+  const post = posts[0];
+  // Matches either the current full title ("...Sensitive Price Indicator
+  // (SPI)...") or a shortened future title that only uses the "SPI"
+  // abbreviation — resilient to PBS rewording the post title, as long as
+  // either form is still present somewhere in it.
+  if (!post || !/sensitive price indicator|\bSPI\b/i.test(post.title.rendered)) {
+    throw new Error("PBS WordPress API did not return a matching SPI post");
+  }
+
+  // The post body links both the item-level "Annex" file and the
+  // aggregate "Report" file — only the Report file has the Combined SPI
+  // index table this function needs.
+  const hrefs = [...post.content.rendered.matchAll(/href="([^"]+\.xlsx)"/gi)].map((m) => m[1]);
+  const reportUrl = hrefs.find((h) => /report/i.test(h));
+  if (!reportUrl) throw new Error("PBS SPI post has no linked .xlsx Report file");
+  return reportUrl;
+}
+
+function parseCombinedSpiTable(buf: ArrayBuffer): SpiPoint[] {
+  const wb = XLSX.read(new Uint8Array(buf), { type: "array" });
+  const sheet = wb.Sheets["Page 1"];
+  if (!sheet) throw new Error('Sheet "Page 1" not found in SPI report');
+
+  const rows = XLSX.utils.sheet_to_json<unknown[]>(sheet, { header: 1 }) as unknown[][];
+
+  const headerIdx = rows.findIndex((row) => row[1] === "Week ended on");
+  if (headerIdx === -1) throw new Error('"Week ended on" table header not found in SPI report');
+
+  // The data columns below are read by fixed position (5/6/7) — confirm
+  // the header row still labels column 5 "Combined SPI" before trusting
+  // that position. If PBS ever reorders these columns, this throws
+  // (falling into the existing null-on-failure path) instead of silently
+  // reading the wrong column into `value`.
+  if (rows[headerIdx][5] !== "Combined SPI") {
+    throw new Error('Expected "Combined SPI" in column 5 of the header row — column layout may have changed');
+  }
+
+  const points: SpiPoint[] = [];
+  for (let i = headerIdx + 1; i < rows.length; i++) {
+    const row = rows[i];
+    const dateStr = row[1];
+    if (typeof dateStr !== "string" || !/^\d{1,2}-\d{2}-\d{4}$/.test(dateStr)) break; // table ends at the first non-data row
+
+    const combinedValue = row[5];
+    const wowPct = row[6];
+    const yoyPct = row[7];
+    if (typeof combinedValue !== "number" || typeof wowPct !== "number" || typeof yoyPct !== "number") continue;
+
+    const [day, month, year] = dateStr.split("-");
+    points.push({
+      date: `${year}-${month}-${day.padStart(2, "0")}`,
+      value: combinedValue,
+      wowPct,
+      yoyPct,
+    });
+  }
+
+  if (points.length === 0) throw new Error("No Combined SPI data points extracted from report");
+  return points;
+}
+
+/**
+ * Weekly Sensitive Price Indicator (Combined group), oldest -> newest.
+ * Returns null on failure — no fabricated fallback for a series this
+ * source-dependent; callers must render an honest unavailable state.
+ */
+export async function getSpiHistory(): Promise<SpiResult | null> {
+  const cacheKey = "pbs-spi-history";
+  const cached = getFresh<SpiResult>(cacheKey, REVALIDATE_WEEKLY_SECONDS * 1000);
+  if (cached) return cached.data;
+
+  try {
+    return await dedupeInFlight(cacheKey, async () => {
+      const reportUrl = await discoverLatestSpiReportUrl();
+      const res = await fetch(reportUrl, {
+        next: { revalidate: REVALIDATE_WEEKLY_SECONDS },
+        signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+      });
+      if (!res.ok) throw new Error(`PBS SPI report fetch returned ${res.status}`);
+      const buf = await res.arrayBuffer();
+      const points = parseCombinedSpiTable(buf);
+      const result: SpiResult = { points, source: "PBS" };
+      setCache(cacheKey, result);
+      return result;
+    });
+  } catch {
+    return null;
+  }
+}

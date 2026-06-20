@@ -34,6 +34,7 @@ export const SEO_PAGES: SeoPageMeta[] = [
   { slug: "fdi-in-pakistan", label: "FDI in Pakistan" },
   { slug: "eur-to-pkr-exchange-rate", label: "EUR to PKR Exchange Rate" },
   { slug: "gbp-to-pkr-exchange-rate", label: "GBP to PKR Exchange Rate" },
+  { slug: "weekly-inflation-pakistan", label: "Pakistan Weekly Inflation (SPI)" },
 ];
 
 // Maps a homepage Kpi's exact `title` string to the SEO page slug that
@@ -59,6 +60,7 @@ export const KPI_SEO_SLUG: Record<string, string> = {
   "FDI Inflows": "fdi-in-pakistan",
   "EUR / PKR": "eur-to-pkr-exchange-rate",
   "GBP / PKR": "gbp-to-pkr-exchange-rate",
+  "Weekly Inflation (SPI)": "weekly-inflation-pakistan",
 };
 
 export function relatedSeoLinks(excludeSlug: string, slugs: string[]): { href: string; label: string }[] {
