@@ -21,12 +21,22 @@ function formatKeyLabel(key: string): string {
 }
 
 export default function PerformanceCalculator({ timeline }: PerformanceCalculatorProps) {
-  // Offer one start-date option per year (Jan of each year with data) plus
-  // the earliest available month, to keep the dropdown short rather than
-  // listing all ~120 months.
+  // Offer one start-date option per year, to keep the dropdown short rather
+  // than listing all ~120 months. Each asset has its own real start date
+  // (e.g. Gold's Yahoo Finance history is a rolling 10-year window, while
+  // USD/PKR and T-Bill's SBP history can reach back further) — starting the
+  // option list from the first point *before* all three overlap would offer
+  // dates where one or more assets silently has no data yet. Restricting to
+  // points from the first full-overlap month onward guarantees every option
+  // in the dropdown produces all three results.
   const startOptions = useMemo(() => {
+    const firstFullOverlapIdx = timeline.findIndex(
+      (p) => p.gold !== null && p.usdPkr !== null && p.tbillYieldPct !== null,
+    );
+    if (firstFullOverlapIdx === -1) return [];
+
     const byYear = new Map<string, string>();
-    for (const point of timeline) {
+    for (const point of timeline.slice(firstFullOverlapIdx)) {
       const year = point.key.slice(0, 4);
       if (!byYear.has(year)) byYear.set(year, point.key);
     }

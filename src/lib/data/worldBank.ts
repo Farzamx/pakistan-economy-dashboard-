@@ -10,6 +10,11 @@ const WORLD_BANK_BASE_URL = "https://api.worldbank.org/v2/country";
 // re-fetching once a day is more than enough.
 const REVALIDATE_SECONDS = 60 * 60 * 24;
 
+// fetch() has no default timeout — without this, a stalled connection hangs
+// for undici's ~5 minute default instead of falling into the existing
+// try/catch error handling.
+const FETCH_TIMEOUT_MS = 10_000;
+
 const INDICATORS = {
   gdpGrowth: "NY.GDP.MKTP.KD.ZG",
   population: "SP.POP.TOTL",
@@ -44,7 +49,10 @@ async function fetchIndicator(
   mostRecentValues = 10,
 ): Promise<IndicatorSeries> {
   const url = `${WORLD_BANK_BASE_URL}/${countryCode}/indicator/${code}?format=json&mrv=${mostRecentValues}`;
-  const response = await fetch(url, { next: { revalidate: REVALIDATE_SECONDS } });
+  const response = await fetch(url, {
+    next: { revalidate: REVALIDATE_SECONDS },
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+  });
 
   if (!response.ok) {
     throw new Error(`World Bank API returned ${response.status} for ${code} (${countryCode})`);

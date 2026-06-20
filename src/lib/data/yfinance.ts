@@ -12,6 +12,11 @@ import { dedupeInFlight, getFresh, setCache } from "@/lib/memoryCache";
 const YF_BASE = "https://query1.finance.yahoo.com/v8/finance/chart";
 const REVALIDATE = 60 * 60; // 1h
 
+// fetch() has no default timeout — without this, a stalled connection hangs
+// for undici's ~5 minute default instead of falling into the existing
+// try/catch error handling.
+const FETCH_TIMEOUT_MS = 10_000;
+
 // Yahoo Finance symbols for Global Markets indicators
 export const YF_SYMBOLS = {
   gold: "GC=F",      // Gold Futures (COMEX)
@@ -53,6 +58,7 @@ export async function fetchYfQuote(symbol: string): Promise<{
   const res = await fetch(`${YF_BASE}/${encoded}?interval=1d&range=2d`, {
     headers: { "User-Agent": "Mozilla/5.0" },
     next: { revalidate: REVALIDATE },
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
   });
   if (!res.ok) throw new Error(`Yahoo Finance HTTP ${res.status} for ${symbol}`);
   const json = (await res.json()) as YfResponse;
@@ -193,6 +199,7 @@ export async function fetchYfHistory(
   const res = await fetch(`${YF_BASE}/${encoded}?interval=${interval}&range=${range}`, {
     headers: { "User-Agent": "Mozilla/5.0" },
     next: { revalidate: REVALIDATE },
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
   });
   if (!res.ok) throw new Error(`Yahoo Finance HTTP ${res.status} for ${symbol} history`);
 

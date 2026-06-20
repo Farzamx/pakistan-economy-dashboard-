@@ -21,6 +21,11 @@ const TWELVE_DATA_BASE_URL = "https://api.twelvedata.com/time_series";
 // Twelve Data's free-tier rate limit.
 const REVALIDATE_SECONDS = 60 * 60 * 6; // 6h
 
+// fetch() has no default timeout — without this, a stalled connection hangs
+// for undici's ~5 minute default (or blocks `next build` static generation)
+// instead of falling into the existing try/catch error handling.
+const FETCH_TIMEOUT_MS = 10_000;
+
 const SYMBOLS = {
   gold: "XAU/USD",
   silver: "XAG/USD",
@@ -84,6 +89,7 @@ async function fetchTwelveDataSeries(symbol: string): Promise<MetalSeries> {
 
   const response = await fetch(`${TWELVE_DATA_BASE_URL}?${params.toString()}`, {
     next: { revalidate: REVALIDATE_SECONDS },
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
   });
 
   if (!response.ok) {

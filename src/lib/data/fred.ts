@@ -24,6 +24,11 @@ const FRED_BASE_URL = "https://api.stlouisfed.org/fred/series/observations";
 // These are daily series, so re-checking once a day is more than enough.
 const REVALIDATE_SECONDS = 60 * 60 * 24; // 24h
 
+// fetch() has no default timeout — without this, a stalled connection hangs
+// for undici's ~5 minute default instead of falling into the existing
+// try/catch error handling.
+const FETCH_TIMEOUT_MS = 10_000;
+
 const SERIES_IDS = {
   wti: "DCOILWTICO", // Crude Oil Prices: West Texas Intermediate (Cushing, OK)
   brent: "DCOILBRENTEU", // Crude Oil Prices: Brent - Europe
@@ -91,6 +96,7 @@ async function fetchFredSeries(seriesId: string): Promise<FredSeries> {
 
   const response = await fetch(`${FRED_BASE_URL}?${params.toString()}`, {
     next: { revalidate: REVALIDATE_SECONDS },
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
   });
 
   if (!response.ok) {
@@ -230,6 +236,7 @@ async function fetchFredHistory(
 
   const response = await fetch(`${FRED_BASE_URL}?${params.toString()}`, {
     next: { revalidate: REVALIDATE_SECONDS },
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
   });
   if (!response.ok) {
     throw new Error(`FRED API returned ${response.status} for ${seriesId}`);

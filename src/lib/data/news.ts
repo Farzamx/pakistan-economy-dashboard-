@@ -20,6 +20,11 @@ export interface NewsItem {
 
 const REVALIDATE_NEWS = 60 * 60 * 2; // 2h
 
+// fetch() has no default timeout — without this, a stalled connection hangs
+// for undici's ~5 minute default (or blocks `next build` static generation)
+// instead of falling into the existing try/catch error handling.
+const FETCH_TIMEOUT_MS = 10_000;
+
 // ---- GNews -------------------------------------------------------------------
 
 interface GNewsArticle {
@@ -50,6 +55,7 @@ async function fetchGNews(
 
   const res = await fetch(`https://gnews.io/api/v4/search?${params.toString()}`, {
     next: { revalidate: REVALIDATE_NEWS },
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
   });
 
   if (!res.ok) return [];
@@ -128,6 +134,7 @@ async function fetchRss(
     const res = await fetch(url, {
       headers: { "User-Agent": "Mozilla/5.0 (compatible; NewsBot/1.0)" },
       next: { revalidate: REVALIDATE_NEWS },
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     });
     if (!res.ok) return [];
     const xml = await res.text();

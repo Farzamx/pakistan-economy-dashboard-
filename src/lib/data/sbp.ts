@@ -50,6 +50,12 @@ const HISTORY_DISPLAY_POINTS = 24;
 const REVALIDATE_MONTHLY = 60 * 60 * 24; // 24h
 const REVALIDATE_AS_NEEDED = 60 * 60 * 6; // 6h
 
+// fetch() has no default timeout — without this, a stalled SBP EasyData
+// connection hangs the underlying request for undici's ~5 minute default,
+// blocking page render (and, during `next build`, static generation)
+// instead of falling through to the existing try/catch error handling.
+const FETCH_TIMEOUT_MS = 10_000;
+
 type Frequency = "Monthly" | "As-Needed" | "Weekly" | "Annual";
 
 const SBP_FREQ_MAP: Record<Frequency, DataFrequency> = {
@@ -177,6 +183,7 @@ async function fetchSbpSeries(seriesKey: string, revalidateSeconds: number): Pro
 
   const response = await fetch(`${SBP_API_BASE}/${seriesKey}/data?${params.toString()}`, {
     next: { revalidate: revalidateSeconds },
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
   });
 
   if (!response.ok) {
@@ -797,6 +804,44 @@ export async function getSbpIndicatorHistory(key: SbpIndicatorKey): Promise<SbpI
   });
 }
 
+const MONTH_ABBR: Record<string, number> = {
+  Jan: 1, Feb: 2, Mar: 3, Apr: 4, May: 5, Jun: 6,
+  Jul: 7, Aug: 8, Sep: 9, Oct: 10, Nov: 11, Dec: 12,
+};
+
+/**
+ * Fallback trend data (sbpFallbackData.ts) stores dates as human-readable
+ * display labels — "MMM 'YY" for monthly series, "D MMM 'YY" for as-needed
+ * series (auction/MPC dates) — since that's what the homepage's compact
+ * trend charts render directly as axis labels. The live path's
+ * `SbpSeries.history[].date` is always a real "YYYY-MM-DD" string. Every
+ * downstream consumer of `SbpIndicatorHistory.points[].date` (date-alignment
+ * merge keys in comparisonData.ts/performanceCalculator.ts, chart date
+ * formatting) assumes the latter — feeding it a label like "May '26"
+ * unparsed produces garbage merge keys and "Invalid Date"/undefined
+ * formatting once a series falls back. This converts the label to a real
+ * ISO date (monthly labels map to that month's last day, matching the
+ * month-end convention SBP's own monthly observation dates use).
+ */
+function parseFallbackMonthLabel(label: string): string {
+  const asNeeded = label.match(/^(\d{1,2}) (\w{3}) '(\d{2})$/);
+  if (asNeeded) {
+    const [, day, mon, yy] = asNeeded;
+    const month = MONTH_ABBR[mon];
+    const year = 2000 + Number(yy);
+    return `${year}-${String(month).padStart(2, "0")}-${day.padStart(2, "0")}`;
+  }
+  const monthly = label.match(/^(\w{3}) '(\d{2})$/);
+  if (monthly) {
+    const [, mon, yy] = monthly;
+    const month = MONTH_ABBR[mon];
+    const year = 2000 + Number(yy);
+    const lastDay = new Date(year, month, 0).getDate();
+    return `${year}-${String(month).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
+  }
+  return label;
+}
+
 async function fetchSbpIndicatorHistoryUncached(key: SbpIndicatorKey): Promise<SbpIndicatorHistory> {
   const config = CONFIGS[key];
   try {
@@ -819,7 +864,7 @@ async function fetchSbpIndicatorHistoryUncached(key: SbpIndicatorKey): Promise<S
   } catch {
     const fb = config.fallback;
     return {
-      points: fb.trend.map((p) => ({ date: p.month, value: p.value })),
+      points: fb.trend.map((p) => ({ date: parseFallbackMonthLabel(p.month), value: p.value })),
       meta: { ...fb.meta, source: "SBP EasyData" },
     };
   }

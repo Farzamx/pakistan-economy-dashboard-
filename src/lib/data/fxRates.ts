@@ -13,6 +13,11 @@ import type { Kpi } from "@/data/kpiData";
 const ER_API_URL = "https://api.exchangerate-api.com/v4/latest/USD";
 const REVALIDATE = 60 * 60; // 1h — API updates multiple times per day
 
+// fetch() has no default timeout — without this, a stalled connection hangs
+// for undici's ~5 minute default (or blocks `next build` static generation)
+// instead of falling into the existing try/catch error handling.
+const FETCH_TIMEOUT_MS = 10_000;
+
 const MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"] as const;
 
 interface ExchangeRateResponse {
@@ -102,6 +107,7 @@ export async function getFxRates(): Promise<FxRateKpis> {
   try {
     const res = await fetch(ER_API_URL, {
       next: { revalidate: REVALIDATE },
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     });
     if (!res.ok) throw new Error(`ExchangeRate-API HTTP ${res.status}`);
 

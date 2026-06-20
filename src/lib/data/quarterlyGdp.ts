@@ -7,6 +7,11 @@ const SBP_QGDP_URL = 'https://www.sbp.org.pk/ecodata/QGDP.xlsx';
 // SBP publishes quarterly — daily revalidation is more than enough.
 const REVALIDATE_SECONDS = 60 * 60 * 24;
 
+// fetch() has no default timeout — without this, a stalled connection hangs
+// for undici's ~5 minute default (or blocks `next build` static generation)
+// instead of falling into the existing try/catch error handling.
+const FETCH_TIMEOUT_MS = 10_000;
+
 // Pakistan FY runs Jul–Jun. Quarter end dates:
 // Q1 = Jul–Sep → Sep 30 of FY start year
 // Q2 = Oct–Dec → Dec 31 of FY start year
@@ -118,7 +123,10 @@ function parseWorkbook(buf: ArrayBuffer): QuarterlyGdpResult {
 
 export async function getQuarterlyGdpKpi(): Promise<QuarterlyGdpResult> {
   try {
-    const res = await fetch(SBP_QGDP_URL, { next: { revalidate: REVALIDATE_SECONDS } });
+    const res = await fetch(SBP_QGDP_URL, {
+      next: { revalidate: REVALIDATE_SECONDS },
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    });
     if (!res.ok) throw new Error(`SBP QGDP fetch returned ${res.status}`);
     const buf = await res.arrayBuffer();
     return parseWorkbook(buf);

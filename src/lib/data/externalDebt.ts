@@ -22,6 +22,11 @@ const TOTAL_ROW_LABEL = "Total external debt and liabilities";
 // SBP updates this workbook quarterly; daily revalidation is more than enough.
 const REVALIDATE_SECONDS = 60 * 60 * 24;
 
+// fetch() has no default timeout — without this, a stalled connection hangs
+// for undici's ~5 minute default instead of falling into the existing
+// try/catch error handling.
+const FETCH_TIMEOUT_MS = 10_000;
+
 // XLSX.SSF.format is not reliably exposed through this library's ESM
 // namespace import (works fine via CJS require(), which is how this was
 // verified during development — confirmed live, this gave `undefined` for
@@ -87,7 +92,10 @@ function parseWorkbook(buf: ArrayBuffer): ExternalDebtResult {
  */
 export async function getExternalDebtHistory(): Promise<ExternalDebtResult | null> {
   try {
-    const res = await fetch(SBP_EXTERNAL_DEBT_URL, { next: { revalidate: REVALIDATE_SECONDS } });
+    const res = await fetch(SBP_EXTERNAL_DEBT_URL, {
+      next: { revalidate: REVALIDATE_SECONDS },
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    });
     if (!res.ok) throw new Error(`SBP external debt fetch returned ${res.status}`);
     const buf = await res.arrayBuffer();
     return parseWorkbook(buf);
