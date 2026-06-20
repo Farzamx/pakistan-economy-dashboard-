@@ -23,6 +23,8 @@ export const ALL_SERIES_OPTIONS: ComparisonSeriesConfig[] = [
   { id: "fred:fedFunds", label: "US Federal Funds Rate", shortLabel: "Fed Funds Rate", unit: "%", color: "#38bdf8" },
   { id: "fred:usCpiInflation", label: "US CPI Inflation (YoY)", shortLabel: "US Inflation", unit: "%", color: "#38bdf8" },
   { id: "yfinance:gold", label: "Gold (USD/oz)", shortLabel: "Gold", unit: "$/oz", color: "#f59e0b" },
+  { id: "sbp:foodInflationUrban", label: "Urban Food CPI (YoY)", shortLabel: "Urban Food Inflation", unit: "%", color: "#34d399" },
+  { id: "sbp:externalDebt", label: "Total External Debt & Liabilities", shortLabel: "External Debt", unit: "B USD", color: "#f59e0b" },
 ];
 
 export function getSeriesOption(id: SeriesProviderId): ComparisonSeriesConfig {

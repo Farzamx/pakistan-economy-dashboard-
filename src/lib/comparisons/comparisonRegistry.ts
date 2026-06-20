@@ -5,9 +5,11 @@
 // case in comparisonData.ts's series dispatcher — nothing else.
 //
 // Only comparisons backed by a real, verified data source are listed here.
-// See COMING_SOON_COMPARISONS below for the ones blocked by the lack of a
-// KSE-100 (PSX) data feed in this project — those are deliberately NOT given
-// SEO subpages, since there's no real content to index yet.
+// There is no KSE-100/PSX data source anywhere in this project (PSX
+// requires a commercial data license this project doesn't have — see the
+// "PSX: Coming Soon" treatment elsewhere in the dashboard) and no Coming
+// Soon placeholders are kept here either: every comparison below has a
+// verified, working data source, full stop.
 
 export type ComparisonGroupId =
   | "external-sector"
@@ -70,7 +72,9 @@ export type SeriesProviderId =
   | "worldbank:gdpGrowthBangladesh"
   | "fred:fedFunds"
   | "fred:usCpiInflation"
-  | "yfinance:gold";
+  | "yfinance:gold"
+  | "sbp:foodInflationUrban"
+  | "sbp:externalDebt";
 
 export interface ComparisonSeriesConfig {
   id: SeriesProviderId;
@@ -124,6 +128,19 @@ export const COMPARISONS: ComparisonDef[] = [
     whyItMatters: "A persistent current account deficit drains reserves over time unless offset by financial inflows (loans, FDI, remittances) — this comparison shows how directly the two have moved together historically.",
     faq: [
       { question: "Why would reserves rise even during a current account deficit?", answer: "Reserves reflect ALL foreign currency flows, not just the current account — external borrowing, IMF disbursements, and bilateral deposits can offset a current account deficit and keep reserves stable or rising." },
+    ],
+  },
+  {
+    slug: "external-debt-vs-forex-reserves",
+    title: "External Debt and Liabilities vs Foreign Exchange Reserves",
+    shortTitle: "External Debt vs Forex Reserves",
+    group: "external-sector",
+    seriesA: { id: "sbp:externalDebt", label: "Total External Debt & Liabilities", shortLabel: "External Debt", unit: "B USD", color: AMBER },
+    seriesB: { id: "sbp:foreignReserves", label: "Foreign Exchange Reserves", shortLabel: "Reserves", unit: "B USD", color: NEON_BLUE },
+    description: "Pakistan's total outstanding external debt and liabilities against the level of foreign exchange reserves available to service it.",
+    whyItMatters: "A rising debt stock against flat or falling reserves signals growing repayment pressure relative to the buffer available to meet it — one of the most closely watched solvency signals for an emerging-market economy.",
+    faq: [
+      { question: "Where does the external debt figure come from?", answer: "SBP's published quarterly \"External Debt and Liabilities — Outstanding\" workbook, total of all public and private external debt and liabilities (categories A through E). This is the debt stock, not annual debt servicing payments." },
     ],
   },
   {
@@ -189,6 +206,19 @@ export const COMPARISONS: ComparisonDef[] = [
     whyItMatters: "The quantity theory of money suggests faster money supply growth relative to real output tends to show up as inflation over time, with a lag — this comparison lets you see that relationship in Pakistan's own data.",
     faq: [
       { question: "Does more money supply always cause more inflation?", answer: "The relationship holds best over the medium-to-long term and depends on how fast the real economy is growing — money supply growing in line with output growth need not be inflationary." },
+    ],
+  },
+  {
+    slug: "inflation-vs-urban-food-inflation",
+    title: "CPI Inflation vs Urban Food Inflation",
+    shortTitle: "Inflation vs Urban Food Inflation",
+    group: "monetary-conditions",
+    seriesA: { id: "sbp:cpiInflation", label: "CPI Inflation (YoY)", shortLabel: "Headline CPI", unit: "%", color: NEON_PURPLE },
+    seriesB: { id: "sbp:foodInflationUrban", label: "Urban Food CPI (YoY)", shortLabel: "Urban Food Inflation", unit: "%", color: EMERALD },
+    description: "Headline CPI inflation against Urban Food CPI inflation, the closest published proxy for food-price pressure (SBP publishes Urban and Rural food CPI separately — there is no single National Food CPI series).",
+    whyItMatters: "Food makes up a large share of household spending in Pakistan, especially for lower-income groups — tracking food inflation specifically shows how much of the headline number is being driven by food prices versus everything else.",
+    faq: [
+      { question: "Why \"Urban\" food inflation and not a national figure?", answer: "SBP's EasyData platform publishes food CPI inflation separately for urban and rural areas only — there is no single national food CPI series to pair with headline inflation, so this uses the verified Urban series rather than estimating a blended national figure." },
     ],
   },
   {
@@ -300,29 +330,6 @@ export const SECTOR_COMPOSITION: SectorComposition = {
     },
   ],
 };
-
-export interface ComingSoonComparison {
-  title: string;
-  shortTitle: string;
-  group: ComparisonGroupId;
-}
-
-// Blocked by the same root cause: no KSE-100 (or any PSX index) data source
-// exists in this project — PSX requires a commercial data license. Shown as
-// "Coming Soon" cards in the workspace, consistent with the existing PSX
-// nav item elsewhere in the dashboard. Deliberately NOT given SEO subpages.
-export const COMING_SOON_COMPARISONS: ComingSoonComparison[] = [
-  { title: "KSE-100 vs SBP Policy Rate", shortTitle: "KSE-100 vs Policy Rate", group: "asset-allocation" },
-  { title: "KSE-100 vs CPI Inflation", shortTitle: "KSE-100 vs Inflation", group: "asset-allocation" },
-  { title: "KSE-100 vs USD/PKR", shortTitle: "KSE-100 vs USD/PKR", group: "asset-allocation" },
-  { title: "KSE-100 vs Gold", shortTitle: "KSE-100 vs Gold", group: "asset-allocation" },
-  { title: "KSE-100 vs GDP Growth", shortTitle: "KSE-100 vs GDP Growth", group: "asset-allocation" },
-  { title: "KSE-100 vs Treasury Bills", shortTitle: "KSE-100 vs T-Bills", group: "asset-allocation" },
-  { title: "Pakistan Market vs S&P 500", shortTitle: "Pakistan vs S&P 500", group: "international" },
-  { title: "Pakistan Market vs MSCI Emerging Markets", shortTitle: "Pakistan vs MSCI EM", group: "international" },
-  { title: "External Debt vs Foreign Exchange Reserves", shortTitle: "External Debt vs Reserves", group: "external-sector" },
-  { title: "CPI Inflation vs Food Inflation", shortTitle: "Inflation vs Food Inflation", group: "monetary-conditions" },
-];
 
 export function getComparisonBySlug(slug: string): ComparisonDef | undefined {
   return COMPARISONS.find((c) => c.slug === slug);

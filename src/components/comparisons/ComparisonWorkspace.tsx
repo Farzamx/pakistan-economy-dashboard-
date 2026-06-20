@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from "react";
 import ComparisonCard from "./ComparisonCard";
-import ComingSoonCard from "./ComingSoonCard";
 import ComparisonControls from "./ComparisonControls";
 import CustomComparisonBuilder from "./CustomComparisonBuilder";
 import PerformanceCalculator from "./PerformanceCalculator";
@@ -11,7 +10,6 @@ import type { ChartMode, ComparisonChartBundle, TimeRange } from "@/lib/comparis
 import { applyTimeRange } from "@/lib/comparisons/comparisonData";
 import {
   COMPARISON_GROUPS,
-  COMING_SOON_COMPARISONS,
   SECTOR_COMPOSITION,
   type ComparisonGroupId,
 } from "@/lib/comparisons/comparisonRegistry";
@@ -41,16 +39,6 @@ export default function ComparisonWorkspace({
     return map;
   }, [bundles]);
 
-  const comingSoonByGroup = useMemo(() => {
-    const map = new Map<ComparisonGroupId, typeof COMING_SOON_COMPARISONS>();
-    for (const item of COMING_SOON_COMPARISONS) {
-      const list = map.get(item.group) ?? [];
-      list.push(item);
-      map.set(item.group, list);
-    }
-    return map;
-  }, []);
-
   const sectorWindowed = useMemo(() => {
     if (!sectorComposition) return null;
     const merged = sectorComposition.map((p) => ({ key: p.year, a: p.agriculture, b: p.industry }));
@@ -78,10 +66,9 @@ export default function ComparisonWorkspace({
 
       {COMPARISON_GROUPS.map((group) => {
         const groupBundles = bundlesByGroup.get(group.id) ?? [];
-        const groupComingSoon = comingSoonByGroup.get(group.id) ?? [];
         const isSectorGroup = group.id === "economic-structure";
 
-        if (groupBundles.length === 0 && groupComingSoon.length === 0 && !isSectorGroup) return null;
+        if (groupBundles.length === 0 && !isSectorGroup) return null;
 
         return (
           <section key={group.id} id={`comparisons-${group.id}`} className="flex flex-col gap-4">
@@ -102,9 +89,6 @@ export default function ComparisonWorkspace({
                   timeRange={timeRange}
                   chartMode={chartMode}
                 />
-              ))}
-              {groupComingSoon.map((item) => (
-                <ComingSoonCard key={item.title} item={item} />
               ))}
               {isSectorGroup && sectorWindowed && (
                 <div className="glass-card flex flex-col gap-4 rounded-2xl p-5 sm:col-span-2">

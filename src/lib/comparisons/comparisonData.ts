@@ -4,10 +4,11 @@
 // value beyond a forward-fill of an already-published figure (see
 // mergeSeries below for exactly what that means and why it isn't fabrication).
 
-import { getSbpIndicatorHistory, type SbpIndicatorKey } from "@/lib/data/sbp";
+import { getSbpIndicatorHistory, getFoodInflationUrbanHistory, type SbpIndicatorKey } from "@/lib/data/sbp";
 import { getGdpGrowthHistory, type WorldBankCountryCode } from "@/lib/data/worldBank";
 import { getFedFundsHistory, getUsCpiInflationHistory } from "@/lib/data/fred";
 import { getGoldHistory } from "@/lib/data/yfinance";
+import { getExternalDebtHistory } from "@/lib/data/externalDebt";
 import type { ComparisonDef, ComparisonSeriesConfig, SeriesProviderId } from "./comparisonRegistry";
 
 export interface RawSeriesPoint {
@@ -81,6 +82,18 @@ export async function fetchComparisonSeries(id: SeriesProviderId): Promise<Serie
         source: "Yahoo Finance",
         frequency: "monthly",
       };
+    }
+
+    if (id === "sbp:foodInflationUrban") {
+      const result = await getFoodInflationUrbanHistory();
+      if (!result) return null;
+      return { points: result.points, source: result.source, frequency: "monthly" };
+    }
+
+    if (id === "sbp:externalDebt") {
+      const result = await getExternalDebtHistory();
+      if (!result) return null;
+      return { points: result.points, source: result.source, frequency: "monthly" };
     }
 
     return null;

@@ -734,7 +734,7 @@ export async function getSbpIndicator(key: SbpIndicatorKey): Promise<SbpIndicato
 }
 
 /**
- * Fetches all 19 SBP indicators in parallel. Each indicator falls back
+ * Fetches all 20 SBP indicators in parallel. Each indicator falls back
  * independently, so one failing series never breaks the others.
  */
 export async function getAllSbpIndicators(): Promise<Record<SbpIndicatorKey, SbpIndicatorResult>> {
@@ -822,5 +822,48 @@ async function fetchSbpIndicatorHistoryUncached(key: SbpIndicatorKey): Promise<S
       points: fb.trend.map((p) => ({ date: p.month, value: p.value })),
       meta: { ...fb.meta, source: "SBP EasyData" },
     };
+  }
+}
+
+// --- Comparisons feature: Urban Food CPI (standalone, not part of the ----
+// shared CONFIGS/getAllSbpIndicators() bulk fetch used by the homepage) ---
+//
+// Deliberately NOT added to SERIES_KEYS/CONFIGS above: that Record type is
+// iterated in full by getAllSbpIndicators(), which the homepage calls — a
+// new shared-config key would silently add an extra fetch to the homepage's
+// render path for an indicator it never displays. This mirrors how
+// getGoldHistory()/getGdpGrowthHistory() are standalone, comparisons-only
+// fetchers in yfinance.ts/worldBank.ts.
+//
+// Series key verified directly against SBP EasyData's /meta endpoint by
+// exhaustively enumerating every series in the "Inflation Snapshot"
+// dataset (P00011516 through P00301516) — there is no National Food CPI,
+// only Urban/Rural splits, so this is explicitly labeled "Urban Food
+// Inflation" rather than implying a national figure that doesn't exist.
+const FOOD_INFLATION_URBAN_SERIES_KEY = "TS_GP_PT_CPI_M.P00041516";
+
+export interface FoodInflationUrbanResult {
+  points: SbpHistoryPoint[];
+  source: "SBP EasyData";
+}
+
+/** Urban Food CPI, year-over-year %. Returns null on failure rather than a static fallback — there's no pre-vetted snapshot for this series. */
+export async function getFoodInflationUrbanHistory(): Promise<FoodInflationUrbanResult | null> {
+  const cacheKey = "sbp-food-inflation-urban-history";
+  const cached = getFresh<FoodInflationUrbanResult>(cacheKey, REVALIDATE_MONTHLY * 1000);
+  if (cached) return cached.data;
+
+  try {
+    return await dedupeInFlight(cacheKey, async () => {
+      const series = await fetchSbpSeries(FOOD_INFLATION_URBAN_SERIES_KEY, REVALIDATE_MONTHLY);
+      const result: FoodInflationUrbanResult = {
+        points: series.history.map((p) => ({ date: p.date, value: p.value })),
+        source: "SBP EasyData",
+      };
+      setCache(cacheKey, result);
+      return result;
+    });
+  } catch {
+    return null;
   }
 }

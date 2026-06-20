@@ -7,37 +7,48 @@ import { motion } from "framer-motion";
 import SettingsModal from "@/components/SettingsModal";
 import PsxComingSoonModal from "@/components/PsxComingSoonModal";
 
+// `id` is the homepage section's element id. The rendered href is always
+// "/#id" (absolute, never a bare "#id") — these are anchors on `/` only,
+// and a bare "#id" resolves against whatever route is currently active. On
+// /comparisons (or any future non-homepage route) that silently produces
+// "/comparisons#id", which matches nothing and leaves the current page
+// mounted instead of navigating away — the bug this fixes.
 const NAV_ITEMS = [
-  { label: "Overview",        href: "#overview" },
-  { label: "Risk Intel",      href: "#risk-intelligence" },
-  { label: "GDP",             href: "#gdp" },
-  { label: "Inflation",       href: "#inflation" },
-  { label: "Prices",          href: "#price-indices" },
-  { label: "Monetary Policy", href: "#monetary-policy" },
-  { label: "Global Markets",  href: "#global-markets" },
-  { label: "Fin. Markets",    href: "#financial-markets" },
-  { label: "Real Economy",    href: "#real-economy" },
-  { label: "Reserves",        href: "#reserves" },
-  { label: "Live FX",         href: "#live-fx" },
-  { label: "Exchange Rate",   href: "#exchange-rate" },
-  { label: "Remittances",     href: "#remittances" },
-  { label: "External Sector", href: "#external-sector" },
-  { label: "News",            href: "#news-intelligence" },
+  { label: "Overview",        id: "overview" },
+  { label: "Risk Intel",      id: "risk-intelligence" },
+  { label: "GDP",             id: "gdp" },
+  { label: "Inflation",       id: "inflation" },
+  { label: "Prices",          id: "price-indices" },
+  { label: "Monetary Policy", id: "monetary-policy" },
+  { label: "Global Markets",  id: "global-markets" },
+  { label: "Fin. Markets",    id: "financial-markets" },
+  { label: "Real Economy",    id: "real-economy" },
+  { label: "Reserves",        id: "reserves" },
+  { label: "Live FX",         id: "live-fx" },
+  { label: "Exchange Rate",   id: "exchange-rate" },
+  { label: "Remittances",     id: "remittances" },
+  { label: "External Sector", id: "external-sector" },
+  { label: "News",            id: "news-intelligence" },
 ];
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const isHomepage = pathname === "/";
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [psxOpen, setPsxOpen] = useState(false);
-  const [activeHref, setActiveHref] = useState<string>(NAV_ITEMS[0].href);
+  const [activeId, setActiveId] = useState<string>(NAV_ITEMS[0].id);
 
   // Scroll-spy: highlights whichever section is currently in view. A thin
   // detection band near the top of the viewport (via rootMargin) decides
   // which section "counts" as current. When two adjacent sections both
   // straddle that band during a fast scroll, the one furthest down the
   // page (last in document order) wins — matching downward scroll intent.
+  // Only meaningful on the homepage — these section ids don't exist on any
+  // other route, so the effect is a no-op (and correctly inert) elsewhere.
   useEffect(() => {
-    const ids = NAV_ITEMS.map((item) => item.href.slice(1));
+    if (!isHomepage) return;
+
+    const ids = NAV_ITEMS.map((item) => item.id);
     const sections = ids
       .map((id) => document.getElementById(id))
       .filter((el): el is HTMLElement => el !== null);
@@ -57,7 +68,7 @@ export default function Sidebar() {
         }
         for (let i = ids.length - 1; i >= 0; i--) {
           if (visible.has(ids[i])) {
-            setActiveHref(`#${ids[i]}`);
+            setActiveId(ids[i]);
             break;
           }
         }
@@ -67,7 +78,7 @@ export default function Sidebar() {
 
     sections.forEach((el) => observer.observe(el));
     return () => observer.disconnect();
-  }, []);
+  }, [isHomepage]);
 
   return (
     <>
@@ -106,22 +117,24 @@ export default function Sidebar() {
           </motion.div>
 
           {NAV_ITEMS.map((item) => {
-            const isActive = activeHref === item.href;
+            // Only ever "active" while actually on the homepage — otherwise
+            // "Overview" (the scroll-spy's unchanged default) would show as
+            // active while on an unrelated route like /comparisons.
+            const isActive = isHomepage && activeId === item.id;
             return (
-              <motion.a
-                key={item.label}
-                href={item.href}
-                aria-current={isActive ? "true" : undefined}
-                whileHover={{ x: 4 }}
-                transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                className={`rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors ${
-                  isActive
-                    ? "border-neon-blue/25 bg-neon-blue/10 text-white light:text-slate-900"
-                    : "border-transparent text-white/50 light:text-slate-500 hover:bg-white/5 light:hover:bg-slate-100 hover:text-white light:hover:text-slate-900"
-                }`}
-              >
-                {item.label}
-              </motion.a>
+              <motion.div key={item.label} whileHover={{ x: 4 }} transition={{ type: "spring", stiffness: 400, damping: 25 }}>
+                <Link
+                  href={`/#${item.id}`}
+                  aria-current={isActive ? "true" : undefined}
+                  className={`block rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors ${
+                    isActive
+                      ? "border-neon-blue/25 bg-neon-blue/10 text-white light:text-slate-900"
+                      : "border-transparent text-white/50 light:text-slate-500 hover:bg-white/5 light:hover:bg-slate-100 hover:text-white light:hover:text-slate-900"
+                  }`}
+                >
+                  {item.label}
+                </Link>
+              </motion.div>
             );
           })}
 
