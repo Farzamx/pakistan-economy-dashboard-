@@ -23,7 +23,43 @@ export const SEO_PAGES: SeoPageMeta[] = [
   { slug: "pakistan-economic-indicators", label: "Pakistan Economic Indicators" },
   { slug: "pakistan-bond-yields", label: "Pakistan Bond Yields" },
   { slug: "pakistan-economic-dashboard", label: "Pakistan Economic Dashboard" },
+  // SEO Phase 1 (added once each had verified, real data behind it)
+  { slug: "pakistan-remittances", label: "Pakistan Remittances" },
+  { slug: "gold-price-pakistan", label: "Gold Price in Pakistan" },
+  { slug: "pakistan-external-debt", label: "Pakistan External Debt" },
+  { slug: "pakistan-trade-deficit", label: "Pakistan Trade Deficit" },
+  { slug: "sar-to-pkr-exchange-rate", label: "SAR to PKR Exchange Rate" },
+  { slug: "pakistan-fiscal-deficit", label: "Pakistan Fiscal Deficit" },
+  { slug: "pakistan-food-inflation", label: "Pakistan Food Inflation" },
+  { slug: "fdi-in-pakistan", label: "FDI in Pakistan" },
+  { slug: "eur-to-pkr-exchange-rate", label: "EUR to PKR Exchange Rate" },
+  { slug: "gbp-to-pkr-exchange-rate", label: "GBP to PKR Exchange Rate" },
 ];
+
+// Maps a homepage Kpi's exact `title` string to the SEO page slug that
+// covers it in depth — powers the "Learn More" link on KpiCard. Cards
+// whose title has no entry here (e.g. Natural Gas, REER, Silver) simply
+// render without the link rather than pointing at an unrelated page.
+export const KPI_SEO_SLUG: Record<string, string> = {
+  "GDP Growth": "gdp-growth-pakistan",
+  "Quarterly GDP Growth (YoY)": "gdp-growth-pakistan",
+  "CPI Inflation": "inflation-rate-pakistan",
+  "Foreign Reserves": "foreign-exchange-reserves-pakistan",
+  "USD / PKR": "usd-pkr-exchange-rate",
+  "Policy Rate": "pakistan-interest-rate",
+  "Current Account": "current-account-deficit-pakistan",
+  "3M T-Bill Yield": "pakistan-bond-yields",
+  "3Y PIB Yield": "pakistan-bond-yields",
+  "Pakistan ETF (NYSE: PAK)": "pakistan-stock-market",
+  "Remittances": "pakistan-remittances",
+  "Gold": "gold-price-pakistan",
+  "Trade Balance": "pakistan-trade-deficit",
+  "SAR / PKR": "sar-to-pkr-exchange-rate",
+  "Fiscal Balance": "pakistan-fiscal-deficit",
+  "FDI Inflows": "fdi-in-pakistan",
+  "EUR / PKR": "eur-to-pkr-exchange-rate",
+  "GBP / PKR": "gbp-to-pkr-exchange-rate",
+};
 
 export function relatedSeoLinks(excludeSlug: string, slugs: string[]): { href: string; label: string }[] {
   return SEO_PAGES.filter((p) => slugs.includes(p.slug) && p.slug !== excludeSlug).map((p) => ({

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { motion } from "framer-motion";
 import type { Kpi } from "@/data/kpiData";
 import AnimatedValue from "@/components/AnimatedValue";
@@ -10,6 +11,7 @@ import {
   FRESHNESS_DOT,
   FRESHNESS_LABEL,
 } from "@/lib/dataFreshness";
+import { KPI_SEO_SLUG } from "@/lib/seoConfig";
 import { useTheme } from "@/components/ThemeProvider";
 
 function TrendArrow({ trend }: { trend: Kpi["trend"] }) {
@@ -55,6 +57,7 @@ export default function KpiCard({ title, value, unit, change, trend, glow, sourc
 
   const cardShadow = isLight ? lightRestGlow : restGlow[glow];
   const cardHoverShadow = isLight ? lightHoverGlow : hoverGlow[glow];
+  const seoSlug = KPI_SEO_SLUG[title];
 
   return (
     <motion.div
@@ -96,6 +99,14 @@ export default function KpiCard({ title, value, unit, change, trend, glow, sourc
             </>
           )}
         </div>
+      )}
+      {seoSlug && (
+        <Link
+          href={`/${seoSlug}`}
+          className="mt-auto text-[11px] font-medium text-neon-blue/70 underline-offset-2 transition-colors hover:text-neon-blue hover:underline"
+        >
+          Learn more →
+        </Link>
       )}
     </motion.div>
   );
