@@ -10,6 +10,7 @@ import MarketTicker, { type TickerItem } from "@/components/MarketTicker";
 import NewsIntelligenceSection from "@/components/NewsIntelligenceSection";
 import RiskIntelligenceSection from "@/components/RiskIntelligenceSection";
 import Sidebar from "@/components/Sidebar";
+import HashScrollRestore from "@/components/HashScrollRestore";
 import ViewportFadeIn from "@/components/ViewportFadeIn";
 import TrendLineChart from "@/components/charts/TrendLineChart";
 import { fallbackPakEtfKpi } from "@/data/globalMarketsFallbackData";
@@ -379,6 +380,7 @@ export default async function Home() {
 
   return (
     <div className="flex min-h-screen w-full">
+      <HashScrollRestore />
       <Sidebar />
       <main id="overview" className="flex-1 scroll-mt-8 px-6 py-8 sm:px-10 lg:px-16">
         <Hero rightSlot={<DataSourcesModal kpis={allKpis} />} />
