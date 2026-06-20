@@ -51,6 +51,17 @@ export const TERMINOLOGY: Record<string, TermEntry> = {
     ],
   },
 
+  "Weekly Inflation (SPI)": {
+    title: "Weekly Inflation (SPI)",
+    what: "PBS's Sensitive Price Indicator — prices of 51 essential items collected weekly, shown here as the year-over-year % change.",
+    why: "It's published every Friday, a full month ahead of CPI — the earliest real signal of whether inflation is building or easing.",
+    how: [
+      "Tracks closely with CPI but is far more volatile week to week",
+      "A sustained run of weekly rises often foreshadows the next CPI print",
+      "Dominated by food and fuel, so it hits lower-income households hardest",
+    ],
+  },
+
   "Core Inflation": {
     title: "Core Inflation",
     what: "CPI inflation with food and energy removed — shows the underlying price pressure across the broader economy.",

@@ -35,6 +35,7 @@ export const SEO_PAGES: SeoPageMeta[] = [
   { slug: "eur-to-pkr-exchange-rate", label: "EUR to PKR Exchange Rate" },
   { slug: "gbp-to-pkr-exchange-rate", label: "GBP to PKR Exchange Rate" },
   { slug: "weekly-inflation-pakistan", label: "Pakistan Weekly Inflation (SPI)" },
+  { slug: "spi-index-pakistan", label: "Pakistan SPI Index" },
 ];
 
 // Maps a homepage Kpi's exact `title` string to the SEO page slug that

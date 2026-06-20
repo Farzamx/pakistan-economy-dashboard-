@@ -90,21 +90,39 @@ export default async function Home() {
 
   // Weekly SPI has no static fallback (see spi.ts) — the card simply
   // doesn't render if the live fetch/parse fails, same as the PAK ETF card.
-  const spiLatest = spi?.points[spi.points.length - 1] ?? null;
+  //
+  // The KPI shows the YoY inflation RATE (%) as its primary value, not the
+  // raw index level — consistent with every other inflation card on this
+  // dashboard (CPI, core inflation) showing a % figure as the headline
+  // number. The raw index still exists (spi.ts, the /spi-index-pakistan
+  // page) for users who specifically want the index level.
+  const spiPoints = spi?.points ?? [];
+  const spiLatest = spiPoints[spiPoints.length - 1] ?? null;
+  const spiPrevious = spiPoints[spiPoints.length - 2] ?? null;
+  const spiYoyPpChange = spiLatest && spiPrevious ? spiLatest.yoyPct - spiPrevious.yoyPct : null;
   const spiKpi: Kpi | null = spiLatest
     ? {
         title: "Weekly Inflation (SPI)",
-        value: spiLatest.value.toFixed(2),
-        unit: "Index",
-        change: `${spiLatest.wowPct >= 0 ? "+" : ""}${spiLatest.wowPct.toFixed(2)}% WoW · ${spiLatest.yoyPct >= 0 ? "+" : ""}${spiLatest.yoyPct.toFixed(2)}% YoY`,
-        trend: spiLatest.wowPct >= 0 ? "up" : "down",
+        value: spiLatest.yoyPct.toFixed(2),
+        unit: "%",
+        change:
+          spiYoyPpChange !== null
+            ? `${spiYoyPpChange >= 0 ? "+" : ""}${spiYoyPpChange.toFixed(2)} pp vs last week`
+            : "YoY change",
+        trend: (spiYoyPpChange ?? spiLatest.yoyPct) >= 0 ? "up" : "down",
         glow: "purple",
         source: "PBS",
-        seriesId: "SPI Combined (2015-16=100)",
+        seriesId: "SPI Combined, YoY Inflation",
         latestDate: spiLatest.date,
         frequency: "Weekly",
       }
     : null;
+
+  const SPI_MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const spiYoyTrend = spiPoints.map((p) => {
+    const [, month, day] = p.date.split("-");
+    return { month: `${Number(day)} ${SPI_MONTH_NAMES[Number(month) - 1]}`, value: p.yoyPct };
+  });
 
   // ── Quantitative risk model inputs ────────────────────────────────────────
   // Compute USD/PKR YoY change from the 24-month trend array (index −13 = 12mo ago)
@@ -326,20 +344,25 @@ export default async function Home() {
   };
   // ─────────────────────────────────────────────────────────────────────────
 
+  // SPI's weekly % takes USD/PKR's old headline slot — USD/PKR is still
+  // fully visible (Live FX section, market ticker), while SPI's faster,
+  // weekly-updating inflation read is more strategically useful as one of
+  // the 6 top-line figures. If the live SPI fetch fails, headlineKpis
+  // simply has 5 cards that render (3-col grid) rather than a gap.
   const headlineKpis = [
     gdpKpi,
     quarterlyGdp.kpi,
     sbp.cpiInflation.kpi,
     sbp.foreignReserves.kpi,
-    sbp.usdPkr.kpi,
     sbp.remittances.kpi,
+    ...(spiKpi ? [spiKpi] : []),
   ];
 
   const secondaryKpis = [
     sbp.policyRate.kpi,
     sbp.coreInflation.kpi,
     sbp.wpiInflation.kpi,
-    ...(spiKpi ? [spiKpi] : []),
+    sbp.usdPkr.kpi,
     sbp.tbillYield3m.kpi,
     sbp.pibYield3y.kpi,
     sbp.currentAccount.kpi,
@@ -453,6 +476,24 @@ export default async function Home() {
               gradientId="cpiInflationGradient"
             />
           </div>
+
+          {spiYoyTrend.length > 0 && (
+            <div className="mt-6 rounded-xl border border-white/5 light:border-slate-200 bg-white/[0.02] light:bg-white p-4">
+              <div className="mb-2 flex items-center gap-1.5">
+                <p className="text-xs font-medium text-white/40 light:text-slate-500">
+                  Weekly Inflation (SPI) — YoY %
+                  <span className="text-white/25 light:text-slate-400"> &middot; Pakistan Bureau of Statistics, weekly</span>
+                </p>
+                <InfoTooltip termKey="Weekly Inflation (SPI)" size="xs" />
+              </div>
+              <TrendLineChart
+                data={spiYoyTrend}
+                color="#c084fc"
+                unit="%"
+                gradientId="spiYoyGradient"
+              />
+            </div>
+          )}
         </DashboardSection>
 
         <DashboardSection {...getSection("price-indices")}>
@@ -505,71 +546,6 @@ export default async function Home() {
             </p>
           </ViewportFadeIn>
           <KpiGrid items={globalMarketsKpis} />
-        </div>
-
-        <div id="financial-markets" className="scroll-mt-8">
-          <ViewportFadeIn>
-            <h2 className="mt-12 text-xl font-semibold text-white light:text-slate-900 sm:text-2xl">
-              Financial Markets
-            </h2>
-            <p className="mt-2 max-w-2xl text-sm text-white/60 light:text-slate-500">
-              Pakistan equity market proxy and bond market yields. Live data via
-              Yahoo Finance and SBP EasyData.
-            </p>
-          </ViewportFadeIn>
-
-          {/* PAK ETF — equity market proxy card (only if data is fresh) */}
-          {pakEtfKpiRaw !== null && <KpiGrid items={[pakEtfKpiRaw]} />}
-
-          {/* KSE-100 data availability notice */}
-          <div className="mt-6 rounded-xl border border-white/5 light:border-slate-200 bg-white/[0.02] light:bg-white px-5 py-4">
-            <p className="text-xs font-medium uppercase tracking-wide text-white/40 light:text-slate-500">
-              KSE-100 Live Chart — Data Unavailable
-            </p>
-            <p className="mt-2 text-sm text-white/50 light:text-slate-600">
-              Pakistan Stock Exchange (PSX) real-time index data requires a commercial
-              data license from PSX. This restriction applies to all free-tier providers
-              including TradingView and Yahoo Finance.
-              {pakEtfKpiRaw !== null
-                ? " The PAK ETF above (Global X MSCI Pakistan ETF, NYSE) tracks the MSCI Pakistan Index and correlates with KSE-100 performance."
-                : " The Global X MSCI Pakistan ETF (NYSE: PAK), a US-listed proxy that previously tracked the MSCI Pakistan Index, is currently unavailable or delisted."}
-            </p>
-            <div className="mt-3 flex gap-6">
-              <a
-                href="https://www.psx.com.pk"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs text-neon-blue/70 underline underline-offset-2 hover:text-neon-blue"
-              >
-                psx.com.pk ↗
-              </a>
-              <a
-                href="https://www.tradingview.com/chart/?symbol=PSX%3AKSE100"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs text-neon-blue/70 underline underline-offset-2 hover:text-neon-blue"
-              >
-                KSE-100 on TradingView ↗
-              </a>
-            </div>
-          </div>
-
-          {/* Pakistan Bond Market — T-Bill 3M yield trend (24-month SBP data) */}
-          <div className="mt-6 rounded-xl border border-white/5 light:border-slate-200 bg-white/[0.02] light:bg-white p-4">
-            <div className="mb-2 flex items-center gap-1.5">
-              <p className="text-xs font-medium text-white/40 light:text-slate-500">
-                Pakistan Bond Market &mdash; T-Bill 3M Yield
-                <span className="text-white/25 light:text-slate-400"> &middot; SBP EasyData, monthly</span>
-              </p>
-              <InfoTooltip termKey="3M T-Bill Yield" size="xs" />
-            </div>
-            <TrendLineChart
-              data={sbp.tbillYield3m.trend}
-              color="#38bdf8"
-              unit="%"
-              gradientId="tbillFinancialMarkets"
-            />
-          </div>
         </div>
 
         <div id="real-economy" className="scroll-mt-8">

@@ -21,7 +21,6 @@ const NAV_ITEMS = [
   { label: "Prices",          id: "price-indices" },
   { label: "Monetary Policy", id: "monetary-policy" },
   { label: "Global Markets",  id: "global-markets" },
-  { label: "Fin. Markets",    id: "financial-markets" },
   { label: "Real Economy",    id: "real-economy" },
   { label: "Reserves",        id: "reserves" },
   { label: "Live FX",         id: "live-fx" },
@@ -96,27 +95,77 @@ export default function Sidebar() {
 
         {/* Navigation */}
         <nav className="flex flex-col gap-1">
-          {/* Comparisons — a real route, not a same-page anchor, so it gets
-              its own Link + usePathname active-state check instead of the
-              scroll-spy logic the homepage anchors use. */}
-          <motion.div whileHover={{ x: 4 }} transition={{ type: "spring", stiffness: 400, damping: 25 }}>
+          {/* Comparisons renders first (premium/marketing placement — the
+              first thing a visitor sees), then Overview, then the rest of
+              NAV_ITEMS. Comparisons is rendered as its own block (not part
+              of NAV_ITEMS) since it's a real route, not a same-page anchor,
+              and needs its own Link + usePathname active-state check
+              instead of the scroll-spy logic the homepage anchors use.
+              Crucially, this is a purely visual reorder — it does NOT
+              change what's active on first load: `activeId` below still
+              initializes to NAV_ITEMS[0].id ("overview"), and visiting "/"
+              always renders the homepage starting at #overview regardless
+              of sidebar order, so Comparisons being listed first never
+              auto-selects or auto-scrolls to /comparisons. NAV_ITEMS itself
+              also stays in document order (Overview first) so the
+              scroll-spy's "last in document order wins" tie-break logic
+              above is unaffected by this visual-only reordering. */}
+          <motion.div
+            whileHover={{ x: 4, scale: 1.015 }}
+            transition={{ type: "spring", stiffness: 400, damping: 25 }}
+            className="mb-1"
+          >
             <Link
               href="/comparisons"
               aria-current={pathname?.startsWith("/comparisons") ? "true" : undefined}
-              className={`flex items-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors ${
+              className={`group relative flex items-center gap-2.5 overflow-hidden rounded-lg border px-4 py-2.5 text-sm font-semibold transition-all duration-300 ${
                 pathname?.startsWith("/comparisons")
-                  ? "border-neon-purple/25 bg-neon-purple/10 text-white light:text-slate-900"
-                  : "border-transparent text-white/50 light:text-slate-500 hover:bg-white/5 light:hover:bg-slate-100 hover:text-white light:hover:text-slate-900"
+                  ? "border-neon-purple/50 bg-gradient-to-r from-neon-blue/25 to-neon-purple/25 text-white shadow-[0_0_22px_rgba(168,85,247,0.45)] light:text-slate-900"
+                  : "border-neon-purple/25 bg-gradient-to-r from-neon-blue/10 to-neon-purple/10 text-white/90 shadow-[0_0_14px_rgba(168,85,247,0.2)] hover:border-neon-purple/45 hover:shadow-[0_0_22px_rgba(168,85,247,0.4)] hover:text-white light:text-slate-700 light:hover:text-slate-900"
               }`}
             >
-              <svg className="h-3.5 w-3.5 opacity-60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M8 6v12M16 6v12M4 10l4-4 4 4M20 14l-4 4-4-4" />
+              <svg
+                className="h-4 w-4 shrink-0 text-neon-purple drop-shadow-[0_0_6px_rgba(168,85,247,0.6)] transition-transform duration-300 group-hover:scale-110"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.75"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M3 16l4.5-7L12 13l4-6L21 8" />
+                <path d="M19 4l2 2-2 2M5 16l-2 2 2 2" />
               </svg>
-              Comparisons
+              <span>Comparisons</span>
+              <span
+                aria-hidden="true"
+                className="ml-auto text-xs text-neon-blue opacity-80 transition-opacity group-hover:opacity-100"
+              >
+                ✦
+              </span>
             </Link>
           </motion.div>
 
-          {NAV_ITEMS.map((item) => {
+          {(() => {
+            const isActive = isHomepage && activeId === NAV_ITEMS[0].id;
+            return (
+              <motion.div whileHover={{ x: 4 }} transition={{ type: "spring", stiffness: 400, damping: 25 }}>
+                <Link
+                  href={`/#${NAV_ITEMS[0].id}`}
+                  aria-current={isActive ? "true" : undefined}
+                  className={`block rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors ${
+                    isActive
+                      ? "border-neon-blue/25 bg-neon-blue/10 text-white light:text-slate-900"
+                      : "border-transparent text-white/50 light:text-slate-500 hover:bg-white/5 light:hover:bg-slate-100 hover:text-white light:hover:text-slate-900"
+                  }`}
+                >
+                  {NAV_ITEMS[0].label}
+                </Link>
+              </motion.div>
+            );
+          })()}
+
+          {NAV_ITEMS.slice(1).map((item) => {
             // Only ever "active" while actually on the homepage — otherwise
             // "Overview" (the scroll-spy's unchanged default) would show as
             // active while on an unrelated route like /comparisons.
