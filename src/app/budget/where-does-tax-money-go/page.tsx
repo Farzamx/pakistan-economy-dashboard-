@@ -3,8 +3,10 @@ import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
 import BudgetAllocationChart from "@/components/budget/BudgetAllocationChart";
 import BudgetRs100Card from "@/components/budget/BudgetRs100Card";
+import BudgetToolkit from "@/components/budget/BudgetToolkit";
 import { getAllocationBreakdown, getRs100Breakdown } from "@/lib/budget/budgetData";
 import { getLatestBudgetYear } from "@/data/budgetHistorical";
+import { getBudgetToolkit } from "@/data/budgetEducation";
 import { SITE_URL, SITE_NAME } from "@/lib/seoConfig";
 
 const SLUG = "where-does-tax-money-go";
@@ -34,12 +36,33 @@ const FAQ = [
     question: "Where does the \"Other\" category come from?",
     answer: "\"Other\" is the residual after subtracting Debt Servicing, Defence, PSDP, Subsidies, Provincial Transfers, and Pension from Total Outlay — it includes Grants & Transfers to Provinces and Others, Running of Civil Government, Net Lending, and contingency provisions.",
   },
+  {
+    question: "Does this change much from year to year?",
+    answer: "The ranking of the top 2-3 categories has stayed fairly stable in recent years, but the exact Rupee amounts and percentages shift annually — use the fiscal year selector on the Budget Workshop's main page to compare different years directly.",
+  },
+  {
+    question: "Why isn't education or health shown in this breakdown?",
+    answer: "Education and health spending come from a different part of the budget (functional classification) than the categories shown here (economic classification), so they can't be subtracted from this same total without double-counting. See the dedicated Federal Education and Federal Health pages instead.",
+  },
+  {
+    question: "Is this the same as 'where my income tax goes'?",
+    answer: "Conceptually yes, though in practice all tax revenue — income tax, sales tax, customs duty, and more — is pooled together before being spent, so no single tax can be traced to a single spending category.",
+  },
+  {
+    question: "Why does Provincial Transfers count as 'spending' here if it's revenue-sharing?",
+    answer: "Technically, provincial transfers are deducted on the revenue side, not booked as federal expenditure — but since this page asks where the government's overall resource pool ends up, provincial transfers are included as one of its real destinations, clearly labelled as such.",
+  },
+  {
+    question: "How is this different from the donut chart on the main Budget Workshop page?",
+    answer: "It's the same underlying data and the same seven categories — this page presents it specifically as a per-Rs100 breakdown for an easier, more intuitive read, rather than as percentages on a chart.",
+  },
 ];
 
 export default function WhereDoesTaxMoneyGoPage() {
   const latest = getLatestBudgetYear();
   const allocation = getAllocationBreakdown(latest);
   const rs100 = getRs100Breakdown(latest);
+  const toolkit = getBudgetToolkit("where-does-tax-money-go");
 
   const faqJsonLd = {
     "@context": "https://schema.org",
@@ -77,6 +100,12 @@ export default function WhereDoesTaxMoneyGoPage() {
           <div className="mt-6">
             <BudgetRs100Card data={rs100} fiscalYear={latest.fiscalYear} />
           </div>
+
+          {toolkit && (
+            <div className="mt-6">
+              <BudgetToolkit toolkit={toolkit} />
+            </div>
+          )}
 
           <section className="glass-card mt-6 p-6 sm:p-8">
             <h2 className="text-xl font-semibold text-white light:text-slate-900">Frequently Asked Questions</h2>

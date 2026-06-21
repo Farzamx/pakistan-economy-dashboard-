@@ -3,8 +3,10 @@ import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
 import BudgetTrendChart from "@/components/budget/BudgetTrendChart";
 import BudgetInsightsPanel from "@/components/budget/BudgetInsightsPanel";
+import BudgetToolkit from "@/components/budget/BudgetToolkit";
 import { getCategoryTrendSeries, generateBudgetInsights } from "@/lib/budget/budgetData";
 import { BUDGET_HISTORICAL } from "@/data/budgetHistorical";
+import { getBudgetToolkit } from "@/data/budgetEducation";
 import { SITE_URL, SITE_NAME } from "@/lib/seoConfig";
 
 const SLUG = "debt-servicing-vs-defence";
@@ -34,12 +36,33 @@ const FAQ = [
     question: "Are these directly comparable figures?",
     answer: "Yes — both are Budget Estimate figures from the same Table 1 (\"Budget at a Glance\") of each year's official Budget in Brief, using the same economic classification.",
   },
+  {
+    question: "When did debt servicing first overtake defence spending?",
+    answer: "Check the Key Finding panel above this FAQ — it states the exact fiscal year this dataset shows the crossover happening, computed directly from the underlying figures, not from a fixed assumption.",
+  },
+  {
+    question: "Could defence spending overtake debt servicing again?",
+    answer: "It's possible, if the government managed to sharply reduce its debt stock or interest rates fell significantly — but given Pakistan's current debt levels, most economists expect debt servicing to stay the larger of the two for the foreseeable future.",
+  },
+  {
+    question: "Does this comparison include provincial defence-related spending?",
+    answer: "No — defence is a purely federal subject in Pakistan, so this comparison only involves federal figures on both sides, with no provincial spending involved.",
+  },
+  {
+    question: "Is Pakistan unusual in spending more on debt than defence?",
+    answer: "No — many heavily indebted countries reach a point where interest costs exceed defence spending. It's a common warning sign that debt-servicing costs are crowding out other government priorities.",
+  },
+  {
+    question: "What would it take to bring debt servicing back below defence spending?",
+    answer: "Realistically, a combination of smaller fiscal deficits over several years, lower domestic interest rates, and a more stable Rupee — none of which tend to happen quickly.",
+  },
 ];
 
 export default function DebtServicingVsDefencePage() {
   const years = BUDGET_HISTORICAL.years;
   const trendPoints = getCategoryTrendSeries(["debtServicing", "defence"], "nominal", years);
   const insights = generateBudgetInsights(years).filter((i) => i.text.toLowerCase().includes("debt servicing"));
+  const toolkit = getBudgetToolkit("debt-servicing-vs-defence");
 
   const faqJsonLd = {
     "@context": "https://schema.org",
@@ -75,6 +98,12 @@ export default function DebtServicingVsDefencePage() {
           <div className="mt-6">
             <BudgetInsightsPanel insights={insights} title="Key Finding" />
           </div>
+
+          {toolkit && (
+            <div className="mt-6">
+              <BudgetToolkit toolkit={toolkit} />
+            </div>
+          )}
 
           <section className="glass-card mt-6 p-6 sm:p-8">
             <h2 className="text-xl font-semibold text-white light:text-slate-900">Frequently Asked Questions</h2>

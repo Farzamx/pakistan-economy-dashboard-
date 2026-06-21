@@ -2,9 +2,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import BudgetDetailView from "@/components/budget/BudgetDetailView";
+import BudgetToolkit from "@/components/budget/BudgetToolkit";
 import { BUDGET_CATEGORIES, getBudgetCategoryBySlug, type BudgetCategoryId } from "@/lib/budget/budgetRegistry";
 import type { BudgetTrendField } from "@/lib/budget/budgetData";
 import { BUDGET_HISTORICAL } from "@/data/budgetHistorical";
+import { getBudgetToolkit } from "@/data/budgetEducation";
 import { SITE_URL, SITE_NAME } from "@/lib/seoConfig";
 
 interface PageProps {
@@ -63,6 +65,7 @@ export default async function BudgetCategoryPage({ params }: PageProps) {
   };
 
   const related = BUDGET_CATEGORIES.filter((c) => c.slug !== category.slug).slice(0, 4);
+  const toolkit = getBudgetToolkit(category.slug);
 
   return (
     <div className="min-h-screen w-full px-6 py-8 sm:px-10 lg:px-16">
@@ -94,6 +97,12 @@ export default async function BudgetCategoryPage({ params }: PageProps) {
         <div className="mt-8">
           <BudgetDetailView slug={category.slug} shortTitle={category.shortTitle} disclaimer={category.disclaimer} years={years} field={field} />
         </div>
+
+        {toolkit && (
+          <div className="mt-6">
+            <BudgetToolkit toolkit={toolkit} />
+          </div>
+        )}
 
         <section className="glass-card mt-6 p-6 sm:p-8">
           <h2 className="text-xl font-semibold text-white light:text-slate-900">Why It Matters</h2>
