@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 import { SITE_URL, SEO_PAGES } from "@/lib/seoConfig";
 import { COMPARISONS, SECTOR_COMPOSITION } from "@/lib/comparisons/comparisonRegistry";
+import { BUDGET_CATEGORIES, BUDGET_EXTRA_SEO_SLUGS } from "@/lib/budget/budgetRegistry";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date();
@@ -36,5 +37,23 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "daily" as const,
       priority: 0.7,
     },
+    {
+      url: `${SITE_URL}/budget`,
+      lastModified: now,
+      changeFrequency: "yearly" as const,
+      priority: 0.9,
+    },
+    ...BUDGET_CATEGORIES.map((c) => ({
+      url: `${SITE_URL}/budget/${c.slug}`,
+      lastModified: now,
+      changeFrequency: "yearly" as const,
+      priority: 0.7,
+    })),
+    ...BUDGET_EXTRA_SEO_SLUGS.map((slug) => ({
+      url: `${SITE_URL}/budget/${slug}`,
+      lastModified: now,
+      changeFrequency: "yearly" as const,
+      priority: 0.7,
+    })),
   ];
 }

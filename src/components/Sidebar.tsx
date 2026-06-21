@@ -146,6 +146,43 @@ export default function Sidebar() {
             </Link>
           </motion.div>
 
+          {/* Budget Tracker — second premium placement, right after
+              Comparisons and before the homepage anchors. Same Link +
+              usePathname pattern as Comparisons (a real route, not a
+              same-page anchor), but visually toned down: single blue glow
+              instead of the blue/purple gradient + heavier shadow used for
+              Comparisons, per the "less prominent" placement. */}
+          <motion.div
+            whileHover={{ x: 4, scale: 1.015 }}
+            transition={{ type: "spring", stiffness: 400, damping: 25 }}
+            className="mb-1"
+          >
+            <Link
+              href="/budget"
+              aria-current={pathname?.startsWith("/budget") ? "true" : undefined}
+              className={`group relative flex items-center gap-2.5 overflow-hidden rounded-lg border px-4 py-2.5 text-sm font-semibold transition-all duration-300 ${
+                pathname?.startsWith("/budget")
+                  ? "border-neon-blue/40 bg-neon-blue/15 text-white shadow-[0_0_16px_rgba(56,189,248,0.35)] light:text-slate-900"
+                  : "border-neon-blue/20 bg-neon-blue/5 text-white/85 hover:border-neon-blue/35 hover:bg-neon-blue/10 hover:text-white light:text-slate-700 light:hover:text-slate-900"
+              }`}
+            >
+              <svg
+                className="h-4 w-4 shrink-0 text-neon-blue transition-transform duration-300 group-hover:scale-110"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.75"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <rect x="3" y="10" width="4" height="10" />
+                <rect x="10" y="6" width="4" height="14" />
+                <rect x="17" y="13" width="4" height="7" />
+              </svg>
+              <span>Budget Tracker</span>
+            </Link>
+          </motion.div>
+
           {(() => {
             const isActive = isHomepage && activeId === NAV_ITEMS[0].id;
             return (
