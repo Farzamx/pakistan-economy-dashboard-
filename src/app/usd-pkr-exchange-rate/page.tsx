@@ -26,9 +26,9 @@ export default async function UsdPkrPage() {
       canonicalPath={`/${SLUG}`}
       title="USD to PKR Exchange Rate"
       subtitle="How many Pakistani Rupees it takes to buy one US Dollar — the most-watched financial indicator in Pakistan."
-      kpiLabel="USD / PKR (Live, Hourly)"
+      kpiLabel="USD / PKR (Intraday)"
       kpiValue={fxRates.usdPkr.value}
-      kpiSourceNote={`Source: ${fxRates.usdPkr.source ?? "ExchangeRate-API"} — live interbank market rate, updated hourly`}
+      kpiSourceNote={`Source: ${fxRates.usdPkr.source ?? "Yahoo Finance"} — interbank market rate, refreshed intraday`}
       chartTitle="USD / PKR — 24-Month Historical Trend"
       chartData={usdPkrHistory.trend}
       chartColor="#f472b6"
@@ -42,7 +42,7 @@ export default async function UsdPkrPage() {
       ]}
       explanation={[
         "The USD/PKR exchange rate shows how many Rupees are needed to buy one US Dollar. Pakistan operates a market-determined (floating) exchange rate, meaning the rate moves based on supply and demand for foreign currency.",
-        "This page shows two distinct figures: the live interbank rate (updated hourly from market data) at the top, and a separate historical trend chart from the State Bank of Pakistan, which publishes a monthly average — useful for analyzing long-term trends, not for live trading decisions.",
+        "This page shows two distinct figures: the interbank rate (refreshed intraday from Yahoo Finance market data) at the top, and a separate historical trend chart from the State Bank of Pakistan, which publishes a monthly average — useful for analyzing long-term trends, not for live trading decisions.",
         "A weaker Rupee (rising USD/PKR) makes imports more expensive and inflates the cost of foreign debt repayments. A stronger Rupee (falling USD/PKR) makes imports cheaper but can hurt export competitiveness.",
       ]}
       whyItMatters={[
@@ -52,11 +52,15 @@ export default async function UsdPkrPage() {
       faq={[
         {
           question: "What is the current USD to PKR exchange rate?",
-          answer: `The current live USD/PKR interbank rate is approximately ${fxRates.usdPkr.value}, updated hourly. This is distinct from SBP's monthly average historical series shown in the chart on this page.`,
+          answer: `The most recently published USD/PKR interbank rate is approximately ${fxRates.usdPkr.value}, refreshed intraday (typically every 10-30 minutes during active trading) from Yahoo Finance market data. This is distinct from SBP's monthly average historical series shown in the chart on this page.`,
         },
         {
-          question: "Why is there a difference between the live rate and the SBP historical chart?",
-          answer: "The live rate reflects real-time interbank market trading, updated hourly. SBP's published historical series is a monthly average (or previous interbank close), which lags and smooths out same-day market movements — it's meant for trend analysis, not live trading decisions.",
+          question: "Why is there a difference between this rate and the SBP historical chart?",
+          answer: "This rate is an intraday market quote, refreshed throughout the day. SBP's published historical series is a monthly average, which lags and smooths out day-to-day market movements — it's meant for trend analysis, not for tracking today's rate.",
+        },
+        {
+          question: "Is this exchange rate updated in real time?",
+          answer: "It's updated intraday, not tick-by-tick continuously — Yahoo Finance's PKR cross-rate quote typically refreshes every 10-30 minutes during active trading hours, verified directly rather than assumed. That's a much tighter window than once-daily sources, though not literally millisecond-by-millisecond.",
         },
         {
           question: "What causes the Rupee to weaken or strengthen?",

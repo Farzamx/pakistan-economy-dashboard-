@@ -7,7 +7,7 @@ const SLUG = "gbp-to-pkr-exchange-rate";
 const PAGE_URL = `${SITE_URL}/${SLUG}`;
 const TITLE = "GBP to PKR Exchange Rate Today — Live Rate";
 const DESCRIPTION =
-  "Today's live British Pound to Pakistani Rupee exchange rate, updated hourly, plus a plain-English explanation of what drives the GBP/PKR rate.";
+  "Today's British Pound to Pakistani Rupee exchange rate, refreshed intraday, plus a plain-English explanation of what drives the GBP/PKR rate.";
 
 export const metadata: Metadata = {
   title: TITLE,
@@ -25,9 +25,9 @@ export default async function GbpPkrPage() {
       canonicalPath={`/${SLUG}`}
       title="GBP to PKR Exchange Rate"
       subtitle="How many Pakistani Rupees it takes to buy one British Pound — relevant for one of Pakistan's largest overseas diaspora communities."
-      kpiLabel="GBP / PKR (Live, Hourly)"
+      kpiLabel="GBP / PKR (Intraday)"
       kpiValue={fxRates.gbpPkr.value}
-      kpiSourceNote={`Source: ${fxRates.gbpPkr.source ?? "ExchangeRate-API"} — live interbank market rate, updated hourly`}
+      kpiSourceNote={`Source: ${fxRates.gbpPkr.source ?? "Yahoo Finance"} — interbank market rate, refreshed intraday`}
       chartTitle="GBP / PKR — Historical Trend"
       chartData={null}
       chartUnavailableNote="No historical GBP/PKR trend chart is available — SBP does not publish a dedicated GBP/PKR historical series; only the live cross-rate above is available."
@@ -52,7 +52,7 @@ export default async function GbpPkrPage() {
       faq={[
         {
           question: "What is the GBP to PKR exchange rate today?",
-          answer: `The current live GBP/PKR interbank rate is approximately ${fxRates.gbpPkr.value}, updated hourly.`,
+          answer: `The most recently published GBP/PKR interbank rate is approximately ${fxRates.gbpPkr.value}, refreshed intraday (typically every 10-30 minutes during active trading) from Yahoo Finance market data.`,
         },
         {
           question: "Why is there no historical GBP/PKR chart on this page?",

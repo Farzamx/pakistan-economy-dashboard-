@@ -7,7 +7,7 @@ const SLUG = "sar-to-pkr-exchange-rate";
 const PAGE_URL = `${SITE_URL}/${SLUG}`;
 const TITLE = "SAR to PKR Exchange Rate Today — Live Rate";
 const DESCRIPTION =
-  "Today's live Saudi Riyal to Pakistani Rupee exchange rate, updated hourly, plus a plain-English explanation of why this rate matters for Pakistan's large Gulf-based expat community.";
+  "Today's Saudi Riyal to Pakistani Rupee exchange rate, refreshed intraday, plus a plain-English explanation of why this rate matters for Pakistan's large Gulf-based expat community.";
 
 export const metadata: Metadata = {
   title: TITLE,
@@ -25,9 +25,9 @@ export default async function SarPkrPage() {
       canonicalPath={`/${SLUG}`}
       title="SAR to PKR Exchange Rate"
       subtitle="How many Pakistani Rupees it takes to buy one Saudi Riyal — a closely watched rate for Pakistan's large Saudi-based expatriate community."
-      kpiLabel="SAR / PKR (Live, Hourly)"
+      kpiLabel="SAR / PKR (Intraday)"
       kpiValue={fxRates.sarPkr.value}
-      kpiSourceNote={`Source: ${fxRates.sarPkr.source ?? "ExchangeRate-API"} — live interbank market rate, updated hourly`}
+      kpiSourceNote={`Source: ${fxRates.sarPkr.source ?? "Yahoo Finance"} — interbank market rate, refreshed intraday`}
       chartTitle="SAR / PKR — Historical Trend"
       chartData={null}
       chartUnavailableNote="No historical SAR/PKR trend chart is available — SBP does not publish a dedicated SAR/PKR historical series; only the live cross-rate above is available. SAR/PKR moves are driven almost entirely by USD/PKR, since the Saudi Riyal has been pegged to the US Dollar since 1986."
@@ -52,7 +52,7 @@ export default async function SarPkrPage() {
       faq={[
         {
           question: "What is the SAR to PKR exchange rate today?",
-          answer: `The current live SAR/PKR interbank rate is approximately ${fxRates.sarPkr.value}, updated hourly.`,
+          answer: `The most recently published SAR/PKR interbank rate is approximately ${fxRates.sarPkr.value}, refreshed intraday (typically every 10-30 minutes during active trading) from Yahoo Finance market data.`,
         },
         {
           question: "Why is there no historical SAR/PKR chart on this page?",

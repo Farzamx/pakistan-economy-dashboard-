@@ -7,7 +7,7 @@ const SLUG = "eur-to-pkr-exchange-rate";
 const PAGE_URL = `${SITE_URL}/${SLUG}`;
 const TITLE = "EUR to PKR Exchange Rate Today — Live Rate";
 const DESCRIPTION =
-  "Today's live Euro to Pakistani Rupee exchange rate, updated hourly, plus a plain-English explanation of what drives the EUR/PKR rate.";
+  "Today's Euro to Pakistani Rupee exchange rate, refreshed intraday, plus a plain-English explanation of what drives the EUR/PKR rate.";
 
 export const metadata: Metadata = {
   title: TITLE,
@@ -25,9 +25,9 @@ export default async function EurPkrPage() {
       canonicalPath={`/${SLUG}`}
       title="EUR to PKR Exchange Rate"
       subtitle="How many Pakistani Rupees it takes to buy one Euro — relevant for trade with the EU, Pakistan's largest export destination bloc, and the European Pakistani diaspora."
-      kpiLabel="EUR / PKR (Live, Hourly)"
+      kpiLabel="EUR / PKR (Intraday)"
       kpiValue={fxRates.eurPkr.value}
-      kpiSourceNote={`Source: ${fxRates.eurPkr.source ?? "ExchangeRate-API"} — live interbank market rate, updated hourly`}
+      kpiSourceNote={`Source: ${fxRates.eurPkr.source ?? "Yahoo Finance"} — interbank market rate, refreshed intraday`}
       chartTitle="EUR / PKR — Historical Trend"
       chartData={null}
       chartUnavailableNote="No historical EUR/PKR trend chart is available — SBP does not publish a dedicated EUR/PKR historical series; only the live cross-rate above is available."
@@ -52,7 +52,7 @@ export default async function EurPkrPage() {
       faq={[
         {
           question: "What is the EUR to PKR exchange rate today?",
-          answer: `The current live EUR/PKR interbank rate is approximately ${fxRates.eurPkr.value}, updated hourly.`,
+          answer: `The most recently published EUR/PKR interbank rate is approximately ${fxRates.eurPkr.value}, refreshed intraday (typically every 10-30 minutes during active trading) from Yahoo Finance market data.`,
         },
         {
           question: "Why is there no historical EUR/PKR chart on this page?",
