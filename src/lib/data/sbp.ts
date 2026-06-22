@@ -1,7 +1,7 @@
 import type { TrendPoint } from "@/components/charts/TrendLineChart";
 import type { Kpi } from "@/data/kpiData";
 import type { DataFrequency } from "@/lib/dataFreshness";
-import { dedupeInFlight, getFresh, setCache } from "@/lib/memoryCache";
+import { dedupeInFlight, getFresh, getStale, setCache } from "@/lib/memoryCache";
 import {
   fallbackCoreInflation,
   fallbackCpiInflation,
@@ -49,6 +49,58 @@ const HISTORY_DISPLAY_POINTS = 24;
 //   re-checked more frequently.
 const REVALIDATE_MONTHLY = 60 * 60 * 24; // 24h
 const REVALIDATE_AS_NEEDED = 60 * 60 * 6; // 6h
+
+// L1 in-memory cache (src/lib/memoryCache.ts) sitting in front of the L2
+// Next.js fetch cache above — same two-layer shape as src/lib/data/fxRates.ts.
+// Goal here isn't fresher data (SBP series only change monthly/as-needed
+// anyway) but cutting duplicate upstream calls: getSbpIndicator("X") is
+// called independently by the homepage's getAllSbpIndicators(), the
+// /pakistan-economic-indicators page's own getAllSbpIndicators() call, and
+// up to 4 separate dedicated SEO pages per indicator (e.g. cpiInflation is
+// requested by inflation-rate-pakistan, pakistan-economic-dashboard,
+// pakistan-food-inflation, AND weekly-inflation-pakistan). Without a shared
+// cache, each of those pages' independent static regeneration can trigger
+// its own upstream fetch for the exact same series within the same minute.
+const L1_TTL_MS = 10 * 60 * 1000; // 10 min — within the 5-15 min target range
+
+export type SbpSourceStatus = "live" | "cache" | "fallback";
+
+// Logging-only labels (not used for any UI/value logic) so production logs
+// read like "[SBP] Remittances ..." instead of the internal camelCase key.
+const INDICATOR_LABELS: Record<SbpIndicatorKey, string> = {
+  foreignReserves: "Foreign Reserves",
+  netBankReserves: "Bank Reserves",
+  usdPkr: "USD/PKR",
+  policyRate: "Policy Rate",
+  cpiInflation: "CPI Inflation",
+  coreInflation: "Core Inflation",
+  wpiInflation: "WPI Inflation",
+  tbillYield3m: "3M T-Bill Yield",
+  pibYield3y: "3Y PIB Yield",
+  remittances: "Remittances",
+  currentAccount: "Current Account",
+  tradeBalance: "Trade Balance",
+  moneySupplyM2: "Money Supply (M2)",
+  exports: "Exports",
+  imports: "Imports",
+  fdiInflows: "FDI Inflows",
+  reer: "REER",
+  lsm: "LSM",
+  privateCreditGrowth: "Private Credit Growth",
+  fiscalBalance: "Fiscal Balance",
+};
+
+/** Structured success/cache-hit log — never thrown, never shown to users. */
+function logSbp(key: SbpIndicatorKey, status: SbpSourceStatus, detail: string): void {
+  console.log(`[SBP] ${INDICATOR_LABELS[key]} — ${status} — ${detail} — ${new Date().toISOString()}`);
+}
+
+/** Structured failure log, in the exact shape requested for production log scanning. Never exposed to users — callers always still return usable data (stale cache or static fallback). */
+function logSbpError(key: SbpIndicatorKey, reason: string, servedFrom: SbpSourceStatus): void {
+  console.error(
+    `[SBP] ${INDICATOR_LABELS[key]} fetch failed\nReason: ${reason}\nServing: ${servedFrom}\nTimestamp: ${new Date().toISOString()}`,
+  );
+}
 
 // fetch() has no default timeout — without this, a stalled SBP EasyData
 // connection hangs the underlying request for undici's ~5 minute default,
@@ -128,6 +180,15 @@ export interface SbpMeta {
   observationDate: string;
   /** ISO timestamp of when this data was fetched (or when the fallback snapshot was captured). */
   lastUpdated: string;
+  /**
+   * Where this result actually came from this request: a fresh upstream
+   * fetch ("live"), the L1 in-memory cache — fresh or stale-on-error, both
+   * still real SBP data ("cache"), or the static last-resort snapshot in
+   * sbpFallbackData.ts ("fallback"). Optional and currently unused by any
+   * UI — set on the main getSbpIndicator() path so it's available for a
+   * future tooltip/debug surface without committing to one now.
+   */
+  sourceStatus?: SbpSourceStatus;
 }
 
 export interface SbpIndicatorResult {
@@ -716,28 +777,65 @@ async function buildIndicatorResult(config: IndicatorConfig): Promise<SbpIndicat
   };
 }
 
+function withSourceStatus(result: SbpIndicatorResult, status: SbpSourceStatus): SbpIndicatorResult {
+  return { ...result, meta: { ...result.meta, sourceStatus: status } };
+}
+
 /**
- * Fetches a single SBP indicator (KPI + trend + source metadata), falling
- * back to the last-known snapshot in src/data/sbpFallbackData.ts if the API
- * key is missing, the request fails, or the response is unusable.
+ * Fetches a single SBP indicator (KPI + trend + source metadata).
+ *
+ * Three-tier resolution, each tier logged (see logSbp/logSbpError — never
+ * thrown, never shown to users):
+ *  1. L1 in-memory cache (memoryCache.ts), if fresh within L1_TTL_MS —
+ *     avoids re-hitting SBP when multiple pages request the same indicator
+ *     within a short window. Concurrent misses are de-duped via
+ *     dedupeInFlight so a stampede of callers shares one upstream call.
+ *  2. A live upstream fetch (buildIndicatorResult -> fetchSbpSeries),
+ *     subject to the existing L2 Next.js fetch-cache revalidate window.
+ *  3. On any failure: the last-known-good L1 value regardless of age
+ *     ("cache", real SBP data, just stale), or — only if there is no cached
+ *     value at all — the static snapshot in sbpFallbackData.ts ("fallback").
  */
 export async function getSbpIndicator(key: SbpIndicatorKey): Promise<SbpIndicatorResult> {
   const config = CONFIGS[key];
-  try {
-    return await buildIndicatorResult(config);
-  } catch {
-    const fb = config.fallback;
-    return {
-      ...fb,
-      kpi: {
-        ...fb.kpi,
-        source: "SBP EasyData",
-        seriesId: config.seriesKey,
-        latestDate: fb.meta.observationDate,
-        frequency: SBP_FREQ_MAP[config.frequency],
-      },
-    };
+  const cacheKey = `sbp-indicator:${key}`;
+
+  const l1 = getFresh<SbpIndicatorResult>(cacheKey, L1_TTL_MS);
+  if (l1) {
+    logSbp(key, "cache", `L1 hit, ${Math.round(l1.ageMs / 1000)}s old, observation=${l1.data.meta.observationDate}`);
+    return withSourceStatus(l1.data, "cache");
   }
+
+  return dedupeInFlight(cacheKey, async () => {
+    try {
+      const result = await buildIndicatorResult(config);
+      setCache(cacheKey, result);
+      logSbp(key, "live", `fetched OK, observation=${result.meta.observationDate}`);
+      return withSourceStatus(result, "live");
+    } catch (err) {
+      const reason = err instanceof Error ? err.message : String(err);
+      const stale = getStale<SbpIndicatorResult>(cacheKey);
+      if (stale) {
+        logSbpError(key, reason, "cache");
+        return withSourceStatus(stale.data, "cache");
+      }
+      logSbpError(key, reason, "fallback");
+      const fb = config.fallback;
+      return withSourceStatus(
+        {
+          ...fb,
+          kpi: {
+            ...fb.kpi,
+            source: "SBP EasyData",
+            seriesId: config.seriesKey,
+            latestDate: fb.meta.observationDate,
+            frequency: SBP_FREQ_MAP[config.frequency],
+          },
+        },
+        "fallback",
+      );
+    }
+  });
 }
 
 /**
@@ -859,13 +957,15 @@ async function fetchSbpIndicatorHistoryUncached(key: SbpIndicatorKey): Promise<S
         frequency: config.frequency,
         observationDate: series.latestDate,
         lastUpdated: series.lastUpdated,
+        sourceStatus: "live",
       },
     };
-  } catch {
+  } catch (err) {
+    logSbpError(key, err instanceof Error ? err.message : String(err), "fallback");
     const fb = config.fallback;
     return {
       points: fb.trend.map((p) => ({ date: parseFallbackMonthLabel(p.month), value: p.value })),
-      meta: { ...fb.meta, source: "SBP EasyData" },
+      meta: { ...fb.meta, source: "SBP EasyData", sourceStatus: "fallback" },
     };
   }
 }
@@ -908,7 +1008,10 @@ export async function getFoodInflationUrbanHistory(): Promise<FoodInflationUrban
       setCache(cacheKey, result);
       return result;
     });
-  } catch {
+  } catch (err) {
+    console.error(
+      `[SBP] Urban Food Inflation fetch failed\nReason: ${err instanceof Error ? err.message : String(err)}\nServing: none (no fallback snapshot exists for this series)\nTimestamp: ${new Date().toISOString()}`,
+    );
     return null;
   }
 }

@@ -460,6 +460,7 @@ const lsmTrend: TrendPoint[] = [
   { month: "Jan '26", value: 144.46 },
   { month: "Feb '26", value: 131.72 },
   { month: "Mar '26", value: 124.89 },
+  { month: "Apr '26", value: 114.56 },
 ];
 
 const privateCreditGrowthTrend: TrendPoint[] = [
@@ -670,6 +671,14 @@ export const fallbackPibYield3y: SbpIndicatorResult = {
   },
 };
 
+// Capture date: 2026-06-17 (FALLBACK_LAST_UPDATED above).
+// Source: SBP EasyData, series TS_GP_BOP_WR_M.WR0010 (Workers' Remittances).
+// Last verified against a live, authenticated SBP EasyData call: 2026-06-22
+// (Remittances & LSM Data Quality Audit) — May 2026 = 4,251.436841M USD,
+// matching this snapshot's 4.3B/2026-05-31 exactly. No update needed at that
+// time. Re-verify (and bump FALLBACK_LAST_UPDATED) once June 2026 data is
+// published — SBP typically releases the following month's remittances
+// figure in the first few business days of the next-next month.
 export const fallbackRemittances: SbpIndicatorResult = {
   kpi: {
     title: "Remittances",
@@ -838,12 +847,26 @@ export const fallbackReer: SbpIndicatorResult = {
   },
 };
 
+// Capture date: originally 2026-06-17 (FALLBACK_LAST_UPDATED above), value
+// REFRESHED 2026-06-22 (Remittances & LSM Data Quality Audit) — the original
+// snapshot was one release behind (Mar 2026) by the time of that audit.
+// Source: SBP EasyData, series TS_GP_RL_LSM1516_M.LSM000160000 (Quantum
+// Index - Overall, base 2015-16=100) — itself a re-publication of Pakistan
+// Bureau of Statistics' original QIM release.
+// Verified two ways before updating: (1) a live, authenticated SBP EasyData
+// call returned 2026-04-30 = 114.56; (2) cross-checked directly against
+// PBS's own page ("Summary of Provisional Quantum Index Numbers... for
+// April 2026"), which independently states the identical 114.56 — not a
+// single-source assumption. PBS labels this figure "provisional"; it may be
+// revised in a later PBS release the way Mar 2026 shifted slightly
+// (124.89 provisional -> 124.96 as later reported by SBP) — re-verify
+// against both sources again before the next refresh, not just SBP alone.
 export const fallbackLsm: SbpIndicatorResult = {
   kpi: {
     title: "LSM",
-    value: "124.9",
+    value: "114.6",
     unit: "Index",
-    change: "-6.8 vs Feb 2026",
+    change: "-10.4 vs Mar 2026",
     trend: "down",
     glow: "blue",
   },
@@ -854,7 +877,7 @@ export const fallbackLsm: SbpIndicatorResult = {
     seriesName: "Quantum Index - Overall",
     unit: "Index",
     frequency: "Monthly",
-    observationDate: "2026-03-31",
+    observationDate: "2026-04-30",
     lastUpdated: FALLBACK_LAST_UPDATED,
   },
 };
