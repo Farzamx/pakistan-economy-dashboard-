@@ -8,6 +8,7 @@ import BudgetRs100Card from "./BudgetRs100Card";
 import BudgetControls from "./BudgetControls";
 import BudgetTrendChart from "./BudgetTrendChart";
 import BudgetInsightsPanel from "./BudgetInsightsPanel";
+import Dropdown from "@/components/Dropdown";
 import { exportChartAsPng, exportTrendAsCsv } from "@/lib/budget/exportUtils";
 import {
   getAllocationBreakdown,
@@ -70,18 +71,15 @@ export default function BudgetWorkspace({ years }: BudgetWorkspaceProps) {
             Pakistan&apos;s federal budget, FY2010-11 through FY2026-27 — every figure traced back to that year&apos;s own official Budget in Brief, Budget Estimate only. No revised or actual figures are mixed in.
           </p>
         </div>
-        <label className="flex items-center gap-2 text-xs font-medium text-[var(--text-muted)]">
+        <div className="flex items-center gap-2 text-xs font-medium text-[var(--text-muted)]">
           Fiscal Year
-          <select
+          <Dropdown
+            label="Fiscal Year"
             value={selectedFy}
-            onChange={(e) => setSelectedFy(e.target.value)}
-            className="rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-1.5 text-sm font-semibold text-[var(--text-primary)] outline-none"
-          >
-            {years.map((y) => (
-              <option key={y.fiscalYear} value={y.fiscalYear}>FY{y.fiscalYear}</option>
-            ))}
-          </select>
-        </label>
+            onChange={setSelectedFy}
+            options={years.map((y) => ({ value: y.fiscalYear, label: `FY${y.fiscalYear}` }))}
+          />
+        </div>
       </div>
 
       {/* KPI Cards */}
