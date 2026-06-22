@@ -1,16 +1,11 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import type { TaggedNewsItem } from "@/lib/data/intelligence";
+import { NEWS_CATEGORIES, type NewsCategory } from "@/lib/news/relevanceEngine";
 import InfoTooltip from "@/components/InfoTooltip";
 import { useSafeReducedMotion } from "@/hooks/useSafeReducedMotion";
-
-const CATEGORY_LABELS: Record<string, string> = {
-  pakistan: "Pakistan",
-  global: "Global",
-  markets: "Markets",
-  energy: "Energy",
-};
 
 const SENTIMENT_STYLES: Record<string, string> = {
   Bullish: "bg-emerald-500/15 light:bg-emerald-50 text-emerald-400 light:text-emerald-700 border border-emerald-500/20 light:border-emerald-200",
@@ -24,10 +19,22 @@ const RISK_STYLES: Record<string, string> = {
   High: "text-rose-400/70 light:text-rose-700",
 };
 
+const FRESHNESS_STYLES: Record<string, string> = {
+  Fresh: "text-emerald-400/70 light:text-emerald-700",
+  Recent: "text-amber-400/70 light:text-amber-600",
+  Aging: "text-white/30 light:text-slate-400",
+};
+
 function impactScoreClass(score: number): string {
   if (score > 0) return "bg-emerald-500/10 light:bg-emerald-50 text-emerald-400 light:text-emerald-700 border-emerald-500/20 light:border-emerald-200";
   if (score < 0) return "bg-rose-500/10 light:bg-rose-50 text-rose-400 light:text-rose-700 border-rose-500/20 light:border-rose-200";
   return "bg-white/5 light:bg-slate-100 text-white/30 light:text-slate-500 border-white/10 light:border-slate-200";
+}
+
+function relevanceClass(score: number): string {
+  if (score >= 8) return "bg-neon-blue/15 text-neon-blue border-neon-blue/25";
+  if (score >= 5) return "bg-white/5 light:bg-slate-100 text-white/50 light:text-slate-600 border-white/10 light:border-slate-200";
+  return "bg-white/[0.02] light:bg-slate-50 text-white/25 light:text-slate-400 border-white/5 light:border-slate-200";
 }
 
 function formatImpactScore(score: number): string {
@@ -67,8 +74,32 @@ interface Props {
   sourceCount: number;     // distinct news source count
 }
 
+type TabId = "All" | NewsCategory;
+const TABS: TabId[] = ["All", ...NEWS_CATEGORIES];
+
+// Per-tab display cap — keeps the grid readable; "All" already sorts by
+// relevance then recency (news.ts), so its cap surfaces the strongest
+// stories dashboard-wide, not just whatever fetched first.
+const ITEMS_PER_TAB = 8;
+
 export default function NewsIntelligenceSection({ items, modelDisplayName, newsRefreshedAt, sourceCount }: Props) {
   const prefersReducedMotion = useSafeReducedMotion();
+  const [activeTab, setActiveTab] = useState<TabId>("All");
+
+  // Tabs with zero articles right now are hidden rather than shown empty —
+  // which tabs are non-empty varies fetch to fetch with real news volume.
+  const countByTab = useMemo(() => {
+    const counts: Partial<Record<TabId, number>> = { All: items.length };
+    for (const item of items) counts[item.category] = (counts[item.category] ?? 0) + 1;
+    return counts;
+  }, [items]);
+
+  const visibleTabs = TABS.filter((tab) => (countByTab[tab] ?? 0) > 0);
+
+  const filteredItems = useMemo(() => {
+    const matching = activeTab === "All" ? items : items.filter((item) => item.category === activeTab);
+    return matching.slice(0, ITEMS_PER_TAB);
+  }, [items, activeTab]);
 
   return (
     <div id="news-intelligence" className="glass-panel-deep mt-12 scroll-mt-8 p-6 sm:p-8">
@@ -101,9 +132,33 @@ export default function NewsIntelligenceSection({ items, modelDisplayName, newsR
             {sourceCount} source{sourceCount !== 1 ? "s" : ""}
           </span>
           <span className="text-[10px] text-white/15 light:text-slate-300">·</span>
-          <span className="text-[10px] text-white/25 light:text-slate-400">Updates every 2h</span>
+          <span className="text-[10px] text-white/25 light:text-slate-400">Breaking topics refresh every 10 min, general coverage every 25 min</span>
         </div>
       </motion.div>
+
+      {/* Category tabs */}
+      {visibleTabs.length > 1 && (
+        <div className="mt-5 flex flex-wrap gap-1.5">
+          {visibleTabs.map((tab) => {
+            const active = tab === activeTab;
+            return (
+              <button
+                key={tab}
+                type="button"
+                onClick={() => setActiveTab(tab)}
+                aria-pressed={active}
+                className={`rounded-full border px-3 py-1 text-[11px] font-medium transition-colors ${
+                  active
+                    ? "border-neon-blue/40 bg-neon-blue/15 text-neon-blue"
+                    : "border-white/10 light:border-slate-200 text-white/50 light:text-slate-500 hover:text-white light:hover:text-slate-900"
+                }`}
+              >
+                {tab} <span className="opacity-60">({countByTab[tab]})</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {items.length === 0 && (
         <p className="mt-6 text-sm text-white/30 light:text-slate-400">
@@ -112,14 +167,15 @@ export default function NewsIntelligenceSection({ items, modelDisplayName, newsR
       )}
 
       <motion.div
+        key={activeTab}
         className="mt-6 grid gap-3 sm:grid-cols-2"
         initial={prefersReducedMotion ? false : "hidden"}
         whileInView="visible"
         viewport={{ once: true, amount: 0.05 }}
         variants={gridVariants}
       >
-        {items.map((item) => {
-          const { sentiment, riskLevel, impactScore, reason } = item.intelligence;
+        {filteredItems.map((item) => {
+          const { sentiment, riskLevel, impactScore, reason, marketImpact } = item.intelligence;
           return (
             <motion.a
               key={item.url}
@@ -133,7 +189,7 @@ export default function NewsIntelligenceSection({ items, modelDisplayName, newsR
               {/* Row 1: category tag + timestamp */}
               <div className="flex items-center justify-between gap-2">
                 <span className="rounded-md bg-white/5 light:bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-white/40 light:text-slate-500">
-                  {CATEGORY_LABELS[item.category] ?? item.category}
+                  {item.category}
                 </span>
                 <span className="text-[10px] text-white/30 light:text-slate-400" suppressHydrationWarning>
                   {formatAge(item.publishedAt)}
@@ -172,14 +228,37 @@ export default function NewsIntelligenceSection({ items, modelDisplayName, newsR
                 </span>
               </div>
 
-              {/* Row 4: AI reason */}
-              {reason && reason !== "Economic impact analysis unavailable." && (
-                <p className="text-[10px] leading-relaxed text-white/35 light:text-slate-500 italic">
-                  {reason}
-                </p>
+              {/* Row 4: quality score strip — relevance / source reliability / freshness */}
+              <div className="flex flex-wrap items-center gap-1.5 border-t border-white/5 light:border-slate-100 pt-1.5">
+                <span
+                  className={`rounded-md border px-1.5 py-0.5 text-[9px] font-semibold tabular-nums ${relevanceClass(item.relevanceScore)}`}
+                  title="Pakistan relevance score (0-10)"
+                >
+                  Relevance {item.relevanceScore}
+                </span>
+                <span className="text-[9px] text-white/30 light:text-slate-400" title="Source reliability score (0-10)">
+                  Source {item.sourceReliability}/10
+                </span>
+                <span className={`text-[9px] font-medium ${FRESHNESS_STYLES[item.freshness]}`}>
+                  {item.freshness}
+                </span>
+              </div>
+
+              {/* Row 5: market impact (deterministic) or AI reason (fallback) */}
+              {marketImpact ? (
+                <div className="text-[10px] leading-relaxed text-white/40 light:text-slate-500">
+                  <span className="font-semibold text-white/55 light:text-slate-600">{marketImpact.label}:</span>{" "}
+                  {marketImpact.bullets.join(" · ")}
+                </div>
+              ) : (
+                reason && reason !== "Economic impact analysis unavailable." && (
+                  <p className="text-[10px] leading-relaxed text-white/35 light:text-slate-500 italic">
+                    {reason}
+                  </p>
+                )
               )}
 
-              {/* Row 5: source */}
+              {/* Row 6: source */}
               <p className="text-[10px] text-white/25 light:text-slate-400">{item.source}</p>
             </motion.a>
           );

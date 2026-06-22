@@ -5,24 +5,47 @@
 // Uses the shared failover client — if the primary model fails, it cascades
 // through FALLBACK_CHAIN automatically.
 //
+// Market impact (Phase 6 of the News & Intelligence audit): the AI's
+// free-text "reason" can degrade to generic phrasing ("no direct impact on
+// Pakistan") for well-understood macro events that actually have clear,
+// known transmission channels. For those, getMarketImpact() (deterministic,
+// keyword-based, no AI call) supplies a fixed set of impact bullets instead
+// — checked first; the AI reason is the fallback for headlines that match
+// no known rule, not a competing source of truth for the ones that do.
+//
 // getTaggedNews returns TaggedNewsResult (items + model metadata) instead of
 // a plain array so callers can surface which model tagged the articles.
 
 import type { NewsItem } from "./news";
 import { callOpenRouter } from "@/lib/openRouterClient";
+import { getMarketImpact, type MarketImpact } from "@/lib/news/marketImpact";
+import { getSourceReliability } from "@/lib/news/relevanceEngine";
 
 export type Sentiment = "Bullish" | "Neutral" | "Bearish";
 export type RiskLevel = "Low" | "Moderate" | "High";
+export type Freshness = "Fresh" | "Recent" | "Aging";
 
 export interface IntelligenceTag {
   sentiment: Sentiment;
   riskLevel: RiskLevel;
   impactScore: number;   // -10 to +10
   reason: string;
+  /** Deterministic market-impact bullets (Phase 6) — null when no known rule matches this headline; callers should display `reason` instead in that case. */
+  marketImpact: MarketImpact | null;
 }
 
 export interface TaggedNewsItem extends NewsItem {
   intelligence: IntelligenceTag;
+  sourceReliability: number; // 0-10, see relevanceEngine.ts
+  freshness: Freshness;
+}
+
+/** Fresh < 2h old, Recent < 12h, Aging beyond that — same age math as the card's own "Xh ago" display, just bucketed for the Phase 8 quality-score badge. */
+function getFreshness(publishedAt: string): Freshness {
+  const ageH = (Date.now() - new Date(publishedAt).getTime()) / 3_600_000;
+  if (ageH < 2) return "Fresh";
+  if (ageH < 12) return "Recent";
+  return "Aging";
 }
 
 export interface TaggedNewsResult {
@@ -36,6 +59,7 @@ const NEUTRAL_TAG: IntelligenceTag = {
   riskLevel: "Low",
   impactScore: 0,
   reason: "Economic impact analysis unavailable.",
+  marketImpact: null,
 };
 
 const PROMPT_SCORING = `
@@ -96,7 +120,9 @@ function parseTag(raw: RawArticleTag): IntelligenceTag {
       ? raw.reason.trim()
       : NEUTRAL_TAG.reason;
 
-  return { sentiment, riskLevel, impactScore, reason };
+  // marketImpact is attached separately in getTaggedNews (deterministic,
+  // doesn't depend on the AI call at all) and merged in afterward.
+  return { sentiment, riskLevel, impactScore, reason, marketImpact: null };
 }
 
 function parseBatchContent(items: NewsItem[]): (content: string) => IntelligenceTag[] {
@@ -127,10 +153,16 @@ async function tagBatchWithOpenRouter(
     modelDisplayName: "Offline",
   };
 
+  // 30 min — down from the previous 2h. News itself now refreshes every
+  // 10-25 min (see news.ts's tiered revalidate); leaving AI tags cached for
+  // 2h would mean serving stale sentiment/risk against fresh headlines for
+  // up to four refresh cycles. The model used (see FALLBACK_CHAIN) is a
+  // free OpenRouter tier, so the ~4x call-frequency increase has no direct
+  // cost, only a bounded latency/rate-limit consideration.
   const aiResult = await callOpenRouter<IntelligenceTag[]>(
     buildBatchPrompt(items),
     parseBatchContent(items),
-    { revalidate: 60 * 60 * 2, taskLabel: "News Intelligence" }, // 2h cadence
+    { revalidate: 60 * 30, taskLabel: "News Intelligence" },
   );
 
   if (!aiResult) return BATCH_FALLBACK;
@@ -142,29 +174,37 @@ async function tagBatchWithOpenRouter(
   };
 }
 
-export async function getTaggedNews(items: NewsItem[]): Promise<TaggedNewsResult> {
-  const fallbackResult: TaggedNewsResult = {
-    items: items.map((item) => ({ ...item, intelligence: NEUTRAL_TAG })),
-    modelUsed: "fallback",
-    modelDisplayName: "Offline",
+/** Decorates a base IntelligenceTag with this article's deterministic market impact, source reliability, and freshness — applied uniformly whether the tag came from the AI or NEUTRAL_TAG, since none of these three depend on the AI call succeeding. */
+function decorate(item: NewsItem, tag: IntelligenceTag): TaggedNewsItem {
+  return {
+    ...item,
+    intelligence: { ...tag, marketImpact: getMarketImpact(item.title) },
+    sourceReliability: getSourceReliability(item.source),
+    freshness: getFreshness(item.publishedAt),
   };
+}
 
+export async function getTaggedNews(items: NewsItem[]): Promise<TaggedNewsResult> {
   if (items.length === 0) {
     return { items: [], modelUsed: "fallback", modelDisplayName: "Offline" };
   }
+
+  const fallbackResult: TaggedNewsResult = {
+    items: items.map((item) => decorate(item, NEUTRAL_TAG)),
+    modelUsed: "fallback",
+    modelDisplayName: "Offline",
+  };
 
   try {
     const batch = items.slice(0, 10);
     const { tags, modelUsed, modelDisplayName } = await tagBatchWithOpenRouter(batch);
     return {
-      items: items.map((item, i) => ({
-        ...item,
-        intelligence: tags[i] ?? NEUTRAL_TAG,
-      })),
+      items: items.map((item, i) => decorate(item, tags[i] ?? NEUTRAL_TAG)),
       modelUsed,
       modelDisplayName,
     };
-  } catch {
+  } catch (err) {
+    console.error("[News] AI intelligence tagging failed:", err instanceof Error ? err.message : String(err));
     return fallbackResult;
   }
 }

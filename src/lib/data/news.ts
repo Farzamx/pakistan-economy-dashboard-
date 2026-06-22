@@ -1,76 +1,66 @@
 // News & Intelligence data layer — aggregates Pakistan economy and global
-// market headlines from GNews API and open RSS feeds.
+// market headlines.
 //
-// Source hierarchy (most → least preferred):
-//   1. GNews API keyword search (requires GNEWS_API_KEY — free, 100 req/day)
-//   2. BBC Business RSS — global market news, no key, reliable
-//   3. Dawn Business RSS — Pakistan economy news, no key
-//   4. Express Tribune Business RSS — Pakistan business news, no key
+// Source hierarchy (verified live during the 2026-06 News & Intelligence
+// audit, not assumed):
+//   1. Google News RSS, topic-targeted queries — free, no key, no ToS
+//      commercial-use restriction (it's public RSS — the same legal basis
+//      this project already relies on for Yahoo Finance quotes/news),
+//      verified live at hours-old freshness for Pakistan-economy-specific
+//      queries (e.g. a "Pakistan budget" piece returned 1-2h old).
+//   2. BBC Business RSS — global market news, no key, reliable.
+//   3. Dawn Business RSS — Pakistan economy news, no key.
+//   4. Express Tribune Business RSS — Pakistan business news, no key.
 //
-// All fetches use Next.js ISR (next.revalidate) so the page always renders
-// from cache; re-fetches happen in the background without blocking users.
+// GNews (the previous primary source) was removed after the audit found
+// three separate, independently disqualifying problems: (a) its free tier's
+// terms explicitly prohibit commercial/production use, (b) its free tier
+// carries a 12-hour data delay — incompatible with a "near real-time" goal
+// regardless of paying for a key, and (c) GNEWS_API_KEY was not even
+// configured in this deployment, so it was silently contributing zero
+// articles every single fetch with nothing in any log to reveal that.
+// Google News RSS replaces its role with equal-or-better topic targeting
+// and none of these three problems.
+//
+// Pipeline: fetch all sources in parallel -> score Pakistan relevance +
+// classify into one of 7 categories (relevanceEngine.ts) -> cluster-dedupe
+// near-duplicate coverage of the same event (dedupe.ts) -> sort by
+// relevance then recency -> cap.
+
+import { dedupeByClustering } from "@/lib/news/dedupe";
+import { getSourceReliability, scoreRelevance, type NewsCategory } from "@/lib/news/relevanceEngine";
 
 export interface NewsItem {
   title: string;
   url: string;
   source: string;
   publishedAt: string;
-  category: "pakistan" | "global" | "markets" | "energy";
+  category: NewsCategory;
+  /** 0-10, see relevanceEngine.ts — how relevant this article is to Pakistan's economy. */
+  relevanceScore: number;
 }
 
-const REVALIDATE_NEWS = 60 * 60 * 2; // 2h
+// Tiered revalidation (Phase 3 of the audit): the previous design used one
+// blanket 2h window for every source regardless of how time-sensitive it
+// was. Narrowly-targeted, high-relevance queries (Pakistan, IMF, Fed) are
+// now checked far more often than broad general-business feeds.
+const REVALIDATE_BREAKING = 60 * 10; // 10 min — Pakistan/IMF/Fed-specific queries
+const REVALIDATE_GENERAL = 60 * 25; // 25 min — broad business RSS feeds
+
+const MAX_ITEMS = 40;
 
 // fetch() has no default timeout — without this, a stalled connection hangs
 // for undici's ~5 minute default (or blocks `next build` static generation)
 // instead of falling into the existing try/catch error handling.
 const FETCH_TIMEOUT_MS = 10_000;
 
-// ---- GNews -------------------------------------------------------------------
-
-interface GNewsArticle {
+interface RawItem {
   title: string;
   url: string;
   publishedAt: string;
-  source: { name: string };
 }
 
-interface GNewsResponse {
-  articles?: GNewsArticle[];
-}
-
-async function fetchGNews(
-  query: string,
-  category: NewsItem["category"],
-  maxResults = 5,
-): Promise<NewsItem[]> {
-  const apiKey = process.env.GNEWS_API_KEY;
-  if (!apiKey) return [];
-
-  const params = new URLSearchParams({
-    q: query,
-    lang: "en",
-    max: String(maxResults),
-    apikey: apiKey,
-  });
-
-  const res = await fetch(`https://gnews.io/api/v4/search?${params.toString()}`, {
-    next: { revalidate: REVALIDATE_NEWS },
-    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-  });
-
-  if (!res.ok) return [];
-
-  const json = (await res.json()) as GNewsResponse;
-  return (json.articles ?? []).map((a) => ({
-    title: a.title,
-    url: a.url,
-    source: a.source.name,
-    publishedAt: a.publishedAt,
-    category,
-  }));
-}
-
-// ---- RSS parser --------------------------------------------------------------
+// ---- RSS parsing (shared by Google News RSS and the fixed-source feeds) ---
 
 // Decode common XML/HTML entities so stored URLs and titles are clean strings.
 // Without this, BBC RSS URLs contain literal "&amp;" which causes React key
@@ -85,12 +75,8 @@ function decodeEntities(text: string): string {
     .replace(/&apos;/g, "'");
 }
 
-function parseRssItems(
-  xml: string,
-  source: string,
-  category: NewsItem["category"],
-): NewsItem[] {
-  const items: NewsItem[] = [];
+function parseRssItemsRaw(xml: string): RawItem[] {
+  const items: RawItem[] = [];
   // Use [^>]* to match namespaced items like <item xmlns:default="...">
   const itemMatches = xml.matchAll(/<item[^>]*>([\s\S]*?)<\/item>/g);
 
@@ -113,11 +99,7 @@ function parseRssItems(
     items.push({
       title,
       url: decodeEntities(linkMatch[1].trim()),
-      source,
-      publishedAt: pubDateMatch
-        ? pubDateMatch[1].trim()
-        : new Date().toISOString(),
-      category,
+      publishedAt: pubDateMatch ? pubDateMatch[1].trim() : new Date().toISOString(),
     });
   }
 
@@ -127,82 +109,133 @@ function parseRssItems(
 async function fetchRss(
   url: string,
   source: string,
-  category: NewsItem["category"],
+  revalidateSeconds: number,
   max = 6,
 ): Promise<NewsItem[]> {
   try {
     const res = await fetch(url, {
       headers: { "User-Agent": "Mozilla/5.0 (compatible; NewsBot/1.0)" },
-      next: { revalidate: REVALIDATE_NEWS },
+      next: { revalidate: revalidateSeconds },
       signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     });
-    if (!res.ok) return [];
+    if (!res.ok) {
+      console.error(`[News] ${source} RSS failed: HTTP ${res.status}`);
+      return [];
+    }
     const xml = await res.text();
-    return parseRssItems(xml, source, category).slice(0, max);
-  } catch {
+    return parseRssItemsRaw(xml)
+      .slice(0, max)
+      .map((item) => withRelevance(item, source));
+  } catch (err) {
+    console.error(`[News] ${source} RSS error:`, err instanceof Error ? err.message : String(err));
     return [];
   }
 }
 
+// ---- Google News RSS -------------------------------------------------------
+// Google News RSS titles are formatted "<headline> - <Outlet Name>" — split
+// that out so the displayed source is the real publisher (better for the
+// source-reliability score and for users), not a generic "Google News" tag.
+
+function splitGoogleNewsTitle(rawTitle: string): { title: string; source: string } {
+  const idx = rawTitle.lastIndexOf(" - ");
+  if (idx === -1) return { title: rawTitle, source: "Google News" };
+  return { title: rawTitle.slice(0, idx).trim(), source: rawTitle.slice(idx + 3).trim() };
+}
+
+function googleNewsRssUrl(query: string): string {
+  const params = new URLSearchParams({ q: `${query} when:2d`, hl: "en-PK", gl: "PK", ceid: "PK:en" });
+  return `https://news.google.com/rss/search?${params.toString()}`;
+}
+
+async function fetchGoogleNewsRss(
+  query: string,
+  revalidateSeconds: number,
+  max = 6,
+): Promise<NewsItem[]> {
+  try {
+    const res = await fetch(googleNewsRssUrl(query), {
+      headers: { "User-Agent": "Mozilla/5.0 (compatible; NewsBot/1.0)" },
+      next: { revalidate: revalidateSeconds },
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    });
+    if (!res.ok) {
+      console.error(`[News] Google News RSS failed for "${query}": HTTP ${res.status}`);
+      return [];
+    }
+    const xml = await res.text();
+    return parseRssItemsRaw(xml)
+      .slice(0, max)
+      .map((item) => {
+        const { title, source } = splitGoogleNewsTitle(item.title);
+        return withRelevance({ title, url: item.url, publishedAt: item.publishedAt }, source);
+      });
+  } catch (err) {
+    console.error(`[News] Google News RSS error for "${query}":`, err instanceof Error ? err.message : String(err));
+    return [];
+  }
+}
+
+function withRelevance(item: RawItem, source: string): NewsItem {
+  const { relevanceScore, category } = scoreRelevance(item.title);
+  return { ...item, source, category, relevanceScore };
+}
+
 // ---- Aggregation ------------------------------------------------------------
 
+// Topic-targeted queries replacing the old GNews keyword searches, extended
+// to cover the categories Phase 7 needs that GNews never targeted (IMF
+// specifically, China, Middle East) — see header note for why Google News
+// RSS replaces GNews entirely rather than running alongside it.
+const GOOGLE_NEWS_QUERIES: { query: string; revalidate: number }[] = [
+  { query: "Pakistan economy SBP OR rupee OR PSX", revalidate: REVALIDATE_BREAKING },
+  { query: "IMF Pakistan OR IMF bailout OR IMF programme", revalidate: REVALIDATE_BREAKING },
+  { query: "Federal Reserve interest rate OR FOMC", revalidate: REVALIDATE_BREAKING },
+  { query: "oil price OPEC Brent WTI", revalidate: REVALIDATE_GENERAL },
+  { query: "China economy OR CPEC", revalidate: REVALIDATE_GENERAL },
+  { query: "Middle East economy OR Gulf economy", revalidate: REVALIDATE_GENERAL },
+];
+
 export async function getNews(): Promise<NewsItem[]> {
-  const [
-    pakistanGNews,
-    marketsGNews,
-    energyGNews,
-    globalGNews,
-    bbcRss,
-    dawnRss,
-    tribuneRss,
-  ] = await Promise.all([
-    fetchGNews("Pakistan economy OR Pakistan rupee OR SBP OR IMF Pakistan", "pakistan", 4),
-    fetchGNews("KSE-100 OR Pakistan stock market OR PSX", "markets", 3),
-    fetchGNews("oil price OPEC crude Brent WTI", "energy", 3),
-    fetchGNews("US Federal Reserve interest rate global economy", "global", 3),
-    fetchRss(
-      "https://feeds.bbci.co.uk/news/business/rss.xml",
-      "BBC Business",
-      "global",
-      8,
-    ),
-    fetchRss(
-      "https://www.dawn.com/feeds/business",
-      "Dawn Business",
-      "pakistan",
-      8,
-    ),
-    fetchRss(
-      "https://tribune.com.pk/feed/business",
-      "Express Tribune",
-      "pakistan",
-      8,
-    ),
+  const [googleNewsResults, bbcRss, dawnRss, tribuneRss] = await Promise.all([
+    Promise.all(GOOGLE_NEWS_QUERIES.map((q) => fetchGoogleNewsRss(q.query, q.revalidate, 6))),
+    fetchRss("https://feeds.bbci.co.uk/news/business/rss.xml", "BBC Business", REVALIDATE_GENERAL, 8),
+    fetchRss("https://www.dawn.com/feeds/business", "Dawn Business", REVALIDATE_BREAKING, 8),
+    fetchRss("https://tribune.com.pk/feed/business", "Express Tribune", REVALIDATE_BREAKING, 8),
   ]);
 
-  const all = [
-    ...pakistanGNews,
-    ...marketsGNews,
-    ...energyGNews,
-    ...globalGNews,
-    ...bbcRss,
-    ...dawnRss,
-    ...tribuneRss,
-  ];
+  const all = [...googleNewsResults.flat(), ...bbcRss, ...dawnRss, ...tribuneRss];
 
-  if (all.length === 0) return [];
+  if (all.length === 0) {
+    console.error("[News] All sources returned zero articles — check network access and source availability.");
+    return [];
+  }
 
-  // De-duplicate by URL and sort newest-first.
-  const seen = new Set<string>();
-  return all
-    .filter((item) => {
-      if (seen.has(item.url)) return false;
-      seen.add(item.url);
-      return true;
+  // Cluster-dedupe near-duplicate coverage of the same event (Phase 4) —
+  // rank combines relevance and source reliability so the "strongest"
+  // article in each cluster survives, not just whichever happened first.
+  const ranked = all.map((item) => ({ ...item, rank: item.relevanceScore * 10 + getSourceReliability(item.source) }));
+  const deduped = dedupeByClustering(ranked);
+
+  const sorted = deduped
+    .sort((a, b) => {
+      if (b.relevanceScore !== a.relevanceScore) return b.relevanceScore - a.relevanceScore;
+      return new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime();
     })
-    .sort(
-      (a, b) =>
-        new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime(),
-    )
-    .slice(0, 24);
+    .slice(0, MAX_ITEMS);
+
+  console.log(
+    `[News] fetched=${all.length} afterDedup=${deduped.length} duplicatesRemoved=${all.length - deduped.length} returned=${sorted.length}`,
+  );
+
+  // Strip the internal dedup-ranking field before returning — callers only
+  // see the public NewsItem shape.
+  return sorted.map((item): NewsItem => ({
+    title: item.title,
+    url: item.url,
+    source: item.source,
+    publishedAt: item.publishedAt,
+    category: item.category,
+    relevanceScore: item.relevanceScore,
+  }));
 }

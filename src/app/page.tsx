@@ -287,8 +287,9 @@ export default async function Home() {
     fedFunds:           `${fedFundsKpi.value}% (${fedFundsKpi.change})`,
   };
 
-  // ── Layer 2: News Intelligence — 2h cache (stays fresh) ──────────────────
-  // getTaggedNews uses next: { revalidate: 7200 } internally — no change.
+  // ── Layer 2: News Intelligence — tiered cache (news.ts: 10-25 min by
+  // source; AI tagging via getTaggedNews: 30 min) — see news.ts/
+  // intelligence.ts for the full breakdown from the News & Intelligence audit.
   const newsSourceCount = new Set(newsItems.map((n) => n.source)).size;
 
   const [taggedNewsResult, aiAnalysis, aiRisk] = await Promise.all([
@@ -597,8 +598,8 @@ export default async function Home() {
               Live Exchange Rates
             </h2>
             <p className="mt-2 max-w-2xl text-sm text-white/60 light:text-slate-500">
-              Current interbank market rates for PKR cross-pairs, updated hourly
-              from ExchangeRate-API. Distinct from the SBP monthly-average series
+              Current interbank market rates for PKR cross-pairs, refreshed
+              intraday from Yahoo Finance market data. Distinct from the SBP monthly-average series
               shown in the historical trend below.
             </p>
           </ViewportFadeIn>
@@ -661,7 +662,7 @@ export default async function Home() {
         </DashboardSection>
 
         <NewsIntelligenceSection
-          items={taggedNewsResult.items.slice(0, 5)}
+          items={taggedNewsResult.items.slice(0, 24)}
           modelDisplayName={taggedNewsResult.modelDisplayName}
           newsRefreshedAt={pktTimestamp}
           sourceCount={newsSourceCount}
