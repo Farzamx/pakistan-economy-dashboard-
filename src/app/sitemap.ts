@@ -2,6 +2,7 @@ import type { MetadataRoute } from "next";
 import { SITE_URL, SEO_PAGES } from "@/lib/seoConfig";
 import { COMPARISONS, SECTOR_COMPOSITION } from "@/lib/comparisons/comparisonRegistry";
 import { BUDGET_CATEGORIES, BUDGET_EXTRA_SEO_SLUGS } from "@/lib/budget/budgetRegistry";
+import { PROVINCES, PROVINCIAL_SEO_SLUGS } from "@/lib/provincial/provincialBudgetRegistry";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date();
@@ -51,6 +52,30 @@ export default function sitemap(): MetadataRoute.Sitemap {
     })),
     ...BUDGET_EXTRA_SEO_SLUGS.map((slug) => ({
       url: `${SITE_URL}/budget/${slug}`,
+      lastModified: now,
+      changeFrequency: "yearly" as const,
+      priority: 0.7,
+    })),
+    {
+      url: `${SITE_URL}/provincial-budget`,
+      lastModified: now,
+      changeFrequency: "yearly" as const,
+      priority: 0.9,
+    },
+    {
+      url: `${SITE_URL}/provincial-budget/compare`,
+      lastModified: now,
+      changeFrequency: "yearly" as const,
+      priority: 0.8,
+    },
+    ...PROVINCES.map((p) => ({
+      url: `${SITE_URL}/provincial-budget/${p.slug}`,
+      lastModified: now,
+      changeFrequency: "yearly" as const,
+      priority: 0.8,
+    })),
+    ...PROVINCIAL_SEO_SLUGS.map((slug) => ({
+      url: `${SITE_URL}/provincial-budget/${slug}`,
       lastModified: now,
       changeFrequency: "yearly" as const,
       priority: 0.7,

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
 import BudgetWorkspace from "@/components/budget/BudgetWorkspace";
 import BudgetToolkit from "@/components/budget/BudgetToolkit";
@@ -25,7 +26,7 @@ const FAQ = [
   { question: "Where does the data come from?", answer: "Every figure is transcribed directly from that fiscal year's official Budget in Brief, published by Pakistan's Finance Division. Each category page lists the exact source document used." },
   { question: "Why isn't this data updated automatically like the rest of the dashboard?", answer: "Pakistan's federal budget is published as a PDF document once a year, not as a live data feed — unlike exchange rates or inflation, there's no machine-readable workbook to pull from automatically, so this dataset is refreshed manually each budget cycle." },
   { question: "What's the difference between the Budget Workshop and the Comparisons page?", answer: "Comparisons tracks live, frequently-updating indicators like the exchange rate and inflation. The Budget Workshop tracks Pakistan's annual federal budget allocations, which change once a year at most." },
-  { question: "Does this cover provincial budgets too?", answer: "No — this is the federal budget only. Each of Pakistan's four provinces publishes its own separate budget, which isn't included here." },
+  { question: "Does this cover provincial budgets too?", answer: "No — this is the federal budget only. Each of Pakistan's four provinces publishes its own separate budget, tracked separately in the Provincial Budget Intelligence section of this dashboard." },
   { question: "What does 'fiscal year' mean in Pakistan?", answer: "Pakistan's fiscal year runs from July to June, not January to December. FY2025-26 means July 2025 through June 2026." },
   { question: "Can I download this data?", answer: "Yes — use the PNG or CSV export buttons on the Historical Budget Explorer chart to save the data you're viewing." },
   { question: "Why does Debt Servicing Share of Budget get special attention here?", answer: "Because it's one of the most important, least-discussed facts about Pakistan's finances — interest payments on past borrowing now take up a larger share of the budget than defence, leaving less room for everything else." },
@@ -57,6 +58,17 @@ export default function BudgetPage() {
           {toolkit && <BudgetToolkit toolkit={toolkit} />}
 
           <BudgetWorkspace years={BUDGET_HISTORICAL.years} />
+
+          <Link
+            href="/provincial-budget"
+            className="glass-card flex items-center justify-between rounded-2xl border-emerald-400/30 p-6 transition-all hover:scale-[1.005]"
+          >
+            <div>
+              <h2 className="text-lg font-semibold text-white light:text-slate-900">Looking for Provincial Budgets?</h2>
+              <p className="text-sm text-white/60 light:text-slate-500">Punjab, Sindh, Khyber Pakhtunkhwa, and Balochistan each publish their own separate budget — explore them in the Provincial Budget Intelligence Workshop.</p>
+            </div>
+            <span className="text-emerald-400">→</span>
+          </Link>
 
           <section className="glass-card flex flex-col gap-4 rounded-2xl p-6 sm:p-8">
             <h2 className="text-xl font-semibold text-white light:text-slate-900">Frequently Asked Questions</h2>

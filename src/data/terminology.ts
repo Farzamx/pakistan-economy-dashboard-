@@ -602,4 +602,61 @@ export const TERMINOLOGY: Record<string, TermEntry> = {
     ],
   },
 
+  // ── Provincial Budget Workshop ──────────────────────────────────────────
+
+  "development-budget": {
+    title: "Development Budget (ADP/PSDP)",
+    what: "The part of a provincial budget set aside for building new things — schools, roads, hospitals — rather than running existing ones.",
+    why: "It's usually the first thing cut when a province needs to save money, so it swings more year to year than salaries do.",
+    how: [
+      "Also called ADP, or PSDP in Balochistan",
+      "Separate from Current Expenditure (salaries, bills)",
+      "Smaller cousin of the federal PSDP, run by each province",
+    ],
+  },
+
+  "federal-transfers": {
+    title: "Federal Transfers (NFC Award)",
+    what: "A province's share of federally-collected taxes, distributed under the National Finance Commission Award — mainly by population.",
+    why: "For most provinces this is the largest single source of money, bigger than what they raise themselves.",
+    how: [
+      "Punjab gets the largest share (most populous)",
+      "Renegotiated at least every 5 years by the Constitution",
+      "Heavy reliance = less control over your own budget",
+    ],
+  },
+
+  "own-revenue": {
+    title: "Own Revenue (OSR)",
+    what: "Money a province raises itself — sales tax on services, property tax, agricultural income tax — separate from federal transfers.",
+    why: "A higher own-revenue share means a province controls more of its own finances, rather than depending on Islamabad.",
+    how: [
+      "Consistently smaller than federal transfers for all 4 provinces",
+      "Sales tax on services is the largest piece for most",
+      "Agricultural income tax is rarely collected near its potential",
+    ],
+  },
+
+  "provincial-debt-servicing": {
+    title: "Provincial Debt Servicing",
+    what: "Interest and principal a province pays each year on its own borrowing — mostly cash development loans from the federal government.",
+    why: "Smaller than federal debt, but it still competes directly with education and health for the same limited money.",
+    how: [
+      "Much smaller share of budget than federal debt servicing",
+      "Mostly owed to the federal government itself",
+      "Compare it against education/health to see the real trade-off",
+    ],
+  },
+
+  "per-citizen-spending": {
+    title: "Per Citizen Spending",
+    what: "A spending category divided by a province's population — a fairer way to compare provinces of very different sizes.",
+    why: "Punjab alone has roughly as many people as the other three provinces combined, so raw totals can mislead.",
+    how: [
+      "Smaller province can spend more per person despite a smaller total budget",
+      "Uses population estimated from the 2023 census",
+      "Non-census years are a documented growth-rate projection, not a live source",
+    ],
+  },
+
 };
