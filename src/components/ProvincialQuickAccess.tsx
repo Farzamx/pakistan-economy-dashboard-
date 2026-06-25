@@ -15,11 +15,13 @@ import Link from "next/link";
 import { useState } from "react";
 import { PROVINCES } from "@/lib/provincial/provincialBudgetRegistry";
 import { useAuth } from "@/components/AuthProvider";
+import { usePreferences } from "@/components/PreferencesProvider";
 import { isProtectedPath } from "@/lib/protectedSections";
 import GuestAccessModal from "@/components/GuestAccessModal";
 
 export default function ProvincialQuickAccess() {
   const { user, loading } = useAuth();
+  const { preferences } = usePreferences();
   const [guestModalOpen, setGuestModalOpen] = useState(false);
   const [guestDestination, setGuestDestination] = useState("/provincial-budget");
 
@@ -48,6 +50,7 @@ export default function ProvincialQuickAccess() {
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {PROVINCES.map((p) => {
           const href = `/provincial-budget/${p.slug}`;
+          const isDefault = preferences?.preferredProvince === p.id;
           return (
             <Link
               key={p.id}
@@ -55,9 +58,17 @@ export default function ProvincialQuickAccess() {
               onClick={(e) => handleClick(e, href)}
               data-cta="provincial-quick-access"
               data-cta-source="provincial-quick-access"
-              className="glass-card group flex flex-col gap-1.5 rounded-xl p-4 transition-all hover:scale-[1.02]"
-              style={{ borderColor: `${p.color}33` }}
+              className="glass-card group relative flex flex-col gap-1.5 rounded-xl p-4 transition-all hover:scale-[1.02]"
+              style={{ borderColor: isDefault ? p.color : `${p.color}33` }}
             >
+              {isDefault && (
+                <span
+                  className="absolute right-2 top-2 rounded-full px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-white"
+                  style={{ backgroundColor: p.color }}
+                >
+                  Default
+                </span>
+              )}
               <span
                 className="h-1.5 w-6 rounded-full transition-all group-hover:w-9"
                 style={{ backgroundColor: p.color }}

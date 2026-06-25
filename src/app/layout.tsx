@@ -7,6 +7,7 @@ import GalaxyBackground from "@/components/GalaxyBackground";
 import MotionProvider from "@/components/MotionProvider";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { AuthProvider } from "@/components/AuthProvider";
+import { PreferencesProvider } from "@/components/PreferencesProvider";
 import MobileNav from "@/components/MobileNav";
 import MobileStickyCta from "@/components/MobileStickyCta";
 
@@ -116,13 +117,15 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col">
         <ThemeProvider>
           <AuthProvider>
-            <GalaxyBackground />
-            <MotionProvider>
-              <MobileNav />
-              {children}
-              <CreatorBadge />
-              <MobileStickyCta />
-            </MotionProvider>
+            <PreferencesProvider>
+              <GalaxyBackground />
+              <MotionProvider>
+                <MobileNav />
+                {children}
+                <CreatorBadge />
+                <MobileStickyCta />
+              </MotionProvider>
+            </PreferencesProvider>
           </AuthProvider>
         </ThemeProvider>
       </body>

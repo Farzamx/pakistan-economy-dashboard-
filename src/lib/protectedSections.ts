@@ -12,7 +12,7 @@
 // "/provincial-budget". proxy.ts already needed prefix matching for the
 // same reason (dynamic [slug] sub-pages); this just shares that logic.
 
-export const PROTECTED_SECTIONS = ["/comparisons", "/budget", "/provincial-budget"];
+export const PROTECTED_SECTIONS = ["/comparisons", "/budget", "/provincial-budget", "/settings"];
 
 export function isProtectedPath(pathname: string): boolean {
   return PROTECTED_SECTIONS.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));

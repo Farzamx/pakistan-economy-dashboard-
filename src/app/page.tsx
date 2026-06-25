@@ -9,6 +9,8 @@ import KpiGrid from "@/components/KpiGrid";
 import MarketTicker, { type TickerItem } from "@/components/MarketTicker";
 import NewsIntelligenceSection from "@/components/NewsIntelligenceSection";
 import ProvincialQuickAccess from "@/components/ProvincialQuickAccess";
+import HideableSection from "@/components/preferences/HideableSection";
+import PinnedIndicatorsRow from "@/components/preferences/PinnedIndicatorsRow";
 import RiskIntelligenceSection from "@/components/RiskIntelligenceSection";
 import Sidebar from "@/components/Sidebar";
 import HashScrollRestore from "@/components/HashScrollRestore";
@@ -455,6 +457,8 @@ export default async function Home() {
 
         <ProvincialQuickAccess />
 
+        <PinnedIndicatorsRow />
+
         <p className="mt-6 text-xs text-white/35 light:text-slate-400" suppressHydrationWarning>
           <span className="font-medium text-white/50 light:text-slate-600">Market Status</span> &middot; Updated {marketStatusUpdatedAt} PKT
         </p>
@@ -464,16 +468,19 @@ export default async function Home() {
 
         <HealthScoreCard {...aiAnalysis} />
 
-        <RiskIntelligenceSection
-          recession={recessionResult}
-          defaultRisk={defaultResult}
-          ai={aiRisk}
-          recessionConfidence={recessionConfidence}
-          defaultConfidence={defaultConfidence}
-          aiCacheIssuedAt={aiCacheIssuedAt}
-          aiCacheExpiresAt={aiCacheExpiresAt}
-        />
+        <HideableSection id="risk-intelligence">
+          <RiskIntelligenceSection
+            recession={recessionResult}
+            defaultRisk={defaultResult}
+            ai={aiRisk}
+            recessionConfidence={recessionConfidence}
+            defaultConfidence={defaultConfidence}
+            aiCacheIssuedAt={aiCacheIssuedAt}
+            aiCacheExpiresAt={aiCacheExpiresAt}
+          />
+        </HideableSection>
 
+        <HideableSection id="gdp">
         <DashboardSection {...getSection("gdp")}>
           <div className="mt-6 rounded-xl border border-white/5 light:border-slate-200 bg-white/[0.02] light:bg-white p-4">
             <div className="mb-2 flex items-center gap-1.5">
@@ -492,7 +499,9 @@ export default async function Home() {
             />
           </div>
         </DashboardSection>
+        </HideableSection>
 
+        <HideableSection id="inflation">
         <DashboardSection {...getSection("inflation")}>
           <div className="mt-6 rounded-xl border border-white/5 light:border-slate-200 bg-white/[0.02] light:bg-white p-4">
             <p className="mb-2 text-xs font-medium text-white/40 light:text-slate-500">
@@ -524,7 +533,9 @@ export default async function Home() {
             </div>
           )}
         </DashboardSection>
+        </HideableSection>
 
+        <HideableSection id="price-indices">
         <DashboardSection {...getSection("price-indices")}>
           <div className="mt-6 rounded-xl border border-white/5 light:border-slate-200 bg-white/[0.02] light:bg-white p-4">
             <p className="mb-2 text-xs font-medium text-white/40 light:text-slate-500">
@@ -538,7 +549,9 @@ export default async function Home() {
             />
           </div>
         </DashboardSection>
+        </HideableSection>
 
+        <HideableSection id="monetary-policy">
         <DashboardSection {...getSection("monetary-policy")}>
           <div className="mt-6 rounded-xl border border-white/5 light:border-slate-200 bg-white/[0.02] light:bg-white p-4">
             <p className="mb-2 text-xs font-medium text-white/40 light:text-slate-500">
@@ -563,7 +576,9 @@ export default async function Home() {
           </p>
         </ViewportFadeIn>
         <KpiGrid items={secondaryKpis} />
+        </HideableSection>
 
+        <HideableSection id="global-markets">
         <div id="global-markets" className="scroll-mt-8">
           <ViewportFadeIn>
             <h2 className="mt-12 text-xl font-semibold text-white light:text-slate-900 sm:text-2xl">
@@ -576,7 +591,9 @@ export default async function Home() {
           </ViewportFadeIn>
           <KpiGrid items={globalMarketsKpis} />
         </div>
+        </HideableSection>
 
+        <HideableSection id="real-economy">
         <div id="real-economy" className="scroll-mt-8">
           <ViewportFadeIn>
             <h2 className="mt-12 text-xl font-semibold text-white light:text-slate-900 sm:text-2xl">
@@ -589,7 +606,9 @@ export default async function Home() {
           </ViewportFadeIn>
           <KpiGrid items={realEconomyKpis} />
         </div>
+        </HideableSection>
 
+        <HideableSection id="reserves">
         <DashboardSection
           {...getSection("reserves")}
           stats={(() => {
@@ -619,7 +638,9 @@ export default async function Home() {
             />
           </div>
         </DashboardSection>
+        </HideableSection>
 
+        <HideableSection id="live-fx">
         <div id="live-fx" className="scroll-mt-8">
           <ViewportFadeIn>
             <h2 className="mt-12 text-xl font-semibold text-white light:text-slate-900 sm:text-2xl">
@@ -633,7 +654,9 @@ export default async function Home() {
           </ViewportFadeIn>
           <KpiGrid items={liveFxKpis} />
         </div>
+        </HideableSection>
 
+        <HideableSection id="exchange-rate">
         <DashboardSection
           {...getSection("exchange-rate")}
           stats={[
@@ -660,7 +683,9 @@ export default async function Home() {
             />
           </div>
         </DashboardSection>
+        </HideableSection>
 
+        <HideableSection id="remittances">
         <DashboardSection {...getSection("remittances")}>
           <div className="mt-6 rounded-xl border border-white/5 light:border-slate-200 bg-white/[0.02] light:bg-white p-4">
             <p className="mb-2 text-xs font-medium text-white/40 light:text-slate-500">
@@ -674,7 +699,9 @@ export default async function Home() {
             />
           </div>
         </DashboardSection>
+        </HideableSection>
 
+        <HideableSection id="external-sector">
         <DashboardSection {...getSection("external-sector")}>
           <div className="mt-6 rounded-xl border border-white/5 light:border-slate-200 bg-white/[0.02] light:bg-white p-4">
             <p className="mb-2 text-xs font-medium text-white/40 light:text-slate-500">
@@ -688,13 +715,16 @@ export default async function Home() {
             />
           </div>
         </DashboardSection>
+        </HideableSection>
 
+        <HideableSection id="news-intelligence">
         <NewsIntelligenceSection
           items={taggedNewsResult.items.slice(0, 24)}
           modelDisplayName={taggedNewsResult.modelDisplayName}
           newsRefreshedAt={pktTimestamp}
           sourceCount={newsSourceCount}
         />
+        </HideableSection>
       </main>
       <FloatingAssistant context={dashboardSnapshot} />
     </div>

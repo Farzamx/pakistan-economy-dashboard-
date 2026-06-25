@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect } from "react";
+import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { useTheme, type Theme } from "@/components/ThemeProvider";
+import { useAuth } from "@/components/AuthProvider";
 
 interface Props {
   open: boolean;
@@ -77,6 +79,7 @@ function ThemeOption({
 
 export default function SettingsModal({ open, onClose }: Props) {
   const { theme, setTheme } = useTheme();
+  const { user } = useAuth();
 
   // Close on Escape key
   useEffect(() => {
@@ -168,16 +171,30 @@ export default function SettingsModal({ open, onClose }: Props) {
                 </div>
               </div>
 
-              {/* Section — Dashboard Preferences (placeholder) */}
+              {/* Section — Dashboard Preferences */}
               <div className="mt-6">
                 <p className="mb-3 text-[10px] font-semibold uppercase tracking-widest text-[var(--text-muted)]">
                   Dashboard Preferences
                 </p>
-                <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-raised)] px-4 py-3">
-                  <p className="text-xs text-[var(--text-muted)]">
-                    Additional preferences coming soon — currency display, refresh intervals, and indicator visibility controls.
-                  </p>
-                </div>
+                {user ? (
+                  <Link
+                    href="/settings/preferences"
+                    onClick={onClose}
+                    className="flex items-center justify-between rounded-xl border border-neon-blue/20 bg-neon-blue/5 px-4 py-3 text-sm font-medium text-neon-blue transition-colors hover:bg-neon-blue/10"
+                  >
+                    Pin indicators, hide widgets, set your default province
+                    <span aria-hidden="true">→</span>
+                  </Link>
+                ) : (
+                  <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-raised)] px-4 py-3">
+                    <p className="text-xs text-[var(--text-muted)]">
+                      <Link href="/login?redirect=/settings/preferences" onClick={onClose} className="text-neon-blue hover:underline">
+                        Log in
+                      </Link>{" "}
+                      to pin indicators, hide widgets, and set a default province.
+                    </p>
+                  </div>
+                )}
               </div>
 
               {/* Section — About */}
