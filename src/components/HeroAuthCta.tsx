@@ -9,20 +9,11 @@
 
 import Link from "next/link";
 import { useAuth } from "@/components/AuthProvider";
-import { signOutAction } from "@/app/auth/actions";
-import { useRouter } from "next/navigation";
 
 const BENEFITS = ["Access Comparisons", "Access Budget Workshops", "Provincial Budget Intelligence", "Future Member Features"];
 
 export default function HeroAuthCta() {
-  const { user, loading, signOut } = useAuth();
-  const router = useRouter();
-
-  async function handleSignOut() {
-    await Promise.all([signOutAction(), signOut()]);
-    router.push("/");
-    router.refresh();
-  }
+  const { user, loading } = useAuth();
 
   // Suppressed entirely while the initial session check is in flight —
   // same convention as Sidebar/MobileNav — to avoid a flash of the wrong
@@ -30,36 +21,20 @@ export default function HeroAuthCta() {
   if (loading) return null;
 
   if (user) {
+    // Account management (Logout, Member badge) lives in the Sidebar's
+    // member card now — duplicating it here was the exact clutter the
+    // Auth UI Cleanup pass removed. The Hero's job is promoting the
+    // product, not account controls, so authenticated visitors just get a
+    // lightweight acknowledgment.
     return (
-      <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4" data-cta-source="hero">
-        <p className="text-sm text-white/70 light:text-slate-600">
-          Welcome back, <span className="font-semibold text-white light:text-slate-900">{user.email}</span>
-        </p>
-        <div className="flex flex-wrap gap-2.5">
-          <Link
-            href="/comparisons"
-            data-cta="dashboard-access"
-            data-cta-source="hero"
-            className="rounded-xl border border-neon-blue/30 bg-neon-blue/10 px-4 py-2 text-sm font-semibold text-neon-blue transition-colors hover:bg-neon-blue/20"
-          >
-            Dashboard Access
-          </Link>
-          <button
-            type="button"
-            onClick={handleSignOut}
-            data-cta="logout"
-            data-cta-source="hero"
-            className="rounded-xl border border-[var(--border)] px-4 py-2 text-sm font-medium text-[var(--text-secondary)] transition-colors hover:bg-[var(--surface-hover)]"
-          >
-            Logout
-          </button>
-        </div>
-      </div>
+      <p className="mt-4 text-sm text-white/70 light:text-slate-600" data-cta-source="hero">
+        Welcome back, <span className="font-semibold text-white light:text-slate-900">{user.email}</span>
+      </p>
     );
   }
 
   return (
-    <div className="mt-6 flex flex-col gap-4" data-cta-source="hero">
+    <div className="mt-4 flex flex-col gap-3" data-cta-source="hero">
       <div className="flex flex-wrap gap-3">
         <Link
           href="/signup"

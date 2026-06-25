@@ -8,6 +8,7 @@ import InfoTooltip from "@/components/InfoTooltip";
 import KpiGrid from "@/components/KpiGrid";
 import MarketTicker, { type TickerItem } from "@/components/MarketTicker";
 import NewsIntelligenceSection from "@/components/NewsIntelligenceSection";
+import ProvincialQuickAccess from "@/components/ProvincialQuickAccess";
 import RiskIntelligenceSection from "@/components/RiskIntelligenceSection";
 import Sidebar from "@/components/Sidebar";
 import HashScrollRestore from "@/components/HashScrollRestore";
@@ -228,6 +229,11 @@ export default async function Home() {
 
   const tickerItems: TickerItem[] = [
     makeTickerItem(fxRates.usdPkr,         "USD/PKR",   "",    "USD / PKR"),
+    // KSE-100 itself requires a commercial PSX data license (see
+    // yfinance.ts) — pakEtfKpi (Global X MSCI Pakistan ETF) is the same
+    // real, free proxy already used elsewhere on this dashboard for
+    // Pakistani-equity exposure, labeled honestly rather than as "KSE100".
+    makeTickerItem(pakEtfKpi,              "KSE-100 Proxy", "", "Pakistan ETF (NYSE: PAK)"),
     makeTickerItem(fxRates.eurPkr,         "EUR/PKR",   "",    "EUR / PKR"),
     makeTickerItem(fxRates.gbpPkr,         "GBP/PKR",   "",    "GBP / PKR"),
     makeTickerItem(fxRates.sarPkr,         "SAR/PKR",   "",    "SAR / PKR"),
@@ -350,12 +356,16 @@ export default async function Home() {
   // weekly-updating inflation read is more strategically useful as one of
   // the 6 top-line figures. If the live SPI fetch fails, headlineKpis
   // simply has 5 cards that render (3-col grid) rather than a gap.
+  // Sparklines reuse each card's own already-fetched trend series (last 12
+  // points) — never a separate fetch or fabricated data. gdpKpi (annual,
+  // World Bank) has no trend array in scope here, so it simply renders
+  // without one rather than inventing a shape.
   const headlineKpis = [
     gdpKpi,
-    quarterlyGdp.kpi,
-    sbp.cpiInflation.kpi,
-    sbp.foreignReserves.kpi,
-    sbp.remittances.kpi,
+    { ...quarterlyGdp.kpi, sparkline: quarterlyGdp.trend.slice(-12).map((p) => p.value) },
+    { ...sbp.cpiInflation.kpi, sparkline: sbp.cpiInflation.trend.slice(-12).map((p) => p.value) },
+    { ...sbp.foreignReserves.kpi, sparkline: sbp.foreignReserves.trend.slice(-12).map((p) => p.value) },
+    { ...sbp.remittances.kpi, sparkline: sbp.remittances.trend.slice(-12).map((p) => p.value) },
     ...(spiKpi ? [spiKpi] : []),
   ];
 
@@ -382,8 +392,12 @@ export default async function Home() {
     fedFundsKpi,
   ];
 
+  // fxRates.usdPkr is a live intraday spot quote with no history of its own
+  // in scope — sbp.usdPkr.trend (the same underlying pair, SBP's monthly-
+  // average series already fetched above for the 24-month chart) is real
+  // data for the same metric, just reused rather than re-fetched.
   const liveFxKpis = [
-    fxRates.usdPkr,
+    { ...fxRates.usdPkr, sparkline: sbp.usdPkr.trend.slice(-12).map((p) => p.value) },
     fxRates.eurPkr,
     fxRates.gbpPkr,
     fxRates.sarPkr,
@@ -423,6 +437,15 @@ export default async function Home() {
     sbp.netBankReserves.kpi,
   ];
 
+  // Market Status pass — the page's own render time, in Pakistan Standard
+  // Time (the dashboard's primary audience), not a client-side clock that
+  // would drift from when this data was actually fetched.
+  const marketStatusUpdatedAt = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Karachi",
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date());
+
   return (
     <div className="flex min-h-screen w-full">
       <HashScrollRestore />
@@ -430,6 +453,11 @@ export default async function Home() {
       <main id="overview" className="flex-1 scroll-mt-8 px-6 py-8 sm:px-10 lg:px-16">
         <Hero rightSlot={<DataSourcesModal kpis={allKpis} />} />
 
+        <ProvincialQuickAccess />
+
+        <p className="mt-6 text-xs text-white/35 light:text-slate-400" suppressHydrationWarning>
+          <span className="font-medium text-white/50 light:text-slate-600">Market Status</span> &middot; Updated {marketStatusUpdatedAt} PKT
+        </p>
         <MarketTicker items={tickerItems} />
 
         <KpiGrid items={headlineKpis} cols={3} />

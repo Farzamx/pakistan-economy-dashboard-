@@ -14,6 +14,33 @@ import {
 import { KPI_SEO_SLUG } from "@/lib/seoConfig";
 import { useTheme } from "@/components/ThemeProvider";
 
+// Hand-rolled inline SVG rather than mounting recharts for an 18px-tall
+// decoration — only renders when a real historical slice was passed in
+// (see Kpi.sparkline); cards without one fall back to the trend arrow
+// alone instead of a fabricated chart.
+function Sparkline({ data, trend }: { data: number[]; trend: Kpi["trend"] }) {
+  const width = 56;
+  const height = 18;
+  const pad = 2;
+  const min = Math.min(...data);
+  const max = Math.max(...data);
+  const range = max - min || 1;
+  const points = data
+    .map((v, i) => {
+      const x = pad + (i / (data.length - 1)) * (width - pad * 2);
+      const y = height - pad - ((v - min) / range) * (height - pad * 2);
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    })
+    .join(" ");
+  const stroke = trend === "up" ? "#34d399" : "#fb7185";
+
+  return (
+    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} className="shrink-0" aria-hidden="true">
+      <polyline points={points} fill="none" stroke={stroke} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 function TrendArrow({ trend }: { trend: Kpi["trend"] }) {
   const isUp = trend === "up";
   return (
@@ -42,7 +69,7 @@ const hoverGlow: Record<Kpi["glow"], string> = {
 const lightRestGlow  = "0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)";
 const lightHoverGlow = "0 4px 12px rgba(0,0,0,0.10), 0 2px 4px rgba(0,0,0,0.06)";
 
-export default function KpiCard({ title, value, unit, change, trend, glow, source, latestDate, frequency }: Kpi) {
+export default function KpiCard({ title, value, unit, change, trend, glow, source, latestDate, frequency, sparkline }: Kpi) {
   const { theme } = useTheme();
   const isLight = theme === "light";
 
@@ -76,9 +103,12 @@ export default function KpiCard({ title, value, unit, change, trend, glow, sourc
         </span>
         <span className="text-sm text-white/50 light:text-slate-400">{unit}</span>
       </div>
-      <div className={`flex items-center gap-1.5 text-xs font-medium ${trendColor}`}>
-        <TrendArrow trend={trend} />
-        <span>{change}</span>
+      <div className="flex items-center justify-between gap-2">
+        <div className={`flex items-center gap-1.5 text-xs font-medium ${trendColor}`}>
+          <TrendArrow trend={trend} />
+          <span>{change}</span>
+        </div>
+        {sparkline && sparkline.length >= 2 && <Sparkline data={sparkline} trend={trend} />}
       </div>
       {latestDate && (
         <div

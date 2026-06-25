@@ -8,6 +8,7 @@ import SettingsModal from "@/components/SettingsModal";
 import PsxComingSoonModal from "@/components/PsxComingSoonModal";
 import GuestAccessModal from "@/components/GuestAccessModal";
 import SidebarAuthCard from "@/components/SidebarAuthCard";
+import GlobalSearch from "@/components/GlobalSearch";
 import { useAuth } from "@/components/AuthProvider";
 import { isProtectedPath } from "@/lib/protectedSections";
 
@@ -33,6 +34,25 @@ const NAV_ITEMS = [
   { label: "External Sector", id: "external-sector" },
   { label: "News",            id: "news-intelligence" },
 ];
+
+// Sidebar Information Architecture grouping — purely a rendering split of
+// NAV_ITEMS into labeled bands (Main / Analytics). NAV_ITEMS' own array
+// order is untouched, so the scroll-spy's "last in document order wins"
+// tie-break logic above stays correct; this only changes how the same
+// items are bucketed under headers, not their underlying order or ids.
+// "External Sector" and "News" aren't in the original IA spec's Analytics
+// list but are real, working sections — folding them into Analytics
+// (rather than dropping them) keeps that existing functionality intact.
+const MAIN_NAV_ITEMS = NAV_ITEMS.slice(0, 2);
+const ANALYTICS_NAV_ITEMS = NAV_ITEMS.slice(2);
+
+function SidebarSectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="mt-4 mb-1.5 px-4 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/30 light:text-slate-400 first:mt-0">
+      {children}
+    </p>
+  );
+}
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -121,23 +141,65 @@ export default function Sidebar() {
             CTA in the same sidebar). */}
         <SidebarAuthCard />
 
-        {/* Navigation */}
+        <GlobalSearch onLinkClick={handleProtectedNav} />
+
+        {/* Navigation — grouped per the Sidebar Information Architecture
+            pass into Main / Analytics / Premium Tools bands. Reordering
+            Premium Tools to render after the homepage anchors (it used to
+            render first for marketing visibility) is purely a sidebar DOM
+            position change — it doesn't touch NAV_ITEMS' own order, so the
+            scroll-spy's "last in document order wins" tie-break and the
+            `activeId` default ("overview") are unaffected. */}
         <nav className="flex flex-col gap-1">
-          {/* Comparisons renders first (premium/marketing placement — the
-              first thing a visitor sees), then Overview, then the rest of
-              NAV_ITEMS. Comparisons is rendered as its own block (not part
-              of NAV_ITEMS) since it's a real route, not a same-page anchor,
-              and needs its own Link + usePathname active-state check
-              instead of the scroll-spy logic the homepage anchors use.
-              Crucially, this is a purely visual reorder — it does NOT
-              change what's active on first load: `activeId` below still
-              initializes to NAV_ITEMS[0].id ("overview"), and visiting "/"
-              always renders the homepage starting at #overview regardless
-              of sidebar order, so Comparisons being listed first never
-              auto-selects or auto-scrolls to /comparisons. NAV_ITEMS itself
-              also stays in document order (Overview first) so the
-              scroll-spy's "last in document order wins" tie-break logic
-              above is unaffected by this visual-only reordering. */}
+          <SidebarSectionLabel>Main</SidebarSectionLabel>
+          {MAIN_NAV_ITEMS.map((item) => {
+            // Only ever "active" while actually on the homepage — otherwise
+            // "Overview" (the scroll-spy's unchanged default) would show as
+            // active while on an unrelated route like /comparisons.
+            const isActive = isHomepage && activeId === item.id;
+            return (
+              <motion.div key={item.label} whileHover={{ x: 4 }} transition={{ type: "spring", stiffness: 400, damping: 25 }}>
+                <Link
+                  href={`/#${item.id}`}
+                  aria-current={isActive ? "true" : undefined}
+                  className={`block rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors ${
+                    isActive
+                      ? "border-neon-blue/25 bg-neon-blue/10 text-white light:text-slate-900"
+                      : "border-transparent text-white/50 light:text-slate-500 hover:bg-white/5 light:hover:bg-slate-100 hover:text-white light:hover:text-slate-900"
+                  }`}
+                >
+                  {item.label}
+                </Link>
+              </motion.div>
+            );
+          })}
+
+          <SidebarSectionLabel>Analytics</SidebarSectionLabel>
+          {ANALYTICS_NAV_ITEMS.map((item) => {
+            const isActive = isHomepage && activeId === item.id;
+            return (
+              <motion.div key={item.label} whileHover={{ x: 4 }} transition={{ type: "spring", stiffness: 400, damping: 25 }}>
+                <Link
+                  href={`/#${item.id}`}
+                  aria-current={isActive ? "true" : undefined}
+                  className={`block rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors ${
+                    isActive
+                      ? "border-neon-blue/25 bg-neon-blue/10 text-white light:text-slate-900"
+                      : "border-transparent text-white/50 light:text-slate-500 hover:bg-white/5 light:hover:bg-slate-100 hover:text-white light:hover:text-slate-900"
+                  }`}
+                >
+                  {item.label}
+                </Link>
+              </motion.div>
+            );
+          })}
+
+          <SidebarSectionLabel>Premium Tools</SidebarSectionLabel>
+
+          {/* Comparisons — purple, same Link + usePathname pattern as the
+              other premium routes (real routes, not same-page anchors, so
+              they need active-state from the pathname rather than the
+              scroll-spy). */}
           <motion.div
             whileHover={{ x: 4, scale: 1.015 }}
             transition={{ type: "spring", stiffness: 400, damping: 25 }}
@@ -175,12 +237,7 @@ export default function Sidebar() {
             </Link>
           </motion.div>
 
-          {/* Budget Tracker — second premium placement, right after
-              Comparisons and before the homepage anchors. Same Link +
-              usePathname pattern as Comparisons (a real route, not a
-              same-page anchor), but visually toned down: single blue glow
-              instead of the blue/purple gradient + heavier shadow used for
-              Comparisons, per the "less prominent" placement. */}
+          {/* Budget Tracker — blue, second premium placement. */}
           <motion.div
             whileHover={{ x: 4, scale: 1.015 }}
             transition={{ type: "spring", stiffness: 400, damping: 25 }}
@@ -213,9 +270,7 @@ export default function Sidebar() {
             </Link>
           </motion.div>
 
-          {/* Provincial Budget — third premium placement, same Link +
-              usePathname pattern as Budget Tracker above, emerald-toned to
-              stay visually distinct from federal's blue. */}
+          {/* Provincial Budget — emerald, third premium placement. */}
           <motion.div
             whileHover={{ x: 4, scale: 1.015 }}
             transition={{ type: "spring", stiffness: 400, damping: 25 }}
@@ -246,47 +301,6 @@ export default function Sidebar() {
               <span>Provincial Budget</span>
             </Link>
           </motion.div>
-
-          {(() => {
-            const isActive = isHomepage && activeId === NAV_ITEMS[0].id;
-            return (
-              <motion.div whileHover={{ x: 4 }} transition={{ type: "spring", stiffness: 400, damping: 25 }}>
-                <Link
-                  href={`/#${NAV_ITEMS[0].id}`}
-                  aria-current={isActive ? "true" : undefined}
-                  className={`block rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors ${
-                    isActive
-                      ? "border-neon-blue/25 bg-neon-blue/10 text-white light:text-slate-900"
-                      : "border-transparent text-white/50 light:text-slate-500 hover:bg-white/5 light:hover:bg-slate-100 hover:text-white light:hover:text-slate-900"
-                  }`}
-                >
-                  {NAV_ITEMS[0].label}
-                </Link>
-              </motion.div>
-            );
-          })()}
-
-          {NAV_ITEMS.slice(1).map((item) => {
-            // Only ever "active" while actually on the homepage — otherwise
-            // "Overview" (the scroll-spy's unchanged default) would show as
-            // active while on an unrelated route like /comparisons.
-            const isActive = isHomepage && activeId === item.id;
-            return (
-              <motion.div key={item.label} whileHover={{ x: 4 }} transition={{ type: "spring", stiffness: 400, damping: 25 }}>
-                <Link
-                  href={`/#${item.id}`}
-                  aria-current={isActive ? "true" : undefined}
-                  className={`block rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors ${
-                    isActive
-                      ? "border-neon-blue/25 bg-neon-blue/10 text-white light:text-slate-900"
-                      : "border-transparent text-white/50 light:text-slate-500 hover:bg-white/5 light:hover:bg-slate-100 hover:text-white light:hover:text-slate-900"
-                  }`}
-                >
-                  {item.label}
-                </Link>
-              </motion.div>
-            );
-          })}
 
           {/* PSX — opens "Coming Soon" modal, not a nav link */}
           <motion.button

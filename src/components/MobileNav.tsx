@@ -14,6 +14,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import GuestAccessModal from "@/components/GuestAccessModal";
+import GlobalSearch from "@/components/GlobalSearch";
 import { useAuth } from "@/components/AuthProvider";
 import { signOutAction } from "@/app/auth/actions";
 import { isProtectedPath } from "@/lib/protectedSections";
@@ -264,6 +265,8 @@ export default function MobileNav() {
                   </svg>
                 </button>
               </div>
+
+              <GlobalSearch onLinkClick={handleLinkClick} />
 
               <nav className="flex flex-col gap-1.5">
                 {LINKS.map((link) => {

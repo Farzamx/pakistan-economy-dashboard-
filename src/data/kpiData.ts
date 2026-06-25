@@ -15,6 +15,8 @@ export interface Kpi {
   seriesId?: string;
   latestDate?: string;   // "YYYY-MM-DD" or "YYYY" (annual)
   frequency?: DataFrequency;
+  /** Recent historical values (oldest first) for the card's inline sparkline. Only ever a slice of a real fetched series — never fabricated — so cards without a wired-up history simply render without one. */
+  sparkline?: number[];
 }
 
 // Fallback used by getGdpKpi() in src/lib/data/worldBank.ts when the API
