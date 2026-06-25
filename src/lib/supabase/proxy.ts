@@ -15,13 +15,7 @@
 
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-
-/** Path prefixes that require a signed-in user. Checked with startsWith, so this also covers every dynamic [slug] and nested sub-page under each section. */
-const PROTECTED_PREFIXES = ["/comparisons", "/budget", "/provincial-budget"];
-
-function isProtectedPath(pathname: string): boolean {
-  return PROTECTED_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
-}
+import { isProtectedPath } from "@/lib/protectedSections";
 
 export async function updateSession(request: NextRequest): Promise<NextResponse> {
   let response = NextResponse.next({ request });

@@ -9,6 +9,7 @@ import PsxComingSoonModal from "@/components/PsxComingSoonModal";
 import GuestAccessModal from "@/components/GuestAccessModal";
 import { useAuth } from "@/components/AuthProvider";
 import { signOutAction } from "@/app/auth/actions";
+import { isProtectedPath } from "@/lib/protectedSections";
 
 // `id` is the homepage section's element id. The rendered href is always
 // "/#id" (absolute, never a bare "#id") — these are anchors on `/` only,
@@ -33,14 +34,11 @@ const NAV_ITEMS = [
   { label: "News",            id: "news-intelligence" },
 ];
 
-/** Sections that require a signed-in user — kept in one place so the Sidebar's click-interception and proxy.ts's PROTECTED_PREFIXES can be eyeballed against each other rather than drift apart silently. */
-const PROTECTED_SECTIONS = ["/comparisons", "/budget", "/provincial-budget"];
-
 export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const isHomepage = pathname === "/";
-  const { user, loading } = useAuth();
+  const { user, loading, signOut } = useAuth();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [psxOpen, setPsxOpen] = useState(false);
   const [activeId, setActiveId] = useState<string>(NAV_ITEMS[0].id);
@@ -55,7 +53,7 @@ export default function Sidebar() {
   // would misfire for users who are actually signed in but whose session
   // hasn't resolved on this render yet.
   function handleProtectedNav(e: React.MouseEvent<HTMLAnchorElement>, href: string) {
-    if (!PROTECTED_SECTIONS.some((p) => href === p)) return;
+    if (!isProtectedPath(href)) return;
     if (loading || user) return;
     e.preventDefault();
     setGuestDestination(href);
@@ -63,7 +61,14 @@ export default function Sidebar() {
   }
 
   async function handleSignOut() {
-    await signOutAction();
+    // Both calls matter: signOutAction() clears the server-side session
+    // cookie (what proxy.ts reads), and useAuth().signOut() clears the
+    // browser's own Supabase client instance — found live during the
+    // authenticated-user audit that calling only the server action left
+    // the UI showing "Log Out" after logging out, since AuthProvider's
+    // user state is only ever updated by its own client instance's
+    // onAuthStateChange listener, which router.refresh() does not touch.
+    await Promise.all([signOutAction(), signOut()]);
     router.push("/");
     router.refresh();
   }
