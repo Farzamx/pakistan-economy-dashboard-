@@ -8,6 +8,7 @@
 // state (show Login vs. Account), not authorization.
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { usePathname } from "next/navigation";
 import type { User } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 
@@ -31,19 +32,35 @@ export function useAuth(): AuthContextValue {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const pathname = usePathname();
 
+  // Re-checks the session on every route change, not just once on mount.
+  // Root cause (confirmed live): /login's signIn Server Action authenticates
+  // and sets the session cookie entirely server-side, then redirect()s —
+  // a soft, client-side route transition that does NOT remount this
+  // provider. The browser's own Supabase client never performed that
+  // sign-in itself, so onAuthStateChange (below) never fires for it, and
+  // without this effect `user` stayed stuck at whatever it was before
+  // logging in (null) for the rest of the session — exactly matching the
+  // reported bug, where the modal reappeared on every later protected
+  // click despite a genuinely valid session. Doesn't touch `loading` on
+  // these re-checks (only the initial mount sets it), so navigating around
+  // an already-resolved session never re-flashes a loading state.
   useEffect(() => {
     const supabase = createClient();
-
     supabase.auth.getUser().then(({ data }) => {
       setUser(data.user);
       setLoading(false);
     });
+  }, [pathname]);
+
+  useEffect(() => {
+    const supabase = createClient();
 
     // Keeps every component reading useAuth() in sync the moment sign-in,
-    // sign-out, or a token refresh happens anywhere in the app — without
-    // this, the Sidebar would only learn about a successful login after a
-    // full page reload.
+    // sign-out, or a token refresh happens through THIS browser client
+    // directly (e.g. signOut() below) — the pathname effect above is what
+    // covers session changes made server-side, like signIn().
     const { data: subscription } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
     });
