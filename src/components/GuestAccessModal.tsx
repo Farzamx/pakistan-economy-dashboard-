@@ -120,15 +120,19 @@ export default function GuestAccessModal({ open, onClose, destination }: Props) 
                 ))}
               </ul>
 
-              <div className="mt-7 flex flex-col gap-2.5 sm:flex-row">
+              <div className="mt-7 flex flex-col gap-2.5 sm:flex-row" data-cta-source="modal">
                 <Link
                   href={`/login${redirectQuery}`}
+                  data-cta="login"
+                  data-cta-source="modal"
                   className="flex-1 rounded-xl border border-[var(--border)] px-4 py-2.5 text-sm font-medium text-[var(--text-primary)] transition-colors hover:bg-[var(--surface-hover)]"
                 >
                   Log In
                 </Link>
                 <Link
                   href={`/signup${redirectQuery}`}
+                  data-cta="signup"
+                  data-cta-source="modal"
                   className="flex-1 rounded-xl bg-neon-blue px-4 py-2.5 text-sm font-semibold text-[#05060f] transition-opacity hover:opacity-90"
                 >
                   Sign Up

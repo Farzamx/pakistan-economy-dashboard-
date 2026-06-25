@@ -2,13 +2,13 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import SettingsModal from "@/components/SettingsModal";
 import PsxComingSoonModal from "@/components/PsxComingSoonModal";
 import GuestAccessModal from "@/components/GuestAccessModal";
+import SidebarAuthCard from "@/components/SidebarAuthCard";
 import { useAuth } from "@/components/AuthProvider";
-import { signOutAction } from "@/app/auth/actions";
 import { isProtectedPath } from "@/lib/protectedSections";
 
 // `id` is the homepage section's element id. The rendered href is always
@@ -36,9 +36,8 @@ const NAV_ITEMS = [
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const router = useRouter();
   const isHomepage = pathname === "/";
-  const { user, loading, signOut } = useAuth();
+  const { user, loading } = useAuth();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [psxOpen, setPsxOpen] = useState(false);
   const [activeId, setActiveId] = useState<string>(NAV_ITEMS[0].id);
@@ -58,19 +57,6 @@ export default function Sidebar() {
     e.preventDefault();
     setGuestDestination(href);
     setGuestModalOpen(true);
-  }
-
-  async function handleSignOut() {
-    // Both calls matter: signOutAction() clears the server-side session
-    // cookie (what proxy.ts reads), and useAuth().signOut() clears the
-    // browser's own Supabase client instance — found live during the
-    // authenticated-user audit that calling only the server action left
-    // the UI showing "Log Out" after logging out, since AuthProvider's
-    // user state is only ever updated by its own client instance's
-    // onAuthStateChange listener, which router.refresh() does not touch.
-    await Promise.all([signOutAction(), signOut()]);
-    router.push("/");
-    router.refresh();
   }
 
   // Scroll-spy: highlights whichever section is currently in view. A thin
@@ -128,6 +114,12 @@ export default function Sidebar() {
             <p className="text-xs text-white/40 light:text-slate-400">Economic Dashboard</p>
           </div>
         </div>
+
+        {/* Auth card — near the top per the Auth UX Enhancement, replacing
+            the old plain-text Login/Logout row that used to live at the
+            bottom of the nav below (kept there would have been a duplicate
+            CTA in the same sidebar). */}
+        <SidebarAuthCard />
 
         {/* Navigation */}
         <nav className="flex flex-col gap-1">
@@ -325,38 +317,6 @@ export default function Sidebar() {
             </svg>
             Settings
           </motion.button>
-
-          {/* Account — Log In link for guests, Log Out button once signed in. Suppressed entirely while the initial session check is in flight to avoid a flash of the wrong state. */}
-          {!loading && (
-            user ? (
-              <motion.button
-                type="button"
-                onClick={handleSignOut}
-                whileHover={{ x: 4 }}
-                transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                className="flex w-full items-center gap-2 rounded-lg border border-transparent px-4 py-2.5 text-sm font-medium text-white/50 light:text-slate-500 transition-colors hover:bg-white/5 light:hover:bg-slate-100 hover:text-white light:hover:text-slate-900"
-              >
-                <svg className="h-3.5 w-3.5 opacity-60" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M6 14H3.5A1.5 1.5 0 0 1 2 12.5v-9A1.5 1.5 0 0 1 3.5 2H6" />
-                  <path d="M10.5 11.5 14 8l-3.5-3.5M14 8H6" />
-                </svg>
-                Log Out
-              </motion.button>
-            ) : (
-              <motion.div whileHover={{ x: 4 }} transition={{ type: "spring", stiffness: 400, damping: 25 }}>
-                <Link
-                  href="/login"
-                  className="flex w-full items-center gap-2 rounded-lg border border-transparent px-4 py-2.5 text-sm font-medium text-white/50 light:text-slate-500 transition-colors hover:bg-white/5 light:hover:bg-slate-100 hover:text-white light:hover:text-slate-900"
-                >
-                  <svg className="h-3.5 w-3.5 opacity-60" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M10 12h2.5A1.5 1.5 0 0 0 14 10.5v-5A1.5 1.5 0 0 0 12.5 4H10" />
-                    <path d="M5.5 5.5 2 8l3.5 2.5M2 8h8" />
-                  </svg>
-                  Log In
-                </Link>
-              </motion.div>
-            )
-          )}
         </nav>
 
         {/* Footer note */}

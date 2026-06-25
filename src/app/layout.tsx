@@ -8,6 +8,7 @@ import MotionProvider from "@/components/MotionProvider";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { AuthProvider } from "@/components/AuthProvider";
 import MobileNav from "@/components/MobileNav";
+import MobileStickyCta from "@/components/MobileStickyCta";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -120,6 +121,7 @@ export default function RootLayout({
               <MobileNav />
               {children}
               <CreatorBadge />
+              <MobileStickyCta />
             </MotionProvider>
           </AuthProvider>
         </ThemeProvider>

@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import HeroAuthCta from "@/components/HeroAuthCta";
 
 interface Props {
   rightSlot?: React.ReactNode;
@@ -38,6 +39,8 @@ export default function Hero({ rightSlot }: Props) {
         Pakistan&apos;s economy &mdash; growth, prices, reserves, currency and
         remittances, all in one place.
       </p>
+
+      <HeroAuthCta />
     </motion.section>
   );
 }
