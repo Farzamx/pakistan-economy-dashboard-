@@ -6,6 +6,7 @@ import CreatorBadge from "@/components/CreatorBadge";
 import GalaxyBackground from "@/components/GalaxyBackground";
 import MotionProvider from "@/components/MotionProvider";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import { AuthProvider } from "@/components/AuthProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -112,11 +113,13 @@ export default function RootLayout({
       </head>
       <body className="min-h-full flex flex-col">
         <ThemeProvider>
-          <GalaxyBackground />
-          <MotionProvider>
-            {children}
-            <CreatorBadge />
-          </MotionProvider>
+          <AuthProvider>
+            <GalaxyBackground />
+            <MotionProvider>
+              {children}
+              <CreatorBadge />
+            </MotionProvider>
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>
