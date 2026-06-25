@@ -177,7 +177,7 @@ export function getProvincialSeoPageFaq(page: ProvincialSeoPageDef): FaqItem[] {
     return [
       {
         question: `What is ${meta.name}'s total budget for FY${year.fiscalYear}?`,
-        answer: `Rs ${year.totalOutlay.toFixed(1)} billion, per the ${meta.name} Finance Department's own ${year.citations.summary.document} for FY${year.fiscalYear}.`,
+        answer: `Rs ${year.totalOutlay !== null ? year.totalOutlay.toFixed(1) : "—"} billion, per the ${meta.name} Finance Department's own ${year.citations.summary.document} for FY${year.fiscalYear}.`,
       },
       {
         question: `Where can I see ${meta.name}'s full budget breakdown?`,

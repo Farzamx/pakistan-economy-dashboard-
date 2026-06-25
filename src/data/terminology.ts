@@ -659,4 +659,15 @@ export const TERMINOLOGY: Record<string, TermEntry> = {
     ],
   },
 
+  "other-spending": {
+    title: "Other (Combined Categories)",
+    what: "Everything a province's own budget documents don't separately name — small departments, reserves, and miscellaneous costs.",
+    why: "Provinces report by sector and by expense type at once, so whichever system they use leaves the rest bundled together.",
+    how: [
+      "Not hidden or unaccounted — just not itemized one by one",
+      "We add named categories (e.g. Pension, Law & Order) whenever a document separately states one",
+      "What's left is genuinely too granular for the source document itself to break out",
+    ],
+  },
+
 };

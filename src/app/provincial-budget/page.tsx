@@ -74,7 +74,7 @@ export default function ProvincialBudgetPage() {
                   </div>
                   <div className="flex items-baseline gap-2">
                     <span className="text-3xl font-bold" style={{ color: p.color }}>
-                      Rs {year.totalOutlay.toFixed(0)}bn
+                      Rs {year.totalOutlay !== null ? year.totalOutlay.toFixed(0) : "—"}bn
                     </span>
                     <span className="text-sm text-white/50 light:text-slate-500">FY{year.fiscalYear} Total Budget</span>
                   </div>

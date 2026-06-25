@@ -52,6 +52,7 @@ export const COMPARISON_METRICS: ProvincialComparisonMetric[] = [
   { field: "health", label: "Health" },
   { field: "developmentBudget", label: "Development" },
   { field: "debtServicing", label: "Debt Servicing" },
+  { field: "pension", label: "Pension" },
   { field: "agriculture", label: "Agriculture" },
   { field: "ownRevenue", label: "Own Revenue" },
   { field: "federalTransfers", label: "Federal Transfers" },
@@ -78,7 +79,7 @@ export function generateProvincialInsights(): ProvincialInsight[] {
   const dependency = ALL_PROVINCE_IDS.map((province) => {
     const year = getLatestProvinceYear(province);
     const meta = getProvinceMeta(province);
-    if (typeof year.federalTransfers !== "number" || year.totalOutlay <= 0) return null;
+    if (typeof year.federalTransfers !== "number" || typeof year.totalOutlay !== "number" || year.totalOutlay <= 0) return null;
     return { name: meta.name, share: (year.federalTransfers / year.totalOutlay) * 100, fiscalYear: year.fiscalYear };
   }).filter((d): d is { name: string; share: number; fiscalYear: string } => d !== null);
   if (dependency.length > 0) {

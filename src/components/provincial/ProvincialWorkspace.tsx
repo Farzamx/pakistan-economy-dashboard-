@@ -23,6 +23,7 @@ import ProvincialAllocationChart from "./ProvincialAllocationChart";
 import ProvincialTreemap from "./ProvincialTreemap";
 import ProvincialAllocationTable from "./ProvincialAllocationTable";
 import ProvincialRs100Card from "./ProvincialRs100Card";
+import OtherSpendingNote from "./OtherSpendingNote";
 import ProvincialDebtSection from "./ProvincialDebtSection";
 import ProvincialPerCitizenSection from "./ProvincialPerCitizenSection";
 import InfoTooltip from "@/components/InfoTooltip";
@@ -159,10 +160,14 @@ export default function ProvincialWorkspace({ province }: ProvincialWorkspacePro
           {allocationView === "treemap" && <ProvincialTreemap data={allocation} />}
           {allocationView === "table" && <ProvincialAllocationTable data={allocation} />}
           <p className="mt-2 text-[11px] text-[var(--text-muted)]">Source: {sourceLabel}, FY{year.fiscalYear} Budget Estimate.</p>
+          <OtherSpendingNote residualNote={year.otherResidualNote} />
         </div>
       </section>
 
-      <ProvincialRs100Card data={rs100} provinceName={meta.name} fiscalYear={year.fiscalYear} sourceLabel={sourceLabel} />
+      <div className="flex flex-col gap-3">
+        <ProvincialRs100Card data={rs100} provinceName={meta.name} fiscalYear={year.fiscalYear} sourceLabel={sourceLabel} />
+        <OtherSpendingNote residualNote={year.otherResidualNote} />
+      </div>
 
       <ProvincialDebtSection snapshot={debtSnapshot} provinceName={meta.name} />
 

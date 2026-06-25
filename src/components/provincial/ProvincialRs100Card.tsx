@@ -54,7 +54,7 @@ export default function ProvincialRs100Card({ data, provinceName, fiscalYear, so
       </div>
 
       <p className="text-[11px] text-white/40 light:text-slate-400">
-        Source: {sourceLabel}, FY{fiscalYear} Budget Estimate. Figures rounded to the nearest Rupee; rounding residue is absorbed into &quot;Other&quot;.
+        Source: {sourceLabel}, FY{fiscalYear} Budget Estimate. Figures rounded to the nearest Rupee; rounding residue is absorbed into &quot;Other (Combined Categories)&quot;.
       </p>
     </div>
   );
