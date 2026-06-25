@@ -14,7 +14,7 @@ export interface FaqItem {
   answer: string;
 }
 
-export type ProvincialSeoPageType = "province-overview" | "province-category" | "cross-comparison";
+export type ProvincialSeoPageType = "province-overview" | "province-category" | "cross-comparison" | "growth-explorer" | "ranking-dashboard";
 
 export interface ProvincialSeoPageDef {
   slug: string;
@@ -112,6 +112,42 @@ export const PROVINCIAL_SEO_PAGES: ProvincialSeoPageDef[] = [
     fieldLabel: "Health",
     title: "Provincial Health Spending Comparison",
     description: "Comparing health budgets across Pakistan's four provinces — which province allocates the most to health, sourced from each province's own official budget documents.",
+  },
+  {
+    slug: "growth-explorer",
+    type: "growth-explorer",
+    title: "Province Growth Explorer — Historical Budget Trends, CAGR & Per-Capita Spending",
+    description: "Explore historical budget trends, growth rates, and per-citizen spending for Punjab, Sindh, Khyber Pakhtunkhwa, and Balochistan — every figure sourced from each province's own official budget documents, with null years shown honestly rather than estimated.",
+  },
+  {
+    slug: "rankings",
+    type: "ranking-dashboard",
+    title: "Province Rankings — Compare Punjab, Sindh, KP & Balochistan by Any Metric",
+    description: "Rank Pakistan's four provinces by total budget, development spending, debt servicing, own revenue, federal transfers, education, health, or agriculture, for any fiscal year with verified data.",
+  },
+  {
+    slug: "debt-burden-rankings",
+    type: "ranking-dashboard",
+    field: "debtServicing",
+    fieldLabel: "Debt Servicing",
+    title: "Provincial Debt Burden Rankings — Which Province Owes the Most?",
+    description: "Ranking Punjab, Sindh, Khyber Pakhtunkhwa, and Balochistan by debt servicing for any fiscal year with verified data, sourced from each province's own official budget documents.",
+  },
+  {
+    slug: "development-spending-rankings",
+    type: "ranking-dashboard",
+    field: "developmentBudget",
+    fieldLabel: "Development Spending",
+    title: "Provincial Development Spending Rankings",
+    description: "Ranking Punjab, Sindh, Khyber Pakhtunkhwa, and Balochistan by Annual Development Programme (ADP/PSDP) spending for any fiscal year with verified data.",
+  },
+  {
+    slug: "own-revenue-rankings",
+    type: "ranking-dashboard",
+    field: "ownRevenue",
+    fieldLabel: "Own Revenue",
+    title: "Provincial Own Revenue Rankings — Which Province Raises the Most Itself?",
+    description: "Ranking Punjab, Sindh, Khyber Pakhtunkhwa, and Balochistan by own-source revenue (provincial tax + non-tax receipts) for any fiscal year with verified data.",
   },
 ];
 
@@ -211,6 +247,35 @@ export function getProvincialSeoPageFaq(page: ProvincialSeoPageDef): FaqItem[] {
       {
         question: `Why might a province show "Not available" for ${page.fieldLabel}?`,
         answer: `Some provinces' own budget documents don't separately itemize every category every year. Rather than estimate a missing figure, it's shown as unavailable.`,
+      },
+    ];
+  }
+  if (page.type === "growth-explorer") {
+    return [
+      {
+        question: "How far back does the historical data go?",
+        answer: "It differs by province: Punjab from FY2010-11, Sindh from FY2011-12, Khyber Pakhtunkhwa from FY2015-16, and Balochistan from FY2017-18 — each starting where that province's own real, verified archive does, not a shared start year.",
+      },
+      {
+        question: "Why do some years show a gap in the trend line?",
+        answer: "A gap means that specific year's figure could not be verified from an official source document — it is left out of the line entirely rather than interpolated or estimated, so the chart never implies a smooth trend the data doesn't actually support.",
+      },
+      {
+        question: "What does CAGR mean here?",
+        answer: "Compound Annual Growth Rate — the steady annual growth rate that would take a province's earliest verified figure to its latest verified figure over that many years. It's calculated only between two real, sourced data points, never estimated years.",
+      },
+    ];
+  }
+  if (page.type === "ranking-dashboard") {
+    const label = page.fieldLabel ?? "the selected metric";
+    return [
+      {
+        question: `How is the ${label} ranking calculated?`,
+        answer: `Directly from each province's own verified figure for the fiscal year you select — no AI estimate, no interpolation. If a province has no verified figure for that exact year, it's shown as not available rather than ranked at zero.`,
+      },
+      {
+        question: "Can I rank provinces for any year?",
+        answer: "Only for fiscal years where at least one province has a verified record. Selecting a year where a specific province has no data simply shows that province as not available for that year.",
       },
     ];
   }

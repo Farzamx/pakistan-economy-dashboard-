@@ -71,4 +71,9 @@ export const PROVINCIAL_SEO_SLUGS = [
   "provincial-debt-comparison",
   "provincial-education-comparison",
   "provincial-health-comparison",
+  "growth-explorer",
+  "rankings",
+  "debt-burden-rankings",
+  "development-spending-rankings",
+  "own-revenue-rankings",
 ];

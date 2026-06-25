@@ -92,6 +92,16 @@ export function getPerCapitaHistory(province: ProvinceId, field: ProvincialTrend
   });
 }
 
+/** Per-citizen value for a province's own latest verified year — used for cross-province per-capita ranking/insights (e.g. "X has the highest per-capita budget"), where each province is necessarily compared on its own latest year since years differ by province. Null if that field is null in the latest year. */
+export function getLatestPerCapita(province: ProvinceId, field: ProvincialTrendField): number | null {
+  const years = getProvinceYears(province);
+  const latest = years[years.length - 1];
+  const value = latest[field];
+  if (typeof value !== "number") return null;
+  const population = getEstimatedPopulation(province, latest.fiscalYear);
+  return (value * 1_000_000_000) / population;
+}
+
 export interface CoverageStats {
   fiscalYearsTracked: number;
   fieldsPopulated: Record<string, number>;

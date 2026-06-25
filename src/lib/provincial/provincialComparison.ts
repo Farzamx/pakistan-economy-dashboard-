@@ -10,7 +10,7 @@
 // AI generation (Phase 10's explicit requirement).
 
 import { ALL_PROVINCE_IDS, type ProvinceId } from "@/data/provincialBudgetHistorical";
-import { getLatestProvinceYear, type ProvincialTrendField } from "./provincialBudgetData";
+import { getLatestProvinceYear, getProvinceYearRecord, getProvinceYears, type ProvincialTrendField } from "./provincialBudgetData";
 import { getProvinceMeta } from "./provincialBudgetRegistry";
 
 export interface ProvinceRankEntry {
@@ -41,21 +41,59 @@ export function rankProvincesByField(field: ProvincialTrendField): ProvinceRankE
   });
 }
 
+/**
+ * Ranks all 4 provinces on one field for one SPECIFIC fiscal year — unlike
+ * rankProvincesByField, a province with no record for that exact year (or a
+ * null value within it) sorts last with value null, rather than silently
+ * substituting its latest year. Powers the Province Ranking Dashboard's
+ * year selector (Phase 6 of the Historical Explorer build).
+ */
+export function rankProvincesByFieldForYear(field: ProvincialTrendField, fiscalYear: string): ProvinceRankEntry[] {
+  const entries = ALL_PROVINCE_IDS.map((province) => {
+    const year = getProvinceYearRecord(province, fiscalYear);
+    const meta = getProvinceMeta(province);
+    return {
+      province,
+      name: meta.name,
+      value: year ? year[field] : null,
+      color: meta.color,
+      fiscalYear,
+    };
+  });
+  return entries.sort((a, b) => {
+    if (a.value === null) return 1;
+    if (b.value === null) return -1;
+    return b.value - a.value;
+  });
+}
+
+/** Every fiscal year that at least one province has a record for — used to populate the Ranking Dashboard's year selector so it never offers a year with zero data across all provinces. */
+export function getAllRankableFiscalYears(): string[] {
+  const years = new Set<string>();
+  for (const province of ALL_PROVINCE_IDS) {
+    for (const y of getProvinceYears(province)) years.add(y.fiscalYear);
+  }
+  return [...years].sort();
+}
+
 export interface ProvincialComparisonMetric {
   field: ProvincialTrendField;
   label: string;
 }
 
+/** Canonical metric list shared by the Province Ranking Dashboard and the Historical Explorer's Metric Selector, so both features always offer the same set. */
 export const COMPARISON_METRICS: ProvincialComparisonMetric[] = [
   { field: "totalOutlay", label: "Total Budget" },
-  { field: "education", label: "Education" },
-  { field: "health", label: "Health" },
   { field: "developmentBudget", label: "Development" },
+  { field: "currentExpenditure", label: "Current Expenditure" },
   { field: "debtServicing", label: "Debt Servicing" },
   { field: "pension", label: "Pension" },
-  { field: "agriculture", label: "Agriculture" },
   { field: "ownRevenue", label: "Own Revenue" },
   { field: "federalTransfers", label: "Federal Transfers" },
+  { field: "education", label: "Education" },
+  { field: "health", label: "Health" },
+  { field: "agriculture", label: "Agriculture" },
+  { field: "infrastructure", label: "Infrastructure" },
 ];
 
 export interface ProvincialInsight {

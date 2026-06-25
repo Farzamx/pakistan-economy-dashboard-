@@ -26,6 +26,7 @@ import ProvincialRs100Card from "./ProvincialRs100Card";
 import OtherSpendingNote from "./OtherSpendingNote";
 import ProvincialDebtSection from "./ProvincialDebtSection";
 import ProvincialPerCitizenSection from "./ProvincialPerCitizenSection";
+import ProvincialHistoricalExplorer from "./ProvincialHistoricalExplorer";
 import InfoTooltip from "@/components/InfoTooltip";
 
 interface ProvincialWorkspaceProps {
@@ -172,6 +173,8 @@ export default function ProvincialWorkspace({ province }: ProvincialWorkspacePro
       <ProvincialDebtSection snapshot={debtSnapshot} provinceName={meta.name} />
 
       <ProvincialPerCitizenSection metrics={perCitizen} provinceName={meta.name} population={population} />
+
+      <ProvincialHistoricalExplorer lockedProvince={province} />
 
       {year.notes && (
         <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface)] p-4">

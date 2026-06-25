@@ -3,6 +3,8 @@ import type { ProvincialSeoPageDef } from "@/lib/provincial/provincialSeoPages";
 import { getLatestProvinceYear } from "@/lib/provincial/provincialBudgetData";
 import { rankProvincesByField } from "@/lib/provincial/provincialComparison";
 import { getProvinceMeta } from "@/lib/provincial/provincialBudgetRegistry";
+import ProvincialHistoricalExplorer from "./ProvincialHistoricalExplorer";
+import ProvincialRankingDashboard from "./ProvincialRankingDashboard";
 
 interface ProvincialSeoTemplateProps {
   page: ProvincialSeoPageDef;
@@ -101,6 +103,42 @@ export default function ProvincialSeoTemplate({ page }: ProvincialSeoTemplatePro
         <Link href="/provincial-budget/compare" className="text-sm font-medium text-neon-blue hover:underline">
           Compare on other metrics →
         </Link>
+      </div>
+    );
+  }
+
+  if (page.type === "growth-explorer") {
+    return (
+      <div className="flex flex-col gap-6">
+        <h1 className="text-2xl font-semibold text-white light:text-slate-900 break-words">{page.title}</h1>
+        <p className="text-sm leading-relaxed text-white/60 light:text-slate-600">{page.description}</p>
+        <ProvincialHistoricalExplorer />
+        <div className="flex flex-wrap gap-2 text-xs">
+          <Link href="/provincial-budget/rankings" className="rounded-full border border-white/10 light:border-slate-200 px-3 py-1.5 text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)]">
+            Province Rankings →
+          </Link>
+          <Link href="/provincial-budget" className="rounded-full border border-white/10 light:border-slate-200 px-3 py-1.5 text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)]">
+            All Provinces →
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (page.type === "ranking-dashboard") {
+    return (
+      <div className="flex flex-col gap-6">
+        <h1 className="text-2xl font-semibold text-white light:text-slate-900 break-words">{page.title}</h1>
+        <p className="text-sm leading-relaxed text-white/60 light:text-slate-600">{page.description}</p>
+        <ProvincialRankingDashboard lockedMetric={page.field} title={page.fieldLabel ? `${page.fieldLabel} Rankings` : undefined} />
+        <div className="flex flex-wrap gap-2 text-xs">
+          <Link href="/provincial-budget/growth-explorer" className="rounded-full border border-white/10 light:border-slate-200 px-3 py-1.5 text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)]">
+            Growth Explorer →
+          </Link>
+          <Link href="/provincial-budget" className="rounded-full border border-white/10 light:border-slate-200 px-3 py-1.5 text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)]">
+            All Provinces →
+          </Link>
+        </div>
       </div>
     );
   }

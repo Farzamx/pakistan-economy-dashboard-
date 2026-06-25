@@ -6,7 +6,10 @@ import { getProvincialBudgetToolkit } from "@/data/provincialBudgetEducation";
 import { PROVINCES } from "@/lib/provincial/provincialBudgetRegistry";
 import { getLatestProvinceYear } from "@/lib/provincial/provincialBudgetData";
 import { generateProvincialInsights } from "@/lib/provincial/provincialComparison";
+import { generateHistoricalInsights } from "@/lib/provincial/provincialHistoricalInsights";
 import BudgetInsightsPanel from "@/components/budget/BudgetInsightsPanel";
+import ProvincialHistoricalExplorer from "@/components/provincial/ProvincialHistoricalExplorer";
+import ProvincialRankingDashboard from "@/components/provincial/ProvincialRankingDashboard";
 import { SITE_URL, SITE_NAME } from "@/lib/seoConfig";
 
 const PAGE_URL = `${SITE_URL}/provincial-budget`;
@@ -32,6 +35,7 @@ const FAQ = [
 export default function ProvincialBudgetPage() {
   const toolkit = getProvincialBudgetToolkit("overview");
   const insights = generateProvincialInsights();
+  const historicalInsights = generateHistoricalInsights();
 
   const faqJsonLd = {
     "@context": "https://schema.org",
@@ -98,6 +102,31 @@ export default function ProvincialBudgetPage() {
           </Link>
 
           <BudgetInsightsPanel insights={insights} title="Provincial Insights" />
+
+          <ProvincialHistoricalExplorer />
+
+          <ProvincialRankingDashboard />
+
+          <BudgetInsightsPanel insights={historicalInsights} title="Historical Insights" />
+
+          <div className="flex flex-wrap items-center gap-2 text-xs">
+            <span className="text-[var(--text-muted)]">Explore further:</span>
+            <Link href="/provincial-budget/growth-explorer" className="rounded-full border border-white/10 light:border-slate-200 px-3 py-1.5 text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)]">
+              Growth Explorer
+            </Link>
+            <Link href="/provincial-budget/rankings" className="rounded-full border border-white/10 light:border-slate-200 px-3 py-1.5 text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)]">
+              Province Rankings
+            </Link>
+            <Link href="/provincial-budget/debt-burden-rankings" className="rounded-full border border-white/10 light:border-slate-200 px-3 py-1.5 text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)]">
+              Debt Burden Rankings
+            </Link>
+            <Link href="/provincial-budget/development-spending-rankings" className="rounded-full border border-white/10 light:border-slate-200 px-3 py-1.5 text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)]">
+              Development Spending Rankings
+            </Link>
+            <Link href="/provincial-budget/own-revenue-rankings" className="rounded-full border border-white/10 light:border-slate-200 px-3 py-1.5 text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)]">
+              Own Revenue Rankings
+            </Link>
+          </div>
 
           <section className="glass-card flex flex-col gap-4 rounded-2xl p-6 sm:p-8">
             <h2 className="text-xl font-semibold text-white light:text-slate-900">Frequently Asked Questions</h2>
