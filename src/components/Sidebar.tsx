@@ -144,56 +144,17 @@ export default function Sidebar() {
         <GlobalSearch onLinkClick={handleProtectedNav} />
 
         {/* Navigation — grouped per the Sidebar Information Architecture
-            pass into Main / Analytics / Premium Tools bands. Reordering
-            Premium Tools to render after the homepage anchors (it used to
-            render first for marketing visibility) is purely a sidebar DOM
-            position change — it doesn't touch NAV_ITEMS' own order, so the
-            scroll-spy's "last in document order wins" tie-break and the
-            `activeId` default ("overview") are unaffected. */}
+            pass into Main / Analytics / Premium Tools bands. Premium Tools
+            (including PSX) now renders FIRST, directly below the search
+            bar — these are flagship/value-added features (Comparisons,
+            Budget Tracker, Provincial Budget, PSX) and the Navigation UX
+            Improvement pass moved them above the fold so they're visible
+            without scrolling, rather than after the full Main/Analytics
+            anchor list. This is purely a sidebar DOM position change — it
+            doesn't touch NAV_ITEMS' own order, so the scroll-spy's "last in
+            document order wins" tie-break and the `activeId` default
+            ("overview") are unaffected. */}
         <nav className="flex flex-col gap-1">
-          <SidebarSectionLabel>Main</SidebarSectionLabel>
-          {MAIN_NAV_ITEMS.map((item) => {
-            // Only ever "active" while actually on the homepage — otherwise
-            // "Overview" (the scroll-spy's unchanged default) would show as
-            // active while on an unrelated route like /comparisons.
-            const isActive = isHomepage && activeId === item.id;
-            return (
-              <motion.div key={item.label} whileHover={{ x: 4 }} transition={{ type: "spring", stiffness: 400, damping: 25 }}>
-                <Link
-                  href={`/#${item.id}`}
-                  aria-current={isActive ? "true" : undefined}
-                  className={`block rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors ${
-                    isActive
-                      ? "border-neon-blue/25 bg-neon-blue/10 text-white light:text-slate-900"
-                      : "border-transparent text-white/50 light:text-slate-500 hover:bg-white/5 light:hover:bg-slate-100 hover:text-white light:hover:text-slate-900"
-                  }`}
-                >
-                  {item.label}
-                </Link>
-              </motion.div>
-            );
-          })}
-
-          <SidebarSectionLabel>Analytics</SidebarSectionLabel>
-          {ANALYTICS_NAV_ITEMS.map((item) => {
-            const isActive = isHomepage && activeId === item.id;
-            return (
-              <motion.div key={item.label} whileHover={{ x: 4 }} transition={{ type: "spring", stiffness: 400, damping: 25 }}>
-                <Link
-                  href={`/#${item.id}`}
-                  aria-current={isActive ? "true" : undefined}
-                  className={`block rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors ${
-                    isActive
-                      ? "border-neon-blue/25 bg-neon-blue/10 text-white light:text-slate-900"
-                      : "border-transparent text-white/50 light:text-slate-500 hover:bg-white/5 light:hover:bg-slate-100 hover:text-white light:hover:text-slate-900"
-                  }`}
-                >
-                  {item.label}
-                </Link>
-              </motion.div>
-            );
-          })}
-
           <SidebarSectionLabel>Premium Tools</SidebarSectionLabel>
 
           {/* Comparisons — purple, same Link + usePathname pattern as the
@@ -316,6 +277,49 @@ export default function Sidebar() {
             </svg>
             PSX
           </motion.button>
+
+          <SidebarSectionLabel>Main</SidebarSectionLabel>
+          {MAIN_NAV_ITEMS.map((item) => {
+            // Only ever "active" while actually on the homepage — otherwise
+            // "Overview" (the scroll-spy's unchanged default) would show as
+            // active while on an unrelated route like /comparisons.
+            const isActive = isHomepage && activeId === item.id;
+            return (
+              <motion.div key={item.label} whileHover={{ x: 4 }} transition={{ type: "spring", stiffness: 400, damping: 25 }}>
+                <Link
+                  href={`/#${item.id}`}
+                  aria-current={isActive ? "true" : undefined}
+                  className={`block rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors ${
+                    isActive
+                      ? "border-neon-blue/25 bg-neon-blue/10 text-white light:text-slate-900"
+                      : "border-transparent text-white/50 light:text-slate-500 hover:bg-white/5 light:hover:bg-slate-100 hover:text-white light:hover:text-slate-900"
+                  }`}
+                >
+                  {item.label}
+                </Link>
+              </motion.div>
+            );
+          })}
+
+          <SidebarSectionLabel>Analytics</SidebarSectionLabel>
+          {ANALYTICS_NAV_ITEMS.map((item) => {
+            const isActive = isHomepage && activeId === item.id;
+            return (
+              <motion.div key={item.label} whileHover={{ x: 4 }} transition={{ type: "spring", stiffness: 400, damping: 25 }}>
+                <Link
+                  href={`/#${item.id}`}
+                  aria-current={isActive ? "true" : undefined}
+                  className={`block rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors ${
+                    isActive
+                      ? "border-neon-blue/25 bg-neon-blue/10 text-white light:text-slate-900"
+                      : "border-transparent text-white/50 light:text-slate-500 hover:bg-white/5 light:hover:bg-slate-100 hover:text-white light:hover:text-slate-900"
+                  }`}
+                >
+                  {item.label}
+                </Link>
+              </motion.div>
+            );
+          })}
 
           {/* Settings — opens modal, not a nav link */}
           <motion.button
