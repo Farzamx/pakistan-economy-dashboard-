@@ -18,6 +18,11 @@ import { usePreferences } from "@/components/PreferencesProvider";
 
 export default function HideableSection({ id, children }: { id: string; children: ReactNode }) {
   const { preferences } = usePreferences();
-  if (preferences?.dashboardLayout.hidden.includes(id)) return null;
+  // Optional-chain every step, not just `preferences` — fromRow() now
+  // normalizes dashboardLayout.hidden to always be an array, but this stays
+  // fully chained anyway as a second line of defense against the exact
+  // crash a partial chain caused in production ("Cannot read properties of
+  // undefined (reading 'includes')" when dashboardLayout had no `hidden` key).
+  if (preferences?.dashboardLayout?.hidden?.includes(id)) return null;
   return <>{children}</>;
 }

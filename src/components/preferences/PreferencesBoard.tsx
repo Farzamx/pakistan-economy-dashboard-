@@ -31,7 +31,7 @@ export default function PreferencesBoard() {
   const [saving, setSaving] = useState(false);
 
   const pinned = preferences?.favoriteIndicators ?? [];
-  const hidden = preferences?.dashboardLayout.hidden ?? [];
+  const hidden = preferences?.dashboardLayout?.hidden ?? [];
   const visible = DASHBOARD_WIDGETS.map((w) => w.id).filter((id) => !pinned.includes(id) && !hidden.includes(id));
 
   async function persist(patch: Parameters<typeof updatePreferences>[0]) {

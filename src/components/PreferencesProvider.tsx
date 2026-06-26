@@ -96,7 +96,10 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
         id: prev?.id ?? "",
         userId: user.id,
         favoriteIndicators: patch.favoriteIndicators ?? prev?.favoriteIndicators ?? [],
-        dashboardLayout: patch.dashboardLayout ?? prev?.dashboardLayout ?? { hidden: [] },
+        // Same normalization as fromRow() in preferences.ts: prev?.dashboardLayout
+        // could in principle be a bare {} (no `hidden` key), which is truthy
+        // and would otherwise pass straight through the ?? chain unchanged.
+        dashboardLayout: patch.dashboardLayout ?? { hidden: prev?.dashboardLayout?.hidden ?? [] },
         preferredProvince: patch.preferredProvince !== undefined ? patch.preferredProvince : prev?.preferredProvince ?? null,
         preferredTheme: patch.preferredTheme !== undefined ? patch.preferredTheme : prev?.preferredTheme ?? null,
         createdAt: prev?.createdAt ?? new Date().toISOString(),

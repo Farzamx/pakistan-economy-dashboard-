@@ -43,7 +43,16 @@ function fromRow(row: UserPreferencesRow): UserPreferences {
     id: row.id,
     userId: row.user_id,
     favoriteIndicators: row.favorite_indicators ?? [],
-    dashboardLayout: row.dashboard_layout ?? { hidden: [] },
+    // The migration's column default is '{}'::jsonb, not null — every row
+    // created without an explicit dashboardLayout patch (e.g. a brand-new
+    // signup, or a user who only ever touched theme/province/pins) has
+    // dashboard_layout = {} in the DB. {} is truthy, so `row.dashboard_layout
+    // ?? { hidden: [] }` alone doesn't catch it and silently produces a
+    // dashboardLayout with no `hidden` array — the exact root cause of a
+    // production crash (HideableSection.tsx's `.hidden.includes(id)`
+    // throwing "Cannot read properties of undefined"). Reading `.hidden`
+    // explicitly, with its own fallback, normalizes both shapes the same way.
+    dashboardLayout: { hidden: row.dashboard_layout?.hidden ?? [] },
     preferredProvince: (row.preferred_province as ProvinceId | null) ?? null,
     preferredTheme: (row.preferred_theme as "dark" | "light" | null) ?? null,
     createdAt: row.created_at,
