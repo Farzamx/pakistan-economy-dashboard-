@@ -10,6 +10,7 @@ import { AuthProvider } from "@/components/AuthProvider";
 import { PreferencesProvider } from "@/components/PreferencesProvider";
 import MobileNav from "@/components/MobileNav";
 import MobileStickyCta from "@/components/MobileStickyCta";
+import BfcacheGuard from "@/components/BfcacheGuard";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -115,6 +116,7 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-full flex flex-col">
+        <BfcacheGuard />
         <ThemeProvider>
           <AuthProvider>
             <PreferencesProvider>
