@@ -2,10 +2,16 @@ import type { MetadataRoute } from "next";
 import { SITE_URL, SEO_PAGES } from "@/lib/seoConfig";
 import { COMPARISONS, SECTOR_COMPOSITION } from "@/lib/comparisons/comparisonRegistry";
 import { BUDGET_CATEGORIES, BUDGET_EXTRA_SEO_SLUGS } from "@/lib/budget/budgetRegistry";
-import { PROVINCES, PROVINCIAL_SEO_SLUGS } from "@/lib/provincial/provincialBudgetRegistry";
+import { PROVINCIAL_SEO_SLUGS } from "@/lib/provincial/provincialBudgetRegistry";
+import { getScheduledEventSlugs, getReleasedEventSlugs } from "@/lib/economicCalendar/economicEventsRepo";
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
+  // Empty until the Phase 2A migration + seed are run in Supabase — these
+  // two calls degrade to [] gracefully (economicEventsRepo's queries return
+  // [] on any error/empty table), so the sitemap still builds correctly
+  // either way.
+  const [scheduledEventSlugs, releasedEventSlugs] = await Promise.all([getScheduledEventSlugs(), getReleasedEventSlugs()]);
 
   return [
     {
@@ -26,12 +32,27 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "daily" as const,
       priority: 0.9,
     },
-    {
-      url: `${SITE_URL}/comparisons`,
+    ...scheduledEventSlugs.map((slug) => ({
+      url: `${SITE_URL}/economic-calendar/event/${slug}`,
       lastModified: now,
-      changeFrequency: "daily" as const,
-      priority: 0.9,
+      changeFrequency: "weekly" as const,
+      priority: 0.6,
+    })),
+    {
+      url: `${SITE_URL}/economic-calendar/archive`,
+      lastModified: now,
+      changeFrequency: "weekly" as const,
+      priority: 0.7,
     },
+    ...releasedEventSlugs.map((slug) => ({
+      url: `${SITE_URL}/economic-calendar/archive/${slug}`,
+      lastModified: now,
+      changeFrequency: "yearly" as const,
+      priority: 0.5,
+    })),
+    // /comparisons itself is a premium tool (route-level protected, see
+    // protectedSections.ts) — only its 16 informational detail pages below
+    // are public, so the hub has no sitemap entry of its own.
     ...COMPARISONS.map((c) => ({
       url: `${SITE_URL}/comparisons/${c.slug}`,
       lastModified: now,
@@ -44,12 +65,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "daily" as const,
       priority: 0.7,
     },
-    {
-      url: `${SITE_URL}/budget`,
-      lastModified: now,
-      changeFrequency: "yearly" as const,
-      priority: 0.9,
-    },
+    // /budget itself is a premium tool (route-level protected) — only its
+    // category + extra pages below are public.
     ...BUDGET_CATEGORIES.map((c) => ({
       url: `${SITE_URL}/budget/${c.slug}`,
       lastModified: now,
@@ -62,25 +79,14 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "yearly" as const,
       priority: 0.7,
     })),
-    {
-      url: `${SITE_URL}/provincial-budget`,
-      lastModified: now,
-      changeFrequency: "yearly" as const,
-      priority: 0.9,
-    },
-    {
-      url: `${SITE_URL}/provincial-budget/compare`,
-      lastModified: now,
-      changeFrequency: "yearly" as const,
-      priority: 0.8,
-    },
-    ...PROVINCES.map((p) => ({
-      url: `${SITE_URL}/provincial-budget/${p.slug}`,
-      lastModified: now,
-      changeFrequency: "yearly" as const,
-      priority: 0.8,
-    })),
-    ...PROVINCIAL_SEO_SLUGS.map((slug) => ({
+    // /provincial-budget, /compare, and each of the 4 province workspaces
+    // are premium tools (route-level protected) — only the 15 informational
+    // SEO pages below are public. "rankings" is explicitly excluded: unlike
+    // its 15 siblings, it's also a protected premium tool (see
+    // protectedSections.ts's PROTECTED_EXACT_PATHS), so listing it here
+    // would advertise a URL that 307-redirects Googlebot to /login — the
+    // exact problem this sitemap exists to avoid.
+    ...PROVINCIAL_SEO_SLUGS.filter((slug) => slug !== "rankings").map((slug) => ({
       url: `${SITE_URL}/provincial-budget/${slug}`,
       lastModified: now,
       changeFrequency: "yearly" as const,

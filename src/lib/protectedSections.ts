@@ -1,31 +1,34 @@
 // Single source of truth for "which sections require a signed-in user" —
 // consumed by src/proxy.ts (server-side enforcement), Sidebar.tsx (desktop
-// click-interception), MobileNav.tsx (mobile drawer interception), and
-// ProvincialQuickAccess.tsx (homepage province cards), so none of them can
-// silently drift out of sync with each other.
+// click-interception), MobileNav.tsx (mobile drawer interception),
+// ProvincialQuickAccess.tsx (homepage province cards), and ProtectedLink.tsx
+// (the reusable wrapper used for cross-links into these sections from
+// otherwise-public pages — back-to-hub links, "Related" sections, etc.), so
+// none of them can silently drift out of sync with each other.
 //
-// SEO Architecture Migration (Phase A): Comparisons, Budget, and Provincial
-// Budget used to be protected as whole sections. An SEO audit found this
-// meant Googlebot was redirected to a noindex'd /login page on every one of
-// ~50 URLs deliberately built with search-intent titles and submitted via
-// sitemap.ts — confirmed live (Googlebot UA received the same 307 a regular
-// browser does, landing on /login with no access to the real page's title,
-// content, or structured data). Only /settings has no public-facing value
-// to lose, so it's the only section still gated at the route level.
+// Premium Access Restoration (post SEO Phase A/B): Phase A removed
+// Comparisons/Budget/Provincial Budget from route-level protection entirely
+// so Googlebot could crawl the ~50 informational detail pages built under
+// them. That correctly freed the detail pages, but it also left the actual
+// premium TOOLS — the interactive hub/workspace pages themselves — reachable
+// by anyone, which was never the intent. The fix is not a rollback to the
+// pre-Phase-A blanket prefix match (that would re-protect the detail pages
+// too, undoing the SEO work) — it's protecting exactly the tool pages by
+// their own exact path, while every detail/SEO page stays public.
+//
+// PROTECTED_SECTIONS: prefix-matched (startsWith) — /settings/preferences
+// must match "/settings" despite not being an exact equal, since account
+// pages can grow new sub-routes without each one needing its own entry here.
+//
+// PROTECTED_EXACT_PATHS: exact-matched only, deliberately NOT prefix-matched
+// — these are leaf "tool" pages whose siblings/children (the 16 comparison
+// detail pages under /comparisons, the 8 budget category pages under
+// /budget, the 15 other provincial SEO pages under /provincial-budget) must
+// stay public. Prefix-matching any of these would silently re-protect that
+// public content.
 export const PROTECTED_SECTIONS = ["/settings"];
 
-// Routes whose BASE content is deliberately public (so they're correctly
-// absent from PROTECTED_SECTIONS above) but that are expected to grow
-// premium-only functionality later — saved/custom comparisons, exports,
-// watchlists, personalization. When that functionality exists, the
-// components implementing it must gate themselves via useAuth() directly;
-// this list has no runtime effect today and nothing currently reads it —
-// it exists so that work doesn't have to re-derive this exact set of
-// routes from scratch. /comparisons/[slug], /budget/[slug], and
-// /provincial-budget's 16 SEO sub-pages are deliberately NOT here: their
-// entire value is the informational content itself, with no premium layer
-// ever planned on top, so they're fully public with nothing to gate.
-export const HYBRID_SECTIONS = [
+export const PROTECTED_EXACT_PATHS = [
   "/comparisons",
   "/budget",
   "/provincial-budget",
@@ -34,10 +37,10 @@ export const HYBRID_SECTIONS = [
   "/provincial-budget/sindh",
   "/provincial-budget/kp",
   "/provincial-budget/balochistan",
+  "/provincial-budget/rankings",
 ];
 
-// Prefix-aware (startsWith), not exact-match — /settings/preferences must
-// match the "/settings" entry above despite not being an exact equal.
 export function isProtectedPath(pathname: string): boolean {
+  if (PROTECTED_EXACT_PATHS.includes(pathname)) return true;
   return PROTECTED_SECTIONS.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
 }

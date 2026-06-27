@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
 import BudgetAllocationChart from "@/components/budget/BudgetAllocationChart";
 import BudgetRs100Card from "@/components/budget/BudgetRs100Card";
 import BudgetToolkit from "@/components/budget/BudgetToolkit";
 import RelatedContent from "@/components/RelatedContent";
+import ProtectedLink from "@/components/ProtectedLink";
 import { getAllocationBreakdown, getRs100Breakdown } from "@/lib/budget/budgetData";
 import { getLatestBudgetYear } from "@/data/budgetHistorical";
 import { getBudgetToolkit } from "@/data/budgetEducation";
@@ -84,9 +84,9 @@ export default function WhereDoesTaxMoneyGoPage() {
           dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd).replace(/</g, "\\u003c") }}
         />
         <div className="mx-auto max-w-4xl">
-          <Link href="/budget" className="flex items-center gap-2 text-xs font-medium text-white/50 light:text-slate-500 transition-colors hover:text-white light:hover:text-slate-900">
+          <ProtectedLink href="/budget" className="flex items-center gap-2 text-xs font-medium text-white/50 light:text-slate-500 transition-colors hover:text-white light:hover:text-slate-900">
             <span aria-hidden="true">←</span> {SITE_NAME} Budget Workshop
-          </Link>
+          </ProtectedLink>
 
           <h1 className="mt-8 text-3xl font-bold tracking-tight text-white light:text-slate-900 sm:text-4xl">{TITLE}</h1>
           <p className="mt-3 max-w-2xl text-sm text-white/60 light:text-slate-500 sm:text-base">{DESCRIPTION}</p>
@@ -139,9 +139,9 @@ export default function WhereDoesTaxMoneyGoPage() {
           />
 
           <div className="mt-10 mb-4 text-center">
-            <Link href="/budget" className="inline-flex items-center gap-2 rounded-lg bg-neon-blue/10 border border-neon-blue/20 px-5 py-2.5 text-sm font-medium text-neon-blue transition-colors hover:bg-neon-blue/20">
+            <ProtectedLink href="/budget" className="inline-flex items-center gap-2 rounded-lg bg-neon-blue/10 border border-neon-blue/20 px-5 py-2.5 text-sm font-medium text-neon-blue transition-colors hover:bg-neon-blue/20">
               View the full Budget Workshop →
-            </Link>
+            </ProtectedLink>
           </div>
         </div>
       </main>

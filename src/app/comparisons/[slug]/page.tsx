@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import ComparisonDetailView from "@/components/comparisons/ComparisonDetailView";
 import RelatedContent from "@/components/RelatedContent";
+import ProtectedLink from "@/components/ProtectedLink";
 import { COMPARISONS, getComparisonBySlug } from "@/lib/comparisons/comparisonRegistry";
 import { getComparisonBundle } from "@/lib/comparisons/comparisonData";
 import { getComparisonRelatedContent } from "@/lib/relatedContent";
@@ -60,12 +61,12 @@ export default async function ComparisonDetailPage({ params }: PageProps) {
 
       <div className="mx-auto max-w-4xl">
         <div className="flex items-center justify-between">
-          <Link
+          <ProtectedLink
             href="/comparisons"
             className="flex items-center gap-2 text-xs font-medium text-white/50 light:text-slate-500 transition-colors hover:text-white light:hover:text-slate-900"
           >
             <span aria-hidden="true">←</span> {SITE_NAME} Comparisons
-          </Link>
+          </ProtectedLink>
           <span className="text-[10px] uppercase tracking-widest text-white/25 light:text-slate-400">
             pakeconintel.com/comparisons/{def.slug}
           </span>
@@ -121,12 +122,12 @@ export default async function ComparisonDetailPage({ params }: PageProps) {
         <RelatedContent groups={relatedContent} />
 
         <div className="mt-10 mb-4 text-center">
-          <Link
+          <ProtectedLink
             href="/comparisons"
             className="inline-flex items-center gap-2 rounded-lg bg-neon-blue/10 border border-neon-blue/20 px-5 py-2.5 text-sm font-medium text-neon-blue transition-colors hover:bg-neon-blue/20"
           >
             View all comparisons →
-          </Link>
+          </ProtectedLink>
         </div>
       </div>
     </div>

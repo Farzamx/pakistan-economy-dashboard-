@@ -1,12 +1,13 @@
-import Link from "next/link";
+import ProtectedLink from "@/components/ProtectedLink";
 
 // Homepage discovery module (SEO Architecture Migration, Phase B) — the
 // single highest-leverage internal-linking fix available: the homepage is
 // the most-crawled, most-visited page on the site, and none of the 50 pages
 // freed from the login wall in Phase A had a single link pointing to them
-// from it. A plain Server Component (no "use client", no auth/interception
-// logic) — Phase A already made every one of these hrefs public, so there's
-// nothing left to gate and nothing here that needs hydration.
+// from it. Uses ProtectedLink (not next/link's <Link>) since Punjab/Sindh
+// Budget and Provincial Budget Rankings became premium tools again after
+// the Premium Access Restoration fix — the other 7 destinations stay
+// public, and ProtectedLink is a safe no-op wrapper for those.
 
 interface InsightLink {
   label: string;
@@ -44,7 +45,7 @@ export default function PopularInsights() {
       </h2>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         {INSIGHTS.map((item) => (
-          <Link
+          <ProtectedLink
             key={item.href}
             href={item.href}
             data-cta="popular-insights"
@@ -62,7 +63,7 @@ export default function PopularInsights() {
             <span className="mt-auto text-xs text-neon-blue opacity-0 transition-opacity group-hover:opacity-100">
               Explore →
             </span>
-          </Link>
+          </ProtectedLink>
         ))}
       </div>
     </section>

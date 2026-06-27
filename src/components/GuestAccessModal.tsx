@@ -1,17 +1,19 @@
 "use client";
 
 // Shown instead of navigating when a signed-out visitor clicks a route
-// still listed in protectedSections.ts's PROTECTED_SECTIONS (today, just
-// /settings — Comparisons/Budget/Provincial Budget's base content became
-// public in the SEO Architecture Migration, so clicking those no longer
-// triggers this) — same AnimatePresence/backdrop/panel shape as
+// listed in protectedSections.ts (isProtectedPath) — /settings, plus the
+// premium tools restored to protection after the SEO Phase A regression
+// (Comparisons, Budget, Provincial Budget, Provincial Budget Compare, the 4
+// province workspaces, and Provincial Budget Rankings). The ~40 public
+// informational/SEO detail pages underneath those tools stay public and
+// never trigger this. Same AnimatePresence/backdrop/panel shape as
 // PsxComingSoonModal.tsx and SettingsModal.tsx, so it feels native to the
 // rest of the dashboard rather than like a bolted-on auth library's default
-// UI. proxy.ts is still the real enforcement for whatever remains protected
-// (direct URL visits without this modal still redirect to /login) — this
-// is purely the better-UX path for the common case. Kept fully intact and
-// reusable for future premium-feature gating (saved comparisons, exports,
-// watchlists) once those exist.
+// UI. proxy.ts is still the real enforcement (direct URL visits without
+// this modal still redirect to /login) — this is purely the better-UX path
+// for the common case. Rendered from many places now: Sidebar.tsx,
+// MobileNav.tsx, ProvincialQuickAccess.tsx, and every ProtectedLink.tsx
+// instance (each owns its own small modal instance rather than sharing one).
 
 import { useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";

@@ -6,14 +6,12 @@
 // features but previously required scrolling to the Sidebar's Premium
 // Tools group to discover.
 //
-// Since the SEO Architecture Migration, none of these hrefs are in
-// PROTECTED_SECTIONS any more (their base content is public — see
-// protectedSections.ts's HYBRID_SECTIONS), so handleClick's isProtectedPath
-// check below currently always no-ops and every card behaves like a plain
-// <Link>. Kept anyway, matching the same pattern Sidebar.tsx/MobileNav.tsx
-// use, so that if any of these routes ever needs guest interception again
-// (e.g. a future premium-only feature embedded on one of these pages), the
-// hook is already wired up correctly instead of needing to be re-added.
+// Each card's href (/provincial-budget and /provincial-budget/{province})
+// is a premium tool per protectedSections.ts's PROTECTED_EXACT_PATHS — the
+// SEO Architecture Migration briefly made these public, but the Premium
+// Access Restoration fix put them back behind the login wall. handleClick's
+// isProtectedPath check below is what makes that correctly show
+// GuestAccessModal here instead of silently letting the click through.
 
 import Link from "next/link";
 import { useState } from "react";

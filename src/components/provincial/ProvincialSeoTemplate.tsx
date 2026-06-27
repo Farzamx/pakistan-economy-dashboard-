@@ -1,4 +1,4 @@
-import Link from "next/link";
+import ProtectedLink from "@/components/ProtectedLink";
 import type { ProvincialSeoPageDef } from "@/lib/provincial/provincialSeoPages";
 import { getLatestProvinceYear } from "@/lib/provincial/provincialBudgetData";
 import { rankProvincesByField } from "@/lib/provincial/provincialComparison";
@@ -12,7 +12,19 @@ interface ProvincialSeoTemplateProps {
   page: ProvincialSeoPageDef;
 }
 
-/** Renders /provincial-budget/[slug] pages that aren't a plain province workspace — content is generated from the live dataset (never hand-typed numbers) so it can't drift from the interactive workspace pages. */
+/**
+ * Renders /provincial-budget/[slug] pages that aren't a plain province
+ * workspace — content is generated from the live dataset (never
+ * hand-typed numbers) so it can't drift from the interactive workspace
+ * pages.
+ *
+ * Every cross-link below uses ProtectedLink, not next/link's <Link> — this
+ * template's pages themselves are public, but most of what they link to
+ * (the province workspaces, /provincial-budget, /provincial-budget/compare,
+ * /provincial-budget/rankings) are premium tools (protectedSections.ts). A
+ * guest browsing one of these public SEO pages should still get the
+ * GuestAccessModal UX when clicking through, not a bare server redirect.
+ */
 export default function ProvincialSeoTemplate({ page }: ProvincialSeoTemplateProps) {
   if (page.type === "province-overview" && page.province) {
     const meta = getProvinceMeta(page.province);
@@ -48,9 +60,9 @@ export default function ProvincialSeoTemplate({ page }: ProvincialSeoTemplatePro
             Source: {meta.name} {year.citations.summary.document}, FY{year.fiscalYear} Budget Estimate.
           </p>
         </div>
-        <Link href={`/provincial-budget/${meta.slug}`} className="text-sm font-medium text-neon-blue hover:underline">
+        <ProtectedLink href={`/provincial-budget/${meta.slug}`} className="text-sm font-medium text-neon-blue hover:underline">
           View the full {meta.name} Budget Workshop →
-        </Link>
+        </ProtectedLink>
         <RelatedContent groups={getProvincialSeoPageRelatedContent(page)} />
       </div>
     );
@@ -73,9 +85,9 @@ export default function ProvincialSeoTemplate({ page }: ProvincialSeoTemplatePro
             FY{year.fiscalYear} Budget Estimate · {year.citations.summary.document}
           </span>
         </div>
-        <Link href={`/provincial-budget/${meta.slug}`} className="text-sm font-medium text-neon-blue hover:underline">
+        <ProtectedLink href={`/provincial-budget/${meta.slug}`} className="text-sm font-medium text-neon-blue hover:underline">
           View the full {meta.name} Budget Workshop →
-        </Link>
+        </ProtectedLink>
         <RelatedContent groups={getProvincialSeoPageRelatedContent(page)} />
       </div>
     );
@@ -89,7 +101,7 @@ export default function ProvincialSeoTemplate({ page }: ProvincialSeoTemplatePro
         <p className="text-sm leading-relaxed text-white/60 light:text-slate-600">{page.description}</p>
         <div className="glass-card flex flex-col gap-3 rounded-2xl p-6">
           {ranked.map((entry, i) => (
-            <Link
+            <ProtectedLink
               key={entry.province}
               href={`/provincial-budget/${entry.province}`}
               className="flex items-center justify-between rounded-xl border border-white/5 light:border-slate-100 p-4 transition-colors hover:bg-white/[0.03] light:hover:bg-slate-50"
@@ -101,12 +113,12 @@ export default function ProvincialSeoTemplate({ page }: ProvincialSeoTemplatePro
               <span className="font-semibold text-white light:text-slate-900">
                 {entry.value === null ? "Not available" : `Rs ${entry.value.toFixed(1)}bn`}
               </span>
-            </Link>
+            </ProtectedLink>
           ))}
         </div>
-        <Link href="/provincial-budget/compare" className="text-sm font-medium text-neon-blue hover:underline">
+        <ProtectedLink href="/provincial-budget/compare" className="text-sm font-medium text-neon-blue hover:underline">
           Compare on other metrics →
-        </Link>
+        </ProtectedLink>
         <RelatedContent groups={getProvincialSeoPageRelatedContent(page)} />
       </div>
     );
@@ -119,12 +131,12 @@ export default function ProvincialSeoTemplate({ page }: ProvincialSeoTemplatePro
         <p className="text-sm leading-relaxed text-white/60 light:text-slate-600">{page.description}</p>
         <ProvincialHistoricalExplorer />
         <div className="flex flex-wrap gap-2 text-xs">
-          <Link href="/provincial-budget/rankings" className="rounded-full border border-white/10 light:border-slate-200 px-3 py-1.5 text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)]">
+          <ProtectedLink href="/provincial-budget/rankings" className="rounded-full border border-white/10 light:border-slate-200 px-3 py-1.5 text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)]">
             Province Rankings →
-          </Link>
-          <Link href="/provincial-budget" className="rounded-full border border-white/10 light:border-slate-200 px-3 py-1.5 text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)]">
+          </ProtectedLink>
+          <ProtectedLink href="/provincial-budget" className="rounded-full border border-white/10 light:border-slate-200 px-3 py-1.5 text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)]">
             All Provinces →
-          </Link>
+          </ProtectedLink>
         </div>
         <RelatedContent groups={getProvincialSeoPageRelatedContent(page)} />
       </div>
@@ -138,12 +150,12 @@ export default function ProvincialSeoTemplate({ page }: ProvincialSeoTemplatePro
         <p className="text-sm leading-relaxed text-white/60 light:text-slate-600">{page.description}</p>
         <ProvincialRankingDashboard lockedMetric={page.field} title={page.fieldLabel ? `${page.fieldLabel} Rankings` : undefined} />
         <div className="flex flex-wrap gap-2 text-xs">
-          <Link href="/provincial-budget/growth-explorer" className="rounded-full border border-white/10 light:border-slate-200 px-3 py-1.5 text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)]">
+          <ProtectedLink href="/provincial-budget/growth-explorer" className="rounded-full border border-white/10 light:border-slate-200 px-3 py-1.5 text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)]">
             Growth Explorer →
-          </Link>
-          <Link href="/provincial-budget" className="rounded-full border border-white/10 light:border-slate-200 px-3 py-1.5 text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)]">
+          </ProtectedLink>
+          <ProtectedLink href="/provincial-budget" className="rounded-full border border-white/10 light:border-slate-200 px-3 py-1.5 text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)]">
             All Provinces →
-          </Link>
+          </ProtectedLink>
         </div>
         <RelatedContent groups={getProvincialSeoPageRelatedContent(page)} />
       </div>
