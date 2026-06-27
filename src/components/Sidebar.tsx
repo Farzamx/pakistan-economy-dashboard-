@@ -147,13 +147,17 @@ export default function Sidebar() {
             pass into Main / Analytics / Premium Tools bands. Premium Tools
             (including PSX) now renders FIRST, directly below the search
             bar — these are flagship/value-added features (Comparisons,
-            Budget Tracker, Provincial Budget, PSX) and the Navigation UX
-            Improvement pass moved them above the fold so they're visible
-            without scrolling, rather than after the full Main/Analytics
-            anchor list. This is purely a sidebar DOM position change — it
-            doesn't touch NAV_ITEMS' own order, so the scroll-spy's "last in
-            document order wins" tie-break and the `activeId` default
-            ("overview") are unaffected. */}
+            Budget Tracker, Provincial Budget, Economic Calendar, PSX) and
+            the Navigation UX Improvement pass moved them above the fold so
+            they're visible without scrolling, rather than after the full
+            Main/Analytics anchor list. This is purely a sidebar DOM
+            position change — it doesn't touch NAV_ITEMS' own order, so the
+            scroll-spy's "last in document order wins" tie-break and the
+            `activeId` default ("overview") are unaffected.
+            Economic Calendar joined this group (moved out of Analytics
+            below) when it became a premium tool — same gating, same
+            gradient/glow treatment as its three siblings here, just its
+            own color (cyan) so all four stay visually distinct. */}
         <nav className="flex flex-col gap-1">
           <SidebarSectionLabel>Premium Tools</SidebarSectionLabel>
 
@@ -263,6 +267,38 @@ export default function Sidebar() {
             </Link>
           </motion.div>
 
+          {/* Economic Calendar — cyan, fourth premium placement. */}
+          <motion.div
+            whileHover={{ x: 4, scale: 1.015 }}
+            transition={{ type: "spring", stiffness: 400, damping: 25 }}
+            className="mb-1"
+          >
+            <Link
+              href="/economic-calendar"
+              onClick={(e) => handleProtectedNav(e, "/economic-calendar")}
+              aria-current={pathname?.startsWith("/economic-calendar") ? "true" : undefined}
+              className={`group relative flex items-center gap-2.5 overflow-hidden rounded-lg border px-4 py-2.5 text-sm font-semibold transition-all duration-300 ${
+                pathname?.startsWith("/economic-calendar")
+                  ? "border-cyan-400/40 bg-cyan-400/15 text-white shadow-[0_0_16px_rgba(34,211,238,0.35)] light:text-slate-900"
+                  : "border-cyan-400/20 bg-cyan-400/5 text-white/85 hover:border-cyan-400/35 hover:bg-cyan-400/10 hover:text-white light:text-slate-700 light:hover:text-slate-900"
+              }`}
+            >
+              <svg
+                className="h-4 w-4 shrink-0 text-cyan-400 transition-transform duration-300 group-hover:scale-110"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.75"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <rect x="3" y="5" width="18" height="16" rx="2" />
+                <path d="M3 10h18M8 3v4M16 3v4" />
+              </svg>
+              <span>Economic Calendar</span>
+            </Link>
+          </motion.div>
+
           {/* PSX — opens "Coming Soon" modal, not a nav link */}
           <motion.button
             type="button"
@@ -302,33 +338,6 @@ export default function Sidebar() {
           })}
 
           <SidebarSectionLabel>Analytics</SidebarSectionLabel>
-
-          {/* Economic Calendar — a real route (not a homepage anchor) like
-              the Premium Tools links above, so it needs pathname-based
-              active state rather than the scroll-spy. Placed first under
-              Analytics, directly above Inflation/Monetary Policy/External
-              Sector, per the Economic Calendar feature spec. Now premium
-              (protectedSections.ts) — gated like Comparisons/Budget/
-              Provincial Budget above, just without their gradient/glow
-              styling, which wasn't part of this gating change. */}
-          <motion.div whileHover={{ x: 4 }} transition={{ type: "spring", stiffness: 400, damping: 25 }}>
-            <Link
-              href="/economic-calendar"
-              onClick={(e) => handleProtectedNav(e, "/economic-calendar")}
-              aria-current={pathname?.startsWith("/economic-calendar") ? "true" : undefined}
-              className={`flex items-center gap-2.5 rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors ${
-                pathname?.startsWith("/economic-calendar")
-                  ? "border-neon-blue/25 bg-neon-blue/10 text-white light:text-slate-900"
-                  : "border-transparent text-white/50 light:text-slate-500 hover:bg-white/5 light:hover:bg-slate-100 hover:text-white light:hover:text-slate-900"
-              }`}
-            >
-              <svg className="h-3.5 w-3.5 shrink-0 opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="3" y="5" width="18" height="16" rx="2" />
-                <path d="M3 10h18M8 3v4M16 3v4" />
-              </svg>
-              Economic Calendar
-            </Link>
-          </motion.div>
 
           {ANALYTICS_NAV_ITEMS.map((item) => {
             const isActive = isHomepage && activeId === item.id;

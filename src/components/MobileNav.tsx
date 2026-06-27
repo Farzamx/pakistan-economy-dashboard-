@@ -22,8 +22,8 @@ import { isProtectedPath } from "@/lib/protectedSections";
 interface DrawerLink {
   label: string;
   href: string;
-  /** "purple" | "blue" | "emerald" match the desktop Sidebar's three premium sections exactly; omitted for the plain items (Rankings, News, Indicators, Overview). */
-  premium?: "purple" | "blue" | "emerald";
+  /** "purple" | "blue" | "emerald" | "cyan" match the desktop Sidebar's four premium sections exactly; omitted for the plain items (Rankings, News, Indicators, Overview). */
+  premium?: "purple" | "blue" | "emerald" | "cyan";
   icon: React.ReactNode;
 }
 
@@ -42,6 +42,11 @@ const PREMIUM_STYLES: Record<string, { active: string; inactive: string; iconCol
     active: "border-emerald-400/40 bg-emerald-400/15 text-white shadow-[0_0_16px_rgba(52,211,153,0.35)]",
     inactive: "border-emerald-400/20 bg-emerald-400/5 text-white/85",
     iconColor: "text-emerald-400",
+  },
+  cyan: {
+    active: "border-cyan-400/40 bg-cyan-400/15 text-white shadow-[0_0_16px_rgba(34,211,238,0.35)]",
+    inactive: "border-cyan-400/20 bg-cyan-400/5 text-white/85",
+    iconColor: "text-cyan-400",
   },
 };
 
@@ -93,21 +98,22 @@ const LINKS: DrawerLink[] = [
     ),
   },
   {
+    label: "Economic Calendar",
+    href: "/economic-calendar",
+    premium: "cyan",
+    icon: (
+      <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="3" y="5" width="18" height="16" rx="2" />
+        <path d="M3 10h18M8 3v4M16 3v4" />
+      </svg>
+    ),
+  },
+  {
     label: "Rankings",
     href: "/provincial-budget/rankings",
     icon: (
       <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
         <path d="M8 20V10M14 20V4M20 20v-7M4 20v-4" />
-      </svg>
-    ),
-  },
-  {
-    label: "Economic Calendar",
-    href: "/economic-calendar",
-    icon: (
-      <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="3" y="5" width="18" height="16" rx="2" />
-        <path d="M3 10h18M8 3v4M16 3v4" />
       </svg>
     ),
   },
