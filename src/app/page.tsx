@@ -18,8 +18,10 @@ import HashScrollRestore from "@/components/HashScrollRestore";
 import ViewportFadeIn from "@/components/ViewportFadeIn";
 import TrendLineChart from "@/components/charts/TrendLineChart";
 import { fallbackPakEtfKpi } from "@/data/globalMarketsFallbackData";
+import { ECONOMIC_CALENDAR_EVENTS, ECONOMIC_CALENDAR_HISTORICAL_EVENTS } from "@/data/economicCalendarEvents";
 import { sectionData } from "@/data/sectionData";
 import { getFreshnessStatus } from "@/lib/dataFreshness";
+import { getMostRecentEvent, valueMatchesEventOutcome } from "@/lib/economicCalendar/economicCalendarData";
 import { getAiEconomicAnalysis } from "@/lib/data/aiEconomicAnalysis";
 import { getAiRiskIntelligence } from "@/lib/data/aiRiskIntelligence";
 import { getAllSbpIndicators } from "@/lib/data/sbp";
@@ -372,13 +374,44 @@ export default async function Home() {
     ...(spiKpi ? [spiKpi] : []),
   ];
 
+  // Economic-Calendar-aware freshness — these three "As Needed" indicators
+  // each track the exact same release as a recurring Economic Calendar
+  // series (MPC decisions, T-Bill/PIB auctions), so the calendar's known
+  // dates let dataFreshness.ts flag a real delay sooner than its generic
+  // 90-day As-Needed threshold would, without misreading a not-yet-due
+  // release as late. Not applied to FX Reserves/Current Account/Trade
+  // Balance/Remittances — those are sourced here as SBP EasyData *monthly*
+  // aggregates, a different vintage from the calendar's weekly press-
+  // release series of the same name, so cross-referencing them would risk
+  // an incorrect verdict rather than a more accurate one.
+  //
+  // releaseAlreadyReflected matters specifically for Policy Rate: SBP
+  // EasyData only adds a new dated observation when the rate actually
+  // changes, so a "hold" decision (the common case) never produces a new
+  // latestDate at all — without this check, every hold would eventually
+  // misreport as "Stale" even though the live value is already correct.
+  const todayForCalendar = new Date();
+  const allCalendarEvents = [...ECONOMIC_CALENDAR_EVENTS, ...ECONOMIC_CALENDAR_HISTORICAL_EVENTS];
+  const policyRateEvent = getMostRecentEvent(allCalendarEvents, "SBP Monetary Policy Committee Meeting", todayForCalendar);
+  const tbillEvent = getMostRecentEvent(allCalendarEvents, "Treasury Bill Auction", todayForCalendar);
+  const pibEvent = getMostRecentEvent(allCalendarEvents, "PIB Auction", todayForCalendar);
+
+  function withCalendarFreshness(kpi: Kpi, event: typeof policyRateEvent) {
+    if (!event) return kpi;
+    return {
+      ...kpi,
+      expectedReleaseDate: event.date,
+      releaseAlreadyReflected: valueMatchesEventOutcome(kpi.value, event.actual),
+    };
+  }
+
   const secondaryKpis = [
-    sbp.policyRate.kpi,
+    withCalendarFreshness(sbp.policyRate.kpi, policyRateEvent),
     sbp.coreInflation.kpi,
     sbp.wpiInflation.kpi,
     sbp.usdPkr.kpi,
-    sbp.tbillYield3m.kpi,
-    sbp.pibYield3y.kpi,
+    withCalendarFreshness(sbp.tbillYield3m.kpi, tbillEvent),
+    withCalendarFreshness(sbp.pibYield3y.kpi, pibEvent),
     sbp.currentAccount.kpi,
     sbp.tradeBalance.kpi,
     sbp.moneySupplyM2.kpi,
@@ -417,11 +450,11 @@ export default async function Home() {
   ];
 
   // Build-time data freshness audit — printed to server/build console
-  console.log("\n=== Global Markets Freshness Audit ===");
+  console.log("\n=== Global Markets & Live FX Freshness Audit ===");
   console.log("Indicator            | Source          | latestDate   | status");
   console.log("---------------------|-----------------|--------------|--------");
-  for (const kpi of globalMarketsKpis) {
-    const status = getFreshnessStatus(kpi.latestDate, kpi.frequency);
+  for (const kpi of [...globalMarketsKpis, ...liveFxKpis]) {
+    const status = getFreshnessStatus(kpi.latestDate, kpi.frequency, { marketType: kpi.marketType, expectedReleaseDate: kpi.expectedReleaseDate, releaseAlreadyReflected: kpi.releaseAlreadyReflected });
     const indicator = kpi.title.padEnd(20);
     const src = (kpi.source ?? "—").padEnd(15);
     const date = (kpi.latestDate ?? "—").padEnd(12);

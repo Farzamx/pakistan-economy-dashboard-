@@ -4,6 +4,8 @@
 // FreshnessStatus that drives the colored badge on each card and the
 // dashboard-wide Data Sources audit table.
 
+import { getMarketClosureReason, getLastTradingDay, MARKET_TYPE_LABEL, type MarketType } from "@/lib/marketCalendar";
+
 export type DataFrequency =
   | "Real-time"
   | "Hourly"
@@ -14,7 +16,11 @@ export type DataFrequency =
   | "Annual"
   | "As Needed";
 
-export type FreshnessStatus = "current" | "delayed" | "stale";
+// "closed-weekend"/"closed-holiday" are distinct from "delayed" — they mean
+// the market itself isn't in session, so the latest available value is
+// already the correct, complete answer. See getFreshnessStatus below for
+// how a KPI opts into this (via `marketType`).
+export type FreshnessStatus = "current" | "delayed" | "stale" | "closed-weekend" | "closed-holiday";
 
 /**
  * Thresholds [delayedAfterDays, staleAfterDays] per frequency.
@@ -47,13 +53,70 @@ function daysSince(latestDate: string): number {
   return Math.floor(diff / 86_400_000);
 }
 
+export interface FreshnessOptions {
+  /** Set for KPIs sourced from an actual tradeable market (forex/futures/Treasury) — enables weekend/holiday-aware classification instead of a flat day-count threshold. */
+  marketType?: MarketType;
+  /**
+   * "YYYY-MM-DD" of the most recent *known* scheduled release for this
+   * indicator (e.g. the last SBP MPC meeting date from the Economic
+   * Calendar) — when set, a release that hasn't happened yet is never
+   * misread as "delayed" by the generic threshold, and one that *has*
+   * happened but hasn't reached this KPI yet is flagged sooner than the
+   * generic threshold otherwise would.
+   */
+  expectedReleaseDate?: string;
+  /**
+   * Set when the KPI's current value already matches the known outcome of
+   * `expectedReleaseDate` (see economicCalendarData.ts's
+   * valueMatchesEventOutcome) — suppresses the delayed/stale override
+   * above. Needed because a "hold" decision (e.g. SBP keeping the policy
+   * rate unchanged) legitimately produces no new dated observation from
+   * the source, so an old `latestDate` doesn't mean the value is wrong.
+   */
+  releaseAlreadyReflected?: boolean;
+}
+
 export function getFreshnessStatus(
   latestDate: string | undefined,
   frequency: DataFrequency | undefined,
+  options?: FreshnessOptions,
 ): FreshnessStatus {
   if (!latestDate || !frequency) return "stale";
+
+  const now = new Date();
+
+  // Market-closure override — only ever engages when *today* is a
+  // non-trading day, and only when latestDate already reflects the most
+  // recent actual trading session (otherwise this is a genuine delay that
+  // happens to coincide with a weekend/holiday, and falls through below).
+  if (options?.marketType) {
+    const closure = getMarketClosureReason(now);
+    if (closure) {
+      const lastTradingDay = getLastTradingDay(now);
+      if (latestDate >= lastTradingDay) return closure;
+    }
+  }
+
   const [delayedAt, staleAt] = THRESHOLDS[frequency];
   const age = daysSince(latestDate);
+
+  // Economic-Calendar-aware override — see FreshnessOptions.expectedReleaseDate.
+  if (options?.expectedReleaseDate) {
+    if (now.toISOString().slice(0, 10) < options.expectedReleaseDate) {
+      // The next/most-recently-known scheduled release hasn't happened yet
+      // — don't penalize the indicator for not having moved.
+      return "current";
+    }
+    if (latestDate < options.expectedReleaseDate && !options.releaseAlreadyReflected) {
+      // The scheduled release has come and gone, but this KPI's value
+      // still predates it — a real delay, flagged ahead of the generic
+      // (and much more generous) As-Needed/Monthly threshold. (Skipped
+      // when releaseAlreadyReflected — see FreshnessOptions for why.)
+      const graceDays = daysSince(options.expectedReleaseDate);
+      return graceDays > 7 ? "stale" : "delayed";
+    }
+  }
+
   if (age <= delayedAt) return "current";
   if (age <= staleAt) return "delayed";
   return "stale";
@@ -75,19 +138,41 @@ export function formatLatestDate(
 }
 
 export const FRESHNESS_DOT: Record<FreshnessStatus, string> = {
-  current: "text-emerald-400 light:text-emerald-700",
-  delayed: "text-amber-400 light:text-amber-600",
-  stale:   "text-rose-400 light:text-rose-700",
+  current:         "text-emerald-400 light:text-emerald-700",
+  delayed:         "text-amber-400 light:text-amber-600",
+  stale:           "text-rose-400 light:text-rose-700",
+  "closed-weekend": "text-sky-400 light:text-sky-700",
+  "closed-holiday": "text-indigo-400 light:text-indigo-700",
 };
 
 export const FRESHNESS_LABEL: Record<FreshnessStatus, string> = {
-  current: "Current",
-  delayed: "Delayed",
-  stale:   "Stale",
+  current:          "Current",
+  delayed:          "Delayed",
+  stale:            "Stale",
+  "closed-weekend": "Last Market Close",
+  "closed-holiday": "Market Closed",
 };
 
+/**
+ * User-trust messaging (requirement: explain *why* a value isn't moving) —
+ * only ever non-null for the two closed-market statuses, so callers can
+ * render it conditionally without their own status-comparison logic.
+ */
+export function getClosureMessage(status: FreshnessStatus, marketType?: MarketType): string | null {
+  const subject = marketType ? `${MARKET_TYPE_LABEL[marketType]} is` : "Markets are";
+  if (status === "closed-weekend") {
+    return `${subject} closed for the weekend. Displaying the latest available market close.`;
+  }
+  if (status === "closed-holiday") {
+    return `${subject} closed for a holiday. Displaying the latest available market close.`;
+  }
+  return null;
+}
+
 export const FRESHNESS_BADGE: Record<FreshnessStatus, string> = {
-  current: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
-  delayed: "bg-amber-500/10  text-amber-400  border-amber-500/20",
-  stale:   "bg-rose-500/10   text-rose-400   border-rose-500/20",
+  current:          "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+  delayed:          "bg-amber-500/10   text-amber-400   border-amber-500/20",
+  stale:            "bg-rose-500/10    text-rose-400    border-rose-500/20",
+  "closed-weekend": "bg-sky-500/10     text-sky-400     border-sky-500/20",
+  "closed-holiday": "bg-indigo-500/10  text-indigo-400  border-indigo-500/20",
 };

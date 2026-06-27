@@ -27,8 +27,8 @@ const FAQ = [
     answer: "The Economic Calendar (/economic-calendar) tracks what's coming next. This archive tracks what has already happened, so you can look back at how a release compared to its forecast.",
   },
   {
-    question: "Can I filter by category or year?",
-    answer: "Yes — use the Category and Year filters above to narrow the list, for example to see only past SBP Monetary Policy Committee decisions, or every release from a specific year.",
+    question: "Can I filter, search, or see released-only events?",
+    answer: "Yes — use the search box plus the Category, Year, and \"Released Only\" filters above to narrow the list, for example to see only past SBP Monetary Policy Committee decisions, or every release from a specific year.",
   },
 ];
 
@@ -43,12 +43,34 @@ export default async function EconomicCalendarArchivePage() {
       acceptedAnswer: { "@type": "Answer", text: item.answer },
     })),
   };
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: SITE_URL },
+      { "@type": "ListItem", position: 2, name: "Economic Calendar", item: `${SITE_URL}/economic-calendar` },
+      { "@type": "ListItem", position: 3, name: "Historical Release Archive", item: PAGE_URL },
+    ],
+  };
+  const datasetJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Dataset",
+    name: "Pakistan Economic Calendar — Historical Release Archive",
+    description: DESCRIPTION,
+    url: PAGE_URL,
+    keywords: ["Pakistan economic data", "SBP", "CPI", "GDP", "Pakistan Bureau of Statistics", "State Bank of Pakistan"],
+    creator: { "@type": "Organization", name: SITE_NAME, url: SITE_URL },
+    temporalCoverage: events.length > 0 ? `${events[events.length - 1].eventDate}/${events[0].eventDate}` : undefined,
+    variableMeasured: ["Previous value", "Forecast value", "Actual value", "Surprise"],
+  };
 
   return (
     <div className="flex min-h-screen w-full">
       <Sidebar />
       <main className="flex-1 px-6 py-8 sm:px-10 lg:px-16">
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd).replace(/</g, "\\u003c") }} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd).replace(/</g, "\\u003c") }} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(datasetJsonLd).replace(/</g, "\\u003c") }} />
 
         <div className="flex flex-col gap-6">
           <div>

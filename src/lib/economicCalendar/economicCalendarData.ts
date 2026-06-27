@@ -1,4 +1,4 @@
-import type { EconomicEvent, EventCategory, ImportanceLevel } from "./economicCalendarTypes";
+import type { EconomicEvent, EventCategory, ImportanceLevel, EventStatus } from "./economicCalendarTypes";
 
 function toDateOnly(d: Date): Date {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate());
@@ -38,8 +38,46 @@ export function formatEventTime(time: string): string {
   return `${hour12}:${String(m).padStart(2, "0")} ${period} PKT`;
 }
 
+/** Explicit `status` wins (postponed/cancelled mock entries); otherwise derived from whether `actual` is set — the same rule the seed generator uses when writing to Supabase, kept here so the mock-data-driven hub matches it exactly. */
+export function resolveStatus(event: EconomicEvent): EventStatus {
+  if (event.status) return event.status;
+  return event.actual ? "released" : "scheduled";
+}
+
 export function sortByDateAsc(events: EconomicEvent[]): EconomicEvent[] {
   return [...events].sort((a, b) => (a.date === b.date ? a.time.localeCompare(b.time) : a.date.localeCompare(b.date)));
+}
+
+/**
+ * The most recent event on/before `today` whose title starts with
+ * `titlePrefix` — used to feed dataFreshness.ts's Economic-Calendar-aware
+ * freshness override for live KPIs that track the exact same release as a
+ * recurring Economic Calendar series (e.g. SBP MPC decisions, T-Bill/PIB
+ * auctions). Deliberately title-prefix matching, not an exact id/slug
+ * lookup, so it keeps working as new dated instances are added to
+ * economicCalendarEvents.ts. Returns null if no matching past event exists.
+ */
+export function getMostRecentEvent(events: EconomicEvent[], titlePrefix: string, today: Date): EconomicEvent | null {
+  const past = events.filter((e) => e.title.startsWith(titlePrefix) && daysBetween(today, parseEventDate(e)) <= 0);
+  if (past.length === 0) return null;
+  return sortByDateAsc(past)[past.length - 1];
+}
+
+/**
+ * Whether a live KPI's current value already matches a known event's
+ * outcome — e.g. an SBP "hold" decision correctly produces no new
+ * SBP EasyData observation, since the rate didn't change, so the existing
+ * `latestDate` can be much older than the meeting date without the figure
+ * actually being wrong. Plain `parseFloat` is enough here since it stops at
+ * the first non-numeric character, so "11.5% (held)" and "11.50" both
+ * resolve to comparable numbers.
+ */
+export function valueMatchesEventOutcome(kpiValue: string, eventActual: string | null | undefined): boolean {
+  if (!eventActual) return false;
+  const kpiNum = parseFloat(kpiValue);
+  const eventNum = parseFloat(eventActual);
+  if (Number.isNaN(kpiNum) || Number.isNaN(eventNum)) return false;
+  return Math.abs(kpiNum - eventNum) < 0.01;
 }
 
 /** All events on the same calendar day as `today`. */
@@ -148,28 +186,28 @@ export function generateWeeklyOutlook(events: EconomicEvent[], today: Date): str
   const week = getThisWeekEvents(events, today);
   const high = week.filter((e) => e.importance === "High");
   if (high.length === 0) {
-    return "No high-impact releases are scheduled in the next 7 days — a comparatively quiet week, with only routine weekly and monthly updates on the calendar.";
+    return "This week contains no High Market Impact releases — a comparatively quiet week for PSX, the Rupee, and bond yields, with only routine weekly and monthly updates on the calendar.";
   }
 
   const categories = Array.from(new Set(high.map((e) => e.category)));
   const monetaryPolicy = high.find((e) => e.category === "Monetary Policy");
   const inflation = high.find((e) => e.category === "Inflation");
   const external = high.filter((e) => e.category === "External Sector");
+  const plural = high.length > 1;
 
-  const parts: string[] = [];
+  const parts: string[] = [`This week contains ${high.length} High Market Impact release${plural ? "s" : ""}${plural ? ":" : ":"} ${high.map((e) => e.title).join(", ")}.`];
+
   if (inflation && monetaryPolicy) {
-    parts.push(`This week investors will focus on ${inflation.title} and the upcoming ${monetaryPolicy.title}.`);
+    parts.push(`Investors will watch whether ${inflation.title} continues its recent trend, which could influence expectations heading into the ${monetaryPolicy.title}.`);
   } else if (inflation) {
-    parts.push(`This week's focus is ${inflation.title}, the clearest read yet on where prices are heading.`);
+    parts.push(`Investors will watch whether inflation continues its recent trend, which could influence expectations for future SBP policy decisions.`);
   } else if (monetaryPolicy) {
-    parts.push(`All eyes are on the ${monetaryPolicy.title}, the week's single most market-moving event.`);
-  } else {
-    parts.push(`This week's highest-impact release${high.length > 1 ? "s are" : " is"} ${high.map((e) => e.title).join(" and ")}.`);
+    parts.push(`All eyes are on the ${monetaryPolicy.title} — the policy rate decision is the week's single most reliably market-moving event for equities and bonds alike.`);
   }
 
   if (external.length > 0) {
     const names = external.map((e) => e.title.replace(/\s*\(.*\)/, "")).join(" and ");
-    parts.push(`External sector releases including ${names} may influence market sentiment.`);
+    parts.push(`External sector releases including ${names} may influence Rupee and reserve sentiment.`);
   } else if (categories.length > 1) {
     parts.push(`Releases across ${categories.filter((c) => c !== inflation?.category && c !== monetaryPolicy?.category).join(" and ") || categories.join(" and ")} round out the week.`);
   }

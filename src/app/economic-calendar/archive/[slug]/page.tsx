@@ -5,6 +5,10 @@ import Sidebar from "@/components/Sidebar";
 import RelatedContent from "@/components/RelatedContent";
 import EventCategoryBadge from "@/components/economicCalendar/EventCategoryBadge";
 import EventImportanceBadge from "@/components/economicCalendar/EventImportanceBadge";
+import EventStatusBadge from "@/components/economicCalendar/EventStatusBadge";
+import { MarketReactionActual } from "@/components/economicCalendar/MarketReactionSection";
+import HistoricalContext from "@/components/economicCalendar/HistoricalContext";
+import DataQualityFooter from "@/components/economicCalendar/DataQualityFooter";
 import {
   getEventBySlug,
   getReleasedEventSlugs,
@@ -14,6 +18,9 @@ import {
 } from "@/lib/economicCalendar/economicEventsRepo";
 import { getEventCategoryRelatedContent, type RelatedGroup } from "@/lib/relatedContent";
 import { formatEventDate } from "@/lib/economicCalendar/economicCalendarData";
+import { calculateSurprise, SURPRISE_LABELS, SURPRISE_BADGE_CLASS } from "@/lib/economicCalendar/surpriseAnalysis";
+import { getMarketReaction } from "@/lib/economicCalendar/marketReactionEngine";
+import { getWhyItMatters } from "@/lib/economicCalendar/whyItMatters";
 import { SITE_URL, SITE_NAME } from "@/lib/seoConfig";
 
 interface PageProps {
@@ -28,11 +35,12 @@ export async function generateStaticParams() {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
   const event = await getEventBySlug(slug);
-  if (!event || event.status !== "released") return {};
+  if (!event || event.status === "scheduled") return {};
 
   const url = `${SITE_URL}/economic-calendar/archive/${event.slug}`;
-  const title = `${event.title} — Actual ${event.actualValue ?? "Result"} | Pakistan Economic Calendar Archive`;
-  const description = `${event.title}, released ${formatEventDate(event.eventDate)}: actual ${event.actualValue ?? "—"}, forecast was ${event.forecastValue ?? "—"}, previous reading ${event.previousValue ?? "—"}.`;
+  const resultLabel = event.actualValue ? `Actual ${event.actualValue}` : event.status === "postponed" ? "Postponed" : event.status === "cancelled" ? "Cancelled" : "Released";
+  const title = `${event.title} — ${resultLabel} | Pakistan Economic Calendar Archive`;
+  const description = `${event.title}, ${formatEventDate(event.eventDate)}: actual ${event.actualValue ?? "—"}, forecast was ${event.forecastValue ?? "—"}, previous reading ${event.previousValue ?? "—"}.`;
   return {
     title,
     description,
@@ -49,8 +57,8 @@ function buildRelatedGroups(event: EventRecord, sameSeries: EventRecord[], sameC
     groups.push({
       heading: "Related Calendar Events",
       links: sameSeries.map((e) => ({
-        href: `/economic-calendar/${e.status === "released" ? "archive" : "event"}/${e.slug}`,
-        label: `${formatEventDate(e.eventDate)} — ${e.status === "released" ? `Actual ${e.actualValue ?? ""}` : "Scheduled"}`,
+        href: `/economic-calendar/${e.status === "scheduled" ? "event" : "archive"}/${e.slug}`,
+        label: `${formatEventDate(e.eventDate)} — ${e.status === "scheduled" ? "Upcoming" : e.actualValue ? `Actual ${e.actualValue}` : "Released"}`,
       })),
     });
   }
@@ -85,8 +93,8 @@ function buildFaq(event: EventRecord) {
 export default async function ArchiveDetailPage({ params }: PageProps) {
   const { slug } = await params;
   const event = await getEventBySlug(slug);
-  // Scheduled/upcoming events live at /economic-calendar/event/[slug] instead.
-  if (!event || event.status !== "released") notFound();
+  // Still-scheduled events live at /economic-calendar/event/[slug] instead.
+  if (!event || event.status === "scheduled") notFound();
 
   const [sameSeries, sameCategory] = await Promise.all([
     getEventsBySeriesSlug(event.series.slug, event.id),
@@ -95,6 +103,11 @@ export default async function ArchiveDetailPage({ params }: PageProps) {
 
   const relatedGroups = buildRelatedGroups(event, sameSeries, sameCategory);
   const faq = buildFaq(event);
+  const whyItMatters = getWhyItMatters(event.series.slug, event.series.category);
+  const surprise = calculateSurprise(event.actualValue, event.forecastValue);
+  const reaction = event.status === "released" ? getMarketReaction(event.series.slug, event.series.category, surprise.direction, event.actualValue, event.previousValue) : null;
+  const reactionAccent = surprise.direction === "positive" ? "positive" : surprise.direction === "negative" ? "negative" : "neutral";
+
   const faqJsonLd = {
     "@context": "https://schema.org",
     "@type": "FAQPage",
@@ -104,27 +117,39 @@ export default async function ArchiveDetailPage({ params }: PageProps) {
       acceptedAnswer: { "@type": "Answer", text: item.answer },
     })),
   };
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: SITE_URL },
+      { "@type": "ListItem", position: 2, name: "Economic Calendar", item: `${SITE_URL}/economic-calendar` },
+      { "@type": "ListItem", position: 3, name: "Historical Release Archive", item: `${SITE_URL}/economic-calendar/archive` },
+      { "@type": "ListItem", position: 4, name: event.title, item: `${SITE_URL}/economic-calendar/archive/${event.slug}` },
+    ],
+  };
 
   return (
     <div className="flex min-h-screen w-full">
       <Sidebar />
       <main className="flex-1 px-6 py-8 sm:px-10 lg:px-16">
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd).replace(/</g, "\\u003c") }} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd).replace(/</g, "\\u003c") }} />
 
         <div className="mx-auto max-w-4xl">
-          <div className="flex items-center justify-between">
-            <Link href="/economic-calendar/archive" className="flex items-center gap-2 text-xs font-medium text-white/50 light:text-slate-500 transition-colors hover:text-white light:hover:text-slate-900">
-              <span aria-hidden="true">←</span> {SITE_NAME} Archive
-            </Link>
-            <span className="text-[10px] uppercase tracking-widest text-white/25 light:text-slate-400">
-              pakeconintel.com/economic-calendar/archive/{event.slug}
-            </span>
-          </div>
+          <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-xs text-white/40 light:text-slate-400">
+            <Link href="/" className="hover:text-white light:hover:text-slate-900">Home</Link>
+            <span aria-hidden="true">/</span>
+            <Link href="/economic-calendar" className="hover:text-white light:hover:text-slate-900">Economic Calendar</Link>
+            <span aria-hidden="true">/</span>
+            <Link href="/economic-calendar/archive" className="hover:text-white light:hover:text-slate-900">Archive</Link>
+            <span aria-hidden="true">/</span>
+            <span className="truncate text-white/60 light:text-slate-600">{event.title}</span>
+          </nav>
 
-          <div className="mt-8 flex flex-wrap items-center gap-2">
+          <div className="mt-4 flex flex-wrap items-center gap-2">
             <EventCategoryBadge category={event.series.category} />
             <EventImportanceBadge importance={event.importance} />
-            <span className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-400">Released</span>
+            <EventStatusBadge status={event.status} />
           </div>
 
           <h1 className="mt-4 text-3xl font-bold tracking-tight text-white light:text-slate-900 sm:text-4xl">{event.title}</h1>
@@ -142,27 +167,33 @@ export default async function ArchiveDetailPage({ params }: PageProps) {
             </div>
             <div className="flex flex-col gap-1">
               <span className="text-[10px] uppercase tracking-wide text-white/35 light:text-slate-400">Actual</span>
-              <span className="text-lg font-bold text-neon-blue">{event.actualValue ?? "—"}</span>
+              <span className="text-lg font-bold text-neon-blue">{event.actualValue ?? "Pending"}</span>
             </div>
           </section>
 
+          {surprise.direction !== "unavailable" && (
+            <section className="glass-card mt-6 flex flex-wrap items-center justify-between gap-3 p-5">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-white/40 light:text-slate-500">Surprise Analysis</p>
+                <p className="mt-1 text-sm text-white/70 light:text-slate-600">
+                  Actual {event.actualValue} vs forecast {event.forecastValue}
+                  {surprise.deltaLabel && <> — surprise of <span className="font-semibold text-white light:text-slate-900">{surprise.deltaLabel}</span></>}
+                </p>
+              </div>
+              <span className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-wide ${SURPRISE_BADGE_CLASS[surprise.direction]}`}>
+                {SURPRISE_LABELS[surprise.direction]}
+              </span>
+            </section>
+          )}
+
           <section className="glass-card mt-6 p-6 sm:p-8">
-            <h2 className="text-xl font-semibold text-white light:text-slate-900">Source</h2>
-            <p className="mt-3 text-sm leading-relaxed text-white/65 light:text-slate-600">
-              Published by {event.series.sourceName}
-              {event.series.cadence !== "irregular" && ` on a ${event.series.cadence} basis`}.
-            </p>
-            {(event.sourceUrl ?? event.series.sourceUrl) && (
-              <a
-                href={event.sourceUrl ?? event.series.sourceUrl ?? undefined}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-2 inline-block text-sm text-neon-blue underline-offset-2 hover:underline"
-              >
-                View official source →
-              </a>
-            )}
+            <h2 className="text-xl font-semibold text-white light:text-slate-900">Why It Matters</h2>
+            <p className="mt-3 text-sm leading-relaxed text-white/65 light:text-slate-600">{whyItMatters}</p>
           </section>
+
+          <MarketReactionActual reaction={reaction} accent={reactionAccent} />
+
+          <HistoricalContext events={sameSeries} />
 
           <section className="glass-card mt-6 p-6 sm:p-8">
             <h2 className="text-xl font-semibold text-white light:text-slate-900">Frequently Asked Questions</h2>
@@ -175,6 +206,8 @@ export default async function ArchiveDetailPage({ params }: PageProps) {
               ))}
             </div>
           </section>
+
+          <DataQualityFooter event={event} />
 
           <RelatedContent groups={relatedGroups} />
 

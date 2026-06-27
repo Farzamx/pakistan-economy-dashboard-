@@ -16,6 +16,17 @@ export interface TermEntry {
 
 export const TERMINOLOGY: Record<string, TermEntry> = {
 
+  "market-impact": {
+    title: "Market Impact",
+    what: "Market Impact estimates the potential effect of this release on PSX, investor sentiment, bond yields, and the Pakistani Rupee.",
+    why: "Not every economic release moves markets the same way — an SBP rate decision or CPI print routinely shifts equity and bond prices, while a weekly market review rarely does.",
+    how: [
+      "High = SBP MPC, CPI, GDP, Federal Budget, major debt releases",
+      "Medium = Trade Balance, Current Account, Remittances, FX Reserves, T-Bill/PIB auctions",
+      "Low = SPI weekly inflation, routine market reviews",
+    ],
+  },
+
   // ── Pakistan macro ──────────────────────────────────────────────────────
 
   "GDP Growth": {

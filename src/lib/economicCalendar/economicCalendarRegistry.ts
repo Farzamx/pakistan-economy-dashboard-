@@ -1,4 +1,4 @@
-import type { EventCategory, ImportanceLevel } from "./economicCalendarTypes";
+import type { EventCategory, ImportanceLevel, EventStatus } from "./economicCalendarTypes";
 
 export interface CategoryMeta {
   label: EventCategory;
@@ -11,13 +11,13 @@ export interface CategoryMeta {
 export const EVENT_CATEGORIES: Record<EventCategory, CategoryMeta> = {
   Inflation: {
     label: "Inflation",
-    description: "CPI, SPI, and food/core inflation releases that show how fast prices are rising.",
+    description: "CPI, core inflation, and SPI weekly releases that show how fast prices are rising in Pakistan.",
     color: "purple",
     hex: "#a855f7",
   },
   "Monetary Policy": {
     label: "Monetary Policy",
-    description: "SBP policy rate decisions and the meetings that set them.",
+    description: "SBP policy rate decisions and the Monetary Policy Committee meetings that set them.",
     color: "blue",
     hex: "#38bdf8",
   },
@@ -29,25 +29,25 @@ export const EVENT_CATEGORIES: Record<EventCategory, CategoryMeta> = {
   },
   "Fiscal Sector": {
     label: "Fiscal Sector",
-    description: "The federal budget, the Economic Survey, and other government fiscal releases.",
+    description: "The federal budget, the Economic Survey, T-Bill/PIB auctions, and government debt releases.",
     color: "amber",
     hex: "#f59e0b",
   },
   "Real Economy": {
     label: "Real Economy",
-    description: "GDP growth and other output releases measuring the size of the economy.",
+    description: "GDP growth and Large Scale Manufacturing (LSM) — output releases measuring the size of the economy.",
     color: "rose",
     hex: "#fb7185",
   },
   "Financial Markets": {
     label: "Financial Markets",
-    description: "PSX/KSE-100 reviews and other market-facing data points.",
+    description: "PSX/KSE-100 reviews, holiday calendar, and other market-facing data points.",
     color: "cyan",
     hex: "#22d3ee",
   },
   "Global Events": {
     label: "Global Events",
-    description: "Foreign central bank decisions and global releases that spill over into Pakistan's markets.",
+    description: "Pakistan-specific international events — IMF program reviews and disbursements that directly affect Pakistan's reserves and bond market. Not a general international calendar.",
     color: "violet",
     hex: "#818cf8",
   },
@@ -57,29 +57,47 @@ export const EVENT_CATEGORY_LIST: EventCategory[] = Object.keys(EVENT_CATEGORIES
 
 export interface ImportanceMeta {
   label: ImportanceLevel;
+  /** Full user-facing label — "{label} Market Impact", used everywhere this renders as a badge. */
+  displayLabel: string;
   badgeClass: string;
   dotClass: string;
 }
 
+/**
+ * Market Impact classification (renamed from generic "Importance" in
+ * Phase 2B — see EventImportanceBadge's tooltip for the exact wording
+ * shown to users). Classifications follow the user-specified mapping:
+ * High = SBP MPC, CPI, GDP, Federal Budget, major debt releases; Medium =
+ * Trade Balance, Current Account, Remittances, FX Reserves, T-Bill/PIB
+ * auctions; Low = SPI weekly, routine market reviews. Assigned per-series
+ * in scripts/generateEconomicCalendarSeed.ts's SERIES_META, not here — this
+ * is just the level metadata (color, label), not the classification rules.
+ */
 export const IMPORTANCE_LEVELS: Record<ImportanceLevel, ImportanceMeta> = {
   High: {
     label: "High",
+    displayLabel: "High Market Impact",
     badgeClass: "border-rose-400/30 bg-rose-400/10 text-rose-400",
     dotClass: "bg-rose-400",
   },
   Medium: {
     label: "Medium",
+    displayLabel: "Medium Market Impact",
     badgeClass: "border-amber-400/30 bg-amber-400/10 text-amber-400",
     dotClass: "bg-amber-400",
   },
   Low: {
     label: "Low",
+    displayLabel: "Low Market Impact",
     badgeClass: "border-emerald-400/30 bg-emerald-400/10 text-emerald-400",
     dotClass: "bg-emerald-400",
   },
 };
 
 export const IMPORTANCE_LEVEL_LIST: ImportanceLevel[] = ["High", "Medium", "Low"];
+
+export const MARKET_IMPACT_TOOLTIP =
+  "Market Impact estimates the potential effect of this release on PSX, investor sentiment, bond yields, and the Pakistani Rupee.";
 
 /** Border/bg/text utility classes for a category badge — Tailwind needs literal class strings, so this can't be templated from CategoryMeta.color at runtime. */
 export const CATEGORY_BADGE_CLASS: Record<CategoryMeta["color"], string> = {
@@ -90,4 +108,17 @@ export const CATEGORY_BADGE_CLASS: Record<CategoryMeta["color"], string> = {
   rose: "border-rose-400/30 bg-rose-400/10 text-rose-400",
   cyan: "border-cyan-400/30 bg-cyan-400/10 text-cyan-400",
   violet: "border-violet-400/30 bg-violet-400/10 text-violet-400",
+};
+
+export interface StatusMeta {
+  label: string;
+  badgeClass: string;
+}
+
+/** Upcoming=Gray, Released=Green, Postponed=Orange, Cancelled=Red, per the Phase 2B spec. */
+export const EVENT_STATUS_META: Record<EventStatus, StatusMeta> = {
+  scheduled: { label: "Upcoming", badgeClass: "border-white/20 bg-white/5 text-white/60 light:border-slate-300 light:bg-slate-100 light:text-slate-600" },
+  released: { label: "Released", badgeClass: "border-emerald-400/30 bg-emerald-400/10 text-emerald-400" },
+  postponed: { label: "Postponed", badgeClass: "border-amber-400/30 bg-amber-400/10 text-amber-400" },
+  cancelled: { label: "Cancelled", badgeClass: "border-rose-400/30 bg-rose-400/10 text-rose-400" },
 };

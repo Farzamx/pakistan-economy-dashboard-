@@ -72,22 +72,31 @@ export default function ThisMonthCalendar({ today, monthEvents }: { today: Date;
         {cells.map((cell) => {
           const key = cell.date.toDateString();
           const isSelected = selectedDate === key;
+          const hasHighImpact = cell.events.some((e) => e.importance === "High");
           return (
             <button
               key={key}
               type="button"
               disabled={cell.events.length === 0}
               onClick={() => setSelectedDate(isSelected ? null : key)}
-              className={`flex aspect-square flex-col items-center justify-start gap-1 rounded-lg border p-1 text-xs transition-colors sm:p-1.5 ${
+              aria-label={cell.events.length > 0 ? `${cell.date.getDate()}: ${cell.events.length} event${cell.events.length === 1 ? "" : "s"}${hasHighImpact ? ", includes a High Market Impact release" : ""}` : undefined}
+              className={`relative flex aspect-square flex-col items-center justify-start gap-1 rounded-lg border p-1 text-xs transition-colors sm:p-1.5 ${
                 !cell.inCurrentMonth
                   ? "border-transparent text-white/15 light:text-slate-300"
                   : isSelected
                     ? "border-neon-blue/50 bg-neon-blue/15 text-white light:text-slate-900"
-                    : cell.isToday
-                      ? "border-neon-blue/30 bg-neon-blue/5 text-white light:text-slate-900"
-                      : "border-white/5 light:border-slate-100 text-white/70 light:text-slate-600 hover:bg-white/5 light:hover:bg-slate-50 disabled:hover:bg-transparent"
+                    : hasHighImpact
+                      ? "border-rose-400/40 bg-rose-400/[0.06] text-white light:text-slate-900 hover:bg-rose-400/10"
+                      : cell.isToday
+                        ? "border-neon-blue/30 bg-neon-blue/5 text-white light:text-slate-900"
+                        : "border-white/5 light:border-slate-100 text-white/70 light:text-slate-600 hover:bg-white/5 light:hover:bg-slate-50 disabled:hover:bg-transparent"
               }`}
             >
+              {cell.events.length > 0 && (
+                <span className="absolute right-0.5 top-0.5 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-white/10 light:bg-slate-200 px-0.5 text-[8px] font-bold leading-none text-white/80 light:text-slate-700">
+                  {cell.events.length}
+                </span>
+              )}
               <span className="font-medium">{cell.date.getDate()}</span>
               {cell.events.length > 0 && (
                 <span className="flex flex-wrap items-center justify-center gap-0.5">
@@ -102,6 +111,7 @@ export default function ThisMonthCalendar({ today, monthEvents }: { today: Date;
                   {cell.events.length > 3 && <span className="text-[8px] text-white/40">+{cell.events.length - 3}</span>}
                 </span>
               )}
+              {hasHighImpact && <span className="h-1 w-4 rounded-full bg-rose-400" aria-hidden="true" />}
             </button>
           );
         })}
@@ -118,9 +128,19 @@ export default function ThisMonthCalendar({ today, monthEvents }: { today: Date;
 
       {selectedCell && selectedCell.events.length > 0 && (
         <div className="flex flex-col gap-2.5 border-t border-white/5 light:border-slate-100 pt-4">
-          <p className="text-xs font-semibold uppercase tracking-widest text-white/40 light:text-slate-500">
-            {formatEventDate(`${selectedCell.date.getFullYear()}-${String(selectedCell.date.getMonth() + 1).padStart(2, "0")}-${String(selectedCell.date.getDate()).padStart(2, "0")}`)}
-          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-xs font-semibold uppercase tracking-widest text-white/40 light:text-slate-500">
+              {formatEventDate(`${selectedCell.date.getFullYear()}-${String(selectedCell.date.getMonth() + 1).padStart(2, "0")}-${String(selectedCell.date.getDate()).padStart(2, "0")}`)}
+            </p>
+            <span className="rounded-full border border-white/10 light:border-slate-200 px-2 py-0.5 text-[10px] font-medium text-white/50 light:text-slate-500">
+              {selectedCell.events.length} Event{selectedCell.events.length === 1 ? "" : "s"}
+            </span>
+            {selectedCell.events.some((e) => e.importance === "High") && (
+              <span className="rounded-full border border-rose-400/30 bg-rose-400/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-rose-400">
+                High Impact
+              </span>
+            )}
+          </div>
           {selectedCell.events.map((event) => (
             <EventRow key={event.id} event={event} showDate={false} />
           ))}

@@ -5,6 +5,10 @@ import Sidebar from "@/components/Sidebar";
 import RelatedContent from "@/components/RelatedContent";
 import EventCategoryBadge from "@/components/economicCalendar/EventCategoryBadge";
 import EventImportanceBadge from "@/components/economicCalendar/EventImportanceBadge";
+import EventStatusBadge from "@/components/economicCalendar/EventStatusBadge";
+import { MarketReactionPreview } from "@/components/economicCalendar/MarketReactionSection";
+import HistoricalContext from "@/components/economicCalendar/HistoricalContext";
+import DataQualityFooter from "@/components/economicCalendar/DataQualityFooter";
 import {
   getEventBySlug,
   getScheduledEventSlugs,
@@ -14,6 +18,8 @@ import {
 } from "@/lib/economicCalendar/economicEventsRepo";
 import { getEventCategoryRelatedContent, type RelatedGroup } from "@/lib/relatedContent";
 import { formatEventDate, formatEventTime, formatRelativeDay } from "@/lib/economicCalendar/economicCalendarData";
+import { getMarketReactionPreview } from "@/lib/economicCalendar/marketReactionEngine";
+import { getWhyItMatters } from "@/lib/economicCalendar/whyItMatters";
 import { SITE_URL, SITE_NAME } from "@/lib/seoConfig";
 
 interface PageProps {
@@ -28,7 +34,7 @@ export async function generateStaticParams() {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
   const event = await getEventBySlug(slug);
-  if (!event || event.status === "released") return {};
+  if (!event || event.status !== "scheduled") return {};
 
   const url = `${SITE_URL}/economic-calendar/event/${event.slug}`;
   const title = `${event.title} — ${formatEventDate(event.eventDate)} | Pakistan Economic Calendar`;
@@ -49,8 +55,8 @@ function buildRelatedGroups(event: EventRecord, sameSeries: EventRecord[], sameC
     groups.push({
       heading: "Related Calendar Events",
       links: sameSeries.map((e) => ({
-        href: `/economic-calendar/${e.status === "released" ? "archive" : "event"}/${e.slug}`,
-        label: `${formatEventDate(e.eventDate)} — ${e.status === "released" ? "Released" : "Scheduled"}`,
+        href: `/economic-calendar/${e.status === "scheduled" ? "event" : "archive"}/${e.slug}`,
+        label: `${formatEventDate(e.eventDate)} — ${e.status === "scheduled" ? "Upcoming" : e.actualValue ? `Actual ${e.actualValue}` : "Released"}`,
       })),
     });
   }
@@ -91,9 +97,10 @@ function buildFaq(event: EventRecord) {
 export default async function EventDetailPage({ params }: PageProps) {
   const { slug } = await params;
   const event = await getEventBySlug(slug);
-  // Released events live permanently at /economic-calendar/archive/[slug]
-  // instead — this avoids the same release ever having two canonical URLs.
-  if (!event || event.status === "released") notFound();
+  // Released/postponed/cancelled events live permanently at
+  // /economic-calendar/archive/[slug] instead — this avoids the same
+  // release ever having two canonical URLs.
+  if (!event || event.status !== "scheduled") notFound();
 
   const [sameSeries, sameCategory] = await Promise.all([
     getEventsBySeriesSlug(event.series.slug, event.id),
@@ -102,6 +109,9 @@ export default async function EventDetailPage({ params }: PageProps) {
 
   const relatedGroups = buildRelatedGroups(event, sameSeries, sameCategory);
   const faq = buildFaq(event);
+  const whyItMatters = getWhyItMatters(event.series.slug, event.series.category);
+  const reactionScenarios = getMarketReactionPreview(event.series.slug, event.series.category);
+
   const faqJsonLd = {
     "@context": "https://schema.org",
     "@type": "FAQPage",
@@ -111,26 +121,36 @@ export default async function EventDetailPage({ params }: PageProps) {
       acceptedAnswer: { "@type": "Answer", text: item.answer },
     })),
   };
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: SITE_URL },
+      { "@type": "ListItem", position: 2, name: "Economic Calendar", item: `${SITE_URL}/economic-calendar` },
+      { "@type": "ListItem", position: 3, name: event.title, item: `${SITE_URL}/economic-calendar/event/${event.slug}` },
+    ],
+  };
 
   return (
     <div className="flex min-h-screen w-full">
       <Sidebar />
       <main className="flex-1 px-6 py-8 sm:px-10 lg:px-16">
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd).replace(/</g, "\\u003c") }} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd).replace(/</g, "\\u003c") }} />
 
         <div className="mx-auto max-w-4xl">
-          <div className="flex items-center justify-between">
-            <Link href="/economic-calendar" className="flex items-center gap-2 text-xs font-medium text-white/50 light:text-slate-500 transition-colors hover:text-white light:hover:text-slate-900">
-              <span aria-hidden="true">←</span> {SITE_NAME} Economic Calendar
-            </Link>
-            <span className="text-[10px] uppercase tracking-widest text-white/25 light:text-slate-400">
-              pakeconintel.com/economic-calendar/event/{event.slug}
-            </span>
-          </div>
+          <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-xs text-white/40 light:text-slate-400">
+            <Link href="/" className="hover:text-white light:hover:text-slate-900">Home</Link>
+            <span aria-hidden="true">/</span>
+            <Link href="/economic-calendar" className="hover:text-white light:hover:text-slate-900">Economic Calendar</Link>
+            <span aria-hidden="true">/</span>
+            <span className="truncate text-white/60 light:text-slate-600">{event.title}</span>
+          </nav>
 
-          <div className="mt-8 flex flex-wrap items-center gap-2">
+          <div className="mt-4 flex flex-wrap items-center gap-2">
             <EventCategoryBadge category={event.series.category} />
             <EventImportanceBadge importance={event.importance} />
+            <EventStatusBadge status={event.status} />
           </div>
 
           <h1 className="mt-4 text-3xl font-bold tracking-tight text-white light:text-slate-900 sm:text-4xl">{event.title}</h1>
@@ -149,6 +169,10 @@ export default async function EventDetailPage({ params }: PageProps) {
                 <span className="text-[10px] uppercase tracking-wide text-white/35 light:text-slate-400">Forecast</span>
                 <span className="text-xl font-semibold text-neon-blue">{event.forecastValue ?? "—"}</span>
               </div>
+              <div className="flex flex-col gap-1">
+                <span className="text-[10px] uppercase tracking-wide text-white/35 light:text-slate-400">Actual</span>
+                <span className="text-xl font-semibold text-white/40 light:text-slate-400">Pending</span>
+              </div>
             </div>
             <a
               href={`/economic-calendar/event/${event.slug}/ics`}
@@ -163,22 +187,13 @@ export default async function EventDetailPage({ params }: PageProps) {
           </section>
 
           <section className="glass-card mt-6 p-6 sm:p-8">
-            <h2 className="text-xl font-semibold text-white light:text-slate-900">Source</h2>
-            <p className="mt-3 text-sm leading-relaxed text-white/65 light:text-slate-600">
-              Published by {event.series.sourceName}
-              {event.series.cadence !== "irregular" && ` on a ${event.series.cadence} basis`}.
-            </p>
-            {(event.sourceUrl ?? event.series.sourceUrl) && (
-              <a
-                href={event.sourceUrl ?? event.series.sourceUrl ?? undefined}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-2 inline-block text-sm text-neon-blue underline-offset-2 hover:underline"
-              >
-                View official source →
-              </a>
-            )}
+            <h2 className="text-xl font-semibold text-white light:text-slate-900">Why It Matters</h2>
+            <p className="mt-3 text-sm leading-relaxed text-white/65 light:text-slate-600">{whyItMatters}</p>
           </section>
+
+          <MarketReactionPreview scenarios={reactionScenarios} />
+
+          <HistoricalContext events={sameSeries} />
 
           <section className="glass-card mt-6 p-6 sm:p-8">
             <h2 className="text-xl font-semibold text-white light:text-slate-900">Frequently Asked Questions</h2>
@@ -191,6 +206,8 @@ export default async function EventDetailPage({ params }: PageProps) {
               ))}
             </div>
           </section>
+
+          <DataQualityFooter event={event} />
 
           <RelatedContent groups={relatedGroups} />
 

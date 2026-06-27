@@ -1,18 +1,23 @@
 import type { EconomicEvent } from "@/lib/economicCalendar/economicCalendarTypes";
 
-// Economic Calendar — Phase 1 mock data set. Dates are fixed, illustrative
-// values (not pulled from any live source) anchored around the date this
-// feature was built (late June 2026), chosen so Today/This Week/This Month
-// all have realistic content to display right now. Phase 2 replaces this
-// file's role with a real event feed — every consumer reads EconomicEvent[]
-// through src/lib/economicCalendar/economicCalendarData.ts's query
-// functions, never this array directly, so swapping the source later means
-// changing where that data comes from, not every component that uses it.
+// Economic Calendar — Phase 1 mock data set, now Pakistan-only (Phase 2B
+// removed Oil/OPEC and US Fed FOMC — see the SEO/automation report for why:
+// this calendar covers only events that directly move PSX, the Rupee,
+// Pakistani bond yields, or investor sentiment in Pakistan specifically).
+// Dates are fixed, illustrative values (not pulled from any live source)
+// anchored around the date this feature was built (late June 2026), chosen
+// so Today/This Week/This Month all have realistic content to display
+// right now. Phase 2A+ layers a real database on top (see
+// economicEventsRepo.ts) for Event Detail/Archive pages and Phase 2B's
+// automation; this file remains the Phase 1 hub's own data source and the
+// seed's input — every consumer reads EconomicEvent[] through
+// economicCalendarData.ts's query functions, never this array directly.
 //
 // Previous/forecast figures are plausible illustrative numbers in the same
 // range as this dashboard's real indicators (CPI, policy rate, reserves,
-// trade balance, current account, remittances, GDP growth) — not actual
-// reported figures, and not meant to be cited as such.
+// trade balance, current account, remittances, GDP growth, LSM, T-Bill/PIB
+// yields, government debt) — not actual reported figures, and not meant to
+// be cited as such.
 
 export const ECONOMIC_CALENDAR_EVENTS: EconomicEvent[] = [
   {
@@ -47,17 +52,6 @@ export const ECONOMIC_CALENDAR_EVENTS: EconomicEvent[] = [
     previous: "+1.8% WoW",
     forecast: null,
     description: "A weekly wrap-up of the Pakistan Stock Exchange's benchmark KSE-100 index performance and the sectors driving it.",
-  },
-  {
-    id: "oil-2026-07-01",
-    title: "Oil Price Update (OPEC Monthly Report)",
-    category: "Global Events",
-    importance: "Low",
-    date: "2026-07-01",
-    time: "15:00",
-    previous: "$83.40/bbl",
-    forecast: "$84.00/bbl",
-    description: "OPEC's monthly oil market report — global crude prices feed directly into Pakistan's import bill and fuel-linked inflation.",
   },
   {
     id: "spi-2026-07-02",
@@ -144,7 +138,7 @@ export const ECONOMIC_CALENDAR_EVENTS: EconomicEvent[] = [
     id: "current-account-2026-07-15",
     title: "Current Account Balance (June 2026)",
     category: "External Sector",
-    importance: "High",
+    importance: "Medium",
     date: "2026-07-15",
     time: "17:00",
     previous: "-$0.4B",
@@ -232,18 +226,6 @@ export const ECONOMIC_CALENDAR_EVENTS: EconomicEvent[] = [
     description: "The State Bank's weekly statement of liquid foreign reserves — the buffer available to defend the Rupee and meet external obligations.",
   },
   {
-    id: "fomc-2026-07-29",
-    title: "US Federal Reserve FOMC Meeting Decision",
-    category: "Global Events",
-    importance: "High",
-    date: "2026-07-29",
-    time: "23:00",
-    previous: "4.25%-4.50%",
-    forecast: "4.25%-4.50% (hold expected)",
-    description: "The Fed's interest rate decision moves global capital flows and the Dollar broadly — a hike or cut shifts the relative appeal of holding Rupee versus Dollar assets.",
-    isHeadline: true,
-  },
-  {
     id: "spi-2026-07-30",
     title: "SPI Weekly Inflation Release",
     category: "Inflation",
@@ -303,7 +285,7 @@ export const ECONOMIC_CALENDAR_EVENTS: EconomicEvent[] = [
     id: "current-account-2026-08-14",
     title: "Current Account Balance (July 2026)",
     category: "External Sector",
-    importance: "High",
+    importance: "Medium",
     date: "2026-08-14",
     time: "17:00",
     previous: "-$0.2B",
@@ -344,6 +326,79 @@ export const ECONOMIC_CALENDAR_EVENTS: EconomicEvent[] = [
     forecast: null,
     description: "The federal government's annual budget speech in the National Assembly — next year's tax measures, spending allocations, and fiscal targets, all set in this single sitting.",
     isHeadline: true,
+  },
+  // Phase 2B additions — Core Inflation, LSM, T-Bill/PIB auctions, and
+  // government debt releases close the gap against the explicit Pakistan-
+  // only event list (these have real SBP EasyData series already used
+  // elsewhere on this dashboard — coreInflation, lsm, tbillYield3m,
+  // pibYield3y — so Priority 1/2 automation can sync them directly).
+  {
+    id: "tbill-auction-2026-07-02",
+    title: "Treasury Bill Auction (3M)",
+    category: "Fiscal Sector",
+    importance: "Medium",
+    date: "2026-07-02",
+    time: "11:00",
+    previous: "11.20%",
+    forecast: "11.10%",
+    description: "SBP's fortnightly 3-month Treasury Bill auction — the cut-off yield is the clearest live read on what the market expects from the next SBP policy rate decision.",
+  },
+  {
+    id: "core-inflation-2026-07-10",
+    title: "Core Inflation Release (June 2026)",
+    category: "Inflation",
+    importance: "High",
+    date: "2026-07-10",
+    time: "12:00",
+    previous: "9.8% YoY",
+    forecast: "9.5% YoY",
+    description: "PBS's core (Urban NFNE) inflation — CPI with volatile food and energy prices stripped out, the measure SBP weighs most heavily for the underlying, persistent inflation trend.",
+    isHeadline: true,
+  },
+  {
+    id: "lsm-2026-07-18",
+    title: "Large Scale Manufacturing (LSM) Growth (May 2026)",
+    category: "Real Economy",
+    importance: "Medium",
+    date: "2026-07-18",
+    time: "16:00",
+    previous: "1.2% YoY",
+    forecast: "1.8% YoY",
+    description: "PBS's Large Scale Manufacturing index — a monthly, timelier proxy for industrial output growth than the annual GDP release.",
+  },
+  {
+    id: "pib-auction-2026-07-24",
+    title: "PIB Auction (3Y)",
+    category: "Fiscal Sector",
+    importance: "Medium",
+    date: "2026-07-24",
+    time: "11:00",
+    previous: "12.10%",
+    forecast: "12.00%",
+    description: "SBP's Pakistan Investment Bond auction — the cut-off yield on longer-dated government debt, reflecting investor expectations for inflation and rates further out than T-Bills.",
+  },
+  {
+    id: "debt-2026-07-28",
+    title: "Government Debt Release (Q4 FY2025-26)",
+    category: "Fiscal Sector",
+    importance: "High",
+    date: "2026-07-28",
+    time: "17:00",
+    previous: "Rs 76.5T",
+    forecast: "Rs 78.0T",
+    description: "SBP's quarterly statement of total government debt — domestic and external combined — a key gauge of fiscal sustainability and future debt-servicing pressure.",
+    isHeadline: true,
+  },
+  {
+    id: "psx-holiday-2026-08-14",
+    title: "PSX Holiday Calendar (Independence Day)",
+    category: "Financial Markets",
+    importance: "Low",
+    date: "2026-08-14",
+    time: "00:00",
+    previous: null,
+    forecast: null,
+    description: "Pakistan Stock Exchange is closed for trading — no KSE-100 session today.",
   },
 ];
 
@@ -391,16 +446,16 @@ export const ECONOMIC_CALENDAR_HISTORICAL_EVENTS: EconomicEvent[] = [
     importance: "High",
     date: "2026-04-27",
     time: "14:00",
-    previous: "11.0%",
-    forecast: "11.0% (hold expected)",
-    actual: "11.0% (held)",
-    description: "The State Bank's policy rate decision — the single most market-moving recurring event on this calendar, setting the benchmark cost of borrowing across the economy.",
+    previous: "10.5%",
+    forecast: "10.5% (hold expected)",
+    actual: "11.5% (hiked +100bps)",
+    description: "The State Bank's policy rate decision — the single most market-moving recurring event on this calendar, setting the benchmark cost of borrowing across the economy. A surprise hike — analysts had expected a hold — as accelerating inflation and oil-price volatility pushed the MPC to tighten ahead of expectations.",
   },
   {
     id: "current-account-2026-05-15",
     title: "Current Account Balance (April 2026)",
     category: "External Sector",
-    importance: "High",
+    importance: "Medium",
     date: "2026-05-15",
     time: "17:00",
     previous: "-$0.6B",
@@ -427,10 +482,10 @@ export const ECONOMIC_CALENDAR_HISTORICAL_EVENTS: EconomicEvent[] = [
     importance: "High",
     date: "2026-06-15",
     time: "14:00",
-    previous: "11.0%",
-    forecast: "11.0% (hold expected)",
-    actual: "11.0% (held)",
-    description: "The State Bank's policy rate decision — the single most market-moving recurring event on this calendar, setting the benchmark cost of borrowing across the economy.",
+    previous: "11.5%",
+    forecast: "11.5% (hold expected)",
+    actual: "11.5% (held)",
+    description: "The State Bank's policy rate decision — the single most market-moving recurring event on this calendar, setting the benchmark cost of borrowing across the economy. The MPC held steady in its final FY26 review, judging the April hike's tightening as still appropriate given GDP growth near 3.7% and reserves rebuilding toward $17.2B.",
   },
   {
     id: "fx-reserves-2026-06-18",
@@ -443,5 +498,65 @@ export const ECONOMIC_CALENDAR_HISTORICAL_EVENTS: EconomicEvent[] = [
     forecast: "$11.0B",
     actual: "$11.0B",
     description: "The State Bank's weekly statement of liquid foreign reserves — the buffer available to defend the Rupee and meet external obligations.",
+  },
+  {
+    id: "tbill-auction-2026-04-16",
+    title: "Treasury Bill Auction (3M)",
+    category: "Fiscal Sector",
+    importance: "Medium",
+    date: "2026-04-16",
+    time: "11:00",
+    previous: "11.50%",
+    forecast: "11.30%",
+    actual: "11.25%",
+    description: "SBP's fortnightly 3-month Treasury Bill auction — the cut-off yield is the clearest live read on what the market expects from the next SBP policy rate decision.",
+  },
+  {
+    id: "core-inflation-2026-04-10",
+    title: "Core Inflation Release (March 2026)",
+    category: "Inflation",
+    importance: "High",
+    date: "2026-04-10",
+    time: "12:00",
+    previous: "10.1% YoY",
+    forecast: "9.9% YoY",
+    actual: "9.8% YoY",
+    description: "PBS's core (Urban NFNE) inflation — CPI with volatile food and energy prices stripped out, the measure SBP weighs most heavily for the underlying, persistent inflation trend.",
+  },
+  {
+    id: "lsm-2026-04-18",
+    title: "Large Scale Manufacturing (LSM) Growth (February 2026)",
+    category: "Real Economy",
+    importance: "Medium",
+    date: "2026-04-18",
+    time: "16:00",
+    previous: "0.5% YoY",
+    forecast: "1.0% YoY",
+    actual: "1.3% YoY",
+    description: "PBS's Large Scale Manufacturing index — a monthly, timelier proxy for industrial output growth than the annual GDP release.",
+  },
+  {
+    id: "pib-auction-2026-04-24",
+    title: "PIB Auction (3Y)",
+    category: "Fiscal Sector",
+    importance: "Medium",
+    date: "2026-04-24",
+    time: "11:00",
+    previous: "12.40%",
+    forecast: "12.20%",
+    actual: "12.15%",
+    description: "SBP's Pakistan Investment Bond auction — the cut-off yield on longer-dated government debt, reflecting investor expectations for inflation and rates further out than T-Bills.",
+  },
+  {
+    id: "debt-2026-04-28",
+    title: "Government Debt Release (Q3 FY2025-26)",
+    category: "Fiscal Sector",
+    importance: "High",
+    date: "2026-04-28",
+    time: "17:00",
+    previous: "Rs 74.0T",
+    forecast: "Rs 75.5T",
+    actual: "Rs 75.8T",
+    description: "SBP's quarterly statement of total government debt — domestic and external combined — a key gauge of fiscal sustainability and future debt-servicing pressure.",
   },
 ];

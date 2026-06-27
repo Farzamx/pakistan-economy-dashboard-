@@ -7,6 +7,7 @@
 // Revalidates every hour — Yahoo Finance updates intraday.
 
 import type { Kpi } from "@/data/kpiData";
+import type { MarketType } from "@/lib/marketCalendar";
 import { dedupeInFlight, getFresh, setCache } from "@/lib/memoryCache";
 
 const YF_BASE = "https://query1.finance.yahoo.com/v8/finance/chart";
@@ -83,6 +84,7 @@ export function buildYfKpi(
   glow: Kpi["glow"],
   decimals: number,
   seriesId: string,
+  marketType: MarketType = "global-market",
 ): Kpi {
   const diff = prevClose !== null ? price - prevClose : 0;
   const sign = diff >= 0 ? "+" : "";
@@ -104,6 +106,7 @@ export function buildYfKpi(
     seriesId,
     latestDate: new Date(updatedAt * 1000).toISOString().slice(0, 10),
     frequency: "Hourly",
+    marketType,
   };
 }
 
@@ -154,7 +157,7 @@ export async function getYfDxyKpi(): Promise<Kpi | null> {
 export async function getYfUs10yKpi(): Promise<Kpi | null> {
   try {
     const { price, prevClose, updatedAt } = await fetchYfQuote(YF_SYMBOLS.us10y);
-    return buildYfKpi(price, prevClose, updatedAt, "US 10Y Treasury", "%", "blue", 3, YF_SYMBOLS.us10y);
+    return buildYfKpi(price, prevClose, updatedAt, "US 10Y Treasury", "%", "blue", 3, YF_SYMBOLS.us10y, "us-treasury");
   } catch { return null; }
 }
 

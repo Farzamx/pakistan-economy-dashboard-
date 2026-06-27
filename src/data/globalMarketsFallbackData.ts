@@ -1,4 +1,8 @@
 import type { Kpi } from "./kpiData";
+import type { MarketType } from "@/lib/marketCalendar";
+
+const GLOBAL_MARKET: MarketType = "global-market";
+const US_TREASURY: MarketType = "us-treasury";
 
 // Emergency static fallback — shown only if BOTH the primary API (Twelve Data /
 // FRED) AND the secondary free API (Yahoo Finance) fail simultaneously.
@@ -19,6 +23,7 @@ export const fallbackGoldKpi: Kpi = {
   seriesId: "GC=F",
   latestDate: "2026-06-16",
   frequency: "Hourly",
+  marketType: GLOBAL_MARKET,
 };
 
 export const fallbackSilverKpi: Kpi = {
@@ -32,6 +37,7 @@ export const fallbackSilverKpi: Kpi = {
   seriesId: "SI=F",
   latestDate: "2026-06-16",
   frequency: "Hourly",
+  marketType: GLOBAL_MARKET,
 };
 
 export const fallbackWtiKpi: Kpi = {
@@ -45,6 +51,7 @@ export const fallbackWtiKpi: Kpi = {
   seriesId: "CL=F",
   latestDate: "2026-06-16",
   frequency: "Hourly",
+  marketType: GLOBAL_MARKET,
 };
 
 export const fallbackBrentKpi: Kpi = {
@@ -58,6 +65,7 @@ export const fallbackBrentKpi: Kpi = {
   seriesId: "BZ=F",
   latestDate: "2026-06-16",
   frequency: "Hourly",
+  marketType: GLOBAL_MARKET,
 };
 
 export const fallbackNatGasKpi: Kpi = {
@@ -71,6 +79,7 @@ export const fallbackNatGasKpi: Kpi = {
   seriesId: "NG=F",
   latestDate: "2026-06-16",
   frequency: "Hourly",
+  marketType: GLOBAL_MARKET,
 };
 
 export const fallbackDxyKpi: Kpi = {
@@ -84,6 +93,7 @@ export const fallbackDxyKpi: Kpi = {
   seriesId: "DX-Y.NYB",
   latestDate: "2026-06-16",
   frequency: "Hourly",
+  marketType: GLOBAL_MARKET,
 };
 
 export const fallbackUs10yKpi: Kpi = {
@@ -97,6 +107,7 @@ export const fallbackUs10yKpi: Kpi = {
   seriesId: "DGS10",
   latestDate: "2026-06-12",
   frequency: "Daily",
+  marketType: US_TREASURY,
 };
 
 export const fallbackFedFundsKpi: Kpi = {
@@ -110,6 +121,7 @@ export const fallbackFedFundsKpi: Kpi = {
   seriesId: "DFF",
   latestDate: "2026-06-12",
   frequency: "Daily",
+  marketType: US_TREASURY,
 };
 
 export const fallbackPakEtfKpi: Kpi = {
@@ -123,4 +135,5 @@ export const fallbackPakEtfKpi: Kpi = {
   seriesId: "PAK",
   latestDate: "2026-06-16",
   frequency: "Hourly",
+  marketType: GLOBAL_MARKET,
 };

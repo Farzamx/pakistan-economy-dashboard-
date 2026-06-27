@@ -96,6 +96,7 @@ const FALLBACK_RATES: FxRateKpis = {
     source: "Yahoo Finance (fallback)",
     latestDate: "2026-06-22",
     frequency: "Hourly",
+    marketType: "forex",
   },
   eurPkr: {
     title: "EUR / PKR",
@@ -107,6 +108,7 @@ const FALLBACK_RATES: FxRateKpis = {
     source: "Yahoo Finance (fallback)",
     latestDate: "2026-06-22",
     frequency: "Hourly",
+    marketType: "forex",
   },
   gbpPkr: {
     title: "GBP / PKR",
@@ -118,6 +120,7 @@ const FALLBACK_RATES: FxRateKpis = {
     source: "Yahoo Finance (fallback)",
     latestDate: "2026-06-22",
     frequency: "Hourly",
+    marketType: "forex",
   },
   sarPkr: {
     title: "SAR / PKR",
@@ -129,6 +132,7 @@ const FALLBACK_RATES: FxRateKpis = {
     source: "Yahoo Finance (fallback)",
     latestDate: "2026-06-22",
     frequency: "Hourly",
+    marketType: "forex",
   },
 };
 
@@ -150,6 +154,7 @@ function makeKpi(
     source: "Yahoo Finance",
     latestDate: d.toISOString().slice(0, 10),
     frequency: "Hourly",
+    marketType: "forex",
   };
 }
 

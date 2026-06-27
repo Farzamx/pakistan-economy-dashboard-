@@ -1,4 +1,5 @@
 import type { DataFrequency } from "@/lib/dataFreshness";
+import type { MarketType } from "@/lib/marketCalendar";
 
 export type Trend = "up" | "down";
 
@@ -15,6 +16,12 @@ export interface Kpi {
   seriesId?: string;
   latestDate?: string;   // "YYYY-MM-DD" or "YYYY" (annual)
   frequency?: DataFrequency;
+  /** Set only for KPIs sourced from an actual tradeable market — enables weekend/holiday-aware freshness instead of a flat day-count threshold (see dataFreshness.ts). */
+  marketType?: MarketType;
+  /** "YYYY-MM-DD" of the most recent known scheduled release (from the Economic Calendar) — lets dataFreshness.ts flag a real delay sooner than its generic per-frequency threshold would, without misreading a not-yet-due release as late. */
+  expectedReleaseDate?: string;
+  /** Whether this KPI's value already matches the known outcome of expectedReleaseDate — see dataFreshness.ts's FreshnessOptions for why this matters (a "hold" decision produces no new dated observation at all). */
+  releaseAlreadyReflected?: boolean;
   /** Recent historical values (oldest first) for the card's inline sparkline. Only ever a slice of a real fetched series — never fabricated — so cards without a wired-up history simply render without one. */
   sparkline?: number[];
 }

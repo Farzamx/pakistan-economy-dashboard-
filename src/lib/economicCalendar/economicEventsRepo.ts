@@ -49,6 +49,7 @@ export interface EventRecord {
   description: string | null;
   sourceUrl: string | null;
   dataConfidence: DataConfidence;
+  updatedAt: string;
   series: EventSeriesRecord;
 }
 
@@ -80,10 +81,11 @@ interface EventRow {
   description: string | null;
   source_url: string | null;
   data_confidence: string;
+  updated_at: string;
   economic_event_series: SeriesRow | SeriesRow[];
 }
 
-const EVENT_SELECT = "id, slug, title, event_date, event_time, previous_value, forecast_value, actual_value, status, importance, description, source_url, data_confidence, economic_event_series(*)";
+const EVENT_SELECT = "id, slug, title, event_date, event_time, previous_value, forecast_value, actual_value, status, importance, description, source_url, data_confidence, updated_at, economic_event_series(*)";
 // Same column list but with the series embed forced to an inner join — used
 // only by queries that also .eq()/.neq() a column on economic_event_series
 // itself (PostgREST requires !inner for that), and used INSTEAD OF
@@ -93,7 +95,7 @@ const EVENT_SELECT = "id, slug, title, event_date, event_time, previous_value, f
 // ("table name ... specified more than once") — caught live while
 // verifying "Related Calendar Events"/"Related Events" against the
 // just-seeded database.
-const EVENT_SELECT_INNER_SERIES = "id, slug, title, event_date, event_time, previous_value, forecast_value, actual_value, status, importance, description, source_url, data_confidence, economic_event_series!inner(*)";
+const EVENT_SELECT_INNER_SERIES = "id, slug, title, event_date, event_time, previous_value, forecast_value, actual_value, status, importance, description, source_url, data_confidence, updated_at, economic_event_series!inner(*)";
 
 function mapSeries(row: SeriesRow): EventSeriesRecord {
   return {
@@ -128,15 +130,16 @@ function mapEvent(row: EventRow): EventRecord | null {
     description: row.description,
     sourceUrl: row.source_url,
     dataConfidence: row.data_confidence as DataConfidence,
+    updatedAt: row.updated_at,
     series: mapSeries(seriesRow),
   };
 }
 
-/** Every event whose canonical home is /economic-calendar/event/[slug] — not yet released. */
+/** Every event whose canonical home is /economic-calendar/event/[slug] — still upcoming. */
 export const getScheduledEventSlugs = unstable_cache(
   async (): Promise<string[]> => {
     const supabase = createPublicDataClient();
-    const { data, error } = await supabase.from("economic_events").select("slug").neq("status", "released");
+    const { data, error } = await supabase.from("economic_events").select("slug").eq("status", "scheduled");
     if (error || !data) return [];
     return data.map((r) => r.slug);
   },
@@ -144,11 +147,11 @@ export const getScheduledEventSlugs = unstable_cache(
   { revalidate: REVALIDATE_SECONDS },
 );
 
-/** Every event whose canonical home is /economic-calendar/archive/[slug] — already released. */
+/** Every event whose canonical home is /economic-calendar/archive/[slug] — released, postponed, or cancelled (i.e. no longer "upcoming"). */
 export const getReleasedEventSlugs = unstable_cache(
   async (): Promise<string[]> => {
     const supabase = createPublicDataClient();
-    const { data, error } = await supabase.from("economic_events").select("slug").eq("status", "released");
+    const { data, error } = await supabase.from("economic_events").select("slug").neq("status", "scheduled");
     if (error || !data) return [];
     return data.map((r) => r.slug);
   },
@@ -167,11 +170,11 @@ export const getEventBySlug = unstable_cache(
   { revalidate: REVALIDATE_SECONDS },
 );
 
-/** All scheduled (not-yet-released) events, soonest first — powers feed.ics and "Related Events". */
+/** All upcoming (still-scheduled) events, soonest first — powers feed.ics, "Related Events", and the Next Major Events panel. */
 export const getAllScheduledEvents = unstable_cache(
   async (): Promise<EventRecord[]> => {
     const supabase = createPublicDataClient();
-    const { data, error } = await supabase.from("economic_events").select(EVENT_SELECT).neq("status", "released").order("event_date", { ascending: true });
+    const { data, error } = await supabase.from("economic_events").select(EVENT_SELECT).eq("status", "scheduled").order("event_date", { ascending: true });
     if (error || !data) return [];
     return (data as unknown as EventRow[]).map(mapEvent).filter((e): e is EventRecord => e !== null);
   },
@@ -179,11 +182,29 @@ export const getAllScheduledEvents = unstable_cache(
   { revalidate: REVALIDATE_SECONDS },
 );
 
-/** Released events, most recent first — powers the Archive list. */
+const IMPORTANCE_RANK: Record<ImportanceLevel, number> = { High: 0, Medium: 1, Low: 2 };
+
+/**
+ * "Next Major Market-Moving Events" panel — scheduled events sorted by
+ * Market Impact first (High before Medium before Low), then soonest date
+ * within the same impact level. Reuses getAllScheduledEvents's own cached
+ * result rather than issuing a second query.
+ */
+export async function getNextMajorEvents(limit = 6): Promise<EventRecord[]> {
+  const events = await getAllScheduledEvents();
+  return [...events]
+    .sort((a, b) => {
+      const rankDiff = IMPORTANCE_RANK[a.importance] - IMPORTANCE_RANK[b.importance];
+      return rankDiff !== 0 ? rankDiff : a.eventDate.localeCompare(b.eventDate);
+    })
+    .slice(0, limit);
+}
+
+/** Released, postponed, and cancelled events, most recent first — powers the Archive list (its "Released only" filter narrows this client-side). */
 export const getHistoricalEvents = unstable_cache(
   async (): Promise<EventRecord[]> => {
     const supabase = createPublicDataClient();
-    const { data, error } = await supabase.from("economic_events").select(EVENT_SELECT).eq("status", "released").order("event_date", { ascending: false });
+    const { data, error } = await supabase.from("economic_events").select(EVENT_SELECT).neq("status", "scheduled").order("event_date", { ascending: false });
     if (error || !data) return [];
     return (data as unknown as EventRow[]).map(mapEvent).filter((e): e is EventRecord => e !== null);
   },
@@ -218,7 +239,7 @@ export const getEventsByCategory = unstable_cache(
       .select(EVENT_SELECT_INNER_SERIES)
       .eq("economic_event_series.category", category)
       .neq("economic_event_series.slug", excludeSeriesSlug)
-      .neq("status", "released")
+      .eq("status", "scheduled")
       .order("event_date", { ascending: true })
       .limit(6);
     if (error || !data) return [];

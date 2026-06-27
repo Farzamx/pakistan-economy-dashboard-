@@ -8,6 +8,7 @@ import {
   FRESHNESS_DOT,
   FRESHNESS_LABEL,
 } from "@/lib/dataFreshness";
+import { SOURCE_CHAINS, getActiveTier } from "@/lib/marketDataSources";
 import { useTheme } from "@/components/ThemeProvider";
 
 interface Props {
@@ -103,8 +104,14 @@ export default function DataSourcesModal({ kpis }: Props) {
               <span className="flex items-center gap-1 text-xs text-rose-400 light:text-rose-700">
                 <span className="text-[8px]">●</span> Stale
               </span>
+              <span className="flex items-center gap-1 text-xs text-sky-400 light:text-sky-700">
+                <span className="text-[8px]">●</span> Last Market Close
+              </span>
+              <span className="flex items-center gap-1 text-xs text-indigo-400 light:text-indigo-700">
+                <span className="text-[8px]">●</span> Market Closed
+              </span>
               <span className="ml-auto text-[10px] text-white/25 light:text-slate-400">
-                Thresholds vary by frequency · Monthly: current ≤60d, delayed ≤90d
+                Thresholds vary by frequency · weekends/holidays never count as Delayed for market data
               </span>
             </div>
 
@@ -119,6 +126,7 @@ export default function DataSourcesModal({ kpis }: Props) {
                     <th className="px-6 py-3">Indicator</th>
                     <th className="px-4 py-3">Source</th>
                     <th className="px-4 py-3">Series ID</th>
+                    <th className="px-4 py-3">Primary / Secondary / Fallback</th>
                     <th className="px-4 py-3">Last Updated</th>
                     <th className="px-4 py-3">Frequency</th>
                     <th className="px-4 py-3">Status</th>
@@ -126,21 +134,39 @@ export default function DataSourcesModal({ kpis }: Props) {
                 </thead>
                 <tbody className="divide-y divide-white/[0.04] light:divide-slate-100">
                   {kpis.map((kpi, i) => {
-                    const status = getFreshnessStatus(kpi.latestDate, kpi.frequency);
+                    const status = getFreshnessStatus(kpi.latestDate, kpi.frequency, { marketType: kpi.marketType, expectedReleaseDate: kpi.expectedReleaseDate, releaseAlreadyReflected: kpi.releaseAlreadyReflected });
                     const dotClass = FRESHNESS_DOT[status];
                     const label = FRESHNESS_LABEL[status];
+                    // Gated on marketType, not just title — see KpiCard.tsx's
+                    // comment: some SBP EasyData indicators share a display
+                    // title with an unrelated Yahoo/FRED/Twelve-Data one.
+                    const chain = kpi.marketType ? SOURCE_CHAINS[kpi.title] : undefined;
+                    const activeTier = chain ? getActiveTier(kpi.title, kpi.source) : "unknown";
                     return (
                       <tr key={`${i}-${kpi.title}`} className="transition hover:bg-white/[0.02] light:hover:bg-slate-50">
                         <td className="px-6 py-3 font-medium text-white/80 light:text-slate-800">{kpi.title}</td>
                         <td className="px-4 py-3 text-white/50 light:text-slate-500">{kpi.source ?? "—"}</td>
                         <td className="px-4 py-3 font-mono text-white/35 light:text-slate-400">{kpi.seriesId ?? "—"}</td>
+                        <td className="px-4 py-3 text-white/40 light:text-slate-400">
+                          {chain ? (
+                            <span className="flex items-center gap-1 whitespace-nowrap">
+                              <span className={activeTier === "primary" ? "font-semibold text-white light:text-slate-900" : ""}>{chain.primary}</span>
+                              <span className="text-white/20 light:text-slate-300">→</span>
+                              <span className={activeTier === "secondary" ? "font-semibold text-white light:text-slate-900" : ""}>{chain.secondary ?? "—"}</span>
+                              <span className="text-white/20 light:text-slate-300">→</span>
+                              <span className={activeTier === "fallback" ? "font-semibold text-white light:text-slate-900" : ""}>{chain.fallback}</span>
+                            </span>
+                          ) : (
+                            "—"
+                          )}
+                        </td>
                         <td className="px-4 py-3 text-white/50 light:text-slate-500" suppressHydrationWarning>
                           {kpi.latestDate ? formatLatestDate(kpi.latestDate, kpi.frequency) : "—"}
                         </td>
                         <td className="px-4 py-3 text-white/50 light:text-slate-500">{kpi.frequency ?? "—"}</td>
                         <td className="px-4 py-3">
                           {kpi.latestDate ? (
-                            <span className={`flex items-center gap-1 ${dotClass}`}>
+                            <span className={`flex items-center gap-1 whitespace-nowrap ${dotClass}`}>
                               <span className="text-[8px]">●</span>
                               {label}
                             </span>
@@ -156,6 +182,7 @@ export default function DataSourcesModal({ kpis }: Props) {
                       <td className="px-6 py-3 font-medium text-white/60 light:text-slate-700">{entry.indicator}</td>
                       <td className="px-4 py-3 text-white/50 light:text-slate-500">{entry.source}</td>
                       <td className="px-4 py-3 font-mono text-white/35 light:text-slate-400">{entry.seriesId}</td>
+                      <td className="px-4 py-3 text-white/25 light:text-slate-400">—</td>
                       <td className="px-4 py-3 text-white/30 light:text-slate-400">live</td>
                       <td className="px-4 py-3 text-white/30 light:text-slate-400">As Needed</td>
                       <td className="px-4 py-3 text-white/25 light:text-slate-400">—</td>

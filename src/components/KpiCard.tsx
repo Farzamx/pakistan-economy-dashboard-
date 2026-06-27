@@ -8,9 +8,11 @@ import InfoTooltip from "@/components/InfoTooltip";
 import {
   getFreshnessStatus,
   formatLatestDate,
+  getClosureMessage,
   FRESHNESS_DOT,
   FRESHNESS_LABEL,
 } from "@/lib/dataFreshness";
+import { getActiveTier, SOURCE_CHAINS } from "@/lib/marketDataSources";
 import { KPI_SEO_SLUG } from "@/lib/seoConfig";
 import { useTheme } from "@/components/ThemeProvider";
 
@@ -69,7 +71,7 @@ const hoverGlow: Record<Kpi["glow"], string> = {
 const lightRestGlow  = "0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)";
 const lightHoverGlow = "0 4px 12px rgba(0,0,0,0.10), 0 2px 4px rgba(0,0,0,0.06)";
 
-export default function KpiCard({ title, value, unit, change, trend, glow, source, latestDate, frequency, sparkline }: Kpi) {
+export default function KpiCard({ title, value, unit, change, trend, glow, source, latestDate, frequency, marketType, expectedReleaseDate, releaseAlreadyReflected, sparkline }: Kpi) {
   const { theme } = useTheme();
   const isLight = theme === "light";
 
@@ -77,10 +79,22 @@ export default function KpiCard({ title, value, unit, change, trend, glow, sourc
     ? "text-emerald-400 light:text-emerald-700"
     : "text-rose-400 light:text-rose-700";
 
-  const freshnessStatus = getFreshnessStatus(latestDate, frequency);
+  const freshnessStatus = getFreshnessStatus(latestDate, frequency, { marketType, expectedReleaseDate, releaseAlreadyReflected });
   const dotClass        = FRESHNESS_DOT[freshnessStatus];
   const freshnessLabel  = FRESHNESS_LABEL[freshnessStatus];
   const displayDate     = formatLatestDate(latestDate, frequency);
+  const closureMessage  = getClosureMessage(freshnessStatus, marketType);
+
+  // Source transparency — gated on `marketType` (not just title) because a
+  // few SBP EasyData indicators happen to share a display title with a
+  // Yahoo/FRED/Twelve-Data-sourced one (e.g. both have a "USD / PKR" card);
+  // marketType is only ever set on the latter, so it disambiguates which
+  // redundancy chain — if any — actually applies to this specific card.
+  const chain = marketType ? SOURCE_CHAINS[title] : undefined;
+  const activeTier = chain ? getActiveTier(title, source) : "unknown";
+  const sourceChainNote = chain
+    ? `Sources — Primary: ${chain.primary}, Secondary: ${chain.secondary ?? "None"}, Fallback: ${chain.fallback}. Currently: ${activeTier}.`
+    : null;
 
   const cardShadow = isLight ? lightRestGlow : restGlow[glow];
   const cardHoverShadow = isLight ? lightHoverGlow : hoverGlow[glow];
@@ -114,7 +128,7 @@ export default function KpiCard({ title, value, unit, change, trend, glow, sourc
         <div
           suppressHydrationWarning
           className="flex flex-wrap items-center gap-1.5 text-[10px] text-white/40 light:text-slate-400 border-t border-white/5 light:border-slate-100 pt-2 mt-0.5"
-          title={`${freshnessLabel} · ${source ?? "Unknown source"} · ${displayDate}${frequency ? ` · ${frequency}` : ""}`}
+          title={`${freshnessLabel} · ${source ?? "Unknown source"} · ${displayDate}${frequency ? ` · ${frequency}` : ""}${sourceChainNote ? ` · ${sourceChainNote}` : ""}`}
         >
           <span className={`text-[8px] ${dotClass}`}>●</span>
           <span className={dotClass}>{freshnessLabel}</span>
@@ -129,6 +143,11 @@ export default function KpiCard({ title, value, unit, change, trend, glow, sourc
             </>
           )}
         </div>
+      )}
+      {closureMessage && (
+        <p suppressHydrationWarning className={`-mt-1.5 text-[10px] leading-snug ${dotClass}`}>
+          {closureMessage}
+        </p>
       )}
       {seoSlug && (
         <Link

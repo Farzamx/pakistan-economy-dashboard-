@@ -4,9 +4,10 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import type { EconomicEvent } from "@/lib/economicCalendar/economicCalendarTypes";
 import { EVENT_CATEGORIES } from "@/lib/economicCalendar/economicCalendarRegistry";
-import { formatEventDate, formatRelativeDay } from "@/lib/economicCalendar/economicCalendarData";
+import { formatEventDate, formatRelativeDay, resolveStatus } from "@/lib/economicCalendar/economicCalendarData";
 import EventCategoryBadge from "./EventCategoryBadge";
 import EventImportanceBadge from "./EventImportanceBadge";
+import EventStatusBadge from "./EventStatusBadge";
 
 export default function MajorUpcomingEvents({ events, today }: { events: EconomicEvent[]; today: Date }) {
   return (
@@ -21,6 +22,7 @@ export default function MajorUpcomingEvents({ events, today }: { events: Economi
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {events.map((event) => {
           const accent = EVENT_CATEGORIES[event.category].hex;
+          const status = resolveStatus(event);
           return (
             <motion.div
               key={event.id}
@@ -35,9 +37,12 @@ export default function MajorUpcomingEvents({ events, today }: { events: Economi
                   area without affecting this flex layout, since it renders
                   no box of its own. */}
               <Link href={`/economic-calendar/event/${event.id}`} className="contents">
-                <div className="flex items-center justify-between">
-                  <EventCategoryBadge category={event.category} />
-                  <EventImportanceBadge importance={event.importance} />
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <EventCategoryBadge category={event.category} />
+                    <EventStatusBadge status={status} />
+                  </div>
+                  <EventImportanceBadge importance={event.importance} withTooltip={false} />
                 </div>
 
                 <h3 className="text-base font-semibold text-white light:text-slate-900">{event.title}</h3>

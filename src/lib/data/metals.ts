@@ -131,6 +131,7 @@ function buildKpi(series: MetalSeries, title: string, unit: string, glow: Kpi["g
     seriesId: symbol,
     latestDate: series.latestDate.split(/[ T]/)[0], // "2026-06-12 00:00:00" → "2026-06-12"
     frequency: "Daily",
+    marketType: "global-market",
   };
 }
 

@@ -1,8 +1,9 @@
 import Link from "next/link";
 import type { EconomicEvent } from "@/lib/economicCalendar/economicCalendarTypes";
-import { formatEventDate, formatEventTime } from "@/lib/economicCalendar/economicCalendarData";
+import { formatEventDate, formatEventTime, resolveStatus } from "@/lib/economicCalendar/economicCalendarData";
 import EventCategoryBadge from "./EventCategoryBadge";
 import EventImportanceBadge from "./EventImportanceBadge";
+import EventStatusBadge from "./EventStatusBadge";
 
 interface Props {
   event: EconomicEvent;
@@ -23,6 +24,7 @@ interface Props {
  * these links 404; that's an expected, transient state, not a bug here.
  */
 export default function EventRow({ event, showDate = true }: Props) {
+  const status = resolveStatus(event);
   return (
     <div className="glass-card flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:gap-4 sm:p-4">
       <div className="flex flex-1 flex-col gap-1.5">
@@ -37,7 +39,8 @@ export default function EventRow({ event, showDate = true }: Props) {
         </Link>
         <div className="flex flex-wrap items-center gap-1.5">
           <EventCategoryBadge category={event.category} />
-          <EventImportanceBadge importance={event.importance} />
+          <EventImportanceBadge importance={event.importance} withTooltip={false} />
+          <EventStatusBadge status={status} />
         </div>
       </div>
 
@@ -49,6 +52,10 @@ export default function EventRow({ event, showDate = true }: Props) {
         <div className="flex flex-col gap-0.5">
           <span className="text-[10px] uppercase tracking-wide text-white/35 light:text-slate-400">Forecast</span>
           <span className="text-sm font-medium text-neon-blue">{event.forecast ?? "—"}</span>
+        </div>
+        <div className="flex flex-col gap-0.5">
+          <span className="text-[10px] uppercase tracking-wide text-white/35 light:text-slate-400">Actual</span>
+          <span className={`text-sm font-medium ${event.actual ? "text-white" : "text-white/30 light:text-slate-400"}`}>{event.actual ?? "Pending"}</span>
         </div>
       </div>
     </div>

@@ -1,4 +1,5 @@
 import type { Kpi } from "@/data/kpiData";
+import type { MarketType } from "@/lib/marketCalendar";
 import {
   fallbackBrentKpi,
   fallbackFedFundsKpi,
@@ -130,6 +131,7 @@ function buildKpi(
   glow: Kpi["glow"],
   decimals: number,
   seriesId: string,
+  marketType: MarketType = "global-market",
 ): Kpi {
   const diff = series.previousValue !== null ? series.latestValue - series.previousValue : 0;
   return {
@@ -143,6 +145,7 @@ function buildKpi(
     seriesId,
     latestDate: series.latestDate,
     frequency: "Daily",
+    marketType,
   };
 }
 
@@ -186,7 +189,7 @@ export async function getNaturalGasKpi(): Promise<Kpi> {
 export async function getUs10yKpi(): Promise<Kpi> {
   try {
     const series = await fetchFredSeries(SERIES_IDS.us10y);
-    return buildKpi(series, "US 10Y Treasury", "%", "blue", 2, SERIES_IDS.us10y);
+    return buildKpi(series, "US 10Y Treasury", "%", "blue", 2, SERIES_IDS.us10y, "us-treasury");
   } catch { /* fall through to Yahoo Finance */ }
   return (await getYfUs10yKpi()) ?? fallbackUs10yKpi;
 }
@@ -198,7 +201,7 @@ export async function getUs10yKpi(): Promise<Kpi> {
 export async function getFedFundsKpi(): Promise<Kpi> {
   try {
     const series = await fetchFredSeries(SERIES_IDS.fedFunds);
-    return buildKpi(series, "Fed Funds Rate", "%", "purple", 2, SERIES_IDS.fedFunds);
+    return buildKpi(series, "Fed Funds Rate", "%", "purple", 2, SERIES_IDS.fedFunds, "us-treasury");
   } catch {
     return fallbackFedFundsKpi;
   }

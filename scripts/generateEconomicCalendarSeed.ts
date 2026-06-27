@@ -45,21 +45,32 @@ function sqlString(value: string | null | undefined): string {
   return `'${value.replace(/'/g, "''")}'`;
 }
 
-// Per-base-title metadata, grounded in the Phase 2 source audit (SBP/PBS/MoF/PSX/IMF).
+// Per-base-title metadata, grounded in the Phase 2 source audit
+// (SBP/PBS/MoF/PSX/IMF). Phase 2B removed Oil Price Update and US Federal
+// Reserve FOMC (non-Pakistan events — see economicCalendarEvents.ts) and
+// added Treasury Bill/PIB auctions, Core Inflation, LSM, Government Debt,
+// and PSX Holiday Calendar to close the gap against the explicit
+// Pakistan-only event list. automationTier "automated" here means a real,
+// already-integrated SBP EasyData series exists (src/lib/data/sbp.ts) that
+// Phase 2B's sync route reads directly — not aspirational.
 const SERIES_META: Record<string, Omit<SeriesMeta, "slug" | "title" | "category" | "defaultImportance" | "description">> = {
   "SPI Weekly Inflation Release": { cadence: "weekly", sourceName: "Pakistan Bureau of Statistics", sourceUrl: "https://www.pbs.gov.pk/spi", automationTier: "automated", reliabilityScore: 4 },
   "SBP Foreign Exchange Reserves": { cadence: "weekly", sourceName: "State Bank of Pakistan", sourceUrl: "https://www.sbp.org.pk/ecodata/index2.asp", automationTier: "automated", reliabilityScore: 5 },
   "KSE-100 Weekly Market Review": { cadence: "weekly", sourceName: "Pakistan Stock Exchange", sourceUrl: "https://www.psx.com.pk/", automationTier: "semi_automated", reliabilityScore: 4 },
-  "Oil Price Update": { cadence: "monthly", sourceName: "OPEC", sourceUrl: null, automationTier: "semi_automated", reliabilityScore: 3 },
   "Trade Balance": { cadence: "monthly", sourceName: "Pakistan Bureau of Statistics", sourceUrl: "https://www.pbs.gov.pk/", automationTier: "automated", reliabilityScore: 4 },
-  "CPI Inflation Release": { cadence: "monthly", sourceName: "Pakistan Bureau of Statistics", sourceUrl: "https://www.pbs.gov.pk/cpi", automationTier: "semi_automated", reliabilityScore: 3 },
+  "CPI Inflation Release": { cadence: "monthly", sourceName: "Pakistan Bureau of Statistics", sourceUrl: "https://www.pbs.gov.pk/cpi", automationTier: "automated", reliabilityScore: 4 },
+  "Core Inflation Release": { cadence: "monthly", sourceName: "Pakistan Bureau of Statistics / SBP EasyData", sourceUrl: "https://www.pbs.gov.pk/cpi", automationTier: "automated", reliabilityScore: 4 },
   "Current Account Balance": { cadence: "monthly", sourceName: "State Bank of Pakistan", sourceUrl: "https://www.sbp.org.pk/ecodata/index2.asp", automationTier: "automated", reliabilityScore: 4 },
   "Worker Remittances": { cadence: "monthly", sourceName: "State Bank of Pakistan", sourceUrl: "https://www.sbp.org.pk/ecodata/homeremit.pdf", automationTier: "automated", reliabilityScore: 4 },
   "SBP Monetary Policy Committee Meeting": { cadence: "irregular", sourceName: "State Bank of Pakistan", sourceUrl: "https://www.sbp.org.pk/m_policy/mp-calendar.asp", automationTier: "semi_automated", reliabilityScore: 5 },
-  "US Federal Reserve FOMC Meeting Decision": { cadence: "irregular", sourceName: "US Federal Reserve", sourceUrl: "https://www.federalreserve.gov/", automationTier: "semi_automated", reliabilityScore: 4 },
   "GDP Growth Release": { cadence: "quarterly", sourceName: "Pakistan Bureau of Statistics", sourceUrl: "https://www.pbs.gov.pk/national-accounts-2/", automationTier: "semi_automated", reliabilityScore: 5 },
+  "Large Scale Manufacturing (LSM) Growth": { cadence: "monthly", sourceName: "Pakistan Bureau of Statistics / SBP EasyData", sourceUrl: "https://www.pbs.gov.pk/", automationTier: "automated", reliabilityScore: 4 },
+  "Treasury Bill Auction": { cadence: "weekly", sourceName: "State Bank of Pakistan", sourceUrl: "https://www.sbp.org.pk/ecodata/index2.asp", automationTier: "automated", reliabilityScore: 4 },
+  "PIB Auction": { cadence: "monthly", sourceName: "State Bank of Pakistan", sourceUrl: "https://www.sbp.org.pk/ecodata/index2.asp", automationTier: "automated", reliabilityScore: 4 },
+  "Government Debt Release": { cadence: "quarterly", sourceName: "State Bank of Pakistan", sourceUrl: "https://www.sbp.org.pk/ecodata/index2.asp", automationTier: "semi_automated", reliabilityScore: 4 },
   "Pakistan Economic Survey": { cadence: "annual", sourceName: "Ministry of Finance", sourceUrl: "https://www.finance.gov.pk/", automationTier: "manual", reliabilityScore: 2 },
   "Federal Budget": { cadence: "annual", sourceName: "Ministry of Finance", sourceUrl: "https://www.finance.gov.pk/", automationTier: "manual", reliabilityScore: 2 },
+  "PSX Holiday Calendar": { cadence: "annual", sourceName: "Pakistan Stock Exchange", sourceUrl: "https://www.psx.com.pk/psx/exchange/general/calendar-holidays", automationTier: "semi_automated", reliabilityScore: 4 },
 };
 
 function metaFor(base: string): SeriesMeta["cadence"] extends never ? never : Omit<SeriesMeta, "slug" | "title" | "category" | "defaultImportance" | "description"> {
@@ -124,7 +135,7 @@ lines.push("");
 
 for (const e of allEvents) {
   const seriesSlug = seriesSlugForEvent(e);
-  const status = e.actual ? "released" : "scheduled";
+  const status = e.status ?? (e.actual ? "released" : "scheduled");
   const dataConfidence = e.actual ? "confirmed" : "estimated";
   lines.push(
     `insert into public.economic_events (series_id, slug, title, event_date, event_time, previous_value, forecast_value, actual_value, status, importance, description, data_confidence)\n` +
