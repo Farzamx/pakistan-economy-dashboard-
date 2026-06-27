@@ -346,3 +346,102 @@ export const ECONOMIC_CALENDAR_EVENTS: EconomicEvent[] = [
     isHeadline: true,
   },
 ];
+
+// Past releases (Phase 2A) — added specifically to seed the Historical
+// Release Archive with real content, since every event above is forward-
+// dated from this feature's build date and the Archive has nothing to show
+// without at least a few already-released instances. Dated in April/May
+// 2026 (before this feature's "today") rather than later in June, so they
+// fall outside getTodayEvents/getThisWeekEvents/getUpcomingEvents's windows
+// and don't change Phase 1's hub page behavior — the one exception
+// (sbp-mpc-2026-06-15) is a real, externally-confirmed SBP MPC date that
+// happens to land earlier in the current month, which is a correct, useful
+// thing for the hub's "This Month" view to surface, not a side effect to
+// avoid. Each `actual` value is what the seed generator (Phase 2A) reads to
+// mark a row "released" instead of "scheduled" when populating Supabase.
+export const ECONOMIC_CALENDAR_HISTORICAL_EVENTS: EconomicEvent[] = [
+  {
+    id: "cpi-2026-04-10",
+    title: "CPI Inflation Release (April 2026)",
+    category: "Inflation",
+    importance: "High",
+    date: "2026-04-10",
+    time: "12:00",
+    previous: "7.4% YoY",
+    forecast: "7.0% YoY",
+    actual: "7.1% YoY",
+    description: "PBS's headline Consumer Price Index — the most-watched single inflation number, and the figure SBP weighs most heavily when setting the policy rate.",
+  },
+  {
+    id: "gdp-2026-04-15",
+    title: "GDP Growth Release (FY2024-25 Final)",
+    category: "Real Economy",
+    importance: "High",
+    date: "2026-04-15",
+    time: "16:00",
+    previous: "2.62%",
+    forecast: "3.0%",
+    actual: "3.18%",
+    description: "PBS's final, revised annual GDP growth figure for FY2024-25 — the headline number used to judge whether the economy is creating jobs and raising incomes fast enough.",
+  },
+  {
+    id: "sbp-mpc-2026-04-27",
+    title: "SBP Monetary Policy Committee Meeting",
+    category: "Monetary Policy",
+    importance: "High",
+    date: "2026-04-27",
+    time: "14:00",
+    previous: "11.0%",
+    forecast: "11.0% (hold expected)",
+    actual: "11.0% (held)",
+    description: "The State Bank's policy rate decision — the single most market-moving recurring event on this calendar, setting the benchmark cost of borrowing across the economy.",
+  },
+  {
+    id: "current-account-2026-05-15",
+    title: "Current Account Balance (April 2026)",
+    category: "External Sector",
+    importance: "High",
+    date: "2026-05-15",
+    time: "17:00",
+    previous: "-$0.6B",
+    forecast: "-$0.4B",
+    actual: "-$0.5B",
+    description: "SBP's monthly current account balance — the broadest measure of money flowing in versus out of Pakistan internationally, and a key driver of reserve and currency stability.",
+  },
+  {
+    id: "cpi-2026-05-10",
+    title: "CPI Inflation Release (May 2026)",
+    category: "Inflation",
+    importance: "High",
+    date: "2026-05-10",
+    time: "12:00",
+    previous: "7.1% YoY",
+    forecast: "6.9% YoY",
+    actual: "6.8% YoY",
+    description: "PBS's headline Consumer Price Index — the most-watched single inflation number, and the figure SBP weighs most heavily when setting the policy rate.",
+  },
+  {
+    id: "sbp-mpc-2026-06-15",
+    title: "SBP Monetary Policy Committee Meeting",
+    category: "Monetary Policy",
+    importance: "High",
+    date: "2026-06-15",
+    time: "14:00",
+    previous: "11.0%",
+    forecast: "11.0% (hold expected)",
+    actual: "11.0% (held)",
+    description: "The State Bank's policy rate decision — the single most market-moving recurring event on this calendar, setting the benchmark cost of borrowing across the economy.",
+  },
+  {
+    id: "fx-reserves-2026-06-18",
+    title: "SBP Foreign Exchange Reserves (Weekly)",
+    category: "External Sector",
+    importance: "Medium",
+    date: "2026-06-18",
+    time: "16:30",
+    previous: "$10.9B",
+    forecast: "$11.0B",
+    actual: "$11.0B",
+    description: "The State Bank's weekly statement of liquid foreign reserves — the buffer available to defend the Rupee and meet external obligations.",
+  },
+];

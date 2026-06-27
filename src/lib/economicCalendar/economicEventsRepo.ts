@@ -1,0 +1,237 @@
+import { unstable_cache } from "next/cache";
+import { createPublicDataClient } from "@/lib/supabase/publicDataClient";
+import type { EventCategory, ImportanceLevel } from "./economicCalendarTypes";
+
+// Phase 2A data-access layer for the database-backed parts of the Economic
+// Calendar (Event Detail pages, the Historical Archive, .ics generation).
+// The Phase 1 hub page (/economic-calendar) deliberately keeps reading
+// src/data/economicCalendarEvents.ts directly — it already works, has zero
+// dependency on the database, and changing its data source wasn't asked
+// for here. These two data sources are seeded from the same mock array
+// (see scripts/generateEconomicCalendarSeed.ts) so ids/slugs line up and
+// the hub can link straight into these pages.
+//
+// Every query is wrapped in unstable_cache (5 min) rather than left
+// uncached — this is public, identical-for-everyone reference data with no
+// per-user variation, the same shape of caching every other indicator
+// fetch on this dashboard already uses.
+
+const REVALIDATE_SECONDS = 300;
+
+export type EventStatus = "scheduled" | "released" | "postponed" | "cancelled";
+export type DataConfidence = "confirmed" | "estimated";
+
+export interface EventSeriesRecord {
+  id: string;
+  slug: string;
+  title: string;
+  category: EventCategory;
+  defaultImportance: ImportanceLevel;
+  cadence: string;
+  sourceName: string;
+  sourceUrl: string | null;
+  automationTier: string;
+  reliabilityScore: number;
+  description: string | null;
+}
+
+export interface EventRecord {
+  id: string;
+  slug: string;
+  title: string;
+  eventDate: string;
+  eventTime: string | null;
+  previousValue: string | null;
+  forecastValue: string | null;
+  actualValue: string | null;
+  status: EventStatus;
+  importance: ImportanceLevel;
+  description: string | null;
+  sourceUrl: string | null;
+  dataConfidence: DataConfidence;
+  series: EventSeriesRecord;
+}
+
+interface SeriesRow {
+  id: string;
+  slug: string;
+  title: string;
+  category: string;
+  default_importance: string;
+  cadence: string;
+  source_name: string;
+  source_url: string | null;
+  automation_tier: string;
+  reliability_score: number;
+  description: string | null;
+}
+
+interface EventRow {
+  id: string;
+  slug: string;
+  title: string;
+  event_date: string;
+  event_time: string | null;
+  previous_value: string | null;
+  forecast_value: string | null;
+  actual_value: string | null;
+  status: string;
+  importance: string;
+  description: string | null;
+  source_url: string | null;
+  data_confidence: string;
+  economic_event_series: SeriesRow | SeriesRow[];
+}
+
+const EVENT_SELECT = "id, slug, title, event_date, event_time, previous_value, forecast_value, actual_value, status, importance, description, source_url, data_confidence, economic_event_series(*)";
+// Same column list but with the series embed forced to an inner join — used
+// only by queries that also .eq()/.neq() a column on economic_event_series
+// itself (PostgREST requires !inner for that), and used INSTEAD OF
+// EVENT_SELECT in those queries, never alongside it: selecting
+// economic_event_series(*) and economic_event_series!inner(...) in the same
+// query both target the same relationship and Postgres rejects it
+// ("table name ... specified more than once") — caught live while
+// verifying "Related Calendar Events"/"Related Events" against the
+// just-seeded database.
+const EVENT_SELECT_INNER_SERIES = "id, slug, title, event_date, event_time, previous_value, forecast_value, actual_value, status, importance, description, source_url, data_confidence, economic_event_series!inner(*)";
+
+function mapSeries(row: SeriesRow): EventSeriesRecord {
+  return {
+    id: row.id,
+    slug: row.slug,
+    title: row.title,
+    category: row.category as EventCategory,
+    defaultImportance: row.default_importance as ImportanceLevel,
+    cadence: row.cadence,
+    sourceName: row.source_name,
+    sourceUrl: row.source_url,
+    automationTier: row.automation_tier,
+    reliabilityScore: row.reliability_score,
+    description: row.description,
+  };
+}
+
+function mapEvent(row: EventRow): EventRecord | null {
+  const seriesRow = Array.isArray(row.economic_event_series) ? row.economic_event_series[0] : row.economic_event_series;
+  if (!seriesRow) return null;
+  return {
+    id: row.id,
+    slug: row.slug,
+    title: row.title,
+    eventDate: row.event_date,
+    eventTime: row.event_time,
+    previousValue: row.previous_value,
+    forecastValue: row.forecast_value,
+    actualValue: row.actual_value,
+    status: row.status as EventStatus,
+    importance: row.importance as ImportanceLevel,
+    description: row.description,
+    sourceUrl: row.source_url,
+    dataConfidence: row.data_confidence as DataConfidence,
+    series: mapSeries(seriesRow),
+  };
+}
+
+/** Every event whose canonical home is /economic-calendar/event/[slug] — not yet released. */
+export const getScheduledEventSlugs = unstable_cache(
+  async (): Promise<string[]> => {
+    const supabase = createPublicDataClient();
+    const { data, error } = await supabase.from("economic_events").select("slug").neq("status", "released");
+    if (error || !data) return [];
+    return data.map((r) => r.slug);
+  },
+  ["economic-calendar-scheduled-slugs"],
+  { revalidate: REVALIDATE_SECONDS },
+);
+
+/** Every event whose canonical home is /economic-calendar/archive/[slug] — already released. */
+export const getReleasedEventSlugs = unstable_cache(
+  async (): Promise<string[]> => {
+    const supabase = createPublicDataClient();
+    const { data, error } = await supabase.from("economic_events").select("slug").eq("status", "released");
+    if (error || !data) return [];
+    return data.map((r) => r.slug);
+  },
+  ["economic-calendar-released-slugs"],
+  { revalidate: REVALIDATE_SECONDS },
+);
+
+export const getEventBySlug = unstable_cache(
+  async (slug: string): Promise<EventRecord | null> => {
+    const supabase = createPublicDataClient();
+    const { data, error } = await supabase.from("economic_events").select(EVENT_SELECT).eq("slug", slug).maybeSingle();
+    if (error || !data) return null;
+    return mapEvent(data as unknown as EventRow);
+  },
+  ["economic-calendar-event-by-slug"],
+  { revalidate: REVALIDATE_SECONDS },
+);
+
+/** All scheduled (not-yet-released) events, soonest first — powers feed.ics and "Related Events". */
+export const getAllScheduledEvents = unstable_cache(
+  async (): Promise<EventRecord[]> => {
+    const supabase = createPublicDataClient();
+    const { data, error } = await supabase.from("economic_events").select(EVENT_SELECT).neq("status", "released").order("event_date", { ascending: true });
+    if (error || !data) return [];
+    return (data as unknown as EventRow[]).map(mapEvent).filter((e): e is EventRecord => e !== null);
+  },
+  ["economic-calendar-all-scheduled"],
+  { revalidate: REVALIDATE_SECONDS },
+);
+
+/** Released events, most recent first — powers the Archive list. */
+export const getHistoricalEvents = unstable_cache(
+  async (): Promise<EventRecord[]> => {
+    const supabase = createPublicDataClient();
+    const { data, error } = await supabase.from("economic_events").select(EVENT_SELECT).eq("status", "released").order("event_date", { ascending: false });
+    if (error || !data) return [];
+    return (data as unknown as EventRow[]).map(mapEvent).filter((e): e is EventRecord => e !== null);
+  },
+  ["economic-calendar-historical"],
+  { revalidate: REVALIDATE_SECONDS },
+);
+
+/** Same series (e.g. other CPI releases), excluding the current event — "Related Calendar Events". */
+export const getEventsBySeriesSlug = unstable_cache(
+  async (seriesSlug: string, excludeEventId: string): Promise<EventRecord[]> => {
+    const supabase = createPublicDataClient();
+    const { data, error } = await supabase
+      .from("economic_events")
+      .select(EVENT_SELECT_INNER_SERIES)
+      .eq("economic_event_series.slug", seriesSlug)
+      .neq("id", excludeEventId)
+      .order("event_date", { ascending: false })
+      .limit(6);
+    if (error || !data) return [];
+    return (data as unknown as EventRow[]).map(mapEvent).filter((e): e is EventRecord => e !== null);
+  },
+  ["economic-calendar-events-by-series"],
+  { revalidate: REVALIDATE_SECONDS },
+);
+
+/** Other series in the same category (e.g. a CPI event -> SPI, Food Inflation) — "Related Events". */
+export const getEventsByCategory = unstable_cache(
+  async (category: EventCategory, excludeSeriesSlug: string): Promise<EventRecord[]> => {
+    const supabase = createPublicDataClient();
+    const { data, error } = await supabase
+      .from("economic_events")
+      .select(EVENT_SELECT_INNER_SERIES)
+      .eq("economic_event_series.category", category)
+      .neq("economic_event_series.slug", excludeSeriesSlug)
+      .neq("status", "released")
+      .order("event_date", { ascending: true })
+      .limit(6);
+    if (error || !data) return [];
+    const seen = new Set<string>();
+    const result: EventRecord[] = [];
+    for (const row of data as unknown as EventRow[]) {
+      const mapped = mapEvent(row);
+      if (!mapped || seen.has(mapped.series.slug)) continue;
+      seen.add(mapped.series.slug);
+      result.push(mapped);
+    }
+    return result;
+  },
+  ["economic-calendar-events-by-category"],
+  { revalidate: REVALIDATE_SECONDS },
+);

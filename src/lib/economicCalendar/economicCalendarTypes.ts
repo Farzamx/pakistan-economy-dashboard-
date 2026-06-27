@@ -29,4 +29,6 @@ export interface EconomicEvent {
   description: string;
   /** Marks this as the canonical event for its type in the Major Upcoming Events section (Section 5) — set on exactly one mock entry per headline type. */
   isHeadline?: boolean;
+  /** Set only on past releases (Phase 2A's Historical Archive seed) — its presence is what the seed generator uses to mark a row "released" with an actual value, instead of "scheduled". */
+  actual?: string | null;
 }

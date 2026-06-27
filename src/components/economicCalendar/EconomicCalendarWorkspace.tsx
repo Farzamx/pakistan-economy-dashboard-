@@ -15,6 +15,7 @@ import {
   DEFAULT_FILTER_STATE,
   type EventFilterState,
 } from "@/lib/economicCalendar/economicCalendarData";
+import Link from "next/link";
 import ViewportFadeIn from "@/components/ViewportFadeIn";
 import EconomicCalendarHero from "./EconomicCalendarHero";
 import EventFilters from "./EventFilters";
@@ -76,6 +77,18 @@ export default function EconomicCalendarWorkspace({ events }: { events: Economic
 
       <ViewportFadeIn delay={0.1}>
         <MajorUpcomingEvents events={majorEvents} today={today} />
+      </ViewportFadeIn>
+
+      <ViewportFadeIn>
+        <div className="flex flex-wrap items-center gap-2 text-xs">
+          <span className="text-[var(--text-muted)]">Explore further:</span>
+          <Link href="/economic-calendar/archive" className="rounded-full border border-white/10 light:border-slate-200 px-3 py-1.5 text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)]">
+            Historical Release Archive
+          </Link>
+          <a href="/economic-calendar/feed.ics" className="rounded-full border border-neon-blue/20 bg-neon-blue/5 px-3 py-1.5 text-neon-blue transition-colors hover:bg-neon-blue/10">
+            Subscribe to Calendar Feed (.ics)
+          </a>
+        </div>
       </ViewportFadeIn>
 
       <ViewportFadeIn>

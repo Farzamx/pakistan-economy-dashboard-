@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { EconomicEvent } from "@/lib/economicCalendar/economicCalendarTypes";
 import { formatEventDate, formatEventTime } from "@/lib/economicCalendar/economicCalendarData";
 import EventCategoryBadge from "./EventCategoryBadge";
@@ -9,7 +10,18 @@ interface Props {
   showDate?: boolean;
 }
 
-/** One event as a responsive row — a horizontal data row on desktop, stacking into label/value pairs on mobile rather than a real <table> (which a 6-column row can't survive at phone widths). */
+/**
+ * One event as a responsive row — a horizontal data row on desktop, stacking
+ * into label/value pairs on mobile rather than a real <table> (which a
+ * 6-column row can't survive at phone widths).
+ *
+ * The title links to /economic-calendar/event/[id] (Phase 2A) — this works
+ * because the database seed (scripts/generateEconomicCalendarSeed.ts) uses
+ * each mock event's own `id` as its Postgres slug, so this static-data
+ * component can link into the database-backed detail page without knowing
+ * anything about Supabase itself. Until the seed SQL has actually been run,
+ * these links 404; that's an expected, transient state, not a bug here.
+ */
 export default function EventRow({ event, showDate = true }: Props) {
   return (
     <div className="glass-card flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:gap-4 sm:p-4">
@@ -20,7 +32,9 @@ export default function EventRow({ event, showDate = true }: Props) {
           )}
           <span className="text-xs text-white/40 light:text-slate-400">{formatEventTime(event.time)}</span>
         </div>
-        <p className="text-sm font-semibold text-white light:text-slate-900">{event.title}</p>
+        <Link href={`/economic-calendar/event/${event.id}`} className="text-sm font-semibold text-white light:text-slate-900 hover:text-neon-blue hover:underline">
+          {event.title}
+        </Link>
         <div className="flex flex-wrap items-center gap-1.5">
           <EventCategoryBadge category={event.category} />
           <EventImportanceBadge importance={event.importance} />

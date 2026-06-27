@@ -13,6 +13,7 @@ import { SEO_PAGES } from "@/lib/seoConfig";
 import type { BudgetCategoryId } from "@/lib/budget/budgetRegistry";
 import { PROVINCES } from "@/lib/provincial/provincialBudgetRegistry";
 import { PROVINCIAL_SEO_PAGES, getCrossComparisonSeoPages, type ProvincialSeoPageDef } from "@/lib/provincial/provincialSeoPages";
+import type { EventCategory } from "@/lib/economicCalendar/economicCalendarTypes";
 
 export interface RelatedLink {
   href: string;
@@ -222,4 +223,24 @@ export function getProvincialSeoPageRelatedContent(page: ProvincialSeoPageDef): 
   }
 
   return groups;
+}
+
+// Economic Calendar event category -> standalone indicator page slugs
+// (SEO_PAGES) — "Related Indicators" on /economic-calendar/event/[slug] and
+// /economic-calendar/archive/[slug]. One list per category rather than per
+// series/event, since every event in a category (e.g. every CPI and SPI
+// release, both "Inflation") points at the same handful of indicator pages.
+const EVENT_CATEGORY_INDICATOR_LINKS: Record<EventCategory, string[]> = {
+  Inflation: ["inflation-rate-pakistan", "weekly-inflation-pakistan", "pakistan-food-inflation", "spi-index-pakistan"],
+  "Monetary Policy": ["pakistan-interest-rate", "pakistan-bond-yields"],
+  "External Sector": ["foreign-exchange-reserves-pakistan", "current-account-deficit-pakistan", "pakistan-trade-deficit", "pakistan-remittances", "pakistan-external-debt"],
+  "Fiscal Sector": ["pakistan-fiscal-deficit"],
+  "Real Economy": ["gdp-growth-pakistan"],
+  "Financial Markets": ["pakistan-stock-market"],
+  "Global Events": ["usd-pkr-exchange-rate", "gold-price-pakistan"],
+};
+
+export function getEventCategoryRelatedContent(category: EventCategory): RelatedGroup[] {
+  const links = indicatorLinks(EVENT_CATEGORY_INDICATOR_LINKS[category] ?? []);
+  return links.length > 0 ? [{ heading: "Related Indicators", links }] : [];
 }

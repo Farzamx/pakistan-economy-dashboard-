@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { motion } from "framer-motion";
 import type { EconomicEvent } from "@/lib/economicCalendar/economicCalendarTypes";
 import { EVENT_CATEGORIES } from "@/lib/economicCalendar/economicCalendarRegistry";
@@ -30,26 +31,31 @@ export default function MajorUpcomingEvents({ events, today }: { events: Economi
             >
               <div className="pointer-events-none absolute -top-10 -right-10 h-32 w-32 rounded-full blur-3xl" style={{ backgroundColor: `${accent}26` }} />
 
-              <div className="flex items-center justify-between">
-                <EventCategoryBadge category={event.category} />
-                <EventImportanceBadge importance={event.importance} />
-              </div>
-
-              <h3 className="text-base font-semibold text-white light:text-slate-900">{event.title}</h3>
-              <p className="text-sm leading-relaxed text-white/55 light:text-slate-500">{event.description}</p>
-
-              <div className="mt-auto flex items-center justify-between border-t border-white/5 light:border-slate-100 pt-3">
-                <div className="flex flex-col">
-                  <span className="text-xs text-white/40 light:text-slate-400">{formatEventDate(event.date)}</span>
-                  <span className="text-sm font-semibold" style={{ color: accent }}>
-                    {formatRelativeDay(event.date, today)}
-                  </span>
+              {/* display:contents — the Link spans the whole card's click
+                  area without affecting this flex layout, since it renders
+                  no box of its own. */}
+              <Link href={`/economic-calendar/event/${event.id}`} className="contents">
+                <div className="flex items-center justify-between">
+                  <EventCategoryBadge category={event.category} />
+                  <EventImportanceBadge importance={event.importance} />
                 </div>
-                <div className="flex flex-col items-end">
-                  <span className="text-[10px] uppercase tracking-wide text-white/35 light:text-slate-400">Forecast</span>
-                  <span className="text-sm font-medium text-white/85 light:text-slate-700">{event.forecast ?? event.previous ?? "—"}</span>
+
+                <h3 className="text-base font-semibold text-white light:text-slate-900">{event.title}</h3>
+                <p className="text-sm leading-relaxed text-white/55 light:text-slate-500">{event.description}</p>
+
+                <div className="mt-auto flex items-center justify-between border-t border-white/5 light:border-slate-100 pt-3">
+                  <div className="flex flex-col">
+                    <span className="text-xs text-white/40 light:text-slate-400">{formatEventDate(event.date)}</span>
+                    <span className="text-sm font-semibold" style={{ color: accent }}>
+                      {formatRelativeDay(event.date, today)}
+                    </span>
+                  </div>
+                  <div className="flex flex-col items-end">
+                    <span className="text-[10px] uppercase tracking-wide text-white/35 light:text-slate-400">Forecast</span>
+                    <span className="text-sm font-medium text-white/85 light:text-slate-700">{event.forecast ?? event.previous ?? "—"}</span>
+                  </div>
                 </div>
-              </div>
+              </Link>
             </motion.div>
           );
         })}
