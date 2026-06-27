@@ -2,8 +2,10 @@ import type { Metadata } from "next";
 import Sidebar from "@/components/Sidebar";
 import EconomicCalendarWorkspace from "@/components/economicCalendar/EconomicCalendarWorkspace";
 import NextMajorEvents from "@/components/economicCalendar/NextMajorEvents";
+import RecentReleases from "@/components/economicCalendar/RecentReleases";
+import MarketImpactRanking from "@/components/economicCalendar/MarketImpactRanking";
 import { ECONOMIC_CALENDAR_EVENTS } from "@/data/economicCalendarEvents";
-import { getNextMajorEvents } from "@/lib/economicCalendar/economicEventsRepo";
+import { getNextMajorEvents, getRecentReleases } from "@/lib/economicCalendar/economicEventsRepo";
 import { SITE_URL, SITE_NAME } from "@/lib/seoConfig";
 
 const PAGE_URL = `${SITE_URL}/economic-calendar`;
@@ -53,7 +55,7 @@ const FAQ = [
 ];
 
 export default async function EconomicCalendarPage() {
-  const nextMajorEvents = await getNextMajorEvents(6);
+  const [nextMajorEvents, recentReleases] = await Promise.all([getNextMajorEvents(6), getRecentReleases(6)]);
   const faqJsonLd = {
     "@context": "https://schema.org",
     "@type": "FAQPage",
@@ -86,6 +88,16 @@ export default async function EconomicCalendarPage() {
             <NextMajorEvents events={nextMajorEvents} />
           </div>
         )}
+
+        {recentReleases.length > 0 && (
+          <div className="mt-6">
+            <RecentReleases events={recentReleases} />
+          </div>
+        )}
+
+        <div className="mt-6">
+          <MarketImpactRanking />
+        </div>
 
         <section className="glass-card mt-6 flex flex-col gap-4 rounded-2xl p-6 sm:p-8">
           <h2 className="text-xl font-semibold text-white light:text-slate-900">Frequently Asked Questions</h2>

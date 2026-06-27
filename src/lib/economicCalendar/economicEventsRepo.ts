@@ -1,6 +1,8 @@
 import { unstable_cache } from "next/cache";
 import { createPublicDataClient } from "@/lib/supabase/publicDataClient";
 import type { EventCategory, ImportanceLevel } from "./economicCalendarTypes";
+import { getMarketImpactScore } from "./marketImpactScore";
+import { isWithinRetention } from "./retentionConfig";
 
 // Phase 2A data-access layer for the database-backed parts of the Economic
 // Calendar (Event Detail pages, the Historical Archive, .ics generation).
@@ -182,20 +184,37 @@ export const getAllScheduledEvents = unstable_cache(
   { revalidate: REVALIDATE_SECONDS },
 );
 
-const IMPORTANCE_RANK: Record<ImportanceLevel, number> = { High: 0, Medium: 1, Low: 2 };
-
 /**
  * "Next Major Market-Moving Events" panel — scheduled events sorted by
- * Market Impact first (High before Medium before Low), then soonest date
- * within the same impact level. Reuses getAllScheduledEvents's own cached
- * result rather than issuing a second query.
+ * Market Impact Score (highest first), then soonest date within the same
+ * score. Reuses getAllScheduledEvents's own cached result rather than
+ * issuing a second query.
  */
 export async function getNextMajorEvents(limit = 6): Promise<EventRecord[]> {
   const events = await getAllScheduledEvents();
   return [...events]
     .sort((a, b) => {
-      const rankDiff = IMPORTANCE_RANK[a.importance] - IMPORTANCE_RANK[b.importance];
-      return rankDiff !== 0 ? rankDiff : a.eventDate.localeCompare(b.eventDate);
+      const scoreDiff = getMarketImpactScore(b.series.slug, b.importance) - getMarketImpactScore(a.series.slug, a.importance);
+      return scoreDiff !== 0 ? scoreDiff : a.eventDate.localeCompare(b.eventDate);
+    })
+    .slice(0, limit);
+}
+
+/**
+ * "Recent Releases" section — released events still within the
+ * EVENT_RETENTION_DAYS window, sorted the same way as Next Major Events
+ * (Impact Score, then most-recently-released first). Postponed/cancelled
+ * events are deliberately excluded — there's no "Actual vs Forecast" to
+ * review for those, which is the whole point of this section.
+ */
+export async function getRecentReleases(limit = 6): Promise<EventRecord[]> {
+  const events = await getHistoricalEvents();
+  const today = new Date();
+  return events
+    .filter((e) => e.status === "released" && isWithinRetention(e.eventDate, today))
+    .sort((a, b) => {
+      const scoreDiff = getMarketImpactScore(b.series.slug, b.importance) - getMarketImpactScore(a.series.slug, a.importance);
+      return scoreDiff !== 0 ? scoreDiff : b.eventDate.localeCompare(a.eventDate);
     })
     .slice(0, limit);
 }

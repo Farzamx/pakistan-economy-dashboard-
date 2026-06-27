@@ -6,9 +6,13 @@ import RelatedContent from "@/components/RelatedContent";
 import EventCategoryBadge from "@/components/economicCalendar/EventCategoryBadge";
 import EventImportanceBadge from "@/components/economicCalendar/EventImportanceBadge";
 import EventStatusBadge from "@/components/economicCalendar/EventStatusBadge";
+import ImpactScoreBadge from "@/components/economicCalendar/ImpactScoreBadge";
 import { MarketReactionPreview } from "@/components/economicCalendar/MarketReactionSection";
 import HistoricalContext from "@/components/economicCalendar/HistoricalContext";
 import DataQualityFooter from "@/components/economicCalendar/DataQualityFooter";
+import AffectedIndicators from "@/components/economicCalendar/AffectedIndicators";
+import ExpectedMarketFocus from "@/components/economicCalendar/ExpectedMarketFocus";
+import RelatedDashboardLink from "@/components/economicCalendar/RelatedDashboardLink";
 import {
   getEventBySlug,
   getScheduledEventSlugs,
@@ -20,6 +24,10 @@ import { getEventCategoryRelatedContent, type RelatedGroup } from "@/lib/related
 import { formatEventDate, formatEventTime, formatRelativeDay } from "@/lib/economicCalendar/economicCalendarData";
 import { getMarketReactionPreview } from "@/lib/economicCalendar/marketReactionEngine";
 import { getWhyItMatters } from "@/lib/economicCalendar/whyItMatters";
+import { getMarketImpactScore } from "@/lib/economicCalendar/marketImpactScore";
+import { computeNextExpectedRelease } from "@/lib/economicCalendar/releaseFrequency";
+import { getAffectedIndicators, getRelatedDashboard } from "@/lib/economicCalendar/indicatorConnections";
+import { getMarketFocus } from "@/lib/economicCalendar/marketFocus";
 import { SITE_URL, SITE_NAME } from "@/lib/seoConfig";
 
 interface PageProps {
@@ -111,6 +119,16 @@ export default async function EventDetailPage({ params }: PageProps) {
   const faq = buildFaq(event);
   const whyItMatters = getWhyItMatters(event.series.slug, event.series.category);
   const reactionScenarios = getMarketReactionPreview(event.series.slug, event.series.category);
+  const impactScore = getMarketImpactScore(event.series.slug, event.importance);
+  const nextExpectedRelease = computeNextExpectedRelease(
+    event.series.cadence,
+    sameSeries.map((e) => ({ eventDate: e.eventDate, status: e.status })),
+    event.eventDate,
+    new Date(),
+  );
+  const affectedIndicators = getAffectedIndicators(event.series.slug);
+  const marketFocus = getMarketFocus(event.series.slug, event.series.category);
+  const relatedDashboard = getRelatedDashboard(event.series.slug);
 
   const faqJsonLd = {
     "@context": "https://schema.org",
@@ -150,6 +168,7 @@ export default async function EventDetailPage({ params }: PageProps) {
           <div className="mt-4 flex flex-wrap items-center gap-2">
             <EventCategoryBadge category={event.series.category} />
             <EventImportanceBadge importance={event.importance} />
+            <ImpactScoreBadge score={impactScore} />
             <EventStatusBadge status={event.status} />
           </div>
 
@@ -158,6 +177,8 @@ export default async function EventDetailPage({ params }: PageProps) {
             {formatEventDate(event.eventDate)} · {formatEventTime(event.eventTime ?? "00:00")} · {formatRelativeDay(event.eventDate, new Date())}
           </p>
           <p className="mt-3 max-w-2xl text-sm text-white/60 light:text-slate-500 sm:text-base">{event.description ?? event.series.description}</p>
+
+          {relatedDashboard && <RelatedDashboardLink label={relatedDashboard.label} href={relatedDashboard.href} />}
 
           <section className="glass-card mt-8 flex flex-col gap-5 p-6 sm:flex-row sm:items-center sm:justify-between sm:p-8">
             <div className="flex flex-wrap gap-8">
@@ -193,6 +214,10 @@ export default async function EventDetailPage({ params }: PageProps) {
 
           <MarketReactionPreview scenarios={reactionScenarios} />
 
+          <ExpectedMarketFocus points={marketFocus} />
+
+          <AffectedIndicators indicators={affectedIndicators} />
+
           <HistoricalContext events={sameSeries} />
 
           <section className="glass-card mt-6 p-6 sm:p-8">
@@ -207,7 +232,7 @@ export default async function EventDetailPage({ params }: PageProps) {
             </div>
           </section>
 
-          <DataQualityFooter event={event} />
+          <DataQualityFooter event={event} nextExpectedRelease={nextExpectedRelease} />
 
           <RelatedContent groups={relatedGroups} />
 

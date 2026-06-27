@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Sidebar from "@/components/Sidebar";
 import ArchiveBrowser from "@/components/economicCalendar/ArchiveBrowser";
 import { getHistoricalEvents } from "@/lib/economicCalendar/economicEventsRepo";
+import { isWithinRetention, EVENT_RETENTION_DAYS } from "@/lib/economicCalendar/retentionConfig";
 import { SITE_URL, SITE_NAME } from "@/lib/seoConfig";
 
 const PAGE_URL = `${SITE_URL}/economic-calendar/archive`;
@@ -30,10 +31,22 @@ const FAQ = [
     question: "Can I filter, search, or see released-only events?",
     answer: "Yes — use the search box plus the Category, Year, and \"Released Only\" filters above to narrow the list, for example to see only past SBP Monetary Policy Committee decisions, or every release from a specific year.",
   },
+  {
+    question: "Why doesn't a release show up here right away?",
+    answer: `A newly released event stays on the main Economic Calendar's "Recent Releases" panel for ${EVENT_RETENTION_DAYS} days first, so there's time to review Actual vs Forecast and the market reaction — it moves here automatically once that window closes. It's reachable at its own page throughout, both before and after that move.`,
+  },
 ];
 
 export default async function EconomicCalendarArchivePage() {
-  const events = await getHistoricalEvents();
+  const allHistorical = await getHistoricalEvents();
+  // Released Event Retention Policy — a released event stays on the
+  // active calendar's Recent Releases panel for EVENT_RETENTION_DAYS
+  // before "graduating" to this list (economicEventsRepo.ts's
+  // getRecentReleases is the other side of this split). Postponed/
+  // cancelled events have no Actual to review, so they skip the window
+  // and appear here immediately.
+  const today = new Date();
+  const events = allHistorical.filter((e) => !(e.status === "released" && isWithinRetention(e.eventDate, today)));
   const faqJsonLd = {
     "@context": "https://schema.org",
     "@type": "FAQPage",

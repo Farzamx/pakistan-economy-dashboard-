@@ -307,11 +307,14 @@ export default function Sidebar() {
               the Premium Tools links above, so it needs pathname-based
               active state rather than the scroll-spy. Placed first under
               Analytics, directly above Inflation/Monetary Policy/External
-              Sector, per the Economic Calendar feature spec. Not premium
-              styled — this page is public, not gated. */}
+              Sector, per the Economic Calendar feature spec. Now premium
+              (protectedSections.ts) — gated like Comparisons/Budget/
+              Provincial Budget above, just without their gradient/glow
+              styling, which wasn't part of this gating change. */}
           <motion.div whileHover={{ x: 4 }} transition={{ type: "spring", stiffness: 400, damping: 25 }}>
             <Link
               href="/economic-calendar"
+              onClick={(e) => handleProtectedNav(e, "/economic-calendar")}
               aria-current={pathname?.startsWith("/economic-calendar") ? "true" : undefined}
               className={`flex items-center gap-2.5 rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors ${
                 pathname?.startsWith("/economic-calendar")

@@ -73,13 +73,20 @@ export default function ThisMonthCalendar({ today, monthEvents }: { today: Date;
           const key = cell.date.toDateString();
           const isSelected = selectedDate === key;
           const hasHighImpact = cell.events.some((e) => e.importance === "High");
+          const hasMediumImpact = !hasHighImpact && cell.events.some((e) => e.importance === "Medium");
+          const impactLabel = hasHighImpact ? "High Impact" : hasMediumImpact ? "Medium Impact" : cell.events.length > 0 ? "Low Impact" : null;
+          const tooltip =
+            cell.events.length > 0
+              ? `${cell.date.toLocaleDateString("en-US", { day: "numeric", month: "short" })} — ${cell.events.length} Event${cell.events.length === 1 ? "" : "s"}${impactLabel ? ` — ${impactLabel}` : ""}`
+              : undefined;
           return (
             <button
               key={key}
               type="button"
               disabled={cell.events.length === 0}
               onClick={() => setSelectedDate(isSelected ? null : key)}
-              aria-label={cell.events.length > 0 ? `${cell.date.getDate()}: ${cell.events.length} event${cell.events.length === 1 ? "" : "s"}${hasHighImpact ? ", includes a High Market Impact release" : ""}` : undefined}
+              title={tooltip}
+              aria-label={cell.events.length > 0 ? `${cell.date.getDate()}: ${cell.events.length} event${cell.events.length === 1 ? "" : "s"}${impactLabel ? `, ${impactLabel}` : ""}` : undefined}
               className={`relative flex aspect-square flex-col items-center justify-start gap-1 rounded-lg border p-1 text-xs transition-colors sm:p-1.5 ${
                 !cell.inCurrentMonth
                   ? "border-transparent text-white/15 light:text-slate-300"
@@ -87,9 +94,11 @@ export default function ThisMonthCalendar({ today, monthEvents }: { today: Date;
                     ? "border-neon-blue/50 bg-neon-blue/15 text-white light:text-slate-900"
                     : hasHighImpact
                       ? "border-rose-400/40 bg-rose-400/[0.06] text-white light:text-slate-900 hover:bg-rose-400/10"
-                      : cell.isToday
-                        ? "border-neon-blue/30 bg-neon-blue/5 text-white light:text-slate-900"
-                        : "border-white/5 light:border-slate-100 text-white/70 light:text-slate-600 hover:bg-white/5 light:hover:bg-slate-50 disabled:hover:bg-transparent"
+                      : hasMediumImpact
+                        ? "border-amber-400/30 bg-amber-400/[0.05] text-white light:text-slate-900 hover:bg-amber-400/10"
+                        : cell.isToday
+                          ? "border-neon-blue/30 bg-neon-blue/5 text-white light:text-slate-900"
+                          : "border-white/5 light:border-slate-100 text-white/70 light:text-slate-600 hover:bg-white/5 light:hover:bg-slate-50 disabled:hover:bg-transparent"
               }`}
             >
               {cell.events.length > 0 && (
@@ -112,6 +121,7 @@ export default function ThisMonthCalendar({ today, monthEvents }: { today: Date;
                 </span>
               )}
               {hasHighImpact && <span className="h-1 w-4 rounded-full bg-rose-400" aria-hidden="true" />}
+              {hasMediumImpact && <span className="h-1 w-4 rounded-full bg-amber-400" aria-hidden="true" />}
             </button>
           );
         })}
@@ -135,11 +145,15 @@ export default function ThisMonthCalendar({ today, monthEvents }: { today: Date;
             <span className="rounded-full border border-white/10 light:border-slate-200 px-2 py-0.5 text-[10px] font-medium text-white/50 light:text-slate-500">
               {selectedCell.events.length} Event{selectedCell.events.length === 1 ? "" : "s"}
             </span>
-            {selectedCell.events.some((e) => e.importance === "High") && (
+            {selectedCell.events.some((e) => e.importance === "High") ? (
               <span className="rounded-full border border-rose-400/30 bg-rose-400/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-rose-400">
                 High Impact
               </span>
-            )}
+            ) : selectedCell.events.some((e) => e.importance === "Medium") ? (
+              <span className="rounded-full border border-amber-400/30 bg-amber-400/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-400">
+                Medium Impact
+              </span>
+            ) : null}
           </div>
           {selectedCell.events.map((event) => (
             <EventRow key={event.id} event={event} showDate={false} />

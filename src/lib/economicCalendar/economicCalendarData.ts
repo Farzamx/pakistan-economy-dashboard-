@@ -20,6 +20,12 @@ export function formatEventDate(dateStr: string): string {
   return new Date(y, m - 1, d).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
 }
 
+/** Whole days from `today` until `dateStr` ("YYYY-MM-DD") — negative if `dateStr` is in the past. Powers the "Days Remaining" field on upcoming-event cards. */
+export function daysUntil(dateStr: string, today: Date): number {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  return daysBetween(today, new Date(y, m - 1, d));
+}
+
 /** "Today" / "Tomorrow" / "In 5 days" / a formatted date once far enough out. */
 export function formatRelativeDay(dateStr: string, today: Date): string {
   const [y, m, d] = dateStr.split("-").map(Number);

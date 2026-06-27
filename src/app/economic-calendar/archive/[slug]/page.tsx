@@ -6,9 +6,13 @@ import RelatedContent from "@/components/RelatedContent";
 import EventCategoryBadge from "@/components/economicCalendar/EventCategoryBadge";
 import EventImportanceBadge from "@/components/economicCalendar/EventImportanceBadge";
 import EventStatusBadge from "@/components/economicCalendar/EventStatusBadge";
+import ImpactScoreBadge from "@/components/economicCalendar/ImpactScoreBadge";
 import { MarketReactionActual } from "@/components/economicCalendar/MarketReactionSection";
 import HistoricalContext from "@/components/economicCalendar/HistoricalContext";
 import DataQualityFooter from "@/components/economicCalendar/DataQualityFooter";
+import AffectedIndicators from "@/components/economicCalendar/AffectedIndicators";
+import ExpectedMarketFocus from "@/components/economicCalendar/ExpectedMarketFocus";
+import RelatedDashboardLink from "@/components/economicCalendar/RelatedDashboardLink";
 import {
   getEventBySlug,
   getReleasedEventSlugs,
@@ -21,6 +25,11 @@ import { formatEventDate } from "@/lib/economicCalendar/economicCalendarData";
 import { calculateSurprise, SURPRISE_LABELS, SURPRISE_BADGE_CLASS } from "@/lib/economicCalendar/surpriseAnalysis";
 import { getMarketReaction } from "@/lib/economicCalendar/marketReactionEngine";
 import { getWhyItMatters } from "@/lib/economicCalendar/whyItMatters";
+import { getMarketImpactScore } from "@/lib/economicCalendar/marketImpactScore";
+import { computeNextExpectedRelease } from "@/lib/economicCalendar/releaseFrequency";
+import { getAffectedIndicators, getRelatedDashboard } from "@/lib/economicCalendar/indicatorConnections";
+import { getMarketFocus } from "@/lib/economicCalendar/marketFocus";
+import { formatReleasedAgo, isWithinRetention } from "@/lib/economicCalendar/retentionConfig";
 import { SITE_URL, SITE_NAME } from "@/lib/seoConfig";
 
 interface PageProps {
@@ -107,6 +116,18 @@ export default async function ArchiveDetailPage({ params }: PageProps) {
   const surprise = calculateSurprise(event.actualValue, event.forecastValue);
   const reaction = event.status === "released" ? getMarketReaction(event.series.slug, event.series.category, surprise.direction, event.actualValue, event.previousValue) : null;
   const reactionAccent = surprise.direction === "positive" ? "positive" : surprise.direction === "negative" ? "negative" : "neutral";
+  const impactScore = getMarketImpactScore(event.series.slug, event.importance);
+  const today = new Date();
+  const nextExpectedRelease = computeNextExpectedRelease(
+    event.series.cadence,
+    sameSeries.map((e) => ({ eventDate: e.eventDate, status: e.status })),
+    event.eventDate,
+    today,
+  );
+  const affectedIndicators = getAffectedIndicators(event.series.slug);
+  const marketFocus = getMarketFocus(event.series.slug, event.series.category);
+  const relatedDashboard = getRelatedDashboard(event.series.slug);
+  const stillWithinRetention = event.status === "released" && isWithinRetention(event.eventDate, today);
 
   const faqJsonLd = {
     "@context": "https://schema.org",
@@ -149,12 +170,20 @@ export default async function ArchiveDetailPage({ params }: PageProps) {
           <div className="mt-4 flex flex-wrap items-center gap-2">
             <EventCategoryBadge category={event.series.category} />
             <EventImportanceBadge importance={event.importance} />
+            <ImpactScoreBadge score={impactScore} />
             <EventStatusBadge status={event.status} />
+            {stillWithinRetention && (
+              <span className="rounded-full border border-neon-blue/20 bg-neon-blue/5 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-neon-blue">
+                {formatReleasedAgo(event.eventDate, today)}
+              </span>
+            )}
           </div>
 
           <h1 className="mt-4 text-3xl font-bold tracking-tight text-white light:text-slate-900 sm:text-4xl">{event.title}</h1>
           <p className="mt-2 text-sm font-medium text-white/50 light:text-slate-500">Released {formatEventDate(event.eventDate)}</p>
           <p className="mt-3 max-w-2xl text-sm text-white/60 light:text-slate-500 sm:text-base">{event.description ?? event.series.description}</p>
+
+          {relatedDashboard && <RelatedDashboardLink label={relatedDashboard.label} href={relatedDashboard.href} />}
 
           <section className="glass-card mt-8 grid grid-cols-3 gap-4 p-6 sm:p-8">
             <div className="flex flex-col gap-1">
@@ -172,7 +201,7 @@ export default async function ArchiveDetailPage({ params }: PageProps) {
           </section>
 
           {surprise.direction !== "unavailable" && (
-            <section className="glass-card mt-6 flex flex-wrap items-center justify-between gap-3 p-5">
+            <section className={`glass-card mt-6 flex flex-wrap items-center justify-between gap-3 p-5 ${stillWithinRetention ? "border-neon-blue/30" : ""}`}>
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wide text-white/40 light:text-slate-500">Surprise Analysis</p>
                 <p className="mt-1 text-sm text-white/70 light:text-slate-600">
@@ -193,6 +222,10 @@ export default async function ArchiveDetailPage({ params }: PageProps) {
 
           <MarketReactionActual reaction={reaction} accent={reactionAccent} />
 
+          <ExpectedMarketFocus points={marketFocus} />
+
+          <AffectedIndicators indicators={affectedIndicators} />
+
           <HistoricalContext events={sameSeries} />
 
           <section className="glass-card mt-6 p-6 sm:p-8">
@@ -207,7 +240,7 @@ export default async function ArchiveDetailPage({ params }: PageProps) {
             </div>
           </section>
 
-          <DataQualityFooter event={event} />
+          <DataQualityFooter event={event} nextExpectedRelease={nextExpectedRelease} />
 
           <RelatedContent groups={relatedGroups} />
 

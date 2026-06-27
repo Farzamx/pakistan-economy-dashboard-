@@ -3,15 +3,9 @@ import { SITE_URL, SEO_PAGES } from "@/lib/seoConfig";
 import { COMPARISONS, SECTOR_COMPOSITION } from "@/lib/comparisons/comparisonRegistry";
 import { BUDGET_CATEGORIES, BUDGET_EXTRA_SEO_SLUGS } from "@/lib/budget/budgetRegistry";
 import { PROVINCIAL_SEO_SLUGS } from "@/lib/provincial/provincialBudgetRegistry";
-import { getScheduledEventSlugs, getReleasedEventSlugs } from "@/lib/economicCalendar/economicEventsRepo";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
-  // Empty until the Phase 2A migration + seed are run in Supabase — these
-  // two calls degrade to [] gracefully (economicEventsRepo's queries return
-  // [] on any error/empty table), so the sitemap still builds correctly
-  // either way.
-  const [scheduledEventSlugs, releasedEventSlugs] = await Promise.all([getScheduledEventSlugs(), getReleasedEventSlugs()]);
 
   return [
     {
@@ -26,30 +20,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "daily" as const,
       priority: 0.8,
     })),
-    {
-      url: `${SITE_URL}/economic-calendar`,
-      lastModified: now,
-      changeFrequency: "daily" as const,
-      priority: 0.9,
-    },
-    ...scheduledEventSlugs.map((slug) => ({
-      url: `${SITE_URL}/economic-calendar/event/${slug}`,
-      lastModified: now,
-      changeFrequency: "weekly" as const,
-      priority: 0.6,
-    })),
-    {
-      url: `${SITE_URL}/economic-calendar/archive`,
-      lastModified: now,
-      changeFrequency: "weekly" as const,
-      priority: 0.7,
-    },
-    ...releasedEventSlugs.map((slug) => ({
-      url: `${SITE_URL}/economic-calendar/archive/${slug}`,
-      lastModified: now,
-      changeFrequency: "yearly" as const,
-      priority: 0.5,
-    })),
+    // /economic-calendar is now a premium tool (route-level protected, see
+    // protectedSections.ts) — unlike /comparisons/budget/provincial-budget
+    // below, the WHOLE section is gated here, not just the hub, so none of
+    // it — hub, archive, or any /event/[slug] or /archive/[slug] detail
+    // page — gets a sitemap entry anymore.
     // /comparisons itself is a premium tool (route-level protected, see
     // protectedSections.ts) — only its 16 informational detail pages below
     // are public, so the hub has no sitemap entry of its own.

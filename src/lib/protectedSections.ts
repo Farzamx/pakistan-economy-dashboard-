@@ -20,13 +20,22 @@
 // must match "/settings" despite not being an exact equal, since account
 // pages can grow new sub-routes without each one needing its own entry here.
 //
+// /economic-calendar joined this list (rather than PROTECTED_EXACT_PATHS)
+// deliberately: unlike Comparisons/Budget/Provincial Budget below, where
+// only the hub is gated and the informational detail pages underneath stay
+// public for SEO, the whole Economic Calendar surface — hub, archive list,
+// every /event/[slug] and /archive/[slug] detail page, and the .ics feed
+// routes — is now premium. Prefix-matching gives that "everything under
+// this path" behavior from one entry instead of enumerating every dynamic
+// slug, which isn't possible here anyway.
+//
 // PROTECTED_EXACT_PATHS: exact-matched only, deliberately NOT prefix-matched
 // — these are leaf "tool" pages whose siblings/children (the 16 comparison
 // detail pages under /comparisons, the 8 budget category pages under
 // /budget, the 15 other provincial SEO pages under /provincial-budget) must
 // stay public. Prefix-matching any of these would silently re-protect that
 // public content.
-export const PROTECTED_SECTIONS = ["/settings"];
+export const PROTECTED_SECTIONS = ["/settings", "/economic-calendar"];
 
 export const PROTECTED_EXACT_PATHS = [
   "/comparisons",
