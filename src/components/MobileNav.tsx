@@ -14,6 +14,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import GuestAccessModal from "@/components/GuestAccessModal";
+import LogoutConfirmModal from "@/components/LogoutConfirmModal";
 import GlobalSearch from "@/components/GlobalSearch";
 import { useAuth } from "@/components/AuthProvider";
 import { signOutAction } from "@/app/auth/actions";
@@ -148,6 +149,8 @@ export default function MobileNav() {
   const [open, setOpen] = useState(false);
   const [guestModalOpen, setGuestModalOpen] = useState(false);
   const [guestDestination, setGuestDestination] = useState("/");
+  const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
   const [lastPathname, setLastPathname] = useState(pathname);
 
   useEffect(() => {
@@ -206,6 +209,7 @@ export default function MobileNav() {
 
   async function handleSignOut() {
     setOpen(false);
+    setSigningOut(true);
     // Both calls matter: signOutAction() clears the server-side session
     // cookie (what proxy.ts reads), and useAuth().signOut() clears the
     // browser's own Supabase client instance — found live during the
@@ -217,6 +221,18 @@ export default function MobileNav() {
     await Promise.all([signOutAction(), signOut()]);
     router.push("/");
     router.refresh();
+    // No setLogoutConfirmOpen(false)/setSigningOut(false) here — `user`
+    // flips to null the moment signOut() resolves, so this drawer's footer
+    // re-renders into its guest branch (no modal in that tree) first.
+  }
+
+  // Closes the drawer and shows the confirmation modal instead of signing
+  // out directly — the drawer must close first since it renders above the
+  // modal (z-[60] vs the modal's z-50); cancelling just leaves the drawer
+  // closed, same as it already behaves for any other link click.
+  function requestSignOut() {
+    setOpen(false);
+    setLogoutConfirmOpen(true);
   }
 
   return (
@@ -316,7 +332,7 @@ export default function MobileNav() {
                       <p className="truncate px-1 text-xs text-white/40 light:text-slate-500">{user.email}</p>
                       <button
                         type="button"
-                        onClick={handleSignOut}
+                        onClick={requestSignOut}
                         className="w-full rounded-lg border border-[var(--border)] px-4 py-2.5 text-sm font-medium text-white/80 light:text-slate-700 transition-colors hover:bg-white/5 light:hover:bg-slate-100"
                       >
                         Log Out
@@ -348,6 +364,7 @@ export default function MobileNav() {
       </AnimatePresence>
 
       <GuestAccessModal open={guestModalOpen} onClose={() => setGuestModalOpen(false)} destination={guestDestination} />
+      <LogoutConfirmModal open={logoutConfirmOpen} onClose={() => setLogoutConfirmOpen(false)} onConfirm={handleSignOut} loading={signingOut} />
     </>
   );
 }

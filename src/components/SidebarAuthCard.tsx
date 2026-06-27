@@ -7,19 +7,27 @@
 // the same future-analytics reason as HeroAuthCta.tsx — data-cta-source
 // ="sidebar" tags every click target, no tracking wired up yet.
 
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
 import { signOutAction } from "@/app/auth/actions";
+import LogoutConfirmModal from "@/components/LogoutConfirmModal";
 
 export default function SidebarAuthCard() {
   const { user, loading, signOut } = useAuth();
   const router = useRouter();
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
 
   async function handleSignOut() {
+    setSigningOut(true);
     await Promise.all([signOutAction(), signOut()]);
     router.push("/");
     router.refresh();
+    // No setConfirmOpen(false)/setSigningOut(false) here — `user` flips to
+    // null the moment signOut() resolves, so this card re-renders into its
+    // guest branch (no modal in that tree at all) before either would matter.
   }
 
   if (loading) {
@@ -56,13 +64,14 @@ export default function SidebarAuthCard() {
         </div>
         <button
           type="button"
-          onClick={handleSignOut}
+          onClick={() => setConfirmOpen(true)}
           data-cta="logout"
           data-cta-source="sidebar"
           className="w-full rounded-lg border border-[var(--border)] py-1.5 text-xs font-medium text-[var(--text-secondary)] transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]"
         >
           Logout
         </button>
+        <LogoutConfirmModal open={confirmOpen} onClose={() => setConfirmOpen(false)} onConfirm={handleSignOut} loading={signingOut} />
       </div>
     );
   }

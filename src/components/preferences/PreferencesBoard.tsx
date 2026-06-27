@@ -9,7 +9,7 @@
 // of cross-list drag, since cross-column drag-and-drop is notoriously poor
 // on touch screens and this page explicitly needs mobile support.
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Reorder } from "framer-motion";
 import { usePreferences } from "@/components/PreferencesProvider";
 import { useTheme, type Theme } from "@/components/ThemeProvider";
@@ -34,6 +34,33 @@ export default function PreferencesBoard() {
   const hidden = preferences?.dashboardLayout?.hidden ?? [];
   const visible = DASHBOARD_WIDGETS.map((w) => w.id).filter((id) => !pinned.includes(id) && !hidden.includes(id));
 
+  // Falls back to the first province in the registry (Punjab) when the
+  // user hasn't explicitly chosen one yet, so the selector never renders
+  // with nothing highlighted — a brand-new preferences row has
+  // preferredProvince: null until the user actually picks one.
+  const selectedProvince = preferences?.preferredProvince ?? PROVINCES[0].id;
+
+  // One-time backfill: a real preferences row whose province was never
+  // explicitly set (preferredProvince === null) gets that same default
+  // written to Supabase once, so the DB matches what's already shown as
+  // selected instead of silently staying out of sync. `backfilledRef`
+  // guards against firing twice for the same load (e.g. Strict Mode's
+  // double-invoke) — once the write resolves, `preferences.preferredProvince`
+  // is no longer null, so the effect's own condition stops it from running
+  // again on its own. Skipped entirely when `preferences` is null (no row
+  // fetched yet) or already has a real saved value — existing users are
+  // never touched.
+  const backfilledRef = useRef(false);
+  useEffect(() => {
+    if (loading || !preferences || preferences.preferredProvince !== null) return;
+    if (backfilledRef.current) return;
+    backfilledRef.current = true;
+    updatePreferences({ preferredProvince: PROVINCES[0].id }).catch(() => {
+      // Allow a retry on the next render if this one-time write failed.
+      backfilledRef.current = false;
+    });
+  }, [loading, preferences, updatePreferences]);
+
   async function persist(patch: Parameters<typeof updatePreferences>[0]) {
     setSaving(true);
     try {
@@ -49,6 +76,9 @@ export default function PreferencesBoard() {
   }
 
   async function handleProvinceChange(id: ProvinceId) {
+    // Already selected (whether explicitly saved or just the default) —
+    // clicking it again is a no-op, not a re-save.
+    if (id === selectedProvince) return;
     await persist({ preferredProvince: id });
   }
 
@@ -113,11 +143,11 @@ export default function PreferencesBoard() {
               key={p.id}
               type="button"
               onClick={() => handleProvinceChange(p.id)}
-              aria-pressed={preferences?.preferredProvince === p.id}
+              aria-pressed={selectedProvince === p.id}
               className={`rounded-xl border px-4 py-2 text-sm font-medium transition-colors ${
-                preferences?.preferredProvince === p.id ? "border-transparent text-white" : "border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--surface-hover)]"
+                selectedProvince === p.id ? "border-transparent text-white" : "border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--surface-hover)]"
               }`}
-              style={preferences?.preferredProvince === p.id ? { backgroundColor: p.color } : undefined}
+              style={selectedProvince === p.id ? { backgroundColor: p.color } : undefined}
             >
               {p.name}
             </button>
