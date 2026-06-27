@@ -4,12 +4,16 @@
 // to each province's Budget Workshop, surfaced right on the homepage since
 // Provincial Budget Intelligence is one of the platform's strongest
 // features but previously required scrolling to the Sidebar's Premium
-// Tools group to discover. Each card is a real route under the existing
-// protected-section system, so it needs the same guest-interception
-// pattern as Sidebar.tsx/MobileNav.tsx rather than a plain <Link> —
-// otherwise a signed-out click here would skip straight past
-// GuestAccessModal to proxy.ts's server-side redirect, which works but
-// loses the in-app modal UX every other Provincial Budget entry point uses.
+// Tools group to discover.
+//
+// Since the SEO Architecture Migration, none of these hrefs are in
+// PROTECTED_SECTIONS any more (their base content is public — see
+// protectedSections.ts's HYBRID_SECTIONS), so handleClick's isProtectedPath
+// check below currently always no-ops and every card behaves like a plain
+// <Link>. Kept anyway, matching the same pattern Sidebar.tsx/MobileNav.tsx
+// use, so that if any of these routes ever needs guest interception again
+// (e.g. a future premium-only feature embedded on one of these pages), the
+// hook is already wired up correctly instead of needing to be re-added.
 
 import Link from "next/link";
 import { useState } from "react";
