@@ -302,6 +302,31 @@ export default function Sidebar() {
           })}
 
           <SidebarSectionLabel>Analytics</SidebarSectionLabel>
+
+          {/* Economic Calendar — a real route (not a homepage anchor) like
+              the Premium Tools links above, so it needs pathname-based
+              active state rather than the scroll-spy. Placed first under
+              Analytics, directly above Inflation/Monetary Policy/External
+              Sector, per the Economic Calendar feature spec. Not premium
+              styled — this page is public, not gated. */}
+          <motion.div whileHover={{ x: 4 }} transition={{ type: "spring", stiffness: 400, damping: 25 }}>
+            <Link
+              href="/economic-calendar"
+              aria-current={pathname?.startsWith("/economic-calendar") ? "true" : undefined}
+              className={`flex items-center gap-2.5 rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors ${
+                pathname?.startsWith("/economic-calendar")
+                  ? "border-neon-blue/25 bg-neon-blue/10 text-white light:text-slate-900"
+                  : "border-transparent text-white/50 light:text-slate-500 hover:bg-white/5 light:hover:bg-slate-100 hover:text-white light:hover:text-slate-900"
+              }`}
+            >
+              <svg className="h-3.5 w-3.5 shrink-0 opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="5" width="18" height="16" rx="2" />
+                <path d="M3 10h18M8 3v4M16 3v4" />
+              </svg>
+              Economic Calendar
+            </Link>
+          </motion.div>
+
           {ANALYTICS_NAV_ITEMS.map((item) => {
             const isActive = isHomepage && activeId === item.id;
             return (

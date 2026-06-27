@@ -21,6 +21,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.8,
     })),
     {
+      url: `${SITE_URL}/economic-calendar`,
+      lastModified: now,
+      changeFrequency: "daily" as const,
+      priority: 0.9,
+    },
+    {
       url: `${SITE_URL}/comparisons`,
       lastModified: now,
       changeFrequency: "daily" as const,

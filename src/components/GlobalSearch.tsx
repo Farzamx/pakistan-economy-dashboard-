@@ -39,6 +39,7 @@ export const SEARCH_INDEX: SearchEntry[] = [
   { label: "Remittances", href: "/#remittances" },
   { label: "External Sector", href: "/#external-sector", keywords: ["Current Account", "Trade Balance"] },
   { label: "News", href: "/#news-intelligence" },
+  { label: "Economic Calendar", href: "/economic-calendar", keywords: ["SBP Meeting", "CPI Release", "Events", "Calendar"] },
   { label: "Comparisons", href: "/comparisons" },
   { label: "Budget Tracker", href: "/budget", keywords: ["Budget", "Federal Budget"] },
   { label: "Provincial Budget", href: "/provincial-budget", keywords: ["Budget"] },
