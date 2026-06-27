@@ -65,6 +65,7 @@ export default async function FiscalDeficitPage() {
       relatedLinks={relatedSeoLinks(SLUG, [
         "pakistan-bond-yields",
         "current-account-deficit-pakistan",
+        "pakistan-external-debt",
         "pakistan-economic-indicators",
       ])}
     />

@@ -4,6 +4,7 @@ import Sidebar from "@/components/Sidebar";
 import BudgetTrendChart from "@/components/budget/BudgetTrendChart";
 import BudgetInsightsPanel from "@/components/budget/BudgetInsightsPanel";
 import BudgetToolkit from "@/components/budget/BudgetToolkit";
+import RelatedContent from "@/components/RelatedContent";
 import { getCategoryTrendSeries, generateBudgetInsights } from "@/lib/budget/budgetData";
 import { BUDGET_HISTORICAL } from "@/data/budgetHistorical";
 import { getBudgetToolkit } from "@/data/budgetEducation";
@@ -116,6 +117,26 @@ export default function DebtServicingVsDefencePage() {
               ))}
             </div>
           </section>
+
+          <RelatedContent
+            groups={[
+              {
+                heading: "Related Budget Categories",
+                links: [
+                  { href: "/budget/debt-servicing", label: "Debt Servicing" },
+                  { href: "/budget/defence-spending", label: "Defence" },
+                  { href: "/budget/where-does-tax-money-go", label: "Where Does Tax Money Go?" },
+                ],
+              },
+              {
+                heading: "Related Provincial Pages",
+                links: [
+                  { href: "/provincial-budget/debt-burden-rankings", label: "Provincial Debt Burden Rankings" },
+                  { href: "/provincial-budget/provincial-debt-comparison", label: "Provincial Debt Comparison" },
+                ],
+              },
+            ]}
+          />
 
           <div className="mt-10 mb-4 text-center">
             <Link href="/budget" className="inline-flex items-center gap-2 rounded-lg bg-neon-blue/10 border border-neon-blue/20 px-5 py-2.5 text-sm font-medium text-neon-blue transition-colors hover:bg-neon-blue/20">

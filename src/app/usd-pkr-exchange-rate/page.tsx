@@ -74,6 +74,7 @@ export default async function UsdPkrPage() {
       relatedLinks={relatedSeoLinks(SLUG, [
         "foreign-exchange-reserves-pakistan",
         "current-account-deficit-pakistan",
+        "sar-to-pkr-exchange-rate",
         "pakistan-economic-indicators",
       ])}
     />

@@ -74,6 +74,10 @@ export default async function EconomicIndicatorsPage() {
         "inflation-rate-pakistan",
         "pakistan-interest-rate",
         "foreign-exchange-reserves-pakistan",
+        "pakistan-external-debt",
+        "spi-index-pakistan",
+        "pakistan-stock-market",
+        "fdi-in-pakistan",
         "pakistan-economic-dashboard",
       ])}
     />

@@ -65,6 +65,7 @@ export default async function CurrentAccountPage() {
       relatedLinks={relatedSeoLinks(SLUG, [
         "foreign-exchange-reserves-pakistan",
         "usd-pkr-exchange-rate",
+        "pakistan-external-debt",
         "pakistan-economic-indicators",
       ])}
     />

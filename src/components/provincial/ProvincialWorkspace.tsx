@@ -106,6 +106,12 @@ export default function ProvincialWorkspace({ province }: ProvincialWorkspacePro
             {p.name}
           </Link>
         ))}
+        <Link href="/provincial-budget/rankings" className="rounded-full border border-white/10 light:border-slate-200 px-3 py-1.5 text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)]">
+          Province Rankings
+        </Link>
+        <Link href="/provincial-budget/growth-explorer" className="rounded-full border border-white/10 light:border-slate-200 px-3 py-1.5 text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)]">
+          Growth Explorer
+        </Link>
         <Link href="/provincial-budget/compare" className="rounded-full border border-neon-purple/30 bg-neon-purple/10 px-3 py-1.5 text-neon-purple transition-colors hover:bg-neon-purple/20">
           Compare All Provinces
         </Link>

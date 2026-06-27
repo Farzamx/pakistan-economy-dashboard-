@@ -2,8 +2,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import ComparisonDetailView from "@/components/comparisons/ComparisonDetailView";
+import RelatedContent from "@/components/RelatedContent";
 import { COMPARISONS, getComparisonBySlug } from "@/lib/comparisons/comparisonRegistry";
 import { getComparisonBundle } from "@/lib/comparisons/comparisonData";
+import { getComparisonRelatedContent } from "@/lib/relatedContent";
 import { SITE_URL, SITE_NAME } from "@/lib/seoConfig";
 
 interface PageProps {
@@ -47,6 +49,7 @@ export default async function ComparisonDetailPage({ params }: PageProps) {
   };
 
   const related = COMPARISONS.filter((c) => c.group === def.group && c.slug !== def.slug).slice(0, 4);
+  const relatedContent = getComparisonRelatedContent(def.slug);
 
   return (
     <div className="min-h-screen w-full px-6 py-8 sm:px-10 lg:px-16">
@@ -114,6 +117,8 @@ export default async function ComparisonDetailPage({ params }: PageProps) {
             </div>
           </section>
         )}
+
+        <RelatedContent groups={relatedContent} />
 
         <div className="mt-10 mb-4 text-center">
           <Link

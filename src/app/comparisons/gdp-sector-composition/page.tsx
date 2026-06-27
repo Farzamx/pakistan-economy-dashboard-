@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import SectorCompositionChart from "@/components/comparisons/SectorCompositionChart";
+import RelatedContent from "@/components/RelatedContent";
 import { SECTOR_COMPOSITION, COMPARISON_GROUPS } from "@/lib/comparisons/comparisonRegistry";
 import { getGdpSectorComposition } from "@/lib/data/worldBank";
+import { getComparisonRelatedContent } from "@/lib/relatedContent";
 import { SITE_URL, SITE_NAME } from "@/lib/seoConfig";
 
 const PAGE_URL = `${SITE_URL}/comparisons/${SECTOR_COMPOSITION.slug}`;
@@ -93,6 +95,8 @@ export default async function GdpSectorCompositionPage() {
             ))}
           </div>
         </section>
+
+        <RelatedContent groups={getComparisonRelatedContent(SECTOR_COMPOSITION.slug)} />
 
         <div className="mt-10 mb-4 text-center">
           <Link

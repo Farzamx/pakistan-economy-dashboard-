@@ -5,6 +5,8 @@ import { rankProvincesByField } from "@/lib/provincial/provincialComparison";
 import { getProvinceMeta } from "@/lib/provincial/provincialBudgetRegistry";
 import ProvincialHistoricalExplorer from "./ProvincialHistoricalExplorer";
 import ProvincialRankingDashboard from "./ProvincialRankingDashboard";
+import RelatedContent from "@/components/RelatedContent";
+import { getProvincialSeoPageRelatedContent } from "@/lib/relatedContent";
 
 interface ProvincialSeoTemplateProps {
   page: ProvincialSeoPageDef;
@@ -49,6 +51,7 @@ export default function ProvincialSeoTemplate({ page }: ProvincialSeoTemplatePro
         <Link href={`/provincial-budget/${meta.slug}`} className="text-sm font-medium text-neon-blue hover:underline">
           View the full {meta.name} Budget Workshop →
         </Link>
+        <RelatedContent groups={getProvincialSeoPageRelatedContent(page)} />
       </div>
     );
   }
@@ -73,6 +76,7 @@ export default function ProvincialSeoTemplate({ page }: ProvincialSeoTemplatePro
         <Link href={`/provincial-budget/${meta.slug}`} className="text-sm font-medium text-neon-blue hover:underline">
           View the full {meta.name} Budget Workshop →
         </Link>
+        <RelatedContent groups={getProvincialSeoPageRelatedContent(page)} />
       </div>
     );
   }
@@ -103,6 +107,7 @@ export default function ProvincialSeoTemplate({ page }: ProvincialSeoTemplatePro
         <Link href="/provincial-budget/compare" className="text-sm font-medium text-neon-blue hover:underline">
           Compare on other metrics →
         </Link>
+        <RelatedContent groups={getProvincialSeoPageRelatedContent(page)} />
       </div>
     );
   }
@@ -121,6 +126,7 @@ export default function ProvincialSeoTemplate({ page }: ProvincialSeoTemplatePro
             All Provinces →
           </Link>
         </div>
+        <RelatedContent groups={getProvincialSeoPageRelatedContent(page)} />
       </div>
     );
   }
@@ -139,6 +145,7 @@ export default function ProvincialSeoTemplate({ page }: ProvincialSeoTemplatePro
             All Provinces →
           </Link>
         </div>
+        <RelatedContent groups={getProvincialSeoPageRelatedContent(page)} />
       </div>
     );
   }

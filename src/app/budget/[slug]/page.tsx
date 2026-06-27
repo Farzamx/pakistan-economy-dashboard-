@@ -3,10 +3,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import BudgetDetailView from "@/components/budget/BudgetDetailView";
 import BudgetToolkit from "@/components/budget/BudgetToolkit";
+import RelatedContent from "@/components/RelatedContent";
 import { BUDGET_CATEGORIES, getBudgetCategoryBySlug, type BudgetCategoryId } from "@/lib/budget/budgetRegistry";
 import type { BudgetTrendField } from "@/lib/budget/budgetData";
 import { BUDGET_HISTORICAL } from "@/data/budgetHistorical";
 import { getBudgetToolkit } from "@/data/budgetEducation";
+import { getBudgetCategoryRelatedContent } from "@/lib/relatedContent";
 import { SITE_URL, SITE_NAME } from "@/lib/seoConfig";
 
 interface PageProps {
@@ -66,6 +68,7 @@ export default async function BudgetCategoryPage({ params }: PageProps) {
 
   const related = BUDGET_CATEGORIES.filter((c) => c.slug !== category.slug).slice(0, 4);
   const toolkit = getBudgetToolkit(category.slug);
+  const relatedContent = getBudgetCategoryRelatedContent(category.id);
 
   return (
     <div className="min-h-screen w-full px-6 py-8 sm:px-10 lg:px-16">
@@ -154,6 +157,8 @@ export default async function BudgetCategoryPage({ params }: PageProps) {
             </div>
           </section>
         )}
+
+        <RelatedContent groups={relatedContent} />
 
         <div className="mt-10 mb-4 text-center">
           <Link

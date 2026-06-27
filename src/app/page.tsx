@@ -9,6 +9,7 @@ import KpiGrid from "@/components/KpiGrid";
 import MarketTicker, { type TickerItem } from "@/components/MarketTicker";
 import NewsIntelligenceSection from "@/components/NewsIntelligenceSection";
 import ProvincialQuickAccess from "@/components/ProvincialQuickAccess";
+import PopularInsights from "@/components/PopularInsights";
 import HideableSection from "@/components/preferences/HideableSection";
 import PinnedIndicatorsRow from "@/components/preferences/PinnedIndicatorsRow";
 import RiskIntelligenceSection from "@/components/RiskIntelligenceSection";
@@ -456,6 +457,8 @@ export default async function Home() {
         <Hero rightSlot={<DataSourcesModal kpis={allKpis} />} />
 
         <ProvincialQuickAccess />
+
+        <PopularInsights />
 
         <PinnedIndicatorsRow />
 

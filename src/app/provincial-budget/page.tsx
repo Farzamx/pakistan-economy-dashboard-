@@ -4,13 +4,19 @@ import Sidebar from "@/components/Sidebar";
 import BudgetToolkit from "@/components/budget/BudgetToolkit";
 import { getProvincialBudgetToolkit } from "@/data/provincialBudgetEducation";
 import { PROVINCES } from "@/lib/provincial/provincialBudgetRegistry";
+import { PROVINCIAL_SEO_PAGES } from "@/lib/provincial/provincialSeoPages";
 import { getLatestProvinceYear } from "@/lib/provincial/provincialBudgetData";
 import { generateProvincialInsights } from "@/lib/provincial/provincialComparison";
 import { generateHistoricalInsights } from "@/lib/provincial/provincialHistoricalInsights";
 import BudgetInsightsPanel from "@/components/budget/BudgetInsightsPanel";
 import ProvincialHistoricalExplorer from "@/components/provincial/ProvincialHistoricalExplorer";
 import ProvincialRankingDashboard from "@/components/provincial/ProvincialRankingDashboard";
+import { shortProvincialLabel } from "@/lib/relatedContent";
 import { SITE_URL, SITE_NAME } from "@/lib/seoConfig";
+
+const DEEP_DIVE_PAGES = PROVINCIAL_SEO_PAGES.filter((p) => p.type === "province-overview" || p.type === "province-category");
+const CROSS_COMPARISON_PAGES = PROVINCIAL_SEO_PAGES.filter((p) => p.type === "cross-comparison");
+const RANKING_TOOL_PAGES = PROVINCIAL_SEO_PAGES.filter((p) => p.type === "growth-explorer" || p.type === "ranking-dashboard");
 
 const PAGE_URL = `${SITE_URL}/provincial-budget`;
 const TITLE = "Provincial Budget Intelligence — Punjab, Sindh, KP & Balochistan Budgets";
@@ -109,23 +115,31 @@ export default function ProvincialBudgetPage() {
 
           <BudgetInsightsPanel insights={historicalInsights} title="Historical Insights" />
 
-          <div className="flex flex-wrap items-center gap-2 text-xs">
-            <span className="text-[var(--text-muted)]">Explore further:</span>
-            <Link href="/provincial-budget/growth-explorer" className="rounded-full border border-white/10 light:border-slate-200 px-3 py-1.5 text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)]">
-              Growth Explorer
-            </Link>
-            <Link href="/provincial-budget/rankings" className="rounded-full border border-white/10 light:border-slate-200 px-3 py-1.5 text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)]">
-              Province Rankings
-            </Link>
-            <Link href="/provincial-budget/debt-burden-rankings" className="rounded-full border border-white/10 light:border-slate-200 px-3 py-1.5 text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)]">
-              Debt Burden Rankings
-            </Link>
-            <Link href="/provincial-budget/development-spending-rankings" className="rounded-full border border-white/10 light:border-slate-200 px-3 py-1.5 text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)]">
-              Development Spending Rankings
-            </Link>
-            <Link href="/provincial-budget/own-revenue-rankings" className="rounded-full border border-white/10 light:border-slate-200 px-3 py-1.5 text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)]">
-              Own Revenue Rankings
-            </Link>
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-wrap items-center gap-2 text-xs">
+              <span className="text-[var(--text-muted)]">Province deep dives:</span>
+              {DEEP_DIVE_PAGES.map((p) => (
+                <Link key={p.slug} href={`/provincial-budget/${p.slug}`} className="rounded-full border border-white/10 light:border-slate-200 px-3 py-1.5 text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)]">
+                  {shortProvincialLabel(p)}
+                </Link>
+              ))}
+            </div>
+            <div className="flex flex-wrap items-center gap-2 text-xs">
+              <span className="text-[var(--text-muted)]">Cross-province comparisons:</span>
+              {CROSS_COMPARISON_PAGES.map((p) => (
+                <Link key={p.slug} href={`/provincial-budget/${p.slug}`} className="rounded-full border border-white/10 light:border-slate-200 px-3 py-1.5 text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)]">
+                  {shortProvincialLabel(p)}
+                </Link>
+              ))}
+            </div>
+            <div className="flex flex-wrap items-center gap-2 text-xs">
+              <span className="text-[var(--text-muted)]">Rankings &amp; tools:</span>
+              {RANKING_TOOL_PAGES.map((p) => (
+                <Link key={p.slug} href={`/provincial-budget/${p.slug}`} className="rounded-full border border-white/10 light:border-slate-200 px-3 py-1.5 text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)]">
+                  {shortProvincialLabel(p)}
+                </Link>
+              ))}
+            </div>
           </div>
 
           <section className="glass-card flex flex-col gap-4 rounded-2xl p-6 sm:p-8">

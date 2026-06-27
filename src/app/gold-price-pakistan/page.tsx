@@ -91,11 +91,11 @@ export default async function GoldPricePage() {
           answer: "One tola equals 11.6638 grams. It's the traditional unit used for gold trading and jewelry pricing across Pakistan, India, and the broader South Asian region.",
         },
       ]}
-      relatedLinks={relatedSeoLinks(SLUG, [
-        "usd-pkr-exchange-rate",
-        "pakistan-interest-rate",
-        "pakistan-economic-indicators",
-      ])}
+      relatedLinks={[
+        ...relatedSeoLinks(SLUG, ["usd-pkr-exchange-rate", "pakistan-interest-rate", "pakistan-economic-indicators"]),
+        { href: "/comparisons/gold-vs-usd-pkr", label: "Gold vs USD/PKR" },
+        { href: "/comparisons/gold-vs-treasury-bills", label: "Gold vs Treasury Bills" },
+      ]}
     />
   );
 }
