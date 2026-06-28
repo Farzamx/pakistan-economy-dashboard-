@@ -19,8 +19,15 @@ import { createPublicDataClient } from "@/lib/supabase/publicDataClient";
 // Phase 2 source audit used that word for, not aspirational.
 interface SyncTarget {
   indicatorKey: SbpIndicatorKey;
-  /** Formats the indicator's raw numeric kpi.value into this calendar's existing actual_value string convention (e.g. "$11.2B", "6.8% YoY"). */
-  format: (value: string) => string;
+  /** Formats the indicator's raw numeric kpi.value (and, where needed, the due event's previous_value) into this calendar's existing actual_value string convention (e.g. "$11.2B", "6.8% YoY", "11.5% (held)"). */
+  format: (value: string, previousValue: string | null) => string;
+}
+
+/** Parses a leading number out of strings like "11.5%" or "11.5% (hold expected)" — tolerant of the descriptive suffixes this calendar's previous_value/forecast fields carry. */
+function parseLeadingNumber(value: string | null): number | null {
+  if (!value) return null;
+  const match = value.match(/-?\d+(\.\d+)?/);
+  return match ? Number(match[0]) : null;
 }
 
 const SYNC_TARGETS: Record<string, SyncTarget> = {
@@ -33,6 +40,24 @@ const SYNC_TARGETS: Record<string, SyncTarget> = {
   "large-scale-manufacturing-lsm-growth": { indicatorKey: "lsm", format: (v) => `${v}% YoY` },
   "treasury-bill-auction": { indicatorKey: "tbillYield3m", format: (v) => `${v}%` },
   "pib-auction": { indicatorKey: "pibYield3y", format: (v) => `${v}%` },
+  // SBP's live policy-rate series (src/lib/data/sbp.ts's `policyRate`,
+  // already powering the homepage and /pakistan-interest-rate) was never
+  // wired into this sync loop — meaning every MPC decision had to be typed
+  // in by hand even though the same automated pipeline every other series
+  // uses could reach it. Mirrors this calendar's existing "11.5% (hiked
+  // +100bps)" / "11.5% (held)" convention by comparing the new rate to the
+  // due event's previous_value, rather than just dropping a bare number in.
+  "sbp-monetary-policy-committee-meeting": {
+    indicatorKey: "policyRate",
+    format: (v, previousValue) => {
+      const prev = parseLeadingNumber(previousValue);
+      const next = parseLeadingNumber(v);
+      if (prev === null || next === null) return `${v}%`;
+      const bps = Math.round((next - prev) * 100);
+      if (bps === 0) return `${v}% (held)`;
+      return `${v}% (${bps > 0 ? "hiked" : "cut"} ${bps > 0 ? "+" : ""}${bps}bps)`;
+    },
+  },
 };
 
 export interface SyncResult {
@@ -68,7 +93,7 @@ export async function syncAllFromSbpEasyData(): Promise<SyncResult[]> {
       const today = new Date().toISOString().slice(0, 10);
       const { data: dueEvents } = await supabase
         .from("economic_events")
-        .select("event_date, economic_event_series!inner(slug)")
+        .select("event_date, previous_value, economic_event_series!inner(slug)")
         .eq("economic_event_series.slug", seriesSlug)
         .eq("status", "scheduled")
         .lte("event_date", today)
@@ -81,7 +106,7 @@ export async function syncAllFromSbpEasyData(): Promise<SyncResult[]> {
         continue;
       }
 
-      const actualValue = target.format(indicator.kpi.value);
+      const actualValue = target.format(indicator.kpi.value, dueEvent.previous_value);
       const { data: didUpdate, error } = await supabase.rpc("sync_event_actual", {
         p_series_slug: seriesSlug,
         p_event_date: dueEvent.event_date,

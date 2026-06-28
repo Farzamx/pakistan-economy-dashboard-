@@ -192,15 +192,25 @@ export const ECONOMIC_CALENDAR_EVENTS: EconomicEvent[] = [
     description: "A weekly wrap-up of the Pakistan Stock Exchange's benchmark KSE-100 index performance and the sectors driving it.",
   },
   {
-    id: "sbp-mpc-2026-07-22",
+    // Corrected from a pre-announcement estimate (2026-07-22) to SBP's
+    // official FY27 MPC calendar date, published 2026-06-23/24 at
+    // https://www.sbp.org.pk/m_policy/mp-calendar.asp — confirmed across
+    // multiple independent financial press reports (Dawn, Business
+    // Recorder, TechJuice, ICCI) citing the same SBP announcement. previous
+    // corrected to 11.5% to match sbp-mpc-2026-06-15's actual ("held" at
+    // 11.5%) below — the prior mock value (11.0%) didn't chain from that
+    // outcome. forecast/expected-direction text removed rather than
+    // re-guessed: no verified analyst consensus source for this date.
+    id: "sbp-mpc-2026-07-27",
+    dateConfirmed: true,
     title: "SBP Monetary Policy Committee Meeting",
     category: "Monetary Policy",
     importance: "High",
-    date: "2026-07-22",
+    date: "2026-07-27",
     time: "14:00",
-    previous: "11.0%",
-    forecast: "11.0% (hold expected)",
-    description: "The State Bank's policy rate decision — the single most market-moving recurring event on this calendar, setting the benchmark cost of borrowing across the economy.",
+    previous: "11.5%",
+    forecast: null,
+    description: "The State Bank's policy rate decision — the single most market-moving recurring event on this calendar, setting the benchmark cost of borrowing across the economy. First MPC meeting of FY27, per SBP's official advance calendar; same-day Monetary Policy Statement, analyst briefing the following day (Jul 28), and SBP's first Monetary Policy Report of FY27 due Aug 10.",
     isHeadline: true,
   },
   {
@@ -293,15 +303,94 @@ export const ECONOMIC_CALENDAR_EVENTS: EconomicEvent[] = [
     description: "SBP's monthly current account balance — the broadest measure of money flowing in versus out of Pakistan internationally, and a key driver of reserve and currency stability.",
   },
   {
-    id: "sbp-mpc-2026-09-09",
+    // Corrected from 2026-09-09 to SBP's official FY27 date. previous/
+    // forecast intentionally null (not 11.0%/10.75% as the prior mock
+    // value had it) — the rate path beyond the 2026-07-27 meeting above
+    // genuinely isn't knowable yet, since it depends on that meeting's own
+    // (not-yet-decided) outcome; carrying forward a guessed number would
+    // misrepresent it as fact on an investor-facing calendar.
+    id: "sbp-mpc-2026-09-14",
+    dateConfirmed: true,
     title: "SBP Monetary Policy Committee Meeting",
     category: "Monetary Policy",
     importance: "High",
-    date: "2026-09-09",
+    date: "2026-09-14",
     time: "14:00",
-    previous: "11.0%",
-    forecast: "10.75%",
-    description: "The State Bank's policy rate decision — the single most market-moving recurring event on this calendar, setting the benchmark cost of borrowing across the economy.",
+    previous: null,
+    forecast: null,
+    description: "The State Bank's policy rate decision — the single most market-moving recurring event on this calendar, setting the benchmark cost of borrowing across the economy. Second MPC meeting of FY27, per SBP's official advance calendar; same-day statement and analyst briefing (no press conference this cycle — SBP holds governor press conferences only after the Jul/Oct/Jan/Apr meetings).",
+  },
+  {
+    id: "sbp-mpc-2026-10-26",
+    dateConfirmed: true,
+    title: "SBP Monetary Policy Committee Meeting",
+    category: "Monetary Policy",
+    importance: "High",
+    date: "2026-10-26",
+    time: "14:00",
+    previous: null,
+    forecast: null,
+    description: "The State Bank's policy rate decision — the single most market-moving recurring event on this calendar, setting the benchmark cost of borrowing across the economy. Third MPC meeting of FY27, per SBP's official advance calendar; same-day statement and governor press conference, analyst briefing the following day (Oct 27).",
+  },
+  {
+    id: "sbp-mpc-2026-12-14",
+    dateConfirmed: true,
+    title: "SBP Monetary Policy Committee Meeting",
+    category: "Monetary Policy",
+    importance: "High",
+    date: "2026-12-14",
+    time: "14:00",
+    previous: null,
+    forecast: null,
+    description: "The State Bank's policy rate decision — the single most market-moving recurring event on this calendar, setting the benchmark cost of borrowing across the economy. Fourth MPC meeting of FY27, per SBP's official advance calendar; same-day statement and analyst briefing (no press conference this cycle).",
+  },
+  {
+    id: "sbp-mpc-2027-01-25",
+    dateConfirmed: true,
+    title: "SBP Monetary Policy Committee Meeting",
+    category: "Monetary Policy",
+    importance: "High",
+    date: "2027-01-25",
+    time: "14:00",
+    previous: null,
+    forecast: null,
+    description: "The State Bank's policy rate decision — the single most market-moving recurring event on this calendar, setting the benchmark cost of borrowing across the economy. Fifth MPC meeting of FY27, per SBP's official advance calendar; same-day statement and governor press conference, analyst briefing the following day (Jan 26); SBP's second Monetary Policy Report of FY27 due Feb 8.",
+  },
+  {
+    id: "sbp-mpc-2027-03-08",
+    dateConfirmed: true,
+    title: "SBP Monetary Policy Committee Meeting",
+    category: "Monetary Policy",
+    importance: "High",
+    date: "2027-03-08",
+    time: "14:00",
+    previous: null,
+    forecast: null,
+    description: "The State Bank's policy rate decision — the single most market-moving recurring event on this calendar, setting the benchmark cost of borrowing across the economy. Sixth MPC meeting of FY27, per SBP's official advance calendar; same-day statement and analyst briefing (no press conference this cycle).",
+  },
+  {
+    id: "sbp-mpc-2027-04-26",
+    dateConfirmed: true,
+    title: "SBP Monetary Policy Committee Meeting",
+    category: "Monetary Policy",
+    importance: "High",
+    date: "2027-04-26",
+    time: "14:00",
+    previous: null,
+    forecast: null,
+    description: "The State Bank's policy rate decision — the single most market-moving recurring event on this calendar, setting the benchmark cost of borrowing across the economy. Seventh MPC meeting of FY27, per SBP's official advance calendar; same-day statement and governor press conference, analyst briefing the following day (Apr 27).",
+  },
+  {
+    id: "sbp-mpc-2027-06-17",
+    dateConfirmed: true,
+    title: "SBP Monetary Policy Committee Meeting",
+    category: "Monetary Policy",
+    importance: "High",
+    date: "2027-06-17",
+    time: "14:00",
+    previous: null,
+    forecast: null,
+    description: "The State Bank's policy rate decision — the single most market-moving recurring event on this calendar, setting the benchmark cost of borrowing across the economy. Eighth and final MPC meeting of FY27, per SBP's official advance calendar; same-day statement and analyst briefing (no press conference this cycle).",
   },
   {
     id: "economic-survey-2027-06-05",

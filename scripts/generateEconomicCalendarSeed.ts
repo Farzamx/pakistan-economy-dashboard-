@@ -16,6 +16,7 @@ import { fileURLToPath } from "url";
 import { dirname, join } from "path";
 import { ECONOMIC_CALENDAR_EVENTS, ECONOMIC_CALENDAR_HISTORICAL_EVENTS } from "../src/data/economicCalendarEvents";
 import type { EconomicEvent, EventCategory } from "../src/lib/economicCalendar/economicCalendarTypes";
+import { baseEventTitle as baseTitle } from "../src/lib/economicCalendar/economicCalendarData";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -30,10 +31,6 @@ interface SeriesMeta {
   automationTier: "automated" | "semi_automated" | "manual";
   reliabilityScore: number;
   description: string;
-}
-
-function baseTitle(title: string): string {
-  return title.replace(/\s*\([^)]*\)\s*$/, "").trim();
 }
 
 function slugify(title: string): string {
@@ -54,7 +51,10 @@ function sqlString(value: string | null | undefined): string {
 // already-integrated SBP EasyData series exists (src/lib/data/sbp.ts) that
 // Phase 2B's sync route reads directly — not aspirational.
 const SERIES_META: Record<string, Omit<SeriesMeta, "slug" | "title" | "category" | "defaultImportance" | "description">> = {
-  "SPI Weekly Inflation Release": { cadence: "weekly", sourceName: "Pakistan Bureau of Statistics", sourceUrl: "https://www.pbs.gov.pk/spi", automationTier: "automated", reliabilityScore: 4 },
+  // "automated" requires a real SYNC_TARGETS entry in syncFromSbpEasyData.ts
+  // backed by a live src/lib/data/sbp.ts indicator — SPI has neither (no
+  // SbpIndicatorKey exists for it), so "automated" here was inaccurate.
+  "SPI Weekly Inflation Release": { cadence: "weekly", sourceName: "Pakistan Bureau of Statistics", sourceUrl: "https://www.pbs.gov.pk/spi", automationTier: "semi_automated", reliabilityScore: 4 },
   "SBP Foreign Exchange Reserves": { cadence: "weekly", sourceName: "State Bank of Pakistan", sourceUrl: "https://www.sbp.org.pk/ecodata/index2.asp", automationTier: "automated", reliabilityScore: 5 },
   "KSE-100 Weekly Market Review": { cadence: "weekly", sourceName: "Pakistan Stock Exchange", sourceUrl: "https://www.psx.com.pk/", automationTier: "semi_automated", reliabilityScore: 4 },
   "Trade Balance": { cadence: "monthly", sourceName: "Pakistan Bureau of Statistics", sourceUrl: "https://www.pbs.gov.pk/", automationTier: "automated", reliabilityScore: 4 },
@@ -62,7 +62,13 @@ const SERIES_META: Record<string, Omit<SeriesMeta, "slug" | "title" | "category"
   "Core Inflation Release": { cadence: "monthly", sourceName: "Pakistan Bureau of Statistics / SBP EasyData", sourceUrl: "https://www.pbs.gov.pk/cpi", automationTier: "automated", reliabilityScore: 4 },
   "Current Account Balance": { cadence: "monthly", sourceName: "State Bank of Pakistan", sourceUrl: "https://www.sbp.org.pk/ecodata/index2.asp", automationTier: "automated", reliabilityScore: 4 },
   "Worker Remittances": { cadence: "monthly", sourceName: "State Bank of Pakistan", sourceUrl: "https://www.sbp.org.pk/ecodata/homeremit.pdf", automationTier: "automated", reliabilityScore: 4 },
-  "SBP Monetary Policy Committee Meeting": { cadence: "irregular", sourceName: "State Bank of Pakistan", sourceUrl: "https://www.sbp.org.pk/m_policy/mp-calendar.asp", automationTier: "semi_automated", reliabilityScore: 5 },
+  // Upgraded to "automated": syncFromSbpEasyData.ts now syncs the actual
+  // decision via src/lib/data/sbp.ts's live `policyRate` indicator, the
+  // same pipeline every other automated series uses. Dates themselves still
+  // come from SBP's published advance calendar (manual transcription when
+  // SBP issues a new one), not a machine-readable feed — automationTier
+  // here tracks the actual-value sync, matching every other series' meaning.
+  "SBP Monetary Policy Committee Meeting": { cadence: "irregular", sourceName: "State Bank of Pakistan", sourceUrl: "https://www.sbp.org.pk/m_policy/mp-calendar.asp", automationTier: "automated", reliabilityScore: 5 },
   "GDP Growth Release": { cadence: "quarterly", sourceName: "Pakistan Bureau of Statistics", sourceUrl: "https://www.pbs.gov.pk/national-accounts-2/", automationTier: "semi_automated", reliabilityScore: 5 },
   "Large Scale Manufacturing (LSM) Growth": { cadence: "monthly", sourceName: "Pakistan Bureau of Statistics / SBP EasyData", sourceUrl: "https://www.pbs.gov.pk/", automationTier: "automated", reliabilityScore: 4 },
   "Treasury Bill Auction": { cadence: "weekly", sourceName: "State Bank of Pakistan", sourceUrl: "https://www.sbp.org.pk/ecodata/index2.asp", automationTier: "automated", reliabilityScore: 4 },
@@ -136,7 +142,7 @@ lines.push("");
 for (const e of allEvents) {
   const seriesSlug = seriesSlugForEvent(e);
   const status = e.status ?? (e.actual ? "released" : "scheduled");
-  const dataConfidence = e.actual ? "confirmed" : "estimated";
+  const dataConfidence = e.actual || e.dateConfirmed ? "confirmed" : "estimated";
   lines.push(
     `insert into public.economic_events (series_id, slug, title, event_date, event_time, previous_value, forecast_value, actual_value, status, importance, description, data_confidence)\n` +
       `values ((select id from public.economic_event_series where slug = ${sqlString(seriesSlug)}), ${sqlString(e.id)}, ${sqlString(e.title)}, ${sqlString(e.date)}, ${sqlString(e.time)}, ${sqlString(e.previous)}, ${sqlString(e.forecast)}, ${sqlString(e.actual ?? null)}, ${sqlString(status)}, ${sqlString(e.importance)}, ${sqlString(e.description)}, ${sqlString(dataConfidence)})\n` +

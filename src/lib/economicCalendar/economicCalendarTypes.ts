@@ -41,4 +41,15 @@ export interface EconomicEvent {
   actual?: string | null;
   /** Defaults to "released" when `actual` is set, "scheduled" otherwise (see economicCalendarData.ts's resolveStatus) — only set explicitly here for postponed/cancelled mock entries. */
   status?: EventStatus;
+  /**
+   * True when the scheduled `date` itself is sourced from an official
+   * advance calendar (e.g. SBP's published FY27 MPC schedule), as opposed
+   * to a projected/typical-pattern estimate — distinct from whether the
+   * event's *outcome* (`actual`) is known yet. Without this, the seed
+   * generator's data_confidence column conflates the two: a still-upcoming
+   * but officially-dated event would otherwise read as "estimated" right
+   * alongside a genuinely-guessed date, which understates how reliable the
+   * date itself is on an investor-facing calendar.
+   */
+  dateConfirmed?: boolean;
 }

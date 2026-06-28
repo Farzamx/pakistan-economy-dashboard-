@@ -121,20 +121,42 @@ export function getHighImpactUpcomingEvents(events: EconomicEvent[], today: Date
 }
 
 /**
+ * Strips a trailing "(...)" parenthetical — e.g. "CPI Inflation Release
+ * (July 2026)" -> "CPI Inflation Release" — so events whose title embeds a
+ * per-instance period (month, fiscal year, quarter) are still recognized as
+ * the same underlying series. Mirrors scripts/generateEconomicCalendarSeed.ts's
+ * identical `baseTitle()`, which groups these same mock events into series
+ * for the Supabase seed; kept here as the shared, single source of truth so
+ * the two never drift into different grouping rules for the same data.
+ */
+export function baseEventTitle(title: string): string {
+  return title.replace(/\s*\([^)]*\)\s*$/, "").trim();
+}
+
+/**
  * One representative card per headline event type (Section 5) — the
- * soonest upcoming event flagged `isHeadline` for each distinct title.
- * Several titles recur (e.g. "SBP Monetary Policy Committee Meeting" has
- * multiple future mock dates); this picks the nearest occurrence of each so
- * the section reads as "what's next for each major release," not a flat
- * list of every future instance.
+ * soonest upcoming instance of each series that's ever been marked
+ * `isHeadline` anywhere in the dataset. `isHeadline` marks the SERIES as
+ * headline-worthy, not a specific date — many series (CPI, GDP, Trade
+ * Balance, ...) embed a per-instance period in the title itself ("CPI
+ * Inflation Release (July 2026)" next becomes "...(August 2026)"), so a
+ * design that required re-flagging isHeadline on every new month's
+ * instance would silently go empty for that entire series the moment the
+ * currently-flagged instance is released and nobody remembers to move the
+ * flag forward — exactly the bug found auditing the MPC schedule, generalized
+ * to every other recurring series with a dated title. Resolving "which
+ * instance to show" dynamically (soonest upcoming, by baseEventTitle()) means
+ * no per-instance flag maintenance is needed at all going forward.
  */
 export function getMajorUpcomingEvents(events: EconomicEvent[], today: Date): EconomicEvent[] {
-  const upcoming = getUpcomingEvents(events, today).filter((e) => e.isHeadline);
+  const majorBaseTitles = new Set(events.filter((e) => e.isHeadline).map((e) => baseEventTitle(e.title)));
+  const upcoming = getUpcomingEvents(events, today).filter((e) => majorBaseTitles.has(baseEventTitle(e.title)));
   const seen = new Set<string>();
   const result: EconomicEvent[] = [];
   for (const event of upcoming) {
-    if (seen.has(event.title)) continue;
-    seen.add(event.title);
+    const key = baseEventTitle(event.title);
+    if (seen.has(key)) continue;
+    seen.add(key);
     result.push(event);
   }
   return result;
