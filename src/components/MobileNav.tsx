@@ -9,7 +9,7 @@
 // interception + isProtectedPath like Sidebar.tsx) rather than a new
 // pattern.
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
@@ -152,6 +152,16 @@ export default function MobileNav() {
   const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const [lastPathname, setLastPathname] = useState(pathname);
+  // See SidebarAuthCard.tsx for why this guard exists — closing the modal
+  // must not depend solely on `user` flipping to null and this drawer's
+  // footer re-rendering into its guest branch; the try/finally in
+  // handleSignOut below needs to know it's still safe to setState.
+  const isMountedRef = useRef(true);
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -210,20 +220,27 @@ export default function MobileNav() {
   async function handleSignOut() {
     setOpen(false);
     setSigningOut(true);
-    // Both calls matter: signOutAction() clears the server-side session
-    // cookie (what proxy.ts reads), and useAuth().signOut() clears the
-    // browser's own Supabase client instance — found live during the
-    // authenticated-user audit that calling only the server action left
-    // the drawer showing "Log Out" after logging out, since
-    // AuthProvider's user state is only ever updated by its own client
-    // instance's onAuthStateChange listener, which router.refresh() does
-    // not touch.
-    await Promise.all([signOutAction(), signOut()]);
-    router.push("/");
-    router.refresh();
-    // No setLogoutConfirmOpen(false)/setSigningOut(false) here — `user`
-    // flips to null the moment signOut() resolves, so this drawer's footer
-    // re-renders into its guest branch (no modal in that tree) first.
+    try {
+      // Both calls matter: signOutAction() clears the server-side session
+      // cookie (what proxy.ts reads), and useAuth().signOut() clears the
+      // browser's own Supabase client instance — found live during the
+      // authenticated-user audit that calling only the server action left
+      // the drawer showing "Log Out" after logging out, since
+      // AuthProvider's user state is only ever updated by its own client
+      // instance's onAuthStateChange listener, which router.refresh() does
+      // not touch.
+      await Promise.all([signOutAction(), signOut()]);
+      router.push("/");
+      router.refresh();
+    } finally {
+      // Always runs — on success, on a rejected signOutAction()/signOut(),
+      // or anything else — so the modal can never get stuck open with a
+      // perpetual spinner. See SidebarAuthCard.tsx for the full rationale.
+      if (isMountedRef.current) {
+        setSigningOut(false);
+        setLogoutConfirmOpen(false);
+      }
+    }
   }
 
   // Closes the drawer and shows the confirmation modal instead of signing

@@ -47,11 +47,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // these re-checks (only the initial mount sets it), so navigating around
   // an already-resolved session never re-flashes a loading state.
   useEffect(() => {
+    let cancelled = false;
     const supabase = createClient();
     supabase.auth.getUser().then(({ data }) => {
+      // Guards against a slower, now-stale call (e.g. one kicked off by the
+      // pathname change a sign-out's own router.push() triggers) resolving
+      // after a newer one and overwriting fresher state with stale data.
+      if (cancelled) return;
       setUser(data.user);
       setLoading(false);
     });
+    return () => {
+      cancelled = true;
+    };
   }, [pathname]);
 
   useEffect(() => {

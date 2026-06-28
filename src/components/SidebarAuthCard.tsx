@@ -7,7 +7,7 @@
 // the same future-analytics reason as HeroAuthCta.tsx — data-cta-source
 // ="sidebar" tags every click target, no tracking wired up yet.
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
@@ -19,15 +19,33 @@ export default function SidebarAuthCard() {
   const router = useRouter();
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
+  // Closing the modal previously relied entirely on `user` flipping to null
+  // and this card re-rendering into its guest branch (which doesn't render
+  // the modal at all) — fragile, since it gave the loading state no path
+  // back to false if signOutAction()/signOut() ever rejected, and the modal
+  // itself deliberately disables Escape/backdrop/Cancel while loading (so a
+  // mid-request dismissal can't abandon the sign-out), leaving no fallback
+  // exit. The try/finally below makes closing self-contained: it always
+  // fires, on success or failure, independent of how/whether `user` updates.
+  const isMountedRef = useRef(true);
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   async function handleSignOut() {
     setSigningOut(true);
-    await Promise.all([signOutAction(), signOut()]);
-    router.push("/");
-    router.refresh();
-    // No setConfirmOpen(false)/setSigningOut(false) here — `user` flips to
-    // null the moment signOut() resolves, so this card re-renders into its
-    // guest branch (no modal in that tree at all) before either would matter.
+    try {
+      await Promise.all([signOutAction(), signOut()]);
+      router.push("/");
+      router.refresh();
+    } finally {
+      if (isMountedRef.current) {
+        setSigningOut(false);
+        setConfirmOpen(false);
+      }
+    }
   }
 
   if (loading) {
