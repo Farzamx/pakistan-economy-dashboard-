@@ -18,7 +18,6 @@ const DATE_RANGE_OPTIONS = [
   { value: "All", label: "All Upcoming" },
   { value: "Today", label: "Today" },
   { value: "This Week", label: "This Week" },
-  { value: "This Month", label: "This Month" },
 ];
 
 export default function EventFilters({ filters, onChange, searchQuery, onSearchChange }: Props) {

@@ -159,13 +159,13 @@ export function getCalendarKpis(events: EconomicEvent[], today: Date): CalendarK
 export interface EventFilterState {
   category: EventCategory | "All";
   importance: ImportanceLevel | "All";
-  /** Date-range preset, applied on top of whatever base list (today/week/month) a section is already showing. */
-  dateRange: "All" | "Today" | "This Week" | "This Month";
+  /** Date-range preset, applied on top of whatever base list (today/week) a section is already showing. */
+  dateRange: "All" | "Today" | "This Week";
 }
 
 export const DEFAULT_FILTER_STATE: EventFilterState = { category: "All", importance: "All", dateRange: "All" };
 
-/** Category + importance only — deliberately NOT dateRange, which instead controls section visibility (see economicCalendarWorkspace) so Today/This Week/This Month keep their own fixed scope rather than fighting over which date constraint wins. */
+/** Category + importance only — deliberately NOT dateRange, which instead controls section visibility (see economicCalendarWorkspace) so Today/This Week keep their own fixed scope rather than fighting over which date constraint wins. */
 export function filterByCategoryAndImportance(events: EconomicEvent[], filters: EventFilterState): EconomicEvent[] {
   let result = events;
   if (filters.category !== "All") result = result.filter((e) => e.category === filters.category);
@@ -173,7 +173,7 @@ export function filterByCategoryAndImportance(events: EconomicEvent[], filters: 
   return result;
 }
 
-export function isSectionVisible(section: "Today" | "This Week" | "This Month", dateRange: EventFilterState["dateRange"]): boolean {
+export function isSectionVisible(section: "Today" | "This Week", dateRange: EventFilterState["dateRange"]): boolean {
   return dateRange === "All" || dateRange === section;
 }
 

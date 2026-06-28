@@ -6,7 +6,6 @@ import {
   getCalendarKpis,
   getTodayEvents,
   getThisWeekEvents,
-  getThisMonthEvents,
   getMajorUpcomingEvents,
   generateWeeklyOutlook,
   filterByCategoryAndImportance,
@@ -21,7 +20,6 @@ import EconomicCalendarHero from "./EconomicCalendarHero";
 import EventFilters from "./EventFilters";
 import TodaysEvents from "./TodaysEvents";
 import ThisWeekEvents from "./ThisWeekEvents";
-import ThisMonthCalendar from "./ThisMonthCalendar";
 import MajorUpcomingEvents from "./MajorUpcomingEvents";
 import WeeklyOutlook from "./WeeklyOutlook";
 import WhyEventsMatter from "./WhyEventsMatter";
@@ -46,10 +44,6 @@ export default function EconomicCalendarWorkspace({ events }: { events: Economic
     () => searchEvents(filterByCategoryAndImportance(getThisWeekEvents(events, today), filters), searchQuery),
     [events, today, filters, searchQuery],
   );
-  const monthEvents = useMemo(
-    () => searchEvents(filterByCategoryAndImportance(getThisMonthEvents(events, today), filters), searchQuery),
-    [events, today, filters, searchQuery],
-  );
 
   return (
     <div className="flex flex-col gap-6">
@@ -66,12 +60,6 @@ export default function EconomicCalendarWorkspace({ events }: { events: Economic
       {isSectionVisible("This Week", filters.dateRange) && (
         <ViewportFadeIn delay={0.05}>
           <ThisWeekEvents events={weekEvents} />
-        </ViewportFadeIn>
-      )}
-
-      {isSectionVisible("This Month", filters.dateRange) && (
-        <ViewportFadeIn delay={0.1}>
-          <ThisMonthCalendar today={today} monthEvents={monthEvents} />
         </ViewportFadeIn>
       )}
 
