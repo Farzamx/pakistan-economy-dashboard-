@@ -17,7 +17,7 @@
 // a plain array so callers can surface which model tagged the articles.
 
 import type { NewsItem } from "./news";
-import { callOpenRouter } from "@/lib/openRouterClient";
+import { callOpenRouter, type AiProvider } from "@/lib/openRouterClient";
 import { getMarketImpact, type MarketImpact } from "@/lib/news/marketImpact";
 import { getSourceReliability } from "@/lib/news/relevanceEngine";
 
@@ -144,6 +144,44 @@ function parseBatchContent(items: NewsItem[]): (content: string) => Intelligence
   };
 }
 
+const BATCH_CACHE_TTL_MS = 30 * 60 * 1000; // matches the revalidate window below — same freshness reasoning
+
+interface CachedBatchResult {
+  tags: IntelligenceTag[];
+  modelUsed: string;
+  modelDisplayName: string;
+  provider: AiProvider;
+  cachedAt: number;
+}
+
+// Explicit, process-local cache — NOT a replacement for Next's own fetch
+// data cache (the `revalidate` passed to callOpenRouter already dedupes
+// identical outbound requests within Next's runtime). This exists
+// specifically so a cache hit/miss is something the app can observe and
+// log (Next's fetch cache is transparent — there's no way to ask "was that
+// a hit?"), and so an *exact repeat* of the same batch within the window
+// skips the network call, retry logic, and provider failover entirely,
+// rather than relying on cache semantics implicit in the fetch call.
+// In-memory and per-instance, not distributed — acceptable here since the
+// cost of an occasional cross-instance miss is just one extra AI call, not
+// a correctness issue.
+const batchCache = new Map<string, CachedBatchResult>();
+
+/** Deterministic key for a batch — same set of headlines/categories/sources in the same order produces the same key, so a near-immediate repeat (e.g. concurrent requests, fast ISR re-render) reuses the result instead of re-calling every provider. */
+function buildBatchCacheKey(items: NewsItem[]): string {
+  return items.map((item) => `${item.title}|${item.category}|${item.source}`).join("::");
+}
+
+function getCachedBatch(key: string): CachedBatchResult | null {
+  const cached = batchCache.get(key);
+  if (!cached) return null;
+  if (Date.now() - cached.cachedAt > BATCH_CACHE_TTL_MS) {
+    batchCache.delete(key);
+    return null;
+  }
+  return cached;
+}
+
 async function tagBatchWithOpenRouter(
   items: NewsItem[],
 ): Promise<{ tags: IntelligenceTag[]; modelUsed: string; modelDisplayName: string }> {
@@ -152,6 +190,15 @@ async function tagBatchWithOpenRouter(
     modelUsed: "fallback",
     modelDisplayName: "Offline",
   };
+
+  const cacheKey = buildBatchCacheKey(items);
+  const cached = getCachedBatch(cacheKey);
+  if (cached) {
+    console.log(
+      `[AI/News Intelligence]\nProvider: ${cached.provider}\nModel: ${cached.modelUsed}\nLatency: 0.00s\nStatus: Success\nCache: HIT (age ${Math.round((Date.now() - cached.cachedAt) / 1000)}s)`,
+    );
+    return { tags: cached.tags, modelUsed: cached.modelUsed, modelDisplayName: cached.modelDisplayName };
+  }
 
   // 30 min — down from the previous 2h. News itself now refreshes every
   // 10-25 min (see news.ts's tiered revalidate); leaving AI tags cached for
@@ -166,6 +213,15 @@ async function tagBatchWithOpenRouter(
   );
 
   if (!aiResult) return BATCH_FALLBACK;
+
+  console.log(`[AI/News Intelligence]\nCache: MISS (stored for ${BATCH_CACHE_TTL_MS / 1000}s)`);
+  batchCache.set(cacheKey, {
+    tags: aiResult.result,
+    modelUsed: aiResult.modelUsed,
+    modelDisplayName: aiResult.modelDisplayName,
+    provider: aiResult.provider,
+    cachedAt: Date.now(),
+  });
 
   return {
     tags: aiResult.result,
