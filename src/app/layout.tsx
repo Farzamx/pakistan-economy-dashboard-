@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script";
+import { GoogleAnalytics } from "@next/third-parties/google";
 import "./globals.css";
 import CreatorBadge from "@/components/CreatorBadge";
 import GalaxyBackground from "@/components/GalaxyBackground";
@@ -87,6 +88,12 @@ const jsonLd = {
 // (e.g. a value containing "</script>") — recommended by the Next.js docs.
 const jsonLdHtml = JSON.stringify(jsonLd).replace(/</g, "\\u003c");
 
+// Unset in environments that haven't configured analytics (e.g. a fresh
+// local checkout without NEXT_PUBLIC_GA_MEASUREMENT_ID) — guarded so
+// <GoogleAnalytics> is simply omitted rather than loading gtag.js with an
+// empty/invalid measurement ID.
+const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -131,6 +138,7 @@ export default function RootLayout({
           </AuthProvider>
         </ThemeProvider>
       </body>
+      {GA_MEASUREMENT_ID && <GoogleAnalytics gaId={GA_MEASUREMENT_ID} />}
     </html>
   );
 }
