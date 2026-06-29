@@ -105,14 +105,15 @@ body {
    Intelligence) that need to read as a dedicated panel rather than sit
    directly on the animated galaxy. Darker/more opaque than .glass-card;
    the lighter individual cards inside it then pop forward, creating a
-   layered, terminal-like hierarchy instead of a flat blend into the bg. */
+   layered, terminal-like hierarchy instead of a flat blend into the bg.
+   Dark-mode values match the Economic Calendar Subscription section's
+   container exactly (solid #05060f, no blur-through) for visual
+   consistency between the two premium panels. */
 .glass-panel-deep {
-  background: rgba(5, 7, 18, 0.55);
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  background: #05060f;
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 1rem;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  box-shadow: none;
 }
 
 [data-theme="light"] .glass-panel-deep {
