@@ -32,7 +32,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createPublicDataClient } from "@/lib/supabase/publicDataClient";
 import { sendEmailBatch, type BatchEmailItem } from "@/lib/email/resend";
-import { SITE_URL } from "@/lib/seoConfig";
+import { buildAlertEmailContent, type AlertEmailEvent, type AlertEmailNextEvent } from "./alertEmailTemplate";
 
 const BATCH_SIZE = 100; // Resend's per-call limit
 const TIME_BUDGET_MS = 270_000; // 30s margin under Hobby's 300s function duration cap
@@ -76,50 +76,59 @@ interface RecordResult {
   failed?: number;
 }
 
-interface EventDetails {
-  title: string;
-  eventDate: string;
-  actualValue: string | null;
-  category: string;
+interface SeriesEmbed {
+  category?: string;
+  slug?: string;
+  source_name?: string;
 }
 
-async function fetchEventDetails(supabase: SupabaseClient, economicEventId: string): Promise<EventDetails | null> {
+function unwrapSeries(value: unknown): SeriesEmbed | null {
+  const series = value as SeriesEmbed | SeriesEmbed[] | null;
+  return Array.isArray(series) ? series[0] ?? null : series;
+}
+
+async function fetchEventDetails(supabase: SupabaseClient, economicEventId: string): Promise<AlertEmailEvent | null> {
   const { data, error } = await supabase
     .from("economic_events")
-    .select("title, event_date, actual_value, economic_event_series(category)")
+    .select("slug, title, event_date, event_time, previous_value, forecast_value, actual_value, importance, economic_event_series(category, slug, source_name)")
     .eq("id", economicEventId)
     .maybeSingle();
 
   if (error || !data) return null;
 
-  const series = data.economic_event_series as unknown as { category?: string } | { category?: string }[] | null;
-  const category = Array.isArray(series) ? series[0]?.category : series?.category;
+  const series = unwrapSeries(data.economic_event_series);
 
   return {
+    slug: data.slug as string,
     title: data.title as string,
     eventDate: data.event_date as string,
+    eventTime: (data.event_time as string | null) ?? null,
+    previousValue: (data.previous_value as string | null) ?? null,
+    forecastValue: (data.forecast_value as string | null) ?? null,
     actualValue: (data.actual_value as string | null) ?? null,
-    category: category ?? "Economic Calendar",
+    importance: data.importance as AlertEmailEvent["importance"],
+    category: series?.category ?? "Economic Calendar",
+    seriesSlug: series?.slug ?? "",
+    sourceName: series?.source_name ?? "Pakistan Economic Intelligence",
   };
 }
 
-function buildAlertEmailContent(event: EventDetails, unsubscribeToken: string): { subject: string; html: string; text: string } {
-  const subject = event.actualValue ? `${event.title}: ${event.actualValue}` : `${event.title} — just released`;
-  const unsubscribeUrl = `${SITE_URL}/api/subscribers/unsubscribe?token=${unsubscribeToken}`;
-  const calendarUrl = `${SITE_URL}/economic-calendar`;
+/** The soonest still-scheduled event across every series — shown as "Next Scheduled Release" at the bottom of the alert email, kept simple (soonest, not impact-ranked) to match the worked example this was built from. Returns null rather than guessing if nothing is currently scheduled. */
+async function fetchNextScheduledRelease(supabase: SupabaseClient): Promise<AlertEmailNextEvent | null> {
+  const { data, error } = await supabase
+    .from("economic_events")
+    .select("title, event_date, event_time")
+    .eq("status", "scheduled")
+    .order("event_date", { ascending: true })
+    .limit(1)
+    .maybeSingle();
 
-  const html = `
-    <h2 style="margin:0 0 8px;">${event.title}</h2>
-    <p style="margin:0 0 4px;"><strong>Actual:</strong> ${event.actualValue ?? "N/A"}</p>
-    <p style="margin:0 0 4px;"><strong>Date:</strong> ${event.eventDate}</p>
-    <p style="margin:0 0 16px;"><strong>Category:</strong> ${event.category}</p>
-    <p style="margin:0 0 16px;"><a href="${calendarUrl}">View the full Economic Calendar</a></p>
-    <hr style="border:none;border-top:1px solid #e2e6ef;margin:24px 0 12px;" />
-    <p style="font-size:12px;color:#888;margin:0;"><a href="${unsubscribeUrl}" style="color:#888;">Unsubscribe</a> from these release alerts.</p>
-  `;
-  const text = `${event.title}\nActual: ${event.actualValue ?? "N/A"}\nDate: ${event.eventDate}\nCategory: ${event.category}\n\nFull calendar: ${calendarUrl}\nUnsubscribe: ${unsubscribeUrl}`;
-
-  return { subject, html, text };
+  if (error || !data) return null;
+  return {
+    title: data.title as string,
+    eventDate: data.event_date as string,
+    eventTime: (data.event_time as string | null) ?? null,
+  };
 }
 
 export interface JobProcessingSummary {
@@ -158,6 +167,8 @@ async function processJob(supabase: SupabaseClient, jobId: string, deadline: num
     console.error(`[Notifications] Job ${jobId}: economic_events row ${economicEventId} not found — cannot generate email content`);
     return null;
   }
+  // Same for every recipient of this job — fetched once, not per-batch.
+  const nextEvent = await fetchNextScheduledRelease(supabase);
 
   let sentThisPass = 0;
   let failedThisPass = 0;
@@ -182,7 +193,7 @@ async function processJob(supabase: SupabaseClient, jobId: string, deadline: num
     }
 
     const items: BatchEmailItem[] = pending.map((row) => {
-      const content = buildAlertEmailContent(event, row.unsubscribe_token);
+      const content = buildAlertEmailContent(event, nextEvent, row.unsubscribe_token);
       return { key: row.email_log_id, to: row.email, subject: content.subject, html: content.html, text: content.text };
     });
 

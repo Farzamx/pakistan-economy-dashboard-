@@ -137,6 +137,11 @@ export function getRateChangeDirection(actual: string | null, previous: string |
   return delta > 0 ? "hike" : "cut";
 }
 
+/** Whether a series has dedicated reaction copy (as opposed to FALLBACK_REACTION's generic placeholder, which references "the Why It Matters section" — a web-page-only concept with no equivalent in, say, the alert email template). Monetary Policy always has dedicated copy (MPC_REACTIONS). */
+export function hasMarketReactionRule(seriesSlug: string, category: string): boolean {
+  return category === "Monetary Policy" || seriesSlug in SERIES_REACTIONS;
+}
+
 /**
  * Resolves the "Potential Market Reaction" content for an event. Monetary
  * Policy uses rate-change direction (previous vs actual); everything else
