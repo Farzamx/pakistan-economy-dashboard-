@@ -58,6 +58,8 @@ interface SimpleRpcResult {
   error?: string;
   already_verified?: boolean;
   already_unsubscribed?: boolean;
+  /** Only ever populated by verify_subscriber — lets the verify route deep-link a real "Manage Subscription" page instead of a generic one. */
+  unsubscribe_token?: string;
 }
 
 export async function verifySubscriberToken(token: string): Promise<SimpleRpcResult> {

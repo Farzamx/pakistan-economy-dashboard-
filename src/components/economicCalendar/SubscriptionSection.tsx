@@ -16,7 +16,7 @@ import LiveEmailPreview from "./LiveEmailPreview";
 // Only events genuinely tracked by this calendar after the Rolling
 // Calendar refactor are listed below — no PSX-sourced item is included
 // (KSE-100/PSX Holiday Calendar were both removed from the calendar
-// entirely), and "Other official government sources" replaces a more
+// entirely), and "Other Official Government Sources" replaces a more
 // specific claim this dashboard can't currently back for every series.
 const TRACKED_EVENTS = [
   "CPI Inflation",
@@ -36,7 +36,27 @@ const TRACKED_EVENTS = [
 
 const TRUST_POINTS = ["Official government data only", "Verified economic releases", "Fast delivery after publication", "No spam", "One-click unsubscribe", "Free subscription"];
 
-const OFFICIAL_SOURCES = ["State Bank of Pakistan", "Pakistan Bureau of Statistics", "Ministry of Finance", "Other official government sources"];
+const OFFICIAL_SOURCE_BADGES = ["State Bank of Pakistan (SBP)", "Pakistan Bureau of Statistics (PBS)", "Ministry of Finance", "Other Official Government Sources"];
+
+// Real subscriber counts aren't tracked/exposed anywhere yet — left null
+// rather than fabricated. Once a real count is available (e.g. threaded
+// through as a prop from a future server-side count), swap this for that
+// value; AudienceStatement already renders the count-based line whenever
+// it's a positive number, with zero other changes needed.
+const SUBSCRIBER_COUNT: number | null = null;
+
+function AudienceStatement({ count }: { count: number | null }) {
+  if (count && count > 0) {
+    return (
+      <p className="text-xs leading-relaxed text-slate-500">
+        Join {count.toLocaleString()} investors, analysts, and market participants receiving official Pakistan economic releases.
+      </p>
+    );
+  }
+  return (
+    <p className="text-xs leading-relaxed text-slate-500">Designed for investors, analysts, economists, businesses, researchers, and anyone who follows Pakistan&apos;s economy.</p>
+  );
+}
 
 export default function SubscriptionSection() {
   return (
@@ -48,16 +68,17 @@ export default function SubscriptionSection() {
             Never Miss a Market-Moving Economic Release
           </h2>
           <p className="mt-4 text-base leading-relaxed text-slate-400">Receive official Pakistan economic releases in your inbox within minutes of publication.</p>
-          <p className="mt-3 text-sm text-slate-500">
-            Official data from institutions including{" "}
-            {OFFICIAL_SOURCES.map((source, i) => (
-              <span key={source}>
-                <span className="text-slate-300">{source}</span>
-                {i < OFFICIAL_SOURCES.length - 2 ? ", " : i === OFFICIAL_SOURCES.length - 2 ? ", and " : ""}
-              </span>
+
+          <ul className="mt-5 flex flex-wrap items-center justify-center gap-2" aria-label="Official data sources">
+            {OFFICIAL_SOURCE_BADGES.map((source) => (
+              <li key={source} className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-xs text-slate-400">
+                <span className="text-emerald-400" aria-hidden="true">
+                  &#10003;
+                </span>
+                {source}
+              </li>
             ))}
-            .
-          </p>
+          </ul>
         </div>
       </ViewportFadeIn>
 
@@ -71,6 +92,12 @@ export default function SubscriptionSection() {
 
             <SubscriptionForm />
 
+            <div className="rounded-xl border border-white/5 bg-white/[0.02] px-4 py-3">
+              <p className="text-xs leading-relaxed text-slate-400">
+                You&apos;ll receive alerts only when important official economic releases are published. No daily newsletters. No promotional emails. No spam.
+              </p>
+            </div>
+
             <ul className="flex flex-col gap-2 border-t border-white/10 pt-5 sm:grid sm:grid-cols-2 sm:gap-x-4 sm:gap-y-2">
               {TRUST_POINTS.map((point) => (
                 <li key={point} className="flex items-start gap-2 text-sm text-slate-400">
@@ -82,7 +109,7 @@ export default function SubscriptionSection() {
               ))}
             </ul>
 
-            <p className="text-xs leading-relaxed text-slate-500">Designed for investors, analysts, economists, businesses, researchers, and anyone who follows Pakistan&apos;s economy.</p>
+            <AudienceStatement count={SUBSCRIBER_COUNT} />
           </div>
         </ViewportFadeIn>
 
