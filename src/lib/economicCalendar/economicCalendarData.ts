@@ -86,11 +86,6 @@ export function valueMatchesEventOutcome(kpiValue: string, eventActual: string |
   return Math.abs(kpiNum - eventNum) < 0.01;
 }
 
-/** All events on the same calendar day as `today`. */
-export function getTodayEvents(events: EconomicEvent[], today: Date): EconomicEvent[] {
-  return sortByDateAsc(events.filter((e) => daysBetween(today, parseEventDate(e)) === 0));
-}
-
 /** Events from today through the next 6 days (a 7-day window), inclusive. */
 export function getThisWeekEvents(events: EconomicEvent[], today: Date): EconomicEvent[] {
   return sortByDateAsc(
@@ -107,6 +102,17 @@ export function getThisMonthEvents(events: EconomicEvent[], today: Date): Econom
     events.filter((e) => {
       const d = parseEventDate(e);
       return d.getFullYear() === today.getFullYear() && d.getMonth() === today.getMonth();
+    }),
+  );
+}
+
+/** Events after the current 7-day window (getThisWeekEvents) through the end of the current calendar month — the rolling calendar's "what's left this month" section, deliberately non-overlapping with This Week so the two sections tile the rest of the month without duplicating rows. */
+export function getRemainingThisMonthEvents(events: EconomicEvent[], today: Date): EconomicEvent[] {
+  return sortByDateAsc(
+    events.filter((e) => {
+      const d = parseEventDate(e);
+      const diff = daysBetween(today, d);
+      return diff > 6 && d.getFullYear() === today.getFullYear() && d.getMonth() === today.getMonth();
     }),
   );
 }
@@ -133,35 +139,6 @@ export function baseEventTitle(title: string): string {
   return title.replace(/\s*\([^)]*\)\s*$/, "").trim();
 }
 
-/**
- * One representative card per headline event type (Section 5) — the
- * soonest upcoming instance of each series that's ever been marked
- * `isHeadline` anywhere in the dataset. `isHeadline` marks the SERIES as
- * headline-worthy, not a specific date — many series (CPI, GDP, Trade
- * Balance, ...) embed a per-instance period in the title itself ("CPI
- * Inflation Release (July 2026)" next becomes "...(August 2026)"), so a
- * design that required re-flagging isHeadline on every new month's
- * instance would silently go empty for that entire series the moment the
- * currently-flagged instance is released and nobody remembers to move the
- * flag forward — exactly the bug found auditing the MPC schedule, generalized
- * to every other recurring series with a dated title. Resolving "which
- * instance to show" dynamically (soonest upcoming, by baseEventTitle()) means
- * no per-instance flag maintenance is needed at all going forward.
- */
-export function getMajorUpcomingEvents(events: EconomicEvent[], today: Date): EconomicEvent[] {
-  const majorBaseTitles = new Set(events.filter((e) => e.isHeadline).map((e) => baseEventTitle(e.title)));
-  const upcoming = getUpcomingEvents(events, today).filter((e) => majorBaseTitles.has(baseEventTitle(e.title)));
-  const seen = new Set<string>();
-  const result: EconomicEvent[] = [];
-  for (const event of upcoming) {
-    const key = baseEventTitle(event.title);
-    if (seen.has(key)) continue;
-    seen.add(key);
-    result.push(event);
-  }
-  return result;
-}
-
 export interface CalendarKpis {
   upcomingCount: number;
   highImpactCount: number;
@@ -181,13 +158,13 @@ export function getCalendarKpis(events: EconomicEvent[], today: Date): CalendarK
 export interface EventFilterState {
   category: EventCategory | "All";
   importance: ImportanceLevel | "All";
-  /** Date-range preset, applied on top of whatever base list (today/week) a section is already showing. */
-  dateRange: "All" | "Today" | "This Week";
+  /** Date-range preset, applied on top of whatever base list (Current Week/Remaining This Month) a section is already showing. */
+  dateRange: "All" | "Current Week" | "Remaining This Month";
 }
 
 export const DEFAULT_FILTER_STATE: EventFilterState = { category: "All", importance: "All", dateRange: "All" };
 
-/** Category + importance only — deliberately NOT dateRange, which instead controls section visibility (see economicCalendarWorkspace) so Today/This Week keep their own fixed scope rather than fighting over which date constraint wins. */
+/** Category + importance only — deliberately NOT dateRange, which instead controls section visibility (see EconomicCalendarWorkspace) so Current Week/Remaining This Month keep their own fixed scope rather than fighting over which date constraint wins. */
 export function filterByCategoryAndImportance(events: EconomicEvent[], filters: EventFilterState): EconomicEvent[] {
   let result = events;
   if (filters.category !== "All") result = result.filter((e) => e.category === filters.category);
@@ -195,7 +172,7 @@ export function filterByCategoryAndImportance(events: EconomicEvent[], filters: 
   return result;
 }
 
-export function isSectionVisible(section: "Today" | "This Week", dateRange: EventFilterState["dateRange"]): boolean {
+export function isSectionVisible(section: "Current Week" | "Remaining This Month", dateRange: EventFilterState["dateRange"]): boolean {
   return dateRange === "All" || dateRange === section;
 }
 

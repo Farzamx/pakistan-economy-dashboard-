@@ -4,8 +4,7 @@ import EconomicCalendarWorkspace from "@/components/economicCalendar/EconomicCal
 import NextMajorEvents from "@/components/economicCalendar/NextMajorEvents";
 import RecentReleases from "@/components/economicCalendar/RecentReleases";
 import MarketImpactRanking from "@/components/economicCalendar/MarketImpactRanking";
-import { ECONOMIC_CALENDAR_EVENTS } from "@/data/economicCalendarEvents";
-import { getNextMajorEvents, getRecentReleases } from "@/lib/economicCalendar/economicEventsRepo";
+import { getAllScheduledEvents, getNextMajorEvents, getRecentReleases, toEconomicEvent } from "@/lib/economicCalendar/economicEventsRepo";
 import { SITE_URL, SITE_NAME } from "@/lib/seoConfig";
 
 const PAGE_URL = `${SITE_URL}/economic-calendar`;
@@ -55,7 +54,8 @@ const FAQ = [
 ];
 
 export default async function EconomicCalendarPage() {
-  const [nextMajorEvents, recentReleases] = await Promise.all([getNextMajorEvents(6), getRecentReleases(6)]);
+  const [scheduledEvents, nextMajorEvents, recentReleases] = await Promise.all([getAllScheduledEvents(), getNextMajorEvents(6), getRecentReleases(6)]);
+  const events = scheduledEvents.map(toEconomicEvent);
   const faqJsonLd = {
     "@context": "https://schema.org",
     "@type": "FAQPage",
@@ -81,7 +81,7 @@ export default async function EconomicCalendarPage() {
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd).replace(/</g, "\\u003c") }} />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd).replace(/</g, "\\u003c") }} />
 
-        <EconomicCalendarWorkspace events={ECONOMIC_CALENDAR_EVENTS} />
+        <EconomicCalendarWorkspace events={events} />
 
         {nextMajorEvents.length > 0 && (
           <div className="mt-6">

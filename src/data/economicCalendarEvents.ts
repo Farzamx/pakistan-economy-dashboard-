@@ -1,23 +1,22 @@
 import type { EconomicEvent } from "@/lib/economicCalendar/economicCalendarTypes";
 
-// Economic Calendar — Phase 1 mock data set, now Pakistan-only (Phase 2B
-// removed Oil/OPEC and US Fed FOMC — see the SEO/automation report for why:
-// this calendar covers only events that directly move PSX, the Rupee,
-// Pakistani bond yields, or investor sentiment in Pakistan specifically).
-// Dates are fixed, illustrative values (not pulled from any live source)
-// anchored around the date this feature was built (late June 2026), chosen
-// so Today/This Week/This Month all have realistic content to display
-// right now. Phase 2A+ layers a real database on top (see
-// economicEventsRepo.ts) for Event Detail/Archive pages and Phase 2B's
-// automation; this file remains the Phase 1 hub's own data source and the
-// seed's input — every consumer reads EconomicEvent[] through
-// economicCalendarData.ts's query functions, never this array directly.
+// LEGACY / NOT READ BY ANY RENDERING CODE. As of the Economic Calendar
+// integrity audit (migration 0012), Supabase is the single source of truth
+// for every display surface (hub page, homepage freshness cross-reference,
+// Event Detail, Archive, .ics feed) — see economicEventsRepo.ts. This file
+// previously WAS the hub page's own data source (read directly, independent
+// of Supabase), which meant a correction made in one place silently didn't
+// apply in the other — exactly the kind of bug that audit found and fixed.
+// It now exists only as the historical input to
+// scripts/generateEconomicCalendarSeed.ts (also legacy — do not run it
+// against current data; see that file's own header). Do not add a new
+// import of this file from rendering code — add the event directly in
+// Supabase instead, following the pattern in
+// supabase/migrations/0012_calendar_integrity_audit.sql.
 //
-// Previous/forecast figures are plausible illustrative numbers in the same
-// range as this dashboard's real indicators (CPI, policy rate, reserves,
-// trade balance, current account, remittances, GDP growth, LSM, T-Bill/PIB
-// yields, government debt) — not actual reported figures, and not meant to
-// be cited as such.
+// Previous/forecast figures below are plausible illustrative numbers in the
+// same range as this dashboard's real indicators — not actual reported
+// figures, and not meant to be cited as such.
 
 export const ECONOMIC_CALENDAR_EVENTS: EconomicEvent[] = [
   {

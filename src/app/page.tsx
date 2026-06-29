@@ -18,10 +18,10 @@ import HashScrollRestore from "@/components/HashScrollRestore";
 import ViewportFadeIn from "@/components/ViewportFadeIn";
 import TrendLineChart from "@/components/charts/TrendLineChart";
 import { fallbackPakEtfKpi } from "@/data/globalMarketsFallbackData";
-import { ECONOMIC_CALENDAR_EVENTS, ECONOMIC_CALENDAR_HISTORICAL_EVENTS } from "@/data/economicCalendarEvents";
 import { sectionData } from "@/data/sectionData";
 import { getFreshnessStatus } from "@/lib/dataFreshness";
 import { getMostRecentEvent, valueMatchesEventOutcome } from "@/lib/economicCalendar/economicCalendarData";
+import { getAllScheduledEvents, getHistoricalEvents, toEconomicEvent } from "@/lib/economicCalendar/economicEventsRepo";
 import { getAiEconomicAnalysis } from "@/lib/data/aiEconomicAnalysis";
 import { getAiRiskIntelligence } from "@/lib/data/aiRiskIntelligence";
 import { getAllSbpIndicators } from "@/lib/data/sbp";
@@ -73,7 +73,7 @@ function getSection(id: string) {
 }
 
 export default async function Home() {
-  const [gdpKpi, sbp, goldKpi, silverKpi, brentKpi, wtiKpi, naturalGasKpi, dxyKpi, us10yKpi, fedFundsKpi, newsItems, fxRates, pakEtfKpiRaw, quarterlyGdp, spi] =
+  const [gdpKpi, sbp, goldKpi, silverKpi, brentKpi, wtiKpi, naturalGasKpi, dxyKpi, us10yKpi, fedFundsKpi, newsItems, fxRates, pakEtfKpiRaw, quarterlyGdp, spi, scheduledCalendarEvents, historicalCalendarEvents] =
     await Promise.all([
       getGdpKpi(),
       getAllSbpIndicators(),
@@ -90,6 +90,8 @@ export default async function Home() {
       getPakEtfKpi(),
       getQuarterlyGdpKpi(),
       getSpiHistory(),
+      getAllScheduledEvents(),
+      getHistoricalEvents(),
     ]);
 
   const pakEtfKpi = pakEtfKpiRaw ?? fallbackPakEtfKpi;
@@ -391,7 +393,7 @@ export default async function Home() {
   // latestDate at all — without this check, every hold would eventually
   // misreport as "Stale" even though the live value is already correct.
   const todayForCalendar = new Date();
-  const allCalendarEvents = [...ECONOMIC_CALENDAR_EVENTS, ...ECONOMIC_CALENDAR_HISTORICAL_EVENTS];
+  const allCalendarEvents = [...scheduledCalendarEvents, ...historicalCalendarEvents].map(toEconomicEvent);
   const policyRateEvent = getMostRecentEvent(allCalendarEvents, "SBP Monetary Policy Committee Meeting", todayForCalendar);
   const tbillEvent = getMostRecentEvent(allCalendarEvents, "Treasury Bill Auction", todayForCalendar);
   const pibEvent = getMostRecentEvent(allCalendarEvents, "PIB Auction", todayForCalendar);

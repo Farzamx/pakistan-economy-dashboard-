@@ -28,20 +28,16 @@ const SERIES_WHY_IT_MATTERS: Record<string, string> = {
     "GDP growth is the headline number used to judge whether the economy is creating jobs and raising incomes fast enough — Pakistan generally needs growth above 5% to meaningfully outpace its population growth and reduce poverty over time.",
   "large-scale-manufacturing-lsm-growth":
     "LSM is published monthly, far more often than the annual GDP figure, making it the timeliest available proxy for industrial momentum. A run of weak LSM prints often foreshadows a softer GDP growth number months before the official release.",
-  "treasury-bill-auction":
-    "T-Bill cut-off yields are a live, twice-monthly vote by the market on where short-term interest rates are headed — often moving ahead of an actual SBP policy decision as investors price in their own rate expectations.",
+  "treasury-bill-auction-3m":
+    "T-Bill cut-off yields are a live, fortnightly vote by the market on where short-term interest rates are headed — often moving ahead of an actual SBP policy decision as investors price in their own rate expectations.",
+  "treasury-bill-auction-6m":
+    "The 6-month cut-off yield sits between the 3M and 12M tenors on the curve — the gap between them is a direct read on how the market expects rates to move over the coming year.",
+  "treasury-bill-auction-12m":
+    "The 12-month T-Bill yield is the market's clearest single-number vote on where the policy rate will be a year from now, distinct from the 3M tenor's more immediate read.",
   "pib-auction":
     "PIB yields reflect investor expectations for inflation and interest rates over a multi-year horizon, not just the next few months. Rising PIB yields can signal the market expects inflation or rates to stay elevated longer than SBP's own guidance suggests.",
-  "government-debt-release":
-    "Pakistan's total government debt — domestic and external combined — determines future debt-servicing costs, which already consume a larger share of the federal budget than defence. A faster-than-expected rise in the debt stock raises questions about fiscal sustainability.",
-  "federal-budget":
-    "The federal budget sets next year's tax measures, spending allocations, and the fiscal deficit target in a single sitting — sector-specific tax changes (e.g. on cement, autos, or banking) can move individual PSX stocks sharply on budget day.",
-  "pakistan-economic-survey":
-    "Released the day before the budget, the Economic Survey frames the government's own narrative on growth, inflation, and the fiscal/external accounts — giving an early read on what assumptions the following day's budget will be built on.",
-  "kse-100-weekly-market-review":
-    "A weekly read on aggregate investor sentiment and sector rotation on the Pakistan Stock Exchange — useful context for the week, though rarely a release that moves markets on its own the way a data print or policy decision does.",
-  "psx-holiday-calendar":
-    "Trading is fully closed — no KSE-100 session, no T-Bill/PIB settlement. Worth noting only so a flat or missing data point on that date isn't mistaken for a market event.",
+  "sbp-monetary-policy-report":
+    "SBP's Monetary Policy Report lays out the analysis and forecasts behind its rate decisions in more depth than the same-day statement — a read on SBP's own thinking, not just its conclusion.",
 };
 
 const CATEGORY_WHY_IT_MATTERS: Record<EventCategory, string> = {

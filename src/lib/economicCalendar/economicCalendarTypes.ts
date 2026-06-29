@@ -1,12 +1,12 @@
-// Shared types for the Economic Calendar feature. Phase 1 is mock-data only
-// (see src/data/economicCalendarEvents.ts) — this shape is deliberately
-// generic enough that Phase 2 (a real event feed) can populate the same
-// EconomicEvent[] without any consuming component needing to change.
+// Shared types for the Economic Calendar feature. This shape is populated
+// from Supabase via economicEventsRepo.ts's toEconomicEvent() adapter for
+// every rendering surface — kept generic enough that the original Phase 1
+// mock array (src/data/economicCalendarEvents.ts, now legacy/unused) could
+// satisfy it too, so the switchover required no changes to this file.
 //
-// Phase 2B: this is now a Pakistan-only calendar (no FOMC/OPEC/ECB/etc — see
-// economicCalendarEvents.ts's removal note) and "Global Events" is scoped
-// to Pakistan-relevant international events specifically (IMF program
-// reviews), not generic international calendars.
+// This is a Pakistan-only calendar (no FOMC/OPEC/ECB/etc.) and "Global
+// Events" is scoped to Pakistan-relevant international events specifically
+// (IMF program reviews), not generic international calendars.
 
 export type EventCategory =
   | "Inflation"

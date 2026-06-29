@@ -108,12 +108,26 @@ const CONNECTIONS: Record<string, SeriesConnections> = {
       { label: "KSE-100", href: page("pakistan-stock-market") },
     ],
   },
-  "treasury-bill-auction": {
+  "treasury-bill-auction-3m": {
     dashboard: { label: "Bond Yields Dashboard", href: "/pakistan-bond-yields" },
     affected: [
       { label: "Policy Rate", href: page("pakistan-interest-rate") },
       { label: "PIB Yields", href: page("pakistan-bond-yields") },
       { label: "Banking Sector", href: null },
+    ],
+  },
+  "treasury-bill-auction-6m": {
+    dashboard: { label: "Bond Yields Dashboard", href: "/pakistan-bond-yields" },
+    affected: [
+      { label: "Policy Rate", href: page("pakistan-interest-rate") },
+      { label: "3M T-Bill Yield", href: page("pakistan-bond-yields") },
+    ],
+  },
+  "treasury-bill-auction-12m": {
+    dashboard: { label: "Bond Yields Dashboard", href: "/pakistan-bond-yields" },
+    affected: [
+      { label: "Policy Rate", href: page("pakistan-interest-rate") },
+      { label: "PIB Yields", href: page("pakistan-bond-yields") },
     ],
   },
   "pib-auction": {
@@ -124,40 +138,12 @@ const CONNECTIONS: Record<string, SeriesConnections> = {
       { label: "Fiscal Deficit", href: page("pakistan-fiscal-deficit") },
     ],
   },
-  "government-debt-release": {
-    dashboard: { label: "External Debt Dashboard", href: "/pakistan-external-debt" },
+  "sbp-monetary-policy-report": {
+    dashboard: { label: "Interest Rate Dashboard", href: "/pakistan-interest-rate" },
     affected: [
-      { label: "External Debt", href: page("pakistan-external-debt") },
-      { label: "Fiscal Deficit", href: page("pakistan-fiscal-deficit") },
-      { label: "Bond Yields", href: page("pakistan-bond-yields") },
-    ],
-  },
-  "federal-budget": {
-    dashboard: { label: "Federal Budget Dashboard", href: "/budget" },
-    affected: [
-      { label: "Fiscal Deficit", href: page("pakistan-fiscal-deficit") },
-      { label: "External Debt", href: page("pakistan-external-debt") },
-      { label: "KSE-100", href: page("pakistan-stock-market") },
-    ],
-  },
-  "pakistan-economic-survey": {
-    dashboard: { label: "Economic Indicators Dashboard", href: "/pakistan-economic-indicators" },
-    affected: [
-      { label: "GDP Growth", href: page("gdp-growth-pakistan") },
-      { label: "Fiscal Deficit", href: page("pakistan-fiscal-deficit") },
-      { label: "Inflation", href: page("inflation-rate-pakistan") },
-    ],
-  },
-  "kse-100-weekly-market-review": {
-    dashboard: { label: "Stock Market Dashboard", href: "/pakistan-stock-market" },
-    affected: [
-      { label: "USD/PKR", href: page("usd-pkr-exchange-rate") },
       { label: "Policy Rate", href: page("pakistan-interest-rate") },
+      { label: "CPI Inflation", href: page("inflation-rate-pakistan") },
     ],
-  },
-  "psx-holiday-calendar": {
-    dashboard: { label: "Stock Market Dashboard", href: "/pakistan-stock-market" },
-    affected: [{ label: "KSE-100", href: page("pakistan-stock-market") }],
   },
 };
 

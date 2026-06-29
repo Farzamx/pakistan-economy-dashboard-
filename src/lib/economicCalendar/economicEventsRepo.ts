@@ -1,17 +1,21 @@
 import { unstable_cache } from "next/cache";
 import { createPublicDataClient } from "@/lib/supabase/publicDataClient";
-import type { EventCategory, ImportanceLevel } from "./economicCalendarTypes";
+import type { EconomicEvent, EventCategory, ImportanceLevel } from "./economicCalendarTypes";
 import { getMarketImpactScore } from "./marketImpactScore";
 import { isWithinRetention } from "./retentionConfig";
 
-// Phase 2A data-access layer for the database-backed parts of the Economic
-// Calendar (Event Detail pages, the Historical Archive, .ics generation).
-// The Phase 1 hub page (/economic-calendar) deliberately keeps reading
-// src/data/economicCalendarEvents.ts directly — it already works, has zero
-// dependency on the database, and changing its data source wasn't asked
-// for here. These two data sources are seeded from the same mock array
-// (see scripts/generateEconomicCalendarSeed.ts) so ids/slugs line up and
-// the hub can link straight into these pages.
+// Data-access layer for the Economic Calendar. Supabase is the single
+// source of truth for every display surface — the hub page
+// (/economic-calendar), the homepage's KPI freshness cross-reference, Event
+// Detail pages, the Historical Archive, and the .ics feed all read through
+// this file (the hub/homepage via toEconomicEvent() below). This was NOT
+// always true: until the Economic Calendar integrity audit (migration
+// 0012), the hub page and homepage read src/data/economicCalendarEvents.ts
+// directly, a static mock array that could silently drift from Supabase the
+// moment either side was corrected independently — exactly the kind of
+// inconsistency that audit was meant to eliminate. That file is now legacy
+// (kept only as the historical input to the now-unused seed regenerator
+// script) and is never imported by any rendering code.
 //
 // Every query is wrapped in unstable_cache (5 min) rather than left
 // uncached — this is public, identical-for-everyone reference data with no
@@ -22,6 +26,8 @@ const REVALIDATE_SECONDS = 300;
 
 export type EventStatus = "scheduled" | "released" | "postponed" | "cancelled";
 export type DataConfidence = "confirmed" | "estimated";
+/** Four-way date/time certainty classification (Economic Calendar integrity audit, migration 0012) — distinct from DataConfidence, which tracks actual-VALUE certainty, not date/time certainty. */
+export type DateTimeClassification = "confirmed" | "official_date_only" | "estimated" | "manual";
 
 export interface EventSeriesRecord {
   id: string;
@@ -35,6 +41,8 @@ export interface EventSeriesRecord {
   automationTier: string;
   reliabilityScore: number;
   description: string | null;
+  /** Carried over from the pre-Rolling-Calendar "Major Upcoming Events" section, which the Rolling Calendar refactor retired (Current Week/Remaining This Month replaced it). Not read by any component today — left in place rather than dropped mid-refactor; safe to remove in a future cleanup if it stays unused. */
+  isHeadline: boolean;
 }
 
 export interface EventRecord {
@@ -51,6 +59,7 @@ export interface EventRecord {
   description: string | null;
   sourceUrl: string | null;
   dataConfidence: DataConfidence;
+  dateTimeClassification: DateTimeClassification;
   updatedAt: string;
   series: EventSeriesRecord;
 }
@@ -67,6 +76,7 @@ interface SeriesRow {
   automation_tier: string;
   reliability_score: number;
   description: string | null;
+  is_headline: boolean;
 }
 
 interface EventRow {
@@ -83,11 +93,12 @@ interface EventRow {
   description: string | null;
   source_url: string | null;
   data_confidence: string;
+  date_time_classification: string;
   updated_at: string;
   economic_event_series: SeriesRow | SeriesRow[];
 }
 
-const EVENT_SELECT = "id, slug, title, event_date, event_time, previous_value, forecast_value, actual_value, status, importance, description, source_url, data_confidence, updated_at, economic_event_series(*)";
+const EVENT_SELECT = "id, slug, title, event_date, event_time, previous_value, forecast_value, actual_value, status, importance, description, source_url, data_confidence, date_time_classification, updated_at, economic_event_series(*)";
 // Same column list but with the series embed forced to an inner join — used
 // only by queries that also .eq()/.neq() a column on economic_event_series
 // itself (PostgREST requires !inner for that), and used INSTEAD OF
@@ -97,7 +108,7 @@ const EVENT_SELECT = "id, slug, title, event_date, event_time, previous_value, f
 // ("table name ... specified more than once") — caught live while
 // verifying "Related Calendar Events"/"Related Events" against the
 // just-seeded database.
-const EVENT_SELECT_INNER_SERIES = "id, slug, title, event_date, event_time, previous_value, forecast_value, actual_value, status, importance, description, source_url, data_confidence, updated_at, economic_event_series!inner(*)";
+const EVENT_SELECT_INNER_SERIES = "id, slug, title, event_date, event_time, previous_value, forecast_value, actual_value, status, importance, description, source_url, data_confidence, date_time_classification, updated_at, economic_event_series!inner(*)";
 
 function mapSeries(row: SeriesRow): EventSeriesRecord {
   return {
@@ -112,6 +123,7 @@ function mapSeries(row: SeriesRow): EventSeriesRecord {
     automationTier: row.automation_tier,
     reliabilityScore: row.reliability_score,
     description: row.description,
+    isHeadline: row.is_headline,
   };
 }
 
@@ -132,8 +144,27 @@ function mapEvent(row: EventRow): EventRecord | null {
     description: row.description,
     sourceUrl: row.source_url,
     dataConfidence: row.data_confidence as DataConfidence,
+    dateTimeClassification: row.date_time_classification as DateTimeClassification,
     updatedAt: row.updated_at,
     series: mapSeries(seriesRow),
+  };
+}
+
+/** Adapts a repo EventRecord to the EconomicEvent shape economicCalendarData.ts's query/filter utilities operate on — the one place that bridges Supabase's column names to the app's internal calendar type, now that Supabase (not the static mock array) is the single source of truth for every display surface. */
+export function toEconomicEvent(record: EventRecord): EconomicEvent {
+  return {
+    id: record.slug,
+    title: record.title,
+    category: record.series.category,
+    importance: record.importance,
+    date: record.eventDate,
+    time: record.eventTime ?? "00:00",
+    previous: record.previousValue,
+    forecast: record.forecastValue,
+    description: record.description ?? "",
+    actual: record.actualValue,
+    status: record.status,
+    isHeadline: record.series.isHeadline,
   };
 }
 

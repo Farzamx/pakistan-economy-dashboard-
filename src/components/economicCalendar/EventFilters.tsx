@@ -16,8 +16,8 @@ const CATEGORY_OPTIONS = [{ value: "All", label: "All Categories" }, ...EVENT_CA
 const IMPORTANCE_OPTIONS = [{ value: "All", label: "All Importance" }, ...IMPORTANCE_LEVEL_LIST.map((i) => ({ value: i, label: `${i} Impact` }))];
 const DATE_RANGE_OPTIONS = [
   { value: "All", label: "All Upcoming" },
-  { value: "Today", label: "Today" },
-  { value: "This Week", label: "This Week" },
+  { value: "Current Week", label: "Current Week" },
+  { value: "Remaining This Month", label: "Remaining This Month" },
 ];
 
 export default function EventFilters({ filters, onChange, searchQuery, onSearchChange }: Props) {

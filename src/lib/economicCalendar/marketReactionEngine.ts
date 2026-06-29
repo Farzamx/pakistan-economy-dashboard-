@@ -97,7 +97,7 @@ const SERIES_REACTIONS: Record<string, SeriesReactionSet> = {
     negative: { headline: "Weaker-than-expected LSM growth", points: ["Negative for industrial and manufacturing-linked equities", "May foreshadow a softer GDP growth print"] },
     "in-line": { headline: "LSM growth in line with forecast", points: ["No new signal on industrial momentum"] },
   },
-  "treasury-bill-auction": {
+  "treasury-bill-auction-3m": {
     positive: { headline: "T-Bill yields came in higher than expected", points: ["Signals investors demanding more compensation to hold short-term government debt", "Can reflect tighter liquidity or rate-hike expectations"] },
     negative: { headline: "T-Bill yields came in lower than expected", points: ["Signals strong investor demand for short-term government debt", "Can reflect expectations of rate cuts or ample market liquidity"] },
     "in-line": { headline: "T-Bill yields in line with forecast", points: ["Confirms the market's existing short-term rate expectations"] },
@@ -106,22 +106,6 @@ const SERIES_REACTIONS: Record<string, SeriesReactionSet> = {
     positive: { headline: "PIB yields came in higher than expected", points: ["Signals investors demanding more compensation for longer-dated government debt", "Can pressure existing bond prices lower"] },
     negative: { headline: "PIB yields came in lower than expected", points: ["Signals strong investor demand for longer-dated government debt", "Supportive for existing bond holders"] },
     "in-line": { headline: "PIB yields in line with forecast", points: ["Confirms the market's existing longer-term rate expectations"] },
-  },
-  "government-debt-release": {
-    positive: { headline: "Debt stock higher than expected", points: ["Signals faster debt accumulation than anticipated", "Can raise concerns about future debt servicing costs"] },
-    negative: { headline: "Debt stock lower than expected", points: ["Signals slower debt accumulation than anticipated", "Modestly reassuring for debt sustainability concerns"] },
-    "in-line": { headline: "Debt stock in line with forecast", points: ["No change to the existing debt sustainability outlook"] },
-  },
-  "kse-100-weekly-market-review": {
-    positive: { headline: "KSE-100 outperformed expectations", points: ["Reflects improving investor sentiment over the week", "Often follows positive macro or corporate earnings news"] },
-    negative: { headline: "KSE-100 underperformed expectations", points: ["Reflects softer investor sentiment over the week", "Often follows negative macro news or profit-taking"] },
-    "in-line": { headline: "KSE-100 broadly in line", points: ["A routine, uneventful trading week"] },
-  },
-  "federal-budget": {
-    "in-line": { headline: "Federal Budget presented", points: ["Tax measures, spending allocations, and the fiscal deficit target all reset for the new fiscal year", "Sector-specific impact depends on which taxes/subsidies changed — check the year's specific measures"] },
-  },
-  "pakistan-economic-survey": {
-    "in-line": { headline: "Economic Survey released", points: ["Sets the government's own narrative on growth, inflation, and fiscal/external accounts ahead of the budget", "Rarely market-moving on its own, but frames expectations for the budget that follows it"] },
   },
 };
 

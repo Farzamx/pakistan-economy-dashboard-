@@ -4,9 +4,8 @@ import { useMemo, useState } from "react";
 import type { EconomicEvent } from "@/lib/economicCalendar/economicCalendarTypes";
 import {
   getCalendarKpis,
-  getTodayEvents,
   getThisWeekEvents,
-  getMajorUpcomingEvents,
+  getRemainingThisMonthEvents,
   generateWeeklyOutlook,
   filterByCategoryAndImportance,
   searchEvents,
@@ -18,12 +17,19 @@ import Link from "next/link";
 import ViewportFadeIn from "@/components/ViewportFadeIn";
 import EconomicCalendarHero from "./EconomicCalendarHero";
 import EventFilters from "./EventFilters";
-import TodaysEvents from "./TodaysEvents";
 import ThisWeekEvents from "./ThisWeekEvents";
-import MajorUpcomingEvents from "./MajorUpcomingEvents";
+import RemainingThisMonthEvents from "./RemainingThisMonthEvents";
 import WeeklyOutlook from "./WeeklyOutlook";
 import WhyEventsMatter from "./WhyEventsMatter";
 
+// Rolling Calendar — deliberately scoped to the present (Current
+// Week/Remaining This Month) rather than a full-year view; "Major Upcoming
+// Events" (which could surface something a year out) and a separate
+// "Today" section were retired in this refactor — Current Week already
+// includes today, and Remaining This Month covers the rest of what's
+// actually near-term. Recently Released and the Archive link live on the
+// page itself (see economic-calendar/page.tsx), both already
+// Supabase-backed.
 export default function EconomicCalendarWorkspace({ events }: { events: EconomicEvent[] }) {
   // Computed once per mount, not per render tick — a calendar page doesn't
   // need to re-evaluate "today" on every re-render, and freezing it avoids
@@ -33,15 +39,14 @@ export default function EconomicCalendarWorkspace({ events }: { events: Economic
   const [searchQuery, setSearchQuery] = useState("");
 
   const kpis = useMemo(() => getCalendarKpis(events, today), [events, today]);
-  const majorEvents = useMemo(() => getMajorUpcomingEvents(events, today), [events, today]);
   const outlook = useMemo(() => generateWeeklyOutlook(events, today), [events, today]);
 
-  const todayEvents = useMemo(
-    () => searchEvents(filterByCategoryAndImportance(getTodayEvents(events, today), filters), searchQuery),
-    [events, today, filters, searchQuery],
-  );
   const weekEvents = useMemo(
     () => searchEvents(filterByCategoryAndImportance(getThisWeekEvents(events, today), filters), searchQuery),
+    [events, today, filters, searchQuery],
+  );
+  const remainingMonthEvents = useMemo(
+    () => searchEvents(filterByCategoryAndImportance(getRemainingThisMonthEvents(events, today), filters), searchQuery),
     [events, today, filters, searchQuery],
   );
 
@@ -51,21 +56,17 @@ export default function EconomicCalendarWorkspace({ events }: { events: Economic
 
       <EventFilters filters={filters} onChange={setFilters} searchQuery={searchQuery} onSearchChange={setSearchQuery} />
 
-      {isSectionVisible("Today", filters.dateRange) && (
+      {isSectionVisible("Current Week", filters.dateRange) && (
         <ViewportFadeIn>
-          <TodaysEvents events={todayEvents} />
-        </ViewportFadeIn>
-      )}
-
-      {isSectionVisible("This Week", filters.dateRange) && (
-        <ViewportFadeIn delay={0.05}>
           <ThisWeekEvents events={weekEvents} />
         </ViewportFadeIn>
       )}
 
-      <ViewportFadeIn delay={0.1}>
-        <MajorUpcomingEvents events={majorEvents} today={today} />
-      </ViewportFadeIn>
+      {isSectionVisible("Remaining This Month", filters.dateRange) && (
+        <ViewportFadeIn delay={0.05}>
+          <RemainingThisMonthEvents events={remainingMonthEvents} />
+        </ViewportFadeIn>
+      )}
 
       <ViewportFadeIn>
         <div className="flex flex-wrap items-center gap-2 text-xs">

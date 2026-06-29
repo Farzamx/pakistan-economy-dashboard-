@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { syncAllFromSbpEasyData } from "@/lib/economicCalendar/automation/syncFromSbpEasyData";
+import { syncOfficialCalendars } from "@/lib/economicCalendar/automation/syncOfficialCalendars";
 import { processNotificationJobs } from "@/lib/notifications/notificationJobWorker";
 
 // Vercel Cron target (see vercel.json) — runs Priority 1 automation (SBP
@@ -32,7 +33,11 @@ export async function GET(request: Request) {
     return new NextResponse("Unauthorized", { status: 401 });
   }
 
+  // Official calendar sync runs first: if SBP just postponed a date, the
+  // actual-value sync below must see that the row is no longer 'scheduled'
+  // before it ever tries to release it.
+  const officialCalendars = await syncOfficialCalendars();
   const results = await syncAllFromSbpEasyData();
   const notifications = await processNotificationJobs();
-  return NextResponse.json({ ranAt: new Date().toISOString(), results, notifications });
+  return NextResponse.json({ ranAt: new Date().toISOString(), officialCalendars, results, notifications });
 }

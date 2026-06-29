@@ -43,7 +43,7 @@ export default function EconomicCalendarHero({ kpis }: { kpis: CalendarKpis }) {
       <div className="mt-7 grid grid-cols-2 gap-3 sm:grid-cols-4">
         <KpiTile label="Upcoming Events" value={kpis.upcomingCount} accent="#38bdf8" />
         <KpiTile label="High Impact Events" value={kpis.highImpactCount} accent="#fb7185" />
-        <KpiTile label="This Week" value={kpis.thisWeekCount} accent="#34d399" />
+        <KpiTile label="Current Week" value={kpis.thisWeekCount} accent="#34d399" />
         <KpiTile label="This Month" value={kpis.thisMonthCount} accent="#a855f7" />
       </div>
     </motion.section>

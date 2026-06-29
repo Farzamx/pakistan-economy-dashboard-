@@ -17,13 +17,11 @@ const SERIES_MARKET_FOCUS: Record<string, string[]> = {
   "worker-remittances": ["Inflow momentum heading into Eid/seasonal periods", "Formal vs informal (hawala) channel share", "Contribution to reserve buildup"],
   "gdp-growth-release": ["Whether growth is outpacing population growth", "Sector-level contribution (agriculture/industry/services)", "Implications for the next fiscal year's revenue target"],
   "large-scale-manufacturing-lsm-growth": ["Industrial momentum ahead of the quarterly GDP print", "Energy-intensive sector output (textiles, cement, autos)", "Early signal for export capacity"],
-  "treasury-bill-auction": ["Cut-off yield versus the prevailing policy rate", "Bid-to-cover ratio (demand strength)", "Government's short-term borrowing cost"],
+  "treasury-bill-auction-3m": ["Cut-off yield versus the prevailing policy rate", "Bid-to-cover ratio (demand strength)", "Government's short-term borrowing cost"],
+  "treasury-bill-auction-6m": ["Cut-off yield versus the 3M tenor (yield curve shape)", "Bid-to-cover ratio (demand strength)", "Government's short-term borrowing cost"],
+  "treasury-bill-auction-12m": ["Cut-off yield versus shorter tenors (yield curve shape)", "Bid-to-cover ratio (demand strength)", "Market's 1-year rate expectations"],
   "pib-auction": ["Longer-tenor yield versus T-Bill yields", "Market's medium-term inflation/rate expectations", "Investor appetite for duration risk"],
-  "government-debt-release": ["Domestic vs external debt mix", "Debt-servicing cost as a share of the budget", "Debt-to-GDP trajectory"],
-  "federal-budget": ["Fiscal deficit", "Debt servicing", "Development spending"],
-  "pakistan-economic-survey": ["Government's own growth and inflation assumptions", "Sector performance scorecard", "What the following day's budget will be built on"],
-  "kse-100-weekly-market-review": ["Sector rotation over the week", "Foreign vs local investor flows", "Volume and volatility trends"],
-  "psx-holiday-calendar": ["No trading session — settlement and clearing pause for the day"],
+  "sbp-monetary-policy-report": ["SBP's own inflation and growth forecasts", "Forward guidance tone", "Risks SBP itself is flagging"],
 };
 
 const CATEGORY_MARKET_FOCUS: Record<EventCategory, string[]> = {

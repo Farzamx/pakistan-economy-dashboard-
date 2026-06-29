@@ -1,15 +1,23 @@
-// One-time/regenerable generator for supabase/migrations/0003_economic_calendar_seed.sql.
-// Run with: npx tsx scripts/generateEconomicCalendarSeed.ts
-//
+// LEGACY — DO NOT RUN. This was the one-time generator for
+// supabase/migrations/0003_economic_calendar_seed.sql, back when
+// src/data/economicCalendarEvents.ts (the mock array) was the source of
+// truth. Since the Economic Calendar integrity audit (migration 0012),
+// Supabase has been hand-corrected directly against primary sources and is
+// now the single source of truth — re-running this script would regenerate
+// 0003 from the STALE mock array and, if that file were ever re-applied,
+// would silently overwrite every correction made in 0005/0006/0009/0011/0012
+// with the original, now-known-wrong mock values. Kept only for historical
+// reference. To add or correct a calendar event going forward, write a new
+// dated migration against Supabase directly (see 0012's pattern), not by
+// editing economicCalendarEvents.ts and re-running this script.
+
+// Original header, preserved for context on how 0003 was originally produced:
 // Derives economic_event_series rows from the mock data's distinct "base
 // titles" (stripping a trailing " (Month Year)"-style parenthetical, since
 // e.g. "Trade Balance (June 2026)" and "Trade Balance (July 2026)" are two
 // INSTANCES of the same series, not two series) and economic_events rows
 // from every individual mock record — including the historical ones added
-// specifically to seed the Archive. Re-run this whenever
-// economicCalendarEvents.ts changes; it always regenerates the whole file
-// (idempotent ON CONFLICT upserts on the way into Postgres), so there's
-// nothing to hand-edit in the generated SQL itself.
+// specifically to seed the Archive.
 
 import { writeFileSync } from "fs";
 import { fileURLToPath } from "url";

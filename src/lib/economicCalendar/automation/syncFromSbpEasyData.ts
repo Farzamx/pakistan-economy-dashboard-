@@ -1,4 +1,5 @@
 import { getSbpIndicator, type SbpIndicatorKey } from "@/lib/data/sbp";
+import { getSpiHistory } from "@/lib/data/spi";
 import { createPublicDataClient } from "@/lib/supabase/publicDataClient";
 
 // Phase 2B Priority 1 automation — syncs `actual_value` on already-scheduled
@@ -38,7 +39,13 @@ const SYNC_TARGETS: Record<string, SyncTarget> = {
   "cpi-inflation-release": { indicatorKey: "cpiInflation", format: (v) => `${v}% YoY` },
   "core-inflation-release": { indicatorKey: "coreInflation", format: (v) => `${v}% YoY` },
   "large-scale-manufacturing-lsm-growth": { indicatorKey: "lsm", format: (v) => `${v}% YoY` },
-  "treasury-bill-auction": { indicatorKey: "tbillYield3m", format: (v) => `${v}%` },
+  // Renamed from "treasury-bill-auction" — Rolling Calendar refactor split
+  // T-Bill auctions into 3M/6M/12M series (SBP reports 3 separate cut-off
+  // yields per auction). Only 3M has a confirmed live SBP EasyData yield
+  // indicator; 6M/12M stay semi_automated (date-only automation, via
+  // generate_next_occurrence()'s official_calendar rule) until an
+  // equivalent indicator is confirmed.
+  "treasury-bill-auction-3m": { indicatorKey: "tbillYield3m", format: (v) => `${v}%` },
   "pib-auction": { indicatorKey: "pibYield3y", format: (v) => `${v}%` },
   // SBP's live policy-rate series (src/lib/data/sbp.ts's `policyRate`,
   // already powering the homepage and /pakistan-interest-rate) was never
@@ -123,5 +130,55 @@ export async function syncAllFromSbpEasyData(): Promise<SyncResult[]> {
     }
   }
 
+  results.push(await syncSpiFromPbs());
+
   return results;
+}
+
+/**
+ * SPI's sync target, kept separate from SYNC_TARGETS/syncAllFromSbpEasyData
+ * above because its source is PBS's own WordPress feed (src/lib/data/spi.ts
+ * — already powering the homepage's SPI card), not SBP EasyData via
+ * getSbpIndicator()'s shared interface. Same "find the soonest due
+ * scheduled event, apply the latest live value via sync_event_actual()"
+ * pattern as every other series, just against a different source.
+ */
+export async function syncSpiFromPbs(): Promise<SyncResult> {
+  const seriesSlug = "spi-weekly-inflation-release";
+  try {
+    const spi = await getSpiHistory();
+    const latest = spi?.points.at(-1);
+    if (!spi || !latest) {
+      return { seriesSlug, status: "skipped-fallback-data", detail: "Live PBS SPI fetch failed or returned no points — not safe to mark as confirmed actual." };
+    }
+
+    const supabase = createPublicDataClient();
+    const today = new Date().toISOString().slice(0, 10);
+    const { data: dueEvents } = await supabase
+      .from("economic_events")
+      .select("event_date, economic_event_series!inner(slug)")
+      .eq("economic_event_series.slug", seriesSlug)
+      .eq("status", "scheduled")
+      .lte("event_date", today)
+      .order("event_date", { ascending: false })
+      .limit(1);
+
+    const dueEvent = dueEvents?.[0];
+    if (!dueEvent) {
+      return { seriesSlug, status: "skipped-no-due-event", detail: "No scheduled SPI event is due yet." };
+    }
+
+    const sign = latest.wowPct >= 0 ? "+" : "";
+    const actualValue = `${sign}${latest.wowPct.toFixed(2)}% WoW`;
+    const { data: didUpdate, error } = await supabase.rpc("sync_event_actual", {
+      p_series_slug: seriesSlug,
+      p_event_date: dueEvent.event_date,
+      p_actual_value: actualValue,
+    });
+
+    if (error) return { seriesSlug, status: "error", detail: error.message };
+    return { seriesSlug, status: didUpdate ? "synced" : "skipped-no-due-event", detail: didUpdate ? `Set actual_value=${actualValue} for ${dueEvent.event_date}` : "Event already released or not found at call time." };
+  } catch (err) {
+    return { seriesSlug, status: "error", detail: err instanceof Error ? err.message : String(err) };
+  }
 }
