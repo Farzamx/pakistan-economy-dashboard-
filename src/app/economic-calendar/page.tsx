@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
 import EconomicCalendarWorkspace from "@/components/economicCalendar/EconomicCalendarWorkspace";
+import SubscriptionSection from "@/components/economicCalendar/SubscriptionSection";
 import { getAllScheduledEvents, getNextMajorEvents, getRecentReleases, toEconomicEvent } from "@/lib/economicCalendar/economicEventsRepo";
 import { SITE_URL, SITE_NAME } from "@/lib/seoConfig";
 
@@ -79,7 +80,7 @@ export default async function EconomicCalendarPage() {
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd).replace(/</g, "\\u003c") }} />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd).replace(/</g, "\\u003c") }} />
 
-        <EconomicCalendarWorkspace events={events} recentReleases={recentReleases} nextMajorEvents={nextMajorEvents} />
+        <EconomicCalendarWorkspace events={events} recentReleases={recentReleases} nextMajorEvents={nextMajorEvents} subscriptionSection={<SubscriptionSection />} />
 
         <section className="glass-card mt-6 flex flex-col gap-4 rounded-2xl p-6 sm:p-8">
           <h2 className="text-xl font-semibold text-white light:text-slate-900">Frequently Asked Questions</h2>

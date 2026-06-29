@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import type { EconomicEvent } from "@/lib/economicCalendar/economicCalendarTypes";
 import type { EventRecord } from "@/lib/economicCalendar/economicEventsRepo";
 import {
@@ -39,10 +39,13 @@ export default function EconomicCalendarWorkspace({
   events,
   recentReleases,
   nextMajorEvents,
+  subscriptionSection,
 }: {
   events: EconomicEvent[];
   recentReleases: EventRecord[];
   nextMajorEvents: EventRecord[];
+  /** Rendered as a server component from page.tsx and passed down here, rather than imported directly into this client component — keeps its copy/benefits/preview in the initial server-rendered HTML (crawlable, not JS-only) instead of being pulled into the client bundle. Only the nested email-input form inside it is an actual client island. */
+  subscriptionSection: ReactNode;
 }) {
   // Computed once per mount, not per render tick — a calendar page doesn't
   // need to re-evaluate "today" on every re-render, and freezing it avoids
@@ -92,6 +95,8 @@ export default function EconomicCalendarWorkspace({
           <NextMajorEvents events={nextMajorEvents} />
         </ViewportFadeIn>
       )}
+
+      <ViewportFadeIn>{subscriptionSection}</ViewportFadeIn>
 
       <ViewportFadeIn>
         <CalendarStatistics kpis={kpis} />

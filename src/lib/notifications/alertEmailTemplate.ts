@@ -33,13 +33,16 @@ export interface AlertEmailNextEvent {
   eventTime: string | null;
 }
 
-const IMPORTANCE_META: Record<AlertEmailEvent["importance"], { emoji: string; bg: string; text: string }> = {
+// Exported so the web UI's "Live Example" subscription preview
+// (LiveEmailPreview.tsx) can render with the exact same badge colors as
+// the real email, rather than maintaining a second, driftable copy.
+export const IMPORTANCE_META: Record<AlertEmailEvent["importance"], { emoji: string; bg: string; text: string }> = {
   High: { emoji: "🔴", bg: "rgba(251,113,133,0.12)", text: "#fb7185" },
   Medium: { emoji: "🟡", bg: "rgba(251,191,36,0.12)", text: "#fbbf24" },
   Low: { emoji: "🟢", bg: "rgba(52,211,153,0.12)", text: "#34d399" },
 };
 
-const SURPRISE_META: Record<"positive" | "negative" | "in-line", { label: string; bg: string; text: string }> = {
+export const SURPRISE_META: Record<"positive" | "negative" | "in-line", { label: string; bg: string; text: string }> = {
   positive: { label: "Positive Surprise", bg: "rgba(52,211,153,0.12)", text: "#34d399" },
   negative: { label: "Negative Surprise", bg: "rgba(251,113,133,0.12)", text: "#fb7185" },
   "in-line": { label: "In Line", bg: "rgba(255,255,255,0.06)", text: "#9ca3af" },
