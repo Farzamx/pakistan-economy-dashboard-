@@ -1,26 +1,16 @@
 "use client";
 
 import { motion } from "framer-motion";
-import type { CalendarKpis } from "@/lib/economicCalendar/economicCalendarData";
 
-interface KpiTileProps {
-  label: string;
-  value: number;
-  accent: string;
-}
-
-function KpiTile({ label, value, accent }: KpiTileProps) {
-  return (
-    <motion.div whileHover={{ scale: 1.03 }} transition={{ type: "spring", stiffness: 300, damping: 22 }} className="glass-card flex flex-col gap-1.5 p-5">
-      <span className="text-xs font-medium text-white/50 light:text-slate-500">{label}</span>
-      <span className="text-3xl font-bold" style={{ color: accent }}>
-        {value}
-      </span>
-    </motion.div>
-  );
-}
-
-export default function EconomicCalendarHero({ kpis }: { kpis: CalendarKpis }) {
+/**
+ * Title/intro banner only — the KPI tiles that used to live here moved to
+ * their own CalendarStatistics section, positioned lower on the page
+ * (see EconomicCalendarWorkspace's render order). An investor-grade
+ * calendar should lead with "what just happened" and "what's next," not
+ * summary counts — Recent Releases now occupies the slot directly below
+ * this Hero instead.
+ */
+export default function EconomicCalendarHero() {
   return (
     <motion.section
       initial={{ opacity: 0, y: 16 }}
@@ -37,15 +27,8 @@ export default function EconomicCalendarHero({ kpis }: { kpis: CalendarKpis }) {
         <span className="bg-gradient-to-r from-neon-blue to-neon-purple bg-clip-text text-transparent">Calendar</span>
       </h1>
       <p className="mt-3 max-w-2xl text-sm text-white/60 light:text-slate-500 sm:text-base">
-        Track upcoming economic releases, policy decisions, budget events, and key indicators that shape Pakistan&apos;s economy.
+        Track the latest releases, upcoming policy decisions, and auction results that move PSX, the Rupee, and Pakistani bond yields.
       </p>
-
-      <div className="mt-7 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <KpiTile label="Upcoming Events" value={kpis.upcomingCount} accent="#38bdf8" />
-        <KpiTile label="High Impact Events" value={kpis.highImpactCount} accent="#fb7185" />
-        <KpiTile label="Current Week" value={kpis.thisWeekCount} accent="#34d399" />
-        <KpiTile label="This Month" value={kpis.thisMonthCount} accent="#a855f7" />
-      </div>
     </motion.section>
   );
 }

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { EventRecord } from "@/lib/economicCalendar/economicEventsRepo";
-import { formatEventDate } from "@/lib/economicCalendar/economicCalendarData";
+import { formatEventDate, formatEventTime } from "@/lib/economicCalendar/economicCalendarData";
 import { formatReleasedAgo, EVENT_RETENTION_DAYS } from "@/lib/economicCalendar/retentionConfig";
 import { calculateSurprise, SURPRISE_LABELS, SURPRISE_BADGE_CLASS } from "@/lib/economicCalendar/surpriseAnalysis";
 import EventCategoryBadge from "./EventCategoryBadge";
@@ -12,7 +12,9 @@ import EventImportanceBadge from "./EventImportanceBadge";
  * instead of disappearing the moment it's released. After
  * EVENT_RETENTION_DAYS, an event simply stops appearing here (still fully
  * available at its own URL and in the Archive) — see
- * economicEventsRepo.ts's getRecentReleases.
+ * economicEventsRepo.ts's getRecentReleases. Positioned directly below the
+ * Hero (see EconomicCalendarWorkspace) — "what just happened" is the first
+ * thing an investor wants to see, ahead of anything upcoming.
  */
 export default function RecentReleases({ events }: { events: EventRecord[] }) {
   if (events.length === 0) return null;
@@ -43,10 +45,14 @@ export default function RecentReleases({ events }: { events: EventRecord[] }) {
                 </div>
                 <p className="text-sm font-semibold text-white light:text-slate-900">{event.title}</p>
                 <span className="text-xs text-white/40 light:text-slate-400">
-                  {formatEventDate(event.eventDate)} · {formatReleasedAgo(event.eventDate, today)}
+                  {formatEventDate(event.eventDate)} {event.eventTime && `· ${formatEventTime(event.eventTime)}`} · {formatReleasedAgo(event.eventDate, today)}
                 </span>
               </div>
               <div className="flex shrink-0 items-center gap-5 border-t border-white/5 light:border-slate-100 pt-3 sm:border-t-0 sm:pt-0">
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-[10px] uppercase tracking-wide text-white/35 light:text-slate-400">Previous</span>
+                  <span className="text-sm font-medium text-white/70 light:text-slate-600">{event.previousValue ?? "—"}</span>
+                </div>
                 <div className="flex flex-col gap-0.5">
                   <span className="text-[10px] uppercase tracking-wide text-white/35 light:text-slate-400">Forecast</span>
                   <span className="text-sm font-medium text-white/70 light:text-slate-600">{event.forecastValue ?? "—"}</span>

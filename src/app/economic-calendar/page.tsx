@@ -1,9 +1,7 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
 import EconomicCalendarWorkspace from "@/components/economicCalendar/EconomicCalendarWorkspace";
-import NextMajorEvents from "@/components/economicCalendar/NextMajorEvents";
-import RecentReleases from "@/components/economicCalendar/RecentReleases";
-import MarketImpactRanking from "@/components/economicCalendar/MarketImpactRanking";
 import { getAllScheduledEvents, getNextMajorEvents, getRecentReleases, toEconomicEvent } from "@/lib/economicCalendar/economicEventsRepo";
 import { SITE_URL, SITE_NAME } from "@/lib/seoConfig";
 
@@ -24,12 +22,12 @@ const FAQ = [
   {
     question: "What is the Pakistan Economic Calendar?",
     answer:
-      "A Pakistan-only calendar of upcoming economic events that move PSX, the Rupee, and Pakistani bond yields — SBP monetary policy meetings, CPI/core/SPI inflation, FX reserves, trade balance, current account, remittances, GDP, LSM, T-Bill/PIB auctions, government debt releases, and the federal budget and Economic Survey. It deliberately excludes generic international calendars (FOMC, OPEC, ECB, etc.) — only events with a direct effect on Pakistan are listed.",
+      "A Pakistan-only calendar of economic events that materially move PSX, the Rupee, and Pakistani bond yields — SBP monetary policy meetings and reports, CPI/core/SPI inflation, FX reserves, trade balance, current account, remittances, GDP, LSM, and T-Bill/PIB auctions. It deliberately excludes generic international calendars (FOMC, OPEC, ECB, etc.) and routine, low-impact items — only events with a direct, material effect on Pakistani markets are listed.",
   },
   {
     question: "When is the next SBP meeting date?",
     answer:
-      "The next SBP Monetary Policy Committee meeting date is shown in the Next Major Market-Moving Events and Major Upcoming Events sections above, along with the previous policy rate and the market's forecast for the decision. SBP's Monetary Policy Committee typically meets roughly every six to eight weeks.",
+      "The next SBP Monetary Policy Committee meeting date is shown in the Next Major Market-Moving Events section above, along with the previous policy rate and the market's forecast for the decision. SBP's Monetary Policy Committee typically meets roughly every six to eight weeks, per SBP's own published advance calendar.",
   },
   {
     question: "What are Pakistan's inflation release dates?",
@@ -39,17 +37,17 @@ const FAQ = [
   {
     question: "What does Market Impact mean on this calendar?",
     answer:
-      "Market Impact estimates the potential effect of a release on PSX, investor sentiment, bond yields, and the Pakistani Rupee — High Market Impact covers SBP MPC decisions, CPI, GDP, the federal budget, and major debt releases; Medium covers trade balance, current account, remittances, FX reserves, and T-Bill/PIB auctions; Low covers SPI and routine market reviews.",
+      "Market Impact estimates the potential effect of a release on PSX, investor sentiment, bond yields, and the Pakistani Rupee — High Market Impact covers SBP MPC decisions, CPI, and GDP; Medium covers trade balance, current account, remittances, FX reserves, and T-Bill/PIB auctions; Low covers SPI.",
   },
   {
-    question: "Does this calendar cover the federal budget and Economic Survey?",
+    question: "Does this calendar update itself automatically?",
     answer:
-      "Yes — the federal budget presentation and the Economic Survey of Pakistan, both released annually in the run-up to the new fiscal year, appear in the Major Upcoming Events section alongside the other recurring releases.",
+      "Yes. SBP's Monetary Policy Committee calendar and its Treasury Bill/PIB auction calendars are fetched and parsed directly from SBP's own published sources daily — if SBP postpones or reschedules a date, this calendar reflects that change automatically. Series with no official advance calendar (CPI, SPI, trade balance, remittances, current account, LSM) use a verified recurrence pattern instead, clearly marked as Estimated rather than Confirmed in each event's Data Quality section.",
   },
   {
     question: "How often is this Pakistan economic data calendar updated?",
     answer:
-      "Foreign exchange reserves, the current account, trade balance, remittances, CPI, core inflation, LSM, and T-Bill/PIB auction yields sync their Actual values automatically from SBP EasyData once a release is due. SBP MPC meeting dates and the federal budget/Economic Survey are confirmed from official advance calendars and updated manually each cycle — see each event's Data Quality section for its specific source and confidence level.",
+      "Foreign exchange reserves, the current account, trade balance, remittances, CPI, core inflation, SPI, LSM, and the 3-month T-Bill yield sync their Actual values automatically once a release is due. SBP MPC, Treasury Bill, and PIB dates are synchronized daily directly from SBP's own published calendars — see each event's Data Quality section for its specific source and confidence level.",
   },
 ];
 
@@ -81,23 +79,7 @@ export default async function EconomicCalendarPage() {
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd).replace(/</g, "\\u003c") }} />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd).replace(/</g, "\\u003c") }} />
 
-        <EconomicCalendarWorkspace events={events} />
-
-        {nextMajorEvents.length > 0 && (
-          <div className="mt-6">
-            <NextMajorEvents events={nextMajorEvents} />
-          </div>
-        )}
-
-        {recentReleases.length > 0 && (
-          <div className="mt-6">
-            <RecentReleases events={recentReleases} />
-          </div>
-        )}
-
-        <div className="mt-6">
-          <MarketImpactRanking />
-        </div>
+        <EconomicCalendarWorkspace events={events} recentReleases={recentReleases} nextMajorEvents={nextMajorEvents} />
 
         <section className="glass-card mt-6 flex flex-col gap-4 rounded-2xl p-6 sm:p-8">
           <h2 className="text-xl font-semibold text-white light:text-slate-900">Frequently Asked Questions</h2>
@@ -110,6 +92,16 @@ export default async function EconomicCalendarPage() {
             ))}
           </div>
         </section>
+
+        <div className="mt-6 flex flex-wrap items-center gap-2 text-xs">
+          <span className="text-[var(--text-muted)]">Explore further:</span>
+          <Link href="/economic-calendar/archive" className="rounded-full border border-white/10 light:border-slate-200 px-3 py-1.5 text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)]">
+            Historical Release Archive
+          </Link>
+          <a href="/economic-calendar/feed.ics" className="rounded-full border border-neon-blue/20 bg-neon-blue/5 px-3 py-1.5 text-neon-blue transition-colors hover:bg-neon-blue/10">
+            Subscribe to Calendar Feed (.ics)
+          </a>
+        </div>
       </main>
     </div>
   );

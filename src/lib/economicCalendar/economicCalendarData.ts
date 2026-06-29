@@ -96,16 +96,6 @@ export function getThisWeekEvents(events: EconomicEvent[], today: Date): Economi
   );
 }
 
-/** Events within the current calendar month (today's month/year). */
-export function getThisMonthEvents(events: EconomicEvent[], today: Date): EconomicEvent[] {
-  return sortByDateAsc(
-    events.filter((e) => {
-      const d = parseEventDate(e);
-      return d.getFullYear() === today.getFullYear() && d.getMonth() === today.getMonth();
-    }),
-  );
-}
-
 /** Events after the current 7-day window (getThisWeekEvents) through the end of the current calendar month — the rolling calendar's "what's left this month" section, deliberately non-overlapping with This Week so the two sections tile the rest of the month without duplicating rows. */
 export function getRemainingThisMonthEvents(events: EconomicEvent[], today: Date): EconomicEvent[] {
   return sortByDateAsc(
@@ -143,7 +133,7 @@ export interface CalendarKpis {
   upcomingCount: number;
   highImpactCount: number;
   thisWeekCount: number;
-  thisMonthCount: number;
+  remainingThisMonthCount: number;
 }
 
 export function getCalendarKpis(events: EconomicEvent[], today: Date): CalendarKpis {
@@ -151,7 +141,7 @@ export function getCalendarKpis(events: EconomicEvent[], today: Date): CalendarK
     upcomingCount: getUpcomingEvents(events, today).length,
     highImpactCount: getHighImpactUpcomingEvents(events, today).length,
     thisWeekCount: getThisWeekEvents(events, today).length,
-    thisMonthCount: getThisMonthEvents(events, today).length,
+    remainingThisMonthCount: getRemainingThisMonthEvents(events, today).length,
   };
 }
 
