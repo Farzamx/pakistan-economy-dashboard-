@@ -8,6 +8,10 @@
     {
       "path": "/api/cron/sync-economic-calendar",
       "schedule": "0 18 * * *"
+    },
+    {
+      "path": "/api/cron/process-notification-jobs",
+      "schedule": "0 20 * * *"
     }
   ]
 }
