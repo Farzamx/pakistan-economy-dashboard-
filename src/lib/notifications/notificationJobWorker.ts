@@ -42,6 +42,17 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+// These five RPCs mutate job/email_log state and return subscriber PII —
+// they're gated by this secret (checked inside the function body, on top
+// of the anon-key grant Supabase RPCs always need) so they can't be called
+// directly by anyone holding the public anon key. See
+// 0011_secure_worker_rpcs.sql for why this was added.
+function workerSecret(): string {
+  const secret = process.env.NOTIFICATION_WORKER_SECRET;
+  if (!secret) throw new Error("NOTIFICATION_WORKER_SECRET is not configured");
+  return secret;
+}
+
 interface ClaimResult {
   success: boolean;
   error?: string;
@@ -122,7 +133,10 @@ export interface JobProcessingSummary {
 
 /** Drains one job's pending email_log rows in batches until it's fully sent or the deadline is reached. Every call is safe to repeat — claiming, batching, and recording are each idempotent against being re-run on the same job. */
 async function processJob(supabase: SupabaseClient, jobId: string, deadline: number): Promise<JobProcessingSummary | null> {
-  const { data: claim, error: claimError } = await supabase.rpc("claim_notification_job_work", { p_job_id: jobId });
+  const { data: claim, error: claimError } = await supabase.rpc("claim_notification_job_work", {
+    p_internal_secret: workerSecret(),
+    p_job_id: jobId,
+  });
   if (claimError) {
     console.error(`[Notifications] Job ${jobId}: claim failed: ${claimError.message}`);
     return null;
@@ -152,6 +166,7 @@ async function processJob(supabase: SupabaseClient, jobId: string, deadline: num
 
   while (Date.now() < deadline) {
     const { data: batchRows, error: batchError } = await supabase.rpc("get_pending_email_log_batch", {
+      p_internal_secret: workerSecret(),
       p_job_id: jobId,
       p_limit: BATCH_SIZE,
     });
@@ -182,6 +197,7 @@ async function processJob(supabase: SupabaseClient, jobId: string, deadline: num
     }));
 
     const { data: recorded, error: recordError } = await supabase.rpc("record_email_batch_results", {
+      p_internal_secret: workerSecret(),
       p_job_id: jobId,
       p_results: rpcResults,
     });
@@ -222,7 +238,10 @@ export async function processNotificationJobs(): Promise<JobProcessingSummary[]>
   const deadline = Date.now() + TIME_BUDGET_MS;
   const summaries: JobProcessingSummary[] = [];
 
-  const { data: jobs, error } = await supabase.rpc("get_pending_notification_jobs", { p_limit: 10 });
+  const { data: jobs, error } = await supabase.rpc("get_pending_notification_jobs", {
+    p_internal_secret: workerSecret(),
+    p_limit: 10,
+  });
   if (error) {
     console.error(`[Notifications] Failed to list pending jobs: ${error.message}`);
     return summaries;

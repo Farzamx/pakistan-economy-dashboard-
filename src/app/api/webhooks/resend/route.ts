@@ -77,8 +77,15 @@ export async function POST(request: Request) {
 
   const statusDetail = event.type === "email.bounced" && "bounce" in event.data ? event.data.bounce?.message : undefined;
 
+  const workerSecret = process.env.NOTIFICATION_WORKER_SECRET;
+  if (!workerSecret) {
+    console.error("[Webhooks/Resend] NOTIFICATION_WORKER_SECRET is not configured — rejecting");
+    return NextResponse.json({ error: "not_configured" }, { status: 500 });
+  }
+
   const supabase = createPublicDataClient();
   const { data, error } = await supabase.rpc("update_email_delivery_status", {
+    p_internal_secret: workerSecret,
     p_resend_message_id: emailId,
     p_status: newStatus,
     p_status_detail: statusDetail ?? null,
