@@ -32,6 +32,7 @@ export default async function PakistanStockMarketPage() {
           ? `Source: Yahoo Finance — a US-listed proxy correlated with Pakistani equity performance, not the KSE-100 itself.`
           : "Live KSE-100 index data requires a commercial data license from PSX."
       }
+      kpiQuality={pakEtf ?? undefined}
       chartTitle="KSE-100 Index — Live Chart"
       chartData={null}
       chartUnavailableNote="Real-time KSE-100 index data requires a commercial data license directly from PSX. This restriction applies to all free-tier financial data providers, including Yahoo Finance and TradingView — no dashboard or news site can legitimately display a live KSE-100 chart without that license. We show this honestly rather than displaying an inaccurate or stale number."

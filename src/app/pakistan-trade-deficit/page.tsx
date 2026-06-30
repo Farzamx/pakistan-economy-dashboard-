@@ -33,6 +33,7 @@ export default async function TradeDeficitPage() {
       kpiLabel={`Trade Balance (Monthly) — ${isDeficit ? "Deficit" : "Surplus"}`}
       kpiValue={`${tradeBalance.kpi.value} ${tradeBalance.kpi.unit}`}
       kpiSourceNote={`Source: ${tradeBalance.kpi.source ?? "State Bank of Pakistan"}${tradeBalance.kpi.latestDate ? ` · ${tradeBalance.kpi.latestDate}` : ""}`}
+      kpiQuality={tradeBalance.kpi}
       chartTitle="Trade Balance — 24-Month Trend"
       chartData={tradeBalance.trend}
       chartColor="#fb7185"

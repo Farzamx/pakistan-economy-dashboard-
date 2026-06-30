@@ -19,6 +19,7 @@ import ViewportFadeIn from "@/components/ViewportFadeIn";
 import TrendLineChart from "@/components/charts/TrendLineChart";
 import { sectionData } from "@/data/sectionData";
 import { getFreshnessStatus } from "@/lib/dataFreshness";
+import { getDataQuality } from "@/lib/dataQuality";
 import { getMostRecentEvent, valueMatchesEventOutcome } from "@/lib/economicCalendar/economicCalendarData";
 import { getAllScheduledEvents, getHistoricalEvents, toEconomicEvent } from "@/lib/economicCalendar/economicEventsRepo";
 import type { AiEconomicAnalysis } from "@/lib/data/aiEconomicAnalysis";
@@ -60,7 +61,16 @@ function makeTickerItem(
       ? `+${m[1]}`
       : m[1]
     : null;
-  return { label, value: kpi.value, unit, changeDisplay, trend: kpi.trend, termKey };
+  const quality = getDataQuality({
+    sourceStatus: kpi.sourceStatus ?? "live",
+    latestDate: kpi.latestDate,
+    frequency: kpi.frequency,
+    marketType: kpi.marketType,
+    expectedReleaseDate: kpi.expectedReleaseDate,
+    releaseAlreadyReflected: kpi.releaseAlreadyReflected,
+    snapshotDate: kpi.snapshotDate,
+  }).state;
+  return { label, value: kpi.value, unit, changeDisplay, trend: kpi.trend, termKey, quality };
 }
 
 /** "17 Jun · 18:00 PKT" — used for the Weekly Intelligence Engine's "computed"/"next update" framing. */

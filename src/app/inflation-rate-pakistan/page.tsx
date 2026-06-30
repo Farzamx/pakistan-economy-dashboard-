@@ -28,6 +28,7 @@ export default async function InflationRatePage() {
       kpiLabel="CPI Inflation (YoY)"
       kpiValue={`${cpiInflation.kpi.value}%`}
       kpiSourceNote={`Source: ${cpiInflation.kpi.source ?? "Pakistan Bureau of Statistics"}${cpiInflation.kpi.latestDate ? ` · ${cpiInflation.kpi.latestDate}` : ""}`}
+      kpiQuality={cpiInflation.kpi}
       chartTitle="CPI Inflation — 24-Month Trend"
       chartData={cpiInflation.trend}
       chartColor="#a855f7"

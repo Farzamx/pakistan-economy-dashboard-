@@ -28,6 +28,7 @@ export default async function InterestRatePage() {
       kpiLabel="SBP Policy Rate"
       kpiValue={`${policyRate.kpi.value}%`}
       kpiSourceNote={`Source: ${policyRate.kpi.source ?? "State Bank of Pakistan"}${policyRate.kpi.latestDate ? ` · ${policyRate.kpi.latestDate}` : ""}`}
+      kpiQuality={policyRate.kpi}
       chartTitle="SBP Policy Rate — Recent Trend"
       chartData={policyRate.trend}
       chartColor="#fbbf24"

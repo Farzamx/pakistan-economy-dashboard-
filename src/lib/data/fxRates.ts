@@ -2,6 +2,7 @@ import { unstable_cache } from "next/cache";
 import { fetchYfQuote } from "@/lib/data/yfinance";
 import { dedupeInFlight, getFresh, getStale, setCache } from "@/lib/memoryCache";
 import type { Kpi } from "@/data/kpiData";
+import type { SourceStatus } from "@/lib/dataQuality";
 
 // Live interbank exchange rates — PKR cross-pairs.
 //
@@ -182,10 +183,24 @@ const getFromL2 = unstable_cache(fetchFromUpstream, ["fx-rates-yf"], {
   tags: ["fx-rates"],
 });
 
+/**
+ * Stamps sourceStatus (and, for fallback, snapshotDate) onto all 4 rates at
+ * once. Production Audit Part 3 fix (2026-06-30): this file predates
+ * resolveWithPersistedFallback() (marketFallbackSnapshot.ts) and had its own
+ * hand-rolled 3-tier resolution that never set sourceStatus at all — meaning
+ * the unified Data Quality badge (which reads sourceStatus, not the literal
+ * "(fallback)" text in `source`) would have shown every one of these 4 rates
+ * as plain "live" even when actually serving the hardcoded snapshot.
+ */
+function withFxSourceStatus(rates: FxRateKpis, status: SourceStatus): FxRateKpis {
+  const stamp = (kpi: Kpi): Kpi => ({ ...kpi, sourceStatus: status, snapshotDate: status === "fallback" ? kpi.latestDate : undefined });
+  return { usdPkr: stamp(rates.usdPkr), eurPkr: stamp(rates.eurPkr), gbpPkr: stamp(rates.gbpPkr), sarPkr: stamp(rates.sarPkr) };
+}
+
 export async function getFxRates(): Promise<FxRateKpis> {
-  // L1 fast path.
+  // L1 fast path — a normal, healthy cache hit, not a degraded state.
   const l1 = getFresh<FxRateKpis>(L1_CACHE_KEY, L1_TTL_MS);
-  if (l1) return l1.data;
+  if (l1) return withFxSourceStatus(l1.data, "cache-fresh");
 
   // De-dupe concurrent callers (the 5 routes that use this can all miss L1
   // at once on a cold instance) so only one of them actually drives the L2 call.
@@ -193,7 +208,7 @@ export async function getFxRates(): Promise<FxRateKpis> {
     try {
       const result = await getFromL2();
       setCache(L1_CACHE_KEY, result);
-      return result;
+      return withFxSourceStatus(result, "live");
     } catch (err) {
       console.error(
         "[fxRates] upstream fetch failed:",
@@ -202,10 +217,10 @@ export async function getFxRates(): Promise<FxRateKpis> {
       const stale = getStale<FxRateKpis>(L1_CACHE_KEY);
       if (stale) {
         console.warn(`[fxRates] serving last-known-good rate, ${Math.round(stale.ageMs / 60_000)} min old`);
-        return stale.data;
+        return withFxSourceStatus(stale.data, "cache-stale");
       }
       console.warn("[fxRates] no cached rate available at all — serving hardcoded fallback snapshot");
-      return FALLBACK_RATES;
+      return withFxSourceStatus(FALLBACK_RATES, "fallback");
     }
   });
 }

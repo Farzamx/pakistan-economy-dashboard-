@@ -29,6 +29,7 @@ export default async function EconomicIndicatorsPage() {
       kpiLabel="CPI Inflation (YoY)"
       kpiValue={`${sbp.cpiInflation.kpi.value}%`}
       kpiSourceNote="Headline indicator shown here — see the full live dashboard for all 50+ tracked indicators."
+      kpiQuality={sbp.cpiInflation.kpi}
       chartTitle="CPI Inflation — 24-Month Trend"
       chartData={sbp.cpiInflation.trend}
       chartColor="#a855f7"

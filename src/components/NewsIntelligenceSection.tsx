@@ -250,8 +250,17 @@ export default function NewsIntelligenceSection({ items, modelDisplayName, newsR
                   <span className="font-semibold text-white/55 light:text-slate-600">{marketImpact.label}:</span>{" "}
                   {marketImpact.bullets.join(" · ")}
                 </div>
+              ) : reason === "Economic impact analysis unavailable." ? (
+                // Production Audit Part 3 fix: this exact string is the
+                // NEUTRAL_TAG sentinel (intelligence.ts) — previously
+                // rendered nothing at all, making an AI-tagging
+                // failure/fallback look identical to a card that simply had
+                // no deterministic market-impact rule. Now visibly flagged.
+                <p className="text-[10px] leading-relaxed text-white/25 light:text-slate-400 italic">
+                  AI analysis unavailable for this article.
+                </p>
               ) : (
-                reason && reason !== "Economic impact analysis unavailable." && (
+                reason && (
                   <p className="text-[10px] leading-relaxed text-white/35 light:text-slate-500 italic">
                     {reason}
                   </p>

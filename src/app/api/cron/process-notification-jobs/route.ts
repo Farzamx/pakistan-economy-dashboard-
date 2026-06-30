@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { processNotificationJobs } from "@/lib/notifications/notificationJobWorker";
+import { logCronRun } from "@/lib/cronLogging";
 
 // Vercel Cron target (see vercel.json) — safety net for the notification
 // job worker. The 9 automated economic-calendar series get near-immediate
@@ -15,12 +16,26 @@ import { processNotificationJobs } from "@/lib/notifications/notificationJobWork
 // Same CRON_SECRET auth pattern as every other cron route in this project.
 export const maxDuration = 300;
 
+// Distinct job_name from sync-economic-calendar's inline "notification-worker"
+// entry — same underlying function, but a genuinely separate scheduled
+// trigger, so System Health can show each one's own run history.
+const JOB_NAME = "notification-worker-safety-net";
+
 export async function GET(request: Request) {
+  const startedAt = new Date();
   const authHeader = request.headers.get("authorization");
   if (!process.env.CRON_SECRET || authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return new NextResponse("Unauthorized", { status: 401 });
   }
 
-  const summaries = await processNotificationJobs();
-  return NextResponse.json({ ranAt: new Date().toISOString(), summaries });
+  try {
+    const summaries = await processNotificationJobs();
+    const totalFailed = summaries.reduce((sum, n) => sum + n.failedThisPass, 0);
+    await logCronRun(JOB_NAME, startedAt, totalFailed > 0 ? "failure" : "success", `${summaries.length} job(s) processed, ${totalFailed} email send failure(s)`);
+    return NextResponse.json({ ranAt: new Date().toISOString(), summaries });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    await logCronRun(JOB_NAME, startedAt, "failure", message);
+    return NextResponse.json({ ranAt: new Date().toISOString(), success: false, error: message }, { status: 500 });
+  }
 }

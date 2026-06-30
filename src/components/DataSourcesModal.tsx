@@ -2,12 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { Kpi } from "@/data/kpiData";
-import {
-  formatLatestDate,
-  getFreshnessStatus,
-  FRESHNESS_DOT,
-  FRESHNESS_LABEL,
-} from "@/lib/dataFreshness";
+import { formatLatestDate } from "@/lib/dataFreshness";
+import { getDataQuality, DATA_QUALITY_DOT } from "@/lib/dataQuality";
+import { getRetrievalMethod } from "@/lib/retrievalMethod";
 import { SOURCE_CHAINS, getActiveTier } from "@/lib/marketDataSources";
 import { useTheme } from "@/components/ThemeProvider";
 
@@ -97,26 +94,26 @@ export default function DataSourcesModal({ kpis }: Props) {
               </button>
             </div>
 
-            {/* Legend */}
-            <div className="flex shrink-0 items-center gap-4 border-b border-white/5 light:border-slate-200 px-6 py-2.5">
+            {/* Legend — the same 5-state Data Quality vocabulary used everywhere else on the dashboard (KpiCard, SEO pages, MarketTicker) */}
+            <div className="flex shrink-0 flex-wrap items-center gap-4 border-b border-white/5 light:border-slate-200 px-6 py-2.5">
               <span className="text-[10px] font-medium uppercase tracking-wider text-white/30 light:text-slate-400">Legend</span>
               <span className="flex items-center gap-1 text-xs text-emerald-400 light:text-emerald-700">
-                <span className="text-[8px]">●</span> Current
+                <span className="text-[8px]">●</span> Verified
               </span>
               <span className="flex items-center gap-1 text-xs text-amber-400 light:text-amber-600">
                 <span className="text-[8px]">●</span> Delayed
               </span>
-              <span className="flex items-center gap-1 text-xs text-rose-400 light:text-rose-700">
-                <span className="text-[8px]">●</span> Stale
-              </span>
               <span className="flex items-center gap-1 text-xs text-sky-400 light:text-sky-700">
-                <span className="text-[8px]">●</span> Last Market Close
+                <span className="text-[8px]">●</span> Cached
               </span>
-              <span className="flex items-center gap-1 text-xs text-indigo-400 light:text-indigo-700">
-                <span className="text-[8px]">●</span> Market Closed
+              <span className="flex items-center gap-1 text-xs text-orange-400 light:text-orange-600">
+                <span className="text-[8px]">●</span> Fallback
+              </span>
+              <span className="flex items-center gap-1 text-xs text-slate-400">
+                <span className="text-[8px]">●</span> Unavailable
               </span>
               <span className="ml-auto text-[10px] text-white/25 light:text-slate-400">
-                Thresholds vary by frequency · weekends/holidays never count as Delayed for market data
+                Hover any Status cell for the exact reason · weekends/holidays never count as Delayed for market data
               </span>
             </div>
 
@@ -130,6 +127,7 @@ export default function DataSourcesModal({ kpis }: Props) {
                   <tr className="text-left text-[10px] font-medium uppercase tracking-wider text-white/30 light:text-slate-600">
                     <th className="px-6 py-3">Indicator</th>
                     <th className="px-4 py-3">Source</th>
+                    <th className="px-4 py-3">Retrieval Method</th>
                     <th className="px-4 py-3">Series ID</th>
                     <th className="px-4 py-3">Primary / Secondary / Fallback</th>
                     <th className="px-4 py-3">Last Updated</th>
@@ -139,9 +137,25 @@ export default function DataSourcesModal({ kpis }: Props) {
                 </thead>
                 <tbody className="divide-y divide-white/[0.04] light:divide-slate-100">
                   {kpis.map((kpi, i) => {
-                    const status = getFreshnessStatus(kpi.latestDate, kpi.frequency, { marketType: kpi.marketType, expectedReleaseDate: kpi.expectedReleaseDate, releaseAlreadyReflected: kpi.releaseAlreadyReflected });
-                    const dotClass = FRESHNESS_DOT[status];
-                    const label = FRESHNESS_LABEL[status];
+                    // Production Audit Part 3/4 fix: this previously called
+                    // getFreshnessStatus() directly — an age-only check that
+                    // never looked at sourceStatus, so a fallback value with
+                    // a recent-looking hardcoded date (e.g. the FX fallback
+                    // snapshot) could read "Current" here even while serving
+                    // a static snapshot. getDataQuality() is the same
+                    // function every other surface (KpiCard, SEO pages,
+                    // MarketTicker) uses — one source of truth, not a
+                    // parallel check that can silently drift out of sync.
+                    const quality = getDataQuality({
+                      sourceStatus: kpi.sourceStatus ?? "live",
+                      latestDate: kpi.latestDate,
+                      frequency: kpi.frequency,
+                      marketType: kpi.marketType,
+                      expectedReleaseDate: kpi.expectedReleaseDate,
+                      releaseAlreadyReflected: kpi.releaseAlreadyReflected,
+                      snapshotDate: kpi.snapshotDate,
+                    });
+                    const dotClass = DATA_QUALITY_DOT[quality.state];
                     // Gated on marketType, not just title — see KpiCard.tsx's
                     // comment: some SBP EasyData indicators share a display
                     // title with an unrelated Yahoo/FRED/Twelve-Data one.
@@ -151,6 +165,7 @@ export default function DataSourcesModal({ kpis }: Props) {
                       <tr key={`${i}-${kpi.title}`} className="transition hover:bg-white/[0.02] light:hover:bg-slate-50">
                         <td className="px-6 py-3 font-medium text-white/80 light:text-slate-800">{kpi.title}</td>
                         <td className="px-4 py-3 text-white/50 light:text-slate-500">{kpi.source ?? "—"}</td>
+                        <td className="px-4 py-3 text-white/40 light:text-slate-400">{getRetrievalMethod(kpi.source)}</td>
                         <td className="px-4 py-3 font-mono text-white/35 light:text-slate-400">{kpi.seriesId ?? "—"}</td>
                         <td className="px-4 py-3 text-white/40 light:text-slate-400">
                           {chain ? (
@@ -169,11 +184,11 @@ export default function DataSourcesModal({ kpis }: Props) {
                           {kpi.latestDate ? formatLatestDate(kpi.latestDate, kpi.frequency) : "—"}
                         </td>
                         <td className="px-4 py-3 text-white/50 light:text-slate-500">{kpi.frequency ?? "—"}</td>
-                        <td className="px-4 py-3">
+                        <td className="px-4 py-3" title={quality.description}>
                           {kpi.latestDate ? (
                             <span className={`flex items-center gap-1 whitespace-nowrap ${dotClass}`}>
                               <span className="text-[8px]">●</span>
-                              {label}
+                              {quality.state}
                             </span>
                           ) : (
                             <span className="text-white/25 light:text-slate-400">—</span>
@@ -186,6 +201,7 @@ export default function DataSourcesModal({ kpis }: Props) {
                     <tr key={entry.indicator} className="transition hover:bg-white/[0.02] light:hover:bg-slate-50">
                       <td className="px-6 py-3 font-medium text-white/60 light:text-slate-700">{entry.indicator}</td>
                       <td className="px-4 py-3 text-white/50 light:text-slate-500">{entry.source}</td>
+                      <td className="px-4 py-3 text-white/40 light:text-slate-400">{getRetrievalMethod(entry.source)}</td>
                       <td className="px-4 py-3 font-mono text-white/35 light:text-slate-400">{entry.seriesId}</td>
                       <td className="px-4 py-3 text-white/25 light:text-slate-400">—</td>
                       <td className="px-4 py-3 text-white/30 light:text-slate-400">live</td>

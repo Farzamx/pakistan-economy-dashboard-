@@ -28,6 +28,7 @@ export default async function SarPkrPage() {
       kpiLabel="SAR / PKR (Intraday)"
       kpiValue={fxRates.sarPkr.value}
       kpiSourceNote={`Source: ${fxRates.sarPkr.source ?? "Yahoo Finance"} — interbank market rate, refreshed intraday`}
+      kpiQuality={fxRates.sarPkr}
       chartTitle="SAR / PKR — Historical Trend"
       chartData={null}
       chartUnavailableNote="No historical SAR/PKR trend chart is available — SBP does not publish a dedicated SAR/PKR historical series; only the live cross-rate above is available. SAR/PKR moves are driven almost entirely by USD/PKR, since the Saudi Riyal has been pegged to the US Dollar since 1986."

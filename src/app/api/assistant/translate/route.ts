@@ -1,7 +1,5 @@
-import { FALLBACK_CHAIN, MODEL_TIMEOUT_MS } from "@/lib/openRouterClient";
+import { callOpenRouter } from "@/lib/openRouterClient";
 import { getFresh, setCache } from "@/lib/memoryCache";
-
-const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 
 // Translated tooltip content is static (the ~30 TERMINOLOGY entries never
 // change), so the same text gets requested repeatedly across different users
@@ -10,10 +8,6 @@ const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 // text is free and instant. Configurable via env (default 24h, since the
 // underlying English source text essentially never changes).
 const TRANSLATION_CACHE_TTL_MS = Number(process.env.TRANSLATE_CACHE_TTL_MS ?? 24 * 60 * 60 * 1000);
-
-interface OpenRouterResponse {
-  choices?: { message?: { content?: string } }[];
-}
 
 // ── System prompt ─────────────────────────────────────────────────────────────
 // Strictly translation-only — model must not add, remove, or interpret anything.
@@ -113,8 +107,7 @@ function containsVerbatimEnglishRun(original: string, translated: string, minWor
 
 export async function POST(request: Request): Promise<Response> {
   const requestStart = Date.now();
-  const apiKey = process.env.OPENROUTER_API_KEY;
-  if (!apiKey) {
+  if (!process.env.OPENROUTER_API_KEY && !process.env.GROQ_API_KEY) {
     return Response.json({
       translation: "[Translation unavailable — API key not configured.]",
     });
@@ -140,78 +133,39 @@ export async function POST(request: Request): Promise<Response> {
     return Response.json({ translation: cached.data });
   }
 
-  // Single call to a model, timeout-protected; returns the cleaned translation,
-  // or null on any failure (HTTP error, timeout, empty body, empty content).
-  async function callModel(model: string): Promise<string | null> {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), MODEL_TIMEOUT_MS);
-    try {
-      const res = await fetch(OPENROUTER_URL, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model,
-          messages: [
-            { role: "system", content: SYSTEM_PROMPT },
-            { role: "user", content: `${text}${USER_SUFFIX}` },
-          ],
-          temperature: 0.1,
-          max_tokens: 1200,
-        }),
-        cache: "no-store",
-        signal: controller.signal,
-      });
-      clearTimeout(timer);
+  // Shared failover client (Final Production Hardening Part 6 — this route
+  // used to reimplement its own OpenRouter-only retry loop, the same
+  // pre-shared-client pattern already fixed for the main Assistant route;
+  // it gets the same health-aware ordering, cooldowns, and Groq backstop
+  // every other AI feature gets, from one place, instead of being invisible
+  // to provider monitoring entirely). The quality check (verbatim-English
+  // detection) is a logging side effect on the result, not part of
+  // parseContent — it must never trigger a retry/next-model, since a model
+  // producing a borderline-imperfect-but-real translation is still a
+  // success, just one worth flagging for observability.
+  const aiResult = await callOpenRouter<string>(
+    [
+      { role: "system", content: SYSTEM_PROMPT },
+      { role: "user", content: `${text}${USER_SUFFIX}` },
+    ],
+    (content) => {
+      const cleaned = cleanTranslation(content);
+      if (!cleaned) throw new Error("empty translation after cleaning");
+      return cleaned;
+    },
+    { revalidate: 0, temperature: 0.1, maxTokens: 1200, taskLabel: "Translate" },
+  );
 
-      if (!res.ok) {
-        console.warn(`[AI/Translate] ${model} — HTTP ${res.status} ${res.statusText}`);
-        return null;
-      }
-
-      const rawText = await res.text();
-      if (!rawText.trim()) {
-        console.warn(`[AI/Translate] ${model} — empty body`);
-        return null;
-      }
-
-      const data = JSON.parse(rawText) as OpenRouterResponse;
-      const raw = data.choices?.[0]?.message?.content?.trim();
-      if (!raw) {
-        console.warn(`[AI/Translate] ${model} — empty content`);
-        return null;
-      }
-
-      return cleanTranslation(raw);
-    } catch (err) {
-      clearTimeout(timer);
-      const aborted = err instanceof Error && err.name === "AbortError";
-      console.warn(`[AI/Translate] ${model} — ${aborted ? `timeout after ${MODEL_TIMEOUT_MS}ms` : err instanceof Error ? err.message : String(err)}`);
-      return null;
+  if (aiResult) {
+    if (containsVerbatimEnglishRun(text, aiResult.result)) {
+      console.warn(`[AI/Translate] ${aiResult.modelUsed} — output may contain untranslated English (quality signal only, not retried)`);
     }
+    setCache(cacheKey, aiResult.result);
+    console.log(`[Timing] translation: ${Date.now() - requestStart}ms — ${aiResult.modelUsed} (${aiResult.provider})`);
+    return Response.json({ translation: aiResult.result });
   }
 
-  // One call per model, in order, stopping at the first success — no retry-on-
-  // imperfect-quality loop. Model-to-model fallback only happens on a hard
-  // failure (HTTP error, timeout, empty response), so the common case is
-  // exactly one LLM call.
-  for (const model of FALLBACK_CHAIN) {
-    const callStart = Date.now();
-    const result = await callModel(model);
-    if (result === null) continue;
-
-    if (containsVerbatimEnglishRun(text, result)) {
-      console.warn(`[AI/Translate] ${model} — output may contain untranslated English (quality signal only, not retried)`);
-    }
-
-    setCache(cacheKey, result);
-    console.log(`[Timing] translation: ${Date.now() - requestStart}ms (model call: ${Date.now() - callStart}ms) — ${model}`);
-    return Response.json({ translation: result });
-  }
-
-  console.error(`[AI/Translate] All models failed (${Date.now() - requestStart}ms)`);
+  console.error(`[AI/Translate] All providers failed (${Date.now() - requestStart}ms)`);
   return Response.json({
     translation: "[Translation unavailable. Please try again.]",
   });

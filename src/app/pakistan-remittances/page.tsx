@@ -28,6 +28,7 @@ export default async function RemittancesPage() {
       kpiLabel="Workers' Remittances (Monthly)"
       kpiValue={`$${remittances.kpi.value}B`}
       kpiSourceNote={`Source: ${remittances.kpi.source ?? "State Bank of Pakistan"}${remittances.kpi.latestDate ? ` · ${remittances.kpi.latestDate}` : ""}`}
+      kpiQuality={remittances.kpi}
       chartTitle="Remittances — 24-Month Trend"
       chartData={remittances.trend}
       chartColor="#34d399"

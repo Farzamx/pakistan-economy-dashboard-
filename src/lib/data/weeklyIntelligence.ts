@@ -115,10 +115,21 @@ export interface StoreWeeklyIntelligencePayload {
   aiModelDisplayName: string;
 }
 
-/** Called only from the weekly cron route, with the trusted server-side internal secret (reuses the 'notification_worker' key — same threat model as the existing notification cron, see 0017's migration header). */
-export async function storeWeeklyIntelligenceSnapshot(payload: StoreWeeklyIntelligencePayload, internalSecret: string): Promise<{ success: boolean; error?: string }> {
+/**
+ * Called only from the weekly cron route, with the trusted server-side
+ * internal secret (reuses the 'notification_worker' key — same threat
+ * model as the existing notification cron, see 0017's migration header).
+ *
+ * `skipped: true` is a normal, non-error outcome (Final Production
+ * Hardening Part 1) — the DB enforces at most one snapshot per ISO week
+ * via a unique constraint on a generated `week_start` column (0019); a
+ * second attempt in the same week (Vercel Cron's at-least-once delivery,
+ * a manual re-trigger, a near-simultaneous race) hits that constraint and
+ * comes back here as `skipped`, not a thrown error.
+ */
+export async function storeWeeklyIntelligenceSnapshot(payload: StoreWeeklyIntelligencePayload, internalSecret: string): Promise<{ success: boolean; skipped?: boolean; error?: string }> {
   const supabase = createPublicDataClient();
-  const { error } = await supabase.rpc("store_weekly_intelligence_snapshot", {
+  const { data, error } = await supabase.rpc("store_weekly_intelligence_snapshot", {
     p_internal_secret: internalSecret,
     p_payload: payload,
   });
@@ -126,5 +137,10 @@ export async function storeWeeklyIntelligenceSnapshot(payload: StoreWeeklyIntell
     console.error(`[WeeklyIntelligence] store_weekly_intelligence_snapshot failed: ${error.message}`);
     return { success: false, error: error.message };
   }
-  return { success: true };
+  const result = data as { id: string | null; skipped: boolean; reason?: string } | null;
+  if (result?.skipped) {
+    console.log(`[WeeklyIntelligence] Skipped — ${result.reason ?? "already ran this week"}`);
+    return { success: true, skipped: true };
+  }
+  return { success: true, skipped: false };
 }

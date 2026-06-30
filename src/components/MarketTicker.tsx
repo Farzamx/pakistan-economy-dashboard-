@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useSafeReducedMotion } from "@/hooks/useSafeReducedMotion";
 import InfoTooltip from "@/components/InfoTooltip";
+import { DATA_QUALITY_DOT, type DataQualityState } from "@/lib/dataQuality";
 
 export interface TickerItem {
   label: string;
@@ -11,6 +12,15 @@ export interface TickerItem {
   changeDisplay: string | null;
   trend: "up" | "down" | "neutral";
   termKey: string;
+  /**
+   * Production Audit Part 3 fix: the ticker previously carried zero
+   * freshness/fallback metadata at all — the least transparent surface on
+   * the dashboard, since every other KPI display went through the
+   * unified Data Quality badge. Optional so older callers (none remain,
+   * but keeps this non-breaking) degrade gracefully with no dot rather
+   * than a crash.
+   */
+  quality?: DataQualityState;
 }
 
 function TickerChip({ item }: { item: TickerItem }) {
@@ -45,6 +55,13 @@ function TickerChip({ item }: { item: TickerItem }) {
           <span>{item.changeDisplay}</span>
         )}
       </span>
+
+      {/* Only shown when degraded — Verified is the normal case and would just be visual noise repeated on every chip. */}
+      {item.quality && item.quality !== "Verified" && (
+        <span className={`text-[9px] ${DATA_QUALITY_DOT[item.quality]}`} title={item.quality} aria-label={item.quality}>
+          &#9679;
+        </span>
+      )}
 
       <InfoTooltip termKey={item.termKey} size="xs" />
     </span>

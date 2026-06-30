@@ -29,6 +29,7 @@ export default async function CurrentAccountPage() {
       kpiLabel={`Current Account (Monthly) — ${isDeficit ? "Deficit" : "Surplus"}`}
       kpiValue={`${currentAccount.kpi.value} ${currentAccount.kpi.unit}`}
       kpiSourceNote={`Source: ${currentAccount.kpi.source ?? "State Bank of Pakistan"}${currentAccount.kpi.latestDate ? ` · ${currentAccount.kpi.latestDate}` : ""}`}
+      kpiQuality={currentAccount.kpi}
       chartTitle="Current Account — 24-Month Trend"
       chartData={currentAccount.trend}
       chartColor="#fb7185"

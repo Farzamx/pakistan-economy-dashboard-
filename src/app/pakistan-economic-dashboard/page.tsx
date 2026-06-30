@@ -32,6 +32,7 @@ export default async function PakistanEconomicDashboardPage() {
       kpiLabel="CPI Inflation (YoY) — Live Preview"
       kpiValue={`${cpiInflation.kpi.value}%`}
       kpiSourceNote="One of 50+ indicators tracked live on the full dashboard."
+      kpiQuality={cpiInflation.kpi}
       chartTitle="CPI Inflation — 24-Month Trend (Preview)"
       chartData={cpiInflation.trend}
       chartColor="#a855f7"

@@ -39,6 +39,7 @@ export default async function GdpGrowthPage() {
       kpiLabel="Annual GDP Growth (Latest)"
       kpiValue={`${gdpKpi.value}%`}
       kpiSourceNote={`Source: ${gdpKpi.source ?? "World Bank"}${gdpKpi.latestDate ? ` · ${gdpKpi.latestDate}` : ""}`}
+      kpiQuality={gdpKpi}
       chartTitle="Quarterly GDP Growth (YoY)"
       chartData={quarterlyGdp.trend}
       chartColor="#38bdf8"

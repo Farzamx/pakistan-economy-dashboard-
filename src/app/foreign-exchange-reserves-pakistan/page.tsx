@@ -35,6 +35,7 @@ export default async function ForeignReservesPage() {
       kpiLabel="SBP Foreign Reserves"
       kpiValue={`$${sbpB.toFixed(1)}B`}
       kpiSourceNote={`Source: ${sbpReserves.kpi.source ?? "State Bank of Pakistan"}${sbpReserves.kpi.latestDate ? ` · ${sbpReserves.kpi.latestDate}` : ""}`}
+      kpiQuality={sbpReserves.kpi}
       chartTitle="SBP Foreign Reserves — 24-Month Trend"
       chartData={sbpReserves.trend}
       chartColor="#38bdf8"

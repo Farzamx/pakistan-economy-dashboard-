@@ -89,7 +89,35 @@ export function getModelDisplayName(modelId: string): string {
   );
 }
 
-export type AiProvider = "OpenRouter" | "Groq";
+// A plain string, not a fixed literal union (Final Production Hardening
+// Part 6: "support OpenRouter, Groq, and future providers") — the actual
+// set of providers is data-driven from PROVIDER_REGISTRY below, so adding
+// a new one is a one-entry addition there, not a type change here plus
+// every switch/if-chain that used to enumerate "OpenRouter | Groq" by hand.
+export type AiProvider = string;
+
+interface ProviderConfig {
+  /** Display name, used as the provider field everywhere (logs, health snapshot, OpenRouterCallResult). */
+  name: AiProvider;
+  /** Every model this provider should be tried with, in priority order. */
+  models: string[];
+  url: string;
+  /** process.env key holding this provider's API key — checked at call time, never logged. */
+  apiKeyEnvVar: string;
+  /** Per-attempt log label, e.g. "OpenRouter (openai/gpt-oss-20b:free)" vs a provider with one fixed model just showing its name. */
+  label: (model: string) => string;
+}
+
+/**
+ * The complete set of providers this client knows about. Adding a third
+ * provider (or a fourth model to an existing one) is exactly one entry
+ * here — getOrderedSteps()/getProviderHealthSnapshot()/callOpenRouter()
+ * all iterate this generically and need no further changes.
+ */
+const PROVIDER_REGISTRY: ProviderConfig[] = [
+  { name: "OpenRouter", models: FALLBACK_CHAIN, url: OPENROUTER_URL, apiKeyEnvVar: "OPENROUTER_API_KEY", label: (model) => `OpenRouter (${model})` },
+  { name: "Groq", models: [GROQ_MODEL], url: GROQ_URL, apiKeyEnvVar: "GROQ_API_KEY", label: () => "Groq" },
+];
 
 export interface ChatMessage {
   role: "system" | "user" | "assistant";
@@ -230,10 +258,7 @@ export interface ProviderHealthSnapshot {
  * cooldown state currently shaping its own routing decisions.
  */
 export function getProviderHealthSnapshot(): ProviderHealthSnapshot[] {
-  const steps = [
-    ...FALLBACK_CHAIN.map((m) => ({ provider: "OpenRouter" as AiProvider, model: m })),
-    { provider: "Groq" as AiProvider, model: GROQ_MODEL },
-  ];
+  const steps = PROVIDER_REGISTRY.flatMap((p) => p.models.map((model) => ({ provider: p.name, model })));
   return steps.map(({ provider, model }) => {
     const stepKey = `${provider}:${model}`;
     const health = healthByStep.get(stepKey);
@@ -362,23 +387,29 @@ interface Step {
   model: string;
   url: string;
   apiKey: string;
+  label: string;
 }
 
 /**
- * Builds the attempt order for this call: starts from FALLBACK_CHAIN (+
- * Groq last, unless preferProvider asks for Groq first), drops any step
- * currently in cooldown, then sorts the rest by ascending consecutive
- * failure count — a model with 0 recent failures is tried before one with
- * 1, even if the latter is earlier in the static FALLBACK_CHAIN order.
- * Cooled-down steps aren't dropped silently — see the "skipped (cooldown)"
- * log line in callOpenRouter.
+ * Builds the attempt order for this call: starts from PROVIDER_REGISTRY's
+ * order (+ preferProvider moved first if set), drops any provider missing
+ * its API key or any step currently in cooldown, then sorts the rest by
+ * ascending consecutive failure count — a model with 0 recent failures is
+ * tried before one with 1, even if the latter is earlier in the registry's
+ * static order. Cooled-down steps aren't dropped silently — see the
+ * "skipped (cooldown)" log line in callOpenRouter.
  */
-function getOrderedSteps(openRouterKey: string | undefined, groqKey: string | undefined, preferProvider: AiProvider | undefined): { steps: Step[]; skipped: string[] } {
+function getOrderedSteps(preferProvider: AiProvider | undefined): { steps: Step[]; skipped: string[]; missingKeys: string[] } {
   const all: Step[] = [];
-  if (openRouterKey) {
-    for (const model of FALLBACK_CHAIN) all.push({ provider: "OpenRouter", model, url: OPENROUTER_URL, apiKey: openRouterKey });
+  const missingKeys: string[] = [];
+  for (const p of PROVIDER_REGISTRY) {
+    const apiKey = process.env[p.apiKeyEnvVar];
+    if (!apiKey) {
+      missingKeys.push(`${p.name} → no ${p.apiKeyEnvVar} configured`);
+      continue;
+    }
+    for (const model of p.models) all.push({ provider: p.name, model, url: p.url, apiKey, label: p.label(model) });
   }
-  if (groqKey) all.push({ provider: "Groq", model: GROQ_MODEL, url: GROQ_URL, apiKey: groqKey });
 
   if (preferProvider) {
     all.sort((a, b) => (a.provider === preferProvider ? -1 : 0) - (b.provider === preferProvider ? -1 : 0));
@@ -400,7 +431,7 @@ function getOrderedSteps(openRouterKey: string | undefined, groqKey: string | un
   const withHealth = available.map((step, originalIndex) => ({ step, originalIndex, failures: getHealth(`${step.provider}:${step.model}`).consecutiveFailures }));
   withHealth.sort((a, b) => a.failures - b.failures || a.originalIndex - b.originalIndex);
 
-  return { steps: withHealth.map((w) => w.step), skipped };
+  return { steps: withHealth.map((w) => w.step), skipped, missingKeys };
 }
 
 /**
@@ -427,7 +458,7 @@ export async function callOpenRouter<T>(
   const messages: ChatMessage[] = typeof promptOrMessages === "string" ? [{ role: "user", content: promptOrMessages }] : promptOrMessages;
   const failureLog: string[] = [];
 
-  const { steps, skipped } = getOrderedSteps(process.env.OPENROUTER_API_KEY, process.env.GROQ_API_KEY, preferProvider);
+  const { steps, skipped, missingKeys } = getOrderedSteps(preferProvider);
   if (skipped.length > 0) {
     console.log(`[AI/${taskLabel}] Skipping (cooldown): ${skipped.join(", ")}`);
   }
@@ -435,8 +466,7 @@ export async function callOpenRouter<T>(
   for (let i = 0; i < steps.length; i++) {
     const step = steps[i];
     const stepKey = `${step.provider}:${step.model}`;
-    const label = step.provider === "OpenRouter" ? `OpenRouter (${step.model})` : "Groq";
-    const outcome = await attemptStep(label, step.url, step.apiKey, step.model, messages, temperature, maxTokens, revalidate, parseContent, taskLabel);
+    const outcome = await attemptStep(step.label, step.url, step.apiKey, step.model, messages, temperature, maxTokens, revalidate, parseContent, taskLabel);
     recordAttempt(stepKey, outcome.latencyMs);
 
     if (outcome.ok) {
@@ -446,11 +476,10 @@ export async function callOpenRouter<T>(
     }
 
     recordFailure(stepKey, outcome.reason, outcome.isRateLimit);
-    failureLog.push(`${label} → ${outcome.reason}`);
+    failureLog.push(`${step.label} → ${outcome.reason}`);
   }
 
-  if (!process.env.OPENROUTER_API_KEY) failureLog.push("OpenRouter → no OPENROUTER_API_KEY configured");
-  if (!process.env.GROQ_API_KEY) failureLog.push("Groq → no GROQ_API_KEY configured");
+  failureLog.push(...missingKeys);
 
   console.error(`[AI/${taskLabel}]\nProvider: Hardcoded Fallback\nReason:\n${failureLog.map((l) => `- ${l}`).join("\n")}`);
   return null;

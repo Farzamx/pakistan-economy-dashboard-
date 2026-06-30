@@ -29,6 +29,7 @@ export default async function FiscalDeficitPage() {
       kpiLabel={`Consolidated Fiscal Balance (Annual) — ${isDeficit ? "Deficit" : "Surplus"}`}
       kpiValue={`${fiscalBalance.kpi.value} ${fiscalBalance.kpi.unit}`}
       kpiSourceNote={`Source: ${fiscalBalance.kpi.source ?? "State Bank of Pakistan"}${fiscalBalance.kpi.latestDate ? ` · FY ${fiscalBalance.kpi.latestDate}` : ""}`}
+      kpiQuality={fiscalBalance.kpi}
       chartTitle="Consolidated Fiscal Balance — Annual Trend"
       chartData={fiscalBalance.trend}
       chartColor="#38bdf8"

@@ -56,8 +56,8 @@ export default async function SystemHealthPage() {
         </p>
 
         <section className="mt-8">
-          <h2 className="text-lg font-semibold">Data Sources</h2>
-          <p className="mt-1 text-xs text-slate-500">Each row is a real, just-executed check against the live fetcher — not a cached/historical record.</p>
+          <h2 className="text-lg font-semibold">Data Sources &amp; Infrastructure</h2>
+          <p className="mt-1 text-xs text-slate-500">Each row is a real, just-executed check against the live dependency, with measured response time — not a cached/historical record. Supabase/Resend checks are read-only (no email sent, no data written).</p>
           <div className="mt-3 overflow-x-auto rounded-xl border border-white/10">
             <table className="w-full text-left text-sm">
               <thead className="bg-white/[0.03] text-xs uppercase tracking-wide text-slate-500">
@@ -65,6 +65,7 @@ export default async function SystemHealthPage() {
                   <th className="px-4 py-2">Source</th>
                   <th className="px-4 py-2">Status</th>
                   <th className="px-4 py-2">Detail</th>
+                  <th className="px-4 py-2">Response Time</th>
                   <th className="px-4 py-2">Latest Date</th>
                 </tr>
               </thead>
@@ -79,6 +80,7 @@ export default async function SystemHealthPage() {
                       </span>
                     </td>
                     <td className="px-4 py-2.5 text-slate-400">{s.detail}</td>
+                    <td className="px-4 py-2.5 text-slate-400">{s.latencyMs >= 0 ? `${s.latencyMs}ms` : "—"}</td>
                     <td className="px-4 py-2.5 text-slate-400">{s.latestDate ?? "—"}</td>
                   </tr>
                 ))}
@@ -138,25 +140,66 @@ export default async function SystemHealthPage() {
         </section>
 
         <section className="mt-8">
-          <h2 className="text-lg font-semibold">Cron Jobs</h2>
-          <p className="mt-1 text-xs text-slate-500">Configured schedules (mirrors vercel.json) — this project doesn&apos;t persist a run-history log, so check Vercel&apos;s own cron execution logs for actual past-run history.</p>
-          <div className="mt-3 space-y-2">
+          <h2 className="text-lg font-semibold">Cron History</h2>
+          <p className="mt-1 text-xs text-slate-500">
+            Real persisted run history (cron_run_log, written by every cron route on completion) — up to 50 runs kept per job. Before this, only the configured schedule was knowable; &quot;last successful run&quot;/&quot;last failure&quot; didn&apos;t exist anywhere.
+          </p>
+          <div className="mt-3 space-y-3">
             {snapshot.cronJobs.map((job) => (
-              <div key={job.path} className="rounded-xl border border-white/10 bg-white/[0.02] p-4">
-                <p className="font-mono text-sm">{job.path}</p>
-                <p className="mt-1 text-xs text-sky-400">{job.schedule}</p>
+              <div key={job.path + job.jobNames.join(",")} className="rounded-xl border border-white/10 bg-white/[0.02] p-4">
+                <div className="flex flex-wrap items-baseline justify-between gap-2">
+                  <p className="font-mono text-sm">{job.path}</p>
+                  <p className="text-xs text-sky-400">{job.schedule}</p>
+                </div>
                 <p className="mt-1 text-xs text-slate-400">{job.description}</p>
+
+                <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                  <div className="rounded-lg bg-white/[0.02] p-3">
+                    <p className="text-[10px] uppercase tracking-wide text-slate-500">Last Success</p>
+                    {job.lastSuccess ? (
+                      <>
+                        <p className="mt-1 text-xs text-slate-300">{fmt(job.lastSuccess.startedAt)} · {job.lastSuccess.durationMs}ms</p>
+                        <p className="text-[11px] text-slate-500">{job.lastSuccess.jobName}{job.lastSuccess.detail ? ` — ${job.lastSuccess.detail}` : ""}</p>
+                      </>
+                    ) : (
+                      <p className="mt-1 text-xs text-slate-500">No successful run recorded yet</p>
+                    )}
+                  </div>
+                  <div className="rounded-lg bg-white/[0.02] p-3">
+                    <p className="text-[10px] uppercase tracking-wide text-slate-500">Last Failure</p>
+                    {job.lastFailure ? (
+                      <>
+                        <p className="mt-1 text-xs text-rose-400">{fmt(job.lastFailure.startedAt)} · {job.lastFailure.durationMs}ms</p>
+                        <p className="text-[11px] text-slate-500">{job.lastFailure.jobName}{job.lastFailure.detail ? ` — ${job.lastFailure.detail}` : ""}</p>
+                      </>
+                    ) : (
+                      <p className="mt-1 text-xs text-emerald-400">None recorded</p>
+                    )}
+                  </div>
+                </div>
+
+                {job.recentRuns.length > 0 && (
+                  <details className="mt-3">
+                    <summary className="cursor-pointer text-[11px] text-slate-500">Recent runs ({job.recentRuns.length})</summary>
+                    <div className="mt-2 space-y-1">
+                      {job.recentRuns.slice(0, 10).map((run, i) => (
+                        <div key={i} className="flex items-center gap-2 text-[11px] text-slate-400">
+                          <span className={`h-1.5 w-1.5 rounded-full ${run.status === "success" ? "bg-emerald-400" : run.status === "skipped" ? "bg-sky-400" : "bg-rose-400"}`} />
+                          <span>{fmt(run.startedAt)}</span>
+                          <span className="text-slate-600">·</span>
+                          <span>{run.jobName}</span>
+                          <span className="text-slate-600">·</span>
+                          <span>{run.status}</span>
+                          <span className="text-slate-600">·</span>
+                          <span>{run.durationMs}ms</span>
+                        </div>
+                      ))}
+                    </div>
+                  </details>
+                )}
               </div>
             ))}
           </div>
-        </section>
-
-        <section className="mt-8">
-          <h2 className="text-lg font-semibold">Notification Worker / Email Pipeline</h2>
-          <p className="mt-2 text-sm text-slate-400">
-            No persisted run-history log exists for this yet — not fabricated here. Drains inline as part of /api/cron/sync-economic-calendar
-            (daily) plus a /api/cron/process-notification-jobs safety-net sweep. Check Resend&apos;s own dashboard and Vercel&apos;s cron logs for actual delivery/run history.
-          </p>
         </section>
       </div>
     </main>

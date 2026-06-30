@@ -28,6 +28,7 @@ export default async function FdiPage() {
       kpiLabel="Net FDI Inflows (Monthly)"
       kpiValue={`$${fdi.kpi.value}M`}
       kpiSourceNote={`Source: ${fdi.kpi.source ?? "State Bank of Pakistan"}${fdi.kpi.latestDate ? ` · ${fdi.kpi.latestDate}` : ""}`}
+      kpiQuality={fdi.kpi}
       chartTitle="Net FDI Inflows — 24-Month Trend"
       chartData={fdi.trend}
       chartColor="#38bdf8"

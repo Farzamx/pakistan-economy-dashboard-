@@ -29,6 +29,7 @@ export default async function UsdPkrPage() {
       kpiLabel="USD / PKR (Intraday)"
       kpiValue={fxRates.usdPkr.value}
       kpiSourceNote={`Source: ${fxRates.usdPkr.source ?? "Yahoo Finance"} — interbank market rate, refreshed intraday`}
+      kpiQuality={fxRates.usdPkr}
       chartTitle="USD / PKR — 24-Month Historical Trend"
       chartData={usdPkrHistory.trend}
       chartColor="#f472b6"

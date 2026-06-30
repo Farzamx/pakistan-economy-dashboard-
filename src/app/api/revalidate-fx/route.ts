@@ -1,5 +1,6 @@
 import { revalidateTag } from "next/cache";
 import { NextResponse } from "next/server";
+import { logCronRun } from "@/lib/cronLogging";
 
 // Triggered once daily by Vercel Cron (see vercel.json) to force a clean
 // refresh of the FX rates L2 cache (src/lib/data/fxRates.ts).
@@ -18,6 +19,7 @@ import { NextResponse } from "next/server";
 // Without CRON_SECRET configured, this route refuses all requests rather
 // than running unauthenticated.
 export async function GET(request: Request) {
+  const startedAt = new Date();
   const authHeader = request.headers.get("authorization");
   const cronSecret = process.env.CRON_SECRET;
 
@@ -26,5 +28,6 @@ export async function GET(request: Request) {
   }
 
   revalidateTag("fx-rates", "max");
+  await logCronRun("revalidate-fx", startedAt, "success", "revalidateTag('fx-rates')");
   return NextResponse.json({ revalidated: "fx-rates", at: new Date().toISOString() });
 }

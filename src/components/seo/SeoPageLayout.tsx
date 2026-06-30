@@ -1,5 +1,7 @@
 import Link from "next/link";
 import TrendLineChart, { type TrendPoint } from "@/components/charts/TrendLineChart";
+import DataQualityBadge from "@/components/DataQualityBadge";
+import type { Kpi } from "@/data/kpiData";
 import { SITE_NAME } from "@/lib/seoConfig";
 
 export interface FaqItem {
@@ -12,12 +14,23 @@ export interface SecondaryStat {
   value: string;
 }
 
+type BadgeKpi = Pick<Kpi, "source" | "latestDate" | "frequency" | "marketType" | "expectedReleaseDate" | "releaseAlreadyReflected" | "sourceStatus" | "snapshotDate">;
+
 export interface SeoPageLayoutProps {
   title: string;
   subtitle: string;
   kpiLabel: string;
   kpiValue: string;
-  kpiSourceNote: string;
+  /**
+   * Legacy plain-text source line — kept for pages not yet migrated.
+   * Superseded by kpiQuality where provided (Production Audit Part 3:
+   * these 21 SEO pages had zero freshness/fallback disclosure — a plain
+   * source string can't show Cached/Fallback/Delayed the way the rest of
+   * the dashboard's unified Data Quality badge does).
+   */
+  kpiSourceNote?: string;
+  /** The KPI object backing kpiValue — drives the same <DataQualityBadge> used everywhere else on the dashboard, so a fallback/cached/delayed value is never shown as plain "live" text here either. */
+  kpiQuality?: BadgeKpi;
   chartTitle: string;
   chartData: TrendPoint[] | null;
   chartUnavailableNote?: string;
@@ -39,6 +52,7 @@ export default function SeoPageLayout({
   kpiLabel,
   kpiValue,
   kpiSourceNote,
+  kpiQuality,
   chartTitle,
   chartData,
   chartUnavailableNote,
@@ -99,7 +113,11 @@ export default function SeoPageLayout({
           <span className="text-4xl font-bold text-white light:text-slate-900 sm:text-5xl">
             {kpiValue}
           </span>
-          <span className="mt-1 text-xs text-white/35 light:text-slate-400">{kpiSourceNote}</span>
+          {kpiQuality ? (
+            <DataQualityBadge kpi={kpiQuality} className="mt-1" />
+          ) : (
+            kpiSourceNote && <span className="mt-1 text-xs text-white/35 light:text-slate-400">{kpiSourceNote}</span>
+          )}
 
           {secondaryStats && secondaryStats.length > 0 && (
             <div className="mt-4 grid grid-cols-2 gap-4 border-t border-white/5 light:border-slate-200 pt-4 sm:grid-cols-3">

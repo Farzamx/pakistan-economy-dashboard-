@@ -32,6 +32,39 @@ function getClient(): Resend {
   return cachedClient;
 }
 
+/**
+ * Read-only connectivity/key-validity check for System Health (Final
+ * Production Hardening Part 7) — never sends an email. domains.list() is
+ * the lightest real call available in the SDK.
+ *
+ * Confirmed live (2026-06-30): this project's RESEND_API_KEY is scoped to
+ * "sending access" only (a deliberate, sensible security choice — a
+ * narrower key limits blast radius if it ever leaked), and domains.list()
+ * returns a 401 "This API key is restricted to only send emails" for that
+ * scope. That response is itself proof the key is valid and Resend is
+ * reachable (an invalid key or a true outage would fail differently/not
+ * respond) — it must not be reported as "down", which would be a false,
+ * misleading signal about Resend's actual availability. Detected by
+ * matching this specific, known error text; any other error is a genuine
+ * failure and reported as such.
+ */
+export async function checkResendHealth(): Promise<{ ok: boolean; latencyMs: number; error?: string; scopeRestricted?: boolean }> {
+  const start = Date.now();
+  try {
+    const client = getClient();
+    const { error } = await client.domains.list();
+    const latencyMs = Date.now() - start;
+    if (error) {
+      const scopeRestricted = /restricted to only send emails/i.test(error.message);
+      if (scopeRestricted) return { ok: true, latencyMs, scopeRestricted: true };
+      return { ok: false, latencyMs, error: error.message };
+    }
+    return { ok: true, latencyMs };
+  } catch (err) {
+    return { ok: false, latencyMs: Date.now() - start, error: err instanceof Error ? err.message : String(err) };
+  }
+}
+
 export interface SendEmailParams {
   to: string | string[];
   subject: string;

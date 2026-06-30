@@ -52,6 +52,7 @@ export default async function GoldPricePage() {
       kpiLabel="Gold (Live, International Spot Price)"
       kpiValue={`$${goldKpi.value}/oz`}
       kpiSourceNote={`Source: ${goldKpi.source ?? "Twelve Data / Yahoo Finance"}${goldKpi.latestDate ? ` · ${goldKpi.latestDate}` : ""} — global spot price, not a local Sarafa Bazaar quote`}
+      kpiQuality={goldKpi}
       chartTitle="Gold (USD/oz) — 10-Year Historical Trend"
       chartData={chartData}
       chartUnavailableNote="Historical chart data is currently unavailable."

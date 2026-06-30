@@ -542,6 +542,7 @@ Keys are read **only** on the server side via `process.env.XXX`. Never pass them
 - `src/app/ai-test/page.tsx` and `src/app/api/ai/test/route.ts` are development-only pages left in the codebase. They should be removed before any public deployment.
 - The Sidebar's "Settings" nav item (`href="#"`) is a placeholder with no target section.
 - `marketDataSources.ts`'s `SOURCE_CHAINS` table (consumed by `KpiCard`'s source-chain tooltip) has no entries for any SBP-sourced indicator — only Global Markets symbols. Low-priority gap, not a correctness issue.
+- `email_log` has no retention/archival policy and is the only table in the schema with genuine unbounded long-term growth — it logs one row per (subscriber × economic event × email type), so it scales with subscriber_count × release_count indefinitely (e.g. ~150K rows/year at 1,000 subscribers × ~150 releases/year). Reviewed deliberately (2026-06-30) and **not implemented yet**: historical operational data (delivery status, attempt counts) is being preserved on purpose until real production growth actually justifies the complexity of an archival strategy, rather than guessing at a retention window now. Revisit once subscriber count or row count makes it worth the design effort.
 
 ---
 
