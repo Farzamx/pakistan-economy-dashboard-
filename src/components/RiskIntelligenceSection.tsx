@@ -202,8 +202,10 @@ interface RiskIntelligenceSectionProps {
   ai: AiRiskIntelligence;
   recessionConfidence: DataConfidence;
   defaultConfidence: DataConfidence;
-  aiCacheIssuedAt: string;  // start of the current 6h AI cache window (PKT)
-  aiCacheExpiresAt: string; // end of the current 6h AI cache window (PKT)
+  /** When the Weekly Intelligence Engine last computed this snapshot (PKT) — see weeklyIntelligenceCompute.ts. */
+  computedAt: string;
+  /** Estimated next weekly run (PKT) — computedAt + 7 days. */
+  nextUpdateAt: string;
 }
 
 export default function RiskIntelligenceSection({
@@ -212,8 +214,8 @@ export default function RiskIntelligenceSection({
   ai,
   recessionConfidence,
   defaultConfidence,
-  aiCacheIssuedAt,
-  aiCacheExpiresAt,
+  computedAt,
+  nextUpdateAt,
 }: RiskIntelligenceSectionProps) {
   return (
     <div id="risk-intelligence" className="scroll-mt-8">
@@ -222,23 +224,23 @@ export default function RiskIntelligenceSection({
           Risk Intelligence
         </h2>
         <p className="mt-2 max-w-2xl text-sm text-white/60 light:text-slate-500">
-          Deterministic probability estimates derived from live economic indicators.
+          Deterministic probability estimates derived from economic indicators.
           AI explains the model output — it never generates the probabilities.
         </p>
-        {/* AI cache window — shows when the AI explanation was last computed */}
+        {/* Weekly Intelligence Engine — updated every Monday, not on page load */}
         <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1">
           <span className="text-[10px] text-white/25 light:text-slate-400">
-            <span className="text-white/35 light:text-slate-500">AI analysis issued</span>{" "}
-            {aiCacheIssuedAt}
+            <span className="text-white/35 light:text-slate-500">Last computed</span>{" "}
+            {computedAt}
           </span>
           <span className="text-[10px] text-white/15 light:text-slate-300">·</span>
           <span className="text-[10px] text-white/25 light:text-slate-400">
-            <span className="text-white/35 light:text-slate-500">Next refresh</span>{" "}
-            {aiCacheExpiresAt}
+            <span className="text-white/35 light:text-slate-500">Next update</span>{" "}
+            {nextUpdateAt}
           </span>
           <span className="text-[10px] text-white/15 light:text-slate-300">·</span>
           <span className="text-[10px] text-white/25 light:text-slate-400">
-            Risk scores are recalculated from live data on every page load
+            Updated weekly, every Monday — not recalculated on page load
           </span>
         </div>
       </ViewportFadeIn>

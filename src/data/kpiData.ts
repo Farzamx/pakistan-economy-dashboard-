@@ -1,5 +1,6 @@
 import type { DataFrequency } from "@/lib/dataFreshness";
 import type { MarketType } from "@/lib/marketCalendar";
+import type { SourceStatus } from "@/lib/dataQuality";
 
 export type Trend = "up" | "down";
 
@@ -16,6 +17,10 @@ export interface Kpi {
   seriesId?: string;
   latestDate?: string;   // "YYYY-MM-DD" or "YYYY" (annual)
   frequency?: DataFrequency;
+  /** Where this value actually came from this request — drives the unified Data Quality badge (dataQuality.ts). Defaults to "live" when omitted (legacy providers that haven't been migrated yet) so existing KPIs keep behaving exactly as before until each is updated. */
+  sourceStatus?: SourceStatus;
+  /** When sourceStatus is "fallback", the date the static snapshot was captured — surfaced in the quality badge's tooltip so "Fallback" never reads as anonymous. */
+  snapshotDate?: string;
   /** Set only for KPIs sourced from an actual tradeable market — enables weekend/holiday-aware freshness instead of a flat day-count threshold (see dataFreshness.ts). */
   marketType?: MarketType;
   /** "YYYY-MM-DD" of the most recent known scheduled release (from the Economic Calendar) — lets dataFreshness.ts flag a real delay sooner than its generic per-frequency threshold would, without misreading a not-yet-due release as late. */
@@ -39,6 +44,8 @@ export const fallbackGdpKpi: Kpi = {
   seriesId: "NY.GDP.MKTP.KD.ZG",
   latestDate: "2023",
   frequency: "Annual",
+  sourceStatus: "fallback",
+  snapshotDate: "2023",
 };
 
 // Fallback used by getQuarterlyGdpKpi() when the SBP QGDP.xlsx is unreachable.
@@ -53,4 +60,6 @@ export const fallbackQuarterlyGdpKpi: Kpi = {
   seriesId: "QGDP.xlsx / Growth_Q / row D.",
   latestDate: "2026-03-31",
   frequency: "Quarterly",
+  sourceStatus: "fallback",
+  snapshotDate: "2026-03-31",
 };

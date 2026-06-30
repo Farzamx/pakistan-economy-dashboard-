@@ -149,6 +149,9 @@ export interface RelevanceResult {
 // underlying outlets of varying quality, so it sits in the middle rather
 // than at either extreme.
 const SOURCE_RELIABILITY: Record<string, number> = {
+  // Highest of all — a primary official source, not journalism about one
+  // (Production Audit Part 9: direct official-source polling).
+  "PBS Official Releases": 10,
   "BBC Business": 9,
   "Dawn Business": 8,
   "Express Tribune": 7,

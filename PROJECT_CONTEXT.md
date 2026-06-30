@@ -243,125 +243,214 @@ All external fetches use `next: { revalidate: N }` — Next.js caches responses 
 - **PAK ETF**: Returns `null` if data is >30 days old (indicates delisting)
 - **Role**: Primary for Oil/NatGas/Metals; secondary fallback for everything else
 
-### ExchangeRate-API (`src/lib/data/fxRates.ts`)
-- **URL**: `https://api.exchangerate-api.com/v4/latest/USD`
-- **Auth**: None (free tier, keyless)
-- **Rates**: USD/PKR direct; EUR/PKR, GBP/PKR, SAR/PKR as cross-rates
-- **Note**: Live interbank rate, updated multiple times/day. Distinct from SBP monthly average.
+### Yahoo Finance — Live FX (`src/lib/data/fxRates.ts`)
+- **URL**: `https://query1.finance.yahoo.com/v8/finance/chart/{USDPKR=X|EURPKR=X|GBPPKR=X|SARPKR=X}`
+- **Auth**: None (keyless)
+- **Migrated 2026-06-22** from ExchangeRate-API — that source updated only once/day despite "Live FX" branding (verified by polling); Yahoo's PKR cross-pair quotes were independently confirmed advancing every ~10-30 min during active trading hours
+- **Rates**: USD/PKR, EUR/PKR, GBP/PKR, SAR/PKR — each a direct Yahoo quote, not a derived USD-base cross-rate
+- **Caching**: L1 in-memory (3min) → L2 `unstable_cache` tagged `"fx-rates"` (15min) → daily Vercel Cron freshness floor (`/api/revalidate-fx`)
+- **Fallback**: `FALLBACK_RATES` in `fxRates.ts` — correctly labeled `"Yahoo Finance (fallback)"` in `source`
+- **Note**: distinct from SBP's monthly-average USD/PKR series shown in the historical trend chart — intentionally a different, slower-moving vintage of the same underlying rate, not a bug (see Section 8's audit notes on this if displayed side-by-side).
 
-### GNews API (`src/lib/data/news.ts`)
-- **URL**: `https://gnews.io/api/v4/search`
-- **Auth**: `GNEWS_API_KEY` env var (optional — returns empty if missing)
-- **Queries**: Pakistan economy, KSE-100, oil/energy, US Fed/global economy
-- **Free tier**: 100 req/day, 1 req/sec
-- **Current status**: Returns 0 results if key not configured
-
-### RSS Feeds (`src/lib/data/news.ts`)
-- **BBC Business**: `https://feeds.bbci.co.uk/news/business/rss.xml` (8 articles)
-- **Dawn Business**: `https://www.dawn.com/feeds/business` (8 articles)
-- **Express Tribune Business**: `https://tribune.com.pk/feed/business` (8 articles)
+### News Sources (`src/lib/data/news.ts`)
+GNews was removed (2026-06) — its free tier prohibited commercial use, carried a 12h data delay, and `GNEWS_API_KEY` was never even configured in this deployment (silently zero articles, nothing in logs to reveal it). Current sources, all free and keyless:
+- **Google News RSS** — 6 topic-targeted queries (Pakistan/SBP/PSX, IMF, Fed, Oil/OPEC, China/CPEC, Middle East), `news.google.com/rss/search`
+- **BBC Business**, **Dawn Business**, **Express Tribune Business** — direct outlet RSS feeds
+- **PBS Official Releases** (added 2026-06-29) — direct polling of Pakistan Bureau of Statistics' own WordPress REST API (`https://www.pbs.gov.pk/wp-json/wp/v2/posts`), the same endpoint `spi.ts` already uses for SPI specifically, here unfiltered to surface every official release (Foreign Trade Statistics, LSM, Inflation Report, etc.). Given a flat relevance score of 10 and "Pakistan Economy" category directly — bypasses the keyword-based `scoreRelevance()` heuristic, which gates most categories on an explicit "Pakistan" keyword that terse statistical-bulletin titles never contain despite being maximally relevant. Highest source-reliability score on the dashboard (10, `relevanceEngine.ts`) since it's a primary source, not journalism about one.
+- **Evaluated and rejected**: SBP's own RSS feeds (Cloudflare bot-protected, 403 regardless of caller) and the Ministry of Finance's press-releases page (legacy static HTML, no API/RSS, no stable structure to scrape reliably) — see Section 8.
 - **HTML entity decoding**: `decodeEntities()` strips `&amp;`, `&lt;`, etc. from URLs/titles before storage (critical — avoids React key mismatches and broken hrefs)
+- **AI tagging batch size**: `NEWS_DISPLAY_LIMIT` (24, exported from `intelligence.ts`) — matches the homepage's own display cap exactly; was a hardcoded 10 until 2026-06-29 (see Section 5).
 
 ---
 
 ## 5. AI Integrations
 
-### Centralized OpenRouter Failover Client (`src/lib/openRouterClient.ts`)
+> Rewritten 2026-06-29 (Production Reliability & Institutional Upgrade) — the previous version of this section described a 4-model OpenRouter-only chain with no health tracking and an AI-generated Health Score. Both have changed; see below.
 
-All three AI features share a single failover client rather than each making direct OpenRouter calls. This is the production resilience layer.
+### Centralized Failover Client (`src/lib/openRouterClient.ts`)
 
-**Model Fallback Chain** (tried in order):
-| Priority | Model | Role | Why |
+Every AI feature on this dashboard — Economic Health Score, Risk Intelligence, News Intelligence, and the chat Assistant — routes through this one function. Provider logic exists in exactly one place; no caller talks to OpenRouter or Groq directly.
+
+**Provider chain** (tried in order, dynamically reordered — see below):
+| Priority | Provider | Model | Tier |
 |---|---|---|---|
-| 1 | `nex-agi/nex-n2-pro:free` | Primary | Current model; 262k ctx |
-| 2 | `openai/gpt-oss-120b:free` | Large reasoning backup | Confirmed clean JSON, 3.9s |
-| 3 | `nousresearch/hermes-3-llama-3.1-405b:free` | Structured-output specialist | 405B dense, fine-tuned for JSON |
-| 4 | `openai/gpt-oss-20b:free` | Lightweight backup | Confirmed fast (2.7s), clean JSON |
+| 1 | OpenRouter | `openai/gpt-oss-20b:free` | Free — fastest confirmed (~2.7s) |
+| 2 | OpenRouter | `openai/gpt-oss-120b:free` | Free — large reasoning, ~3.9s |
+| 3 | OpenRouter | `nousresearch/hermes-3-llama-3.1-405b:free` | Free — 405B, slowest, last OpenRouter resort |
+| 4 | Groq | `openai/gpt-oss-120b` | **Paid** — independent infrastructure/key/billing, the resilient backstop |
 
-**Retry triggers** — a model is skipped and the next is tried on any of:
-- HTTP error (any non-200 status, including 429 rate-limit)
-- Empty response body
-- Empty message content
-- `parseContent()` callback throws (invalid JSON, missing required fields)
-- Any network exception (timeout, DNS, etc.)
+`nex-agi/nex-n2-pro:free` (the former priority-1 model) was removed in 2026-06 for frequent 429s. Groq was added the same month after a real incident where an account-wide OpenRouter rate limit failed all 3 free models simultaneously — Groq stays up independently since it's a separate provider, not just a different model on the same backend.
 
-**Console logging**:
-- `console.warn` — per-model failure with reason and HTTP status
-- `console.log` — on success, includes which model was used
-- `console.error` — if all 4 models fail (hardcoded fallback activates)
+**Provider health tracking (added 2026-06-29)** — a process-local in-memory map tracks, per model: consecutive failures, last success/failure timestamps, last failure reason, a rolling window of recent latencies, and a cooldown timestamp.
+- An HTTP 429 puts that model into cooldown **immediately** (an authoritative "stop hitting me" signal), starting at 30s and doubling on repeated 429s up to a 5-minute cap.
+- Other failure types (timeout, 5xx, parse failure) trigger a cooldown after 2 consecutive failures (15s).
+- Models currently in cooldown are skipped entirely on the next call — not retried — and the remaining models are tried in ascending order of recent failure count, so a chain that's "learned" one model is unhealthy converges on a working one faster than always trying in the fixed static order.
+- **Limitation**: this is process-local. On Vercel's multi-instance serverless model it reflects only the instance handling a given request, not a global view — still meaningfully reduces repeat-hammering within one warm instance, which is the exact pattern that motivated it.
+- Inspect current health at `/admin/system-health` (gated — see Section 3) or via `getProviderHealthSnapshot()`.
 
-**Return type**: `{ result: T, modelUsed: string, modelDisplayName: string } | null`
-- `null` → all models failed; callers return their hardcoded `FALLBACK` object with `modelUsed: "fallback"`, `modelDisplayName: "Offline"`
+**Task-specific routing**: `OpenRouterCallConfig.preferProvider` lets a caller try a specific provider's step(s) first (the rest of the chain still runs as fallback). No current caller sets this — health tracking already deprioritizes unhealthy providers dynamically, which the project judged more robust than a fixed task→provider mandate. The capability exists for a future workload that should default to paid/less-rate-limited Groq.
 
-**`parseContent` callback**: Each AI function passes its own JSON parser as the `parseContent` argument. If the parser throws (e.g., `JSON.parse()` on malformed JSON), the client catches it and tries the next model. This means parse failures trigger model fallback, not just HTTP failures.
+**Retry triggers** — a model is skipped and the next is tried on any of: HTTP error (429/500/502/503/504 get one bounded retry with backoff first; other statuses fail immediately), empty response body, empty message content, `parseContent()` throwing, or a timeout/network exception.
 
-**Model display names** (shown as badge in UI):
-```
-"nex-agi/nex-n2-pro:free"                   → "Nex-N2-Pro"
-"openai/gpt-oss-120b:free"                  → "GPT-OSS 120B"
-"nousresearch/hermes-3-llama-3.1-405b:free" → "Hermes 3 405B"
-"openai/gpt-oss-20b:free"                   → "GPT-OSS 20B"
-```
+**Multi-message support**: `callOpenRouter()`'s first argument accepts either a single prompt string (wrapped as one user message) or a full `ChatMessage[]` array (system + history + user) — added so the chat Assistant (previously its own separate retry loop) could share this client too.
+
+**Console logging**: `console.warn` per-attempt failure, `console.log` on success (provider/model/latency), `console.error` if every step fails (then the caller's hardcoded `FALLBACK` activates, `modelDisplayName: "Offline"`).
 
 ### CRITICAL: Response Parsing Pattern
-The `nex-agi/nex-n2-pro` model prepends hundreds of whitespace/newline characters (streaming reasoning tokens) before its JSON payload. Next.js's patched `Response.json()` throws a `SyntaxError` on this leading whitespace. The centralized client uses the correct pattern:
+Some models prepend whitespace/reasoning tokens before their JSON payload, breaking Next.js's patched `Response.json()`. Always use:
 ```typescript
-// CORRECT — handles leading whitespace (applied in openRouterClient.ts):
 const rawText = await res.text();
-const apiData = JSON.parse(rawText); // outer OpenRouter wrapper
-const content = apiData.choices[0].message.content; // inner AI response
+const apiData = JSON.parse(rawText); // outer chat-completions wrapper
+const content = apiData.choices[0].message.content; // inner AI response string
 // parseContent(content) then handles the domain-specific JSON
 ```
-Never revert to `res.json()` for OpenRouter calls.
+Never revert to `res.json()` for these calls.
 
-### AI Economic Health Score (`src/lib/data/aiEconomicAnalysis.ts`)
-- **Input**: `IndicatorSnapshot` (16 indicator values as formatted strings) + 10 news headlines
-- **Output**: `AiEconomicAnalysis { economicHealthScore, sentiment, riskLevel, summary, topDrivers, modelUsed, modelDisplayName }`
-- **Prompt**: Asks model to act as senior Pakistan economist; return strict JSON
-- **Revalidation**: 1 hour (`REVALIDATE = 60 * 60`)
-- **Fallback**: Returns hardcoded neutral analysis (score 55, Neutral, Moderate, `modelDisplayName: "Offline"`) if API key missing or all models fail
-- **Display**: `<HealthScoreCard>` — SVG arc gauge + 3 badges (Strong/Moderate/Weak, Bullish/Neutral/Bearish, Low/Moderate/High Risk) + summary + bullet drivers + model badge
-- **API route**: `POST /api/ai/economic-intelligence` also exists but is not called by the UI (was created for testing)
+### Deterministic Economic Health Score (`src/lib/economicHealth.ts`)
+**The AI no longer generates this number.** It's a 9-factor weighted composite — the same deterministic pattern as Recession/Default below — covering growth, inflation, monetary, external, and fiscal dimensions. See Section 3's "Risk & Health Scoring Methodology" for the full factor/weight table and the reasoning behind each inclusion/exclusion. `calculateEconomicHealth(inputs): HealthModelResult` returns `{ score, status: {label, ringColor, badgeClass}, factors, topStrengthFactors, topWeaknessFactors }`.
+
+### AI Economic Health Narration (`src/lib/data/aiEconomicAnalysis.ts`)
+- **Input**: the already-computed `HealthModelResult` (factor labels/values only — never the raw indicator snapshot, and the prompt forbids quoting the exact score) + 10 news headlines
+- **Output**: `AiEconomicAnalysis { sentiment, summary, topDrivers, modelUsed, modelDisplayName }` — `economicHealthScore`/`riskLevel` are **not** part of this contract anymore. `riskLevel` is derived deterministically from the health label (`healthLabelToRiskLevel()`) so it can't silently contradict it.
+- **Fallback**: hardcoded neutral narration, `modelDisplayName: "Offline"`, if every provider fails
 
 ### AI Risk Intelligence (`src/lib/data/aiRiskIntelligence.ts`)
-- **Input**: Pre-calculated `RiskModelResult` for recession and sovereign default (from `src/lib/riskModels.ts`)
+- **Input**: pre-calculated `RiskModelResult` for recession and sovereign default (`src/lib/riskModels.ts`) — factor labels/values only, never probability numbers
 - **Output**: `AiRiskIntelligence { recession: AiRiskExplanation, default: AiRiskExplanation, modelUsed, modelDisplayName }`
-- **AI role**: ONLY explains pre-calculated probabilities — explicitly instructed NOT to modify or generate probabilities
-- **Deterministic layer**: `calculateRecessionRisk()` and `calculateDefaultRisk()` in `riskModels.ts` are pure synchronous functions — AI has zero involvement in probability generation
-- **Revalidation**: 1 hour
-- **Fallback**: Returns hardcoded explanations with `modelDisplayName: "Offline"` if all models fail
-- **Display**: `<RiskIntelligenceSection>` — two `RiskCard` components side by side (lg:grid-cols-2)
+- **AI role**: narration only — explicitly instructed not to quote the probability or model score
+- **Display**: `<RiskIntelligenceSection>` — two `RiskCard`s side by side
 
 ### AI News Intelligence (`src/lib/data/intelligence.ts`)
-- **Input**: Up to 10 `NewsItem` objects (the first 10 of the 24 aggregated)
+- **Input**: up to `NEWS_DISPLAY_LIMIT` (24) `NewsItem` objects — **was 10** until 2026-06-29; the page displays up to 24, so roughly 14 of 24 visible cards previously got the generic `NEUTRAL_TAG` fallback on every successful render, indistinguishable from a real outage. The cap now matches the page's own display limit via one shared exported constant so the two can't drift apart again.
 - **Output**: `TaggedNewsResult { items: TaggedNewsItem[], modelUsed, modelDisplayName }`
-- **Strategy**: Single batch OpenRouter call for all 10 articles (one prompt, one JSON array response)
-- **Articles 11–24**: Get `NEUTRAL_TAG` (no AI call — avoids excess API usage)
-- **Page display**: Only `.slice(0, 5)` of tagged articles shown in `<NewsIntelligenceSection>`
-- **Revalidation**: 2 hours
-- **Fallback**: All articles get `NEUTRAL_TAG` with `modelDisplayName: "Offline"` if all models fail
-- **Display**: Each news card shows category badge, age, headline, sentiment badge, risk label, impact score badge (green/red), and a one-sentence reason; section header shows model badge
+- **Strategy**: single batched call for all 24 articles (one prompt, one JSON array response)
+- **Cache**: 30 min in-memory (process-local) + matching ISR window
+- **Fallback**: all articles get `NEUTRAL_TAG` if every provider fails
 
-### Error Handling Flow
-```
-callOpenRouter() → for each model in FALLBACK_CHAIN:
-  1. Fetch fails (network/timeout) → warn + try next
-  2. res.status !== 200           → warn + try next (includes 429 rate-limit)
-  3. Body empty                   → warn + try next
-  4. Content empty                → warn + try next
-  5. parseContent() throws        → warn + try next (JSON/parse failure)
-  6. parseContent() succeeds      → log success + return { result, modelUsed, modelDisplayName }
-All 4 fail → error log → return null
-Caller receives null → return hardcoded FALLBACK (modelDisplayName: "Offline")
-Page renders with fallback data — never crashes
-```
+### Chat Assistant (`src/app/api/assistant/route.ts`)
+Previously reimplemented its own OpenRouter-only retry loop, bypassing the shared client entirely — meaning it had no Groq fallback, no health-aware ordering, and no structured `[AI/...]` logging that every other AI feature got. As of 2026-06-29 it calls `callOpenRouter()` with a full `ChatMessage[]` array (system prompt + last 6 turns + user message) like everything else, gated on either `OPENROUTER_API_KEY` or `GROQ_API_KEY` being set (previously gated on OpenRouter's key specifically, which would have refused to even try Groq-only configurations).
 
 ### Model Badge UI
-Each AI-powered section shows a badge in place of the former generic "AI" chip:
-- `<HealthScoreCard>` — badge in title row (e.g., "GPT-OSS 120B")
-- `<RiskCard>` (×2) — badge in each card's title row
-- `<NewsIntelligenceSection>` — badge in section heading row
-- When fallback is active: badge shows "Offline"
+Each AI-powered section shows the active model/provider in a badge: `<HealthScoreCard>`, `<RiskCard>` (×2), `<NewsIntelligenceSection>`. Shows "Offline" when every provider has failed and a hardcoded fallback is active.
+
+---
+
+## 5a. Weekly Intelligence Engine (added 2026-06-29)
+
+Health Score and Recession/Default Probability used to recompute on every homepage render (the deterministic math) with AI narration cached for 6h. Both now update **once a week, every Monday**, via a cron-and-store architecture instead:
+
+```
+Vercel Cron (Mondays, 06:00 UTC, /api/cron/weekly-intelligence)
+  → computeWeeklyIntelligence() [src/lib/weeklyIntelligenceCompute.ts]
+      → fetch live indicators (SBP, World Bank, quarterly GDP, news)
+      → calculateEconomicHealth() / calculateRecessionRisk() / calculateDefaultRisk()  [deterministic — see Section 5d]
+      → getAiEconomicAnalysis() / getAiRiskIntelligence()  [AI narration only]
+  → storeWeeklyIntelligenceSnapshot()  [src/lib/data/weeklyIntelligence.ts]
+      → store_weekly_intelligence_snapshot RPC  [0017 migration]
+      → INSERT into weekly_intelligence_snapshots (one row per run, history kept)
+
+Homepage render
+  → getLatestWeeklyIntelligenceSnapshot()  [get_latest_weekly_intelligence_snapshot RPC]
+  → reads the most recent row — computes nothing itself
+```
+
+- Reuses the existing notification-worker cron pattern exactly: same `CRON_SECRET` auth on the route, same `internal_secrets`/`check_internal_secret('notification_worker', ...)` gate on the write RPC — this is just another trusted server-side job under the same threat model, not a new secret to provision.
+- If the cron has never run (e.g. immediately after this shipped), `getLatestWeeklyIntelligenceSnapshot()` returns `null` and the homepage shows an explicit "Weekly intelligence snapshot not yet available" message — never a fabricated or stale-looking number.
+- `RiskIntelligenceSection`'s UI copy was updated from "recalculated... on every page load" to "Last computed: [date] · Next update: [date+7d] · Updated weekly, every Monday."
+- The Data Confidence panel (fallback/stale indicator counts) is **not** part of this snapshot — it still recomputes live on every render, since it reflects right-now SBP data quality, a genuinely different signal from the weekly score itself.
+
+## 5b. Data Quality Layer (added 2026-06-29)
+
+One shared module — `src/lib/dataQuality.ts` + `<DataQualityBadge>` — is now the only place that decides which of five states a KPI is in. Previously, `KpiCard.tsx` rendered its own inline freshness badge, and a real bug meant a KPI silently serving a hardcoded fallback could still show a plain "SBP EasyData" source label with no fallback indication anywhere (see Section 8 — fixed; root cause was `sbp.ts`'s catch block unconditionally overwriting `kpi.source` back to a live-looking string).
+
+**States** (precedence order, most concerning first):
+| State | Meaning |
+|---|---|
+| `Unavailable` | No data could be produced at all (e.g. SPI fetch/parse failed — it has no fallback by design) |
+| `Fallback` | Serving the hardcoded last-resort snapshot — always shown regardless of how old that snapshot is |
+| `Cached` | Live refresh just failed; serving the last-known-good cached value (genuinely degraded, distinct from a normal cache hit) |
+| `Delayed` | Live data, but past its expected-freshness window (age-based, `dataFreshness.ts`, or a known Economic Calendar release date has passed) |
+| `Verified` | Live data, confirmed current |
+
+**`SourceStatus`** (`"live" | "cache-fresh" | "cache-stale" | "fallback" | "unavailable"`) is the input signal every fetcher now stamps onto its `Kpi.sourceStatus` field. `cache-fresh` (a normal, healthy in-memory cache hit within TTL) and `cache-stale` (the live call just failed; serving an aged last-known-good value regardless) used to be conflated as one "cache" status — they're now distinguished because only the latter is actually a degraded state worth disclosing.
+
+### Fallback architecture
+- **SBP EasyData (20 indicators)**: L1 in-memory (10min) → live fetch → L1 stale-on-error → static snapshot (`sbpFallbackData.ts`). Fix applied 2026-06-29: `withSourceStatus()` now stamps `kpi.source`/`kpi.sourceStatus`/`kpi.snapshotDate` correctly on every branch instead of the fallback branch overwriting the label.
+- **SPI**: no fallback by design — returns `null` on failure, callers render an honest "unavailable" state. L1 TTL was shortened from 12h (mirroring L2) to 10 minutes (2026-06-29) to bound how long a quiet-traffic period can serve a stale cached value after a real PBS release — see the push-based invalidation note below.
+- **Global Markets (Gold/Silver/DXY/Brent/WTI/NatGas/US10Y/FedFunds/PAK-ETF)**: now **auto-regenerating** (`src/lib/marketFallbackSnapshot.ts`, 0018 migration) — every successful live fetch persists its result to `market_fallback_snapshots` (Supabase). If both primary and secondary sources fail, the most recent *persisted* snapshot is used first (always more current than the static file), falling back to the hardcoded file in `globalMarketsFallbackData.ts` only if nothing has ever been persisted. Previously these static snapshots were captured once and never updated — a symbol whose live sources both failed was mathematically guaranteed to read "Stale" almost immediately, forever.
+
+### Push-based cache invalidation
+SBP and SPI fetches are now tagged (`next.tags`) so a successful calendar-sync cron write can force an immediate cache bust via `revalidateTag()` — `invalidateSbpIndicatorCache(key)` / `invalidateSpiCache()`, called right after `sync_event_actual` confirms a new value. This closes the original SPI staleness incident's root cause: the cron (push, proactive, runs daily regardless of traffic) and the Overview KPI (pull, lazy, only refreshes on the next request after its own TTL expires) could previously diverge by a full cache window; now the cron actively invalidates the Overview's cache the moment it writes new data, and L1's now-short TTL bounds the remaining worst case to minutes.
+
+### Calendar-aware freshness
+`dataFreshness.ts`'s `expectedReleaseDate`/`releaseAlreadyReflected` override (originally built only for Policy Rate/T-Bill 3M/PIB) now also covers SPI, CPI, Core Inflation, Current Account, Trade Balance, Remittances, FX Reserves, and LSM — every series with a known Economic Calendar due date. A pre-existing latent bug was fixed in the same change: the Rolling Calendar refactor split Treasury Bill auctions into 3M/6M/12M series under titles like "Treasury Bill Auction (3M)", but the title-prefix match used to look for the bare "Treasury Bill Auction" — matching all three tenors indiscriminately and risking pairing the wrong tenor's actual value against the 3M yield KPI specifically. Now matches "Treasury Bill Auction (3M)" exactly.
+
+## 5c. Cron Schedules
+
+| Path | Schedule | Purpose |
+|---|---|---|
+| `/api/revalidate-fx` | Daily, 03:00 UTC | Freshness floor for the FX rate cache (the 15min L2 window does most of the work) |
+| `/api/cron/sync-economic-calendar` | Daily, 18:00 UTC | Syncs SBP/PBS actuals into the Economic Calendar; drains pending notification jobs inline |
+| `/api/cron/process-notification-jobs` | Daily, 20:00 UTC | Safety-net sweep for any notification job the calendar sync's inline drain missed |
+| `/api/cron/weekly-intelligence` | Mondays, 06:00 UTC | Computes Health Score + Recession/Default once, stores the snapshot the homepage reads |
+
+All four are Vercel Cron-invoked, authenticated via `Authorization: Bearer ${CRON_SECRET}` (Vercel sends this automatically for scheduled invocations). Vercel's Hobby plan caps cron *frequency* at once/day per job — the weekly schedule is well within that (less frequent than daily, not more). No run-history log is persisted for any of these; check Vercel's own cron execution logs, or `/admin/system-health` for current-state checks of what each job's most recent successful output looks like (where derivable).
+
+## 5d. Risk & Health Scoring Methodology
+
+All three scores are deterministic, weighted-factor composites — pure synchronous functions, zero AI involvement in the number itself (Section 5d exists specifically so this is documented in one place per the "AI explains, never invents" principle). Thresholds are hardcoded literals, never AI-influenceable.
+
+### Recession Probability (`calculateRecessionRisk`, `src/lib/riskModels.ts`)
+8 factors, weights sum to 1.00. Each factor is banded into a 0-100 "pressure score" (higher = more recession pressure); `modelScore = round(Σ pressureScore × weight)`; `probability = round(clamp(4 + modelScore × 0.70, 0, 100))` (floor 4%, ceiling ~74%).
+
+| Factor | Weight |
+|---|---|
+| GDP Growth (Quarterly YoY) | 0.18 |
+| LSM Output (MoM) | 0.18 |
+| PKR Depreciation (YoY) | 0.12 |
+| Private Credit Growth (YoY) | 0.12 |
+| CPI Inflation | 0.10 |
+| Real Policy Rate (policy rate − CPI) | 0.10 |
+| Import Cover (months) | 0.10 |
+| Current Account | 0.10 |
+
+### Sovereign Default Probability (`calculateDefaultRisk`, `src/lib/riskModels.ts`)
+5 factors, weights sum to 1.00. `probability = round(clamp(2 + modelScore × 0.60, 0, 100))` (floor 2%, ceiling ~62% — Pakistan's IMF program + bilateral support are a structural near-term backstop).
+
+| Factor | Weight |
+|---|---|
+| Import Cover (months) | 0.32 |
+| Fiscal Balance | 0.23 |
+| Current Account | 0.20 |
+| PKR Depreciation (YoY) | 0.15 |
+| Policy Rate | 0.10 |
+
+SBP Reserves is deliberately *not* a separate factor — it's Import Cover's own numerator; including both was an earlier version's double-counting bug (fixed, see Section 9).
+
+**Risk category bands** (shared by both models): `<20 Low`, `<40 Elevated`, `<60 High`, `≥60 Severe`.
+
+### Economic Health Score (`calculateEconomicHealth`, `src/lib/economicHealth.ts`, added 2026-06-29)
+9 factors across 5 dimensions, weights sum to 1.00. Each factor is a 0-100 "how healthy does this look" component score (higher = healthier — opposite polarity from the two risk models above); `score = round(Σ componentScore × weight)` directly (no extra linear transform needed, since it's already meant to span 0-100).
+
+| Factor | Weight | Dimension |
+|---|---|---|
+| GDP Growth (Quarterly YoY) | 0.20 | Growth |
+| CPI Inflation | 0.15 | Inflation |
+| Import Cover (months) | 0.15 | External |
+| Real Policy Rate | 0.10 | Monetary |
+| Current Account | 0.10 | External |
+| Fiscal Balance | 0.10 | Fiscal |
+| REER (deviation from 100 = equilibrium) | 0.08 | External |
+| Excess Money Growth (M2 YoY − [Real GDP Growth + CPI]) | 0.07 | Monetary |
+| LSM Output (MoM) | 0.05 | Industrial momentum |
+
+**Label bands**: `≥70 Strong`, `≥40 Moderate`, else `Weak`. `riskLevel` (Low/Moderate/High, shown alongside) is derived 1:1 from this label (`healthLabelToRiskLevel()`), not separately AI-classified.
+
+**Deliberately excluded, each for a specific documented reason** (no unjustified omissions):
+- **Trade Balance, FDI, Remittances** — each is already a component flow *of* Current Account, the factor actually used; including them separately would double-count the same underlying external position.
+- **Global Financial Conditions (Fed Funds/US10Y), Commodity Exposure (oil prices)** — their effect on Pakistan transmits through, and is therefore already reflected in, Current Account/Import Cover. Global Financial Conditions was judged a *stronger* candidate as a future Default-model enhancement instead (external borrowing-cost sensitivity) — not added there yet either, just identified as the better fit if/when added.
+- **Government Debt** — no live series for this is currently fetched anywhere on this dashboard; revisit if one is added.
+- **Yield curve spread (PIB − T-Bill)** — identified as a reasonable future addition to Recession specifically (adds market-implied forward risk pricing, distinct from the trailing macro data both models currently use exclusively) — not implemented, flagged for a future pass.
 
 ---
 
@@ -370,9 +459,9 @@ Each AI-powered section shows a badge in place of the former generic "AI" chip:
 ### Data & Analytics
 - **35 live indicators** across 8 categories: GDP (annual), CPI/Core/WPI inflation, Policy Rate, SBP Reserves, USD/PKR, Remittances, Current Account, Trade Balance, M2 Money Supply, T-Bill & PIB yields, Exports, Imports, FDI, REER, LSM, Private Credit Growth, Fiscal Balance, 8 Global Markets (Gold, Silver, Brent, WTI, Nat Gas, DXY, US10Y, Fed Funds), 4 Live FX rates, PAK ETF
 - **24-month trend sparklines** for CPI, Core Inflation, Policy Rate, SBP Reserves, USD/PKR, Remittances, Trade Balance, T-Bill 3M yield
-- **Data freshness system**: every KPI card shows Current/Delayed/Stale badge with colored dot, source name, latest date, and data frequency
+- **Data Quality badge** (`<DataQualityBadge>`, replaces the old inline freshness badge 2026-06-29): every KPI shows one of 5 states — Verified/Delayed/Cached/Fallback/Unavailable — colored dot, source name, latest date, frequency. See Section 5b.
 - **Data Sources audit modal**: floating modal listing all KPIs with source/series ID/date/freshness
-- **Fallback chain**: every indicator has a hardcoded static snapshot so the dashboard always renders even if all APIs fail
+- **Fallback chain**: every SBP/Global-Market indicator has a fallback path; Global Markets' is now auto-regenerating (persisted to Supabase on every successful live fetch, Section 5b) rather than a frozen-forever static snapshot
 
 ### UI/UX
 - **Galaxy background**: animated star-field canvas (`GalaxyBackground.tsx`)
@@ -386,8 +475,10 @@ Each AI-powered section shows a badge in place of the former generic "AI" chip:
 - **Creator badge**: "Built by Farzam" badge fixed to bottom-right corner
 
 ### AI Features
-- **AI Economic Health Score**: 0–100 score with arc gauge, sentiment badge, risk badge, 2–3 sentence summary, and bullet list of top 3 economic drivers — all generated fresh by OpenRouter each ISR cycle
-- **AI News Intelligence**: 5 economy-relevant news cards, each with Bullish/Neutral/Bearish sentiment, Low/Moderate/High risk, impact score (-10 to +10), and one-sentence reason — all generated by a single batch OpenRouter call
+- **Economic Health Score**: 0–100 *deterministic* composite (9 weighted factors, Section 3) with arc gauge, sentiment badge, risk badge, 2–3 sentence AI summary, and bullet list of top 3 drivers. Updated weekly (Section 5a) — AI narrates, never invents the number.
+- **Risk Intelligence**: Recession/Sovereign Default probabilities, deterministic, also updated weekly.
+- **AI News Intelligence**: up to 24 economy-relevant news cards (matches the display cap exactly, Section 5), each with Bullish/Neutral/Bearish sentiment, Low/Moderate/High risk, impact score (-10 to +10), and one-sentence reason — one batched call across providers with health-aware failover (Section 5).
+- **System Health diagnostics** (`/admin/system-health`, gated, not public): live status of every external data source, AI provider health/cooldown state, Weekly Intelligence Engine status, and configured cron schedules.
 
 ### KSE-100 / Financial Markets
 - PAK ETF (NYSE: PAK) as a free KSE-100 proxy via Yahoo Finance — shown when data is fresh
@@ -404,18 +495,28 @@ All keys live in `.env.local` at the project root. **Never commit this file** �
 | Variable | Required | Used For |
 |---|---|---|
 | `SBP_EASYDATA_API_KEY` | Yes (core data) | SBP EasyData API — 20 Pakistan economic indicators |
-| `OPENROUTER_API_KEY` | Yes (AI features) | OpenRouter — AI Health Score + News Intelligence |
+| `OPENROUTER_API_KEY` | Yes (AI features)* | OpenRouter — 3 free-tier models in the failover chain |
+| `GROQ_API_KEY` | Yes (AI features)* | Groq — paid backstop, independent of OpenRouter's rate limits |
 | `FRED_API_KEY` | Recommended | FRED — US 10Y Treasury yield, Fed Funds Rate (Yahoo Finance fallback works without it) |
 | `TWELVEDATA_API_KEY` | Recommended | Twelve Data — Gold, Silver, DXY spot prices (Yahoo Finance fallback works without it) |
-| `GNEWS_API_KEY` | Optional | GNews — Pakistan/global economy news search (RSS-only mode if missing) |
+| `CRON_SECRET` | Yes (automation) | Authenticates all Vercel Cron-invoked routes (`/api/cron/*`, `/api/revalidate-fx`) |
+| `NOTIFICATION_WORKER_SECRET` | Yes (automation) | Trusted-server-only RPCs (notification worker, weekly intelligence storage) — checked against the `internal_secrets` table, key `'notification_worker'` |
+| `ADMIN_EMAIL` | Recommended | Gates `/admin/system-health` — unset means that page 404s for everyone, including the owner |
+
+*At least one of `OPENROUTER_API_KEY`/`GROQ_API_KEY` must be set for any AI feature to produce a real (non-fallback) result; both is strongly recommended for genuine provider-level resilience.
+
+`GNEWS_API_KEY` was **removed** (2026-06) — GNews's free tier prohibited commercial use, carried a 12h data delay, and was never even configured in this deployment (silently contributing zero articles with nothing in logs to reveal it). Google News RSS replaced it with equal-or-better topic targeting and none of those three problems; see Section 4.
 
 **Example `.env.local`**:
 ```
 SBP_EASYDATA_API_KEY=your_sbp_key_here
 OPENROUTER_API_KEY=sk-or-v1-...
+GROQ_API_KEY=gsk_...
 FRED_API_KEY=your_fred_key_here
 TWELVEDATA_API_KEY=your_twelvedata_key_here
-GNEWS_API_KEY=your_gnews_key_here
+CRON_SECRET=a_long_random_string
+NOTIFICATION_WORKER_SECRET=a_long_random_string
+ADMIN_EMAIL=you@example.com
 ```
 
 Keys are read **only** on the server side via `process.env.XXX`. Never pass them to client components or hardcode them in source files.
@@ -426,24 +527,21 @@ Keys are read **only** on the server side via `process.env.XXX`. Never pass them
 
 ### Active Bugs / Limitations
 
-1. **GNews returning 0 results**: If `GNEWS_API_KEY` is not set (or quota exceeded), the news aggregator falls back to RSS-only. 22 articles still come from BBC/Dawn/Tribune, so the News section still works. Set the key to unlock keyword-filtered Pakistan economy news.
+1. **PAK ETF liquidity risk**: `getPakEtfKpi()` treats Yahoo Finance data >30 days old as a fetch failure (the fund may be delisted), falling through to the persisted/static fallback rather than showing a stale quote as current. The Global X MSCI Pakistan ETF (NYSE: PAK) has had liquidity concerns — if it delists fully, this symbol permanently rides on its fallback snapshot.
 
-2. **Dawn Business feed unreliability**: `https://www.dawn.com/feeds/business` may return non-business articles or fail silently (returns `[]`). If it fails, Tribune + BBC cover the gap. Monitor the top 5 article quality — if non-economy articles dominate, consider adding a relevance filter or switching to a confirmed economy-specific feed URL.
+2. **SBP Fiscal Balance is annual, 1-year lag**: `TS_GP_PF_SPF_Y.SPF370000` is an annual series with ~12-month publication lag. The displayed value may be from the prior fiscal year. Expected — annual series with that series key.
 
-3. **nex-agi primary model intermittently slow/unavailable**: The `nex-agi/nex-n2-pro:free` model occasionally fails or is very slow. This is handled gracefully — the centralized failover client automatically cascades to `openai/gpt-oss-120b:free` (confirmed fast and reliable). Check server logs for `[AI/...] Succeeded — model:` to see which model was actually used.
+3. **US10Y and Fed Funds freshness shows "Delayed" near the threshold edge**: FRED publishes with ~2-business-day lag; the freshness system marks these Delayed past 3 days. Correct behavior, not a bug.
 
-4. **PAK ETF potentially delisted**: `getPakEtfKpi()` returns `null` if Yahoo Finance data is >30 days old. The Financial Markets section gracefully hides the KPI card in that case. The Global X MSCI Pakistan ETF (NYSE: PAK) has had liquidity concerns — if it delist fully, this KPI card disappears permanently.
+4. **AI provider health tracking is process-local**: `getProviderHealthSnapshot()` (and the cooldown logic that consumes it) only reflects the serverless instance handling the current request, not a global view across Vercel's multi-instance deployment. A model that's healthy on one instance and cooling down on another is expected, not a bug — see Section 5.
 
-5. **SBP Fiscal Balance is annual, 1-year lag**: `TS_GP_PF_SPF_Y.SPF370000` is an annual series with ~12-month publication lag. The displayed value may be from the prior fiscal year. Expected — annual series with that series key.
-
-6. **US10Y and Fed Funds freshness shows "Delayed"**: FRED publishes with ~2-business-day lag. The freshness system marks these as Delayed after 3 days, which is correct behavior, not a bug.
+5. **Ministry of Finance press releases not polled**: evaluated for direct official-source news polling (2026-06-29) and deliberately not implemented — the page is a legacy, table-based static HTML site with no API/RSS and no stable structure to scrape reliably without dedicated development and testing. SBP's press-release RSS was also evaluated and rejected — it sits behind Cloudflare bot protection that returns 403 regardless of caller IP (confirmed directly). PBS *is* polled directly (see Section 4) since its WordPress REST API is reliable and already proven via the SPI integration.
 
 ### Technical Debt
 
 - `src/app/ai-test/page.tsx` and `src/app/api/ai/test/route.ts` are development-only pages left in the codebase. They should be removed before any public deployment.
-- `src/lib/economicHealth.ts` contains `getHealthStatus()` and `calculateHealthScore()`. The latter is no longer called (replaced by AI), but both functions remain. `getHealthStatus()` is still used by `HealthScoreCard.tsx`.
-- `src/data/healthScoreData.ts` contains hardcoded health factor weights from the pre-AI era. Unused but not deleted.
 - The Sidebar's "Settings" nav item (`href="#"`) is a placeholder with no target section.
+- `marketDataSources.ts`'s `SOURCE_CHAINS` table (consumed by `KpiCard`'s source-chain tooltip) has no entries for any SBP-sourced indicator — only Global Markets symbols. Low-priority gap, not a correctness issue.
 
 ---
 
@@ -498,10 +596,16 @@ Keys are read **only** on the server side via `process.env.XXX`. Never pass them
 ## 10. Future Roadmap
 
 ### Reliability / Quality
-- [ ] Add `GNEWS_API_KEY` to get Pakistan-specific keyword-filtered news (currently RSS-only)
-- [ ] Verify Dawn business feed URL and add a fallback if it returns non-economy content
-- [ ] Consider adding a content-relevance filter on aggregated articles before AI tagging
-- [x] AI failover: centralized `openRouterClient.ts` with 4-model chain; nex-agi → gpt-oss-120b → hermes-3-405b → gpt-oss-20b (completed)
+- [x] AI failover: centralized `openRouterClient.ts`, 3 OpenRouter free models → Groq paid backstop, with health tracking/cooldowns (completed 2026-06-29)
+- [x] Deterministic Economic Health Score, replacing AI-generated number (completed 2026-06-29, Section 5d)
+- [x] Weekly Intelligence Engine — Health/Recession/Default update once a week instead of every page load (completed 2026-06-29, Section 5a)
+- [x] Auto-regenerating Global Markets fallback snapshots instead of a frozen-forever static file (completed 2026-06-29, Section 5b)
+- [x] Direct official-source news polling — PBS Official Releases (completed 2026-06-29, Section 4)
+- [ ] Ministry of Finance press releases — evaluated, needs dedicated scraper development against its legacy static HTML page (no API/RSS exists); not implemented (Section 8)
+- [ ] Yield curve spread (PIB − T-Bill) as a Recession model factor — identified as well-justified, not yet implemented (Section 5d)
+- [ ] External debt coverage ratio as a Default model factor — needs a new SBP series not currently fetched (Section 5d)
+- [ ] Broader rate-limit-aware handling (Yahoo/Twelve Data/FRED currently treat HTTP 429 the same as a total outage — only the AI provider client has real 429-specific cooldown logic)
+- [ ] Extend the Data Quality badge to the ~12 standalone SEO landing pages (`/usd-pkr-exchange-rate`, `/gold-price-pakistan`, etc.) — they currently render KPI values as plain text with no freshness/fallback indication at all
 - [ ] Remove dev-only endpoints: `/ai-test` page and `/api/ai/test` route
 
 ### New Data / Features

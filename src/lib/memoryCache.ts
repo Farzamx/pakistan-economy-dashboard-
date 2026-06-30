@@ -33,6 +33,11 @@ export function setCache<T>(key: string, data: T): void {
   store.set(key, { data, timestamp: Date.now() });
 }
 
+/** Drops a key so the next getFresh()/getStale() call for it misses entirely — used by cron routes that just wrote new upstream data, so this instance's own cache can't go on serving a value older than what was just confirmed. Only clears THIS serverless instance's in-memory store; see invalidateSbpIndicatorCache()/invalidateSpiCache() for why that's still a meaningful fix paired with revalidateTag(). */
+export function invalidate(key: string): void {
+  store.delete(key);
+}
+
 // In-flight request coalescing ("singleflight"). A TTL cache alone only
 // catches *sequential* repeat calls — it can't help with calls that arrive
 // concurrently (e.g. Promise.all over several comparisons that each need

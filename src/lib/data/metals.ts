@@ -4,6 +4,7 @@ import {
   fallbackGoldKpi,
   fallbackSilverKpi,
 } from "@/data/globalMarketsFallbackData";
+import { resolveWithPersistedFallback } from "@/lib/marketFallbackSnapshot";
 import {
   getYfDxyKpi,
   getYfGoldKpi,
@@ -135,29 +136,48 @@ function buildKpi(series: MetalSeries, title: string, unit: string, glow: Kpi["g
   };
 }
 
+/**
+ * Tries primary (Twelve Data) then secondary (Yahoo Finance); throws only
+ * if both fail, so resolveWithPersistedFallback's catch block is reached
+ * exclusively for genuine "everything failed" cases — matching the
+ * pre-existing two-stage behavior exactly, just wrapped so a successful
+ * result also gets persisted as this symbol's auto-regenerating fallback
+ * (Production Audit Part 6).
+ */
+async function fetchPrimaryThenSecondary(symbol: string, title: string, unit: string, glow: Kpi["glow"], getSecondary: () => Promise<Kpi | null>): Promise<Kpi> {
+  try {
+    const series = await fetchTwelveDataSeries(symbol);
+    return buildKpi(series, title, unit, glow, symbol);
+  } catch {
+    const secondary = await getSecondary();
+    if (secondary) return secondary;
+    throw new Error(`Both Twelve Data and Yahoo Finance failed for ${symbol}`);
+  }
+}
+
 /** Gold spot price (XAU/USD), in USD per troy ounce. */
 export async function getGoldKpi(): Promise<Kpi> {
-  try {
-    const series = await fetchTwelveDataSeries(SYMBOLS.gold);
-    return buildKpi(series, "Gold", "$/oz", "blue", SYMBOLS.gold);
-  } catch { /* fall through to Yahoo Finance */ }
-  return (await getYfGoldKpi()) ?? fallbackGoldKpi;
+  return resolveWithPersistedFallback(
+    "gold",
+    () => fetchPrimaryThenSecondary(SYMBOLS.gold, "Gold", "$/oz", "blue", getYfGoldKpi),
+    fallbackGoldKpi,
+  );
 }
 
 /** Silver spot price (XAG/USD), in USD per troy ounce. */
 export async function getSilverKpi(): Promise<Kpi> {
-  try {
-    const series = await fetchTwelveDataSeries(SYMBOLS.silver);
-    return buildKpi(series, "Silver", "$/oz", "purple", SYMBOLS.silver);
-  } catch { /* fall through to Yahoo Finance */ }
-  return (await getYfSilverKpi()) ?? fallbackSilverKpi;
+  return resolveWithPersistedFallback(
+    "silver",
+    () => fetchPrimaryThenSecondary(SYMBOLS.silver, "Silver", "$/oz", "purple", getYfSilverKpi),
+    fallbackSilverKpi,
+  );
 }
 
 /** ICE US Dollar Index (DXY). */
 export async function getDxyKpi(): Promise<Kpi> {
-  try {
-    const series = await fetchTwelveDataSeries(SYMBOLS.dxy);
-    return buildKpi(series, "US Dollar Index", "DXY", "purple", SYMBOLS.dxy);
-  } catch { /* fall through to Yahoo Finance */ }
-  return (await getYfDxyKpi()) ?? fallbackDxyKpi;
+  return resolveWithPersistedFallback(
+    "dxy",
+    () => fetchPrimaryThenSecondary(SYMBOLS.dxy, "US Dollar Index", "DXY", "purple", getYfDxyKpi),
+    fallbackDxyKpi,
+  );
 }

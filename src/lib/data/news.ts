@@ -11,6 +11,10 @@
 //   2. BBC Business RSS — global market news, no key, reliable.
 //   3. Dawn Business RSS — Pakistan economy news, no key.
 //   4. Express Tribune Business RSS — Pakistan business news, no key.
+//   5. PBS Official Releases — direct polling of Pakistan Bureau of
+//      Statistics' own WordPress feed (Production Audit Part 9), not
+//      journalism about it. Highest source-reliability score on this
+//      dashboard (relevanceEngine.ts) since it's a primary source.
 //
 // GNews (the previous primary source) was removed after the audit found
 // three separate, independently disqualifying problems: (a) its free tier's
@@ -181,6 +185,70 @@ function withRelevance(item: RawItem, source: string): NewsItem {
   return { ...item, source, category, relevanceScore };
 }
 
+// ---- Official sources (Production Audit Part 9) ---------------------------
+// Direct polling of an official institution's own releases, not journalism
+// about them. PBS's WordPress REST API is the same one src/lib/data/spi.ts
+// already uses successfully (verified live) — this just removes the
+// "Sensitive Price Indicator" search filter to pick up every post, not only
+// SPI ones. SBP and the Ministry of Finance were evaluated and deliberately
+// NOT added here: SBP's RSS feeds sit behind Cloudflare bot protection that
+// returns 403 regardless of caller (confirmed directly, not assumed — this
+// would silently contribute zero articles forever in production, which is
+// the exact failure mode this audit exists to eliminate, not introduce).
+// The Ministry of Finance's press-releases page is a legacy, table-based
+// static HTML page with no API/RSS and no stable structure to parse
+// reliably without dedicated scraper development and testing — flagged as
+// a Phase 2 recommendation rather than shipped untested.
+const PBS_POSTS_API = "https://www.pbs.gov.pk/wp-json/wp/v2/posts";
+
+interface PbsPost {
+  title: { rendered: string };
+  link: string;
+  date: string;
+}
+
+function decodePbsTitle(rendered: string): string {
+  return decodeEntities(rendered.replace(/<[^>]+>/g, "").trim());
+}
+
+async function fetchPbsOfficialReleases(revalidateSeconds: number, max = 8): Promise<NewsItem[]> {
+  try {
+    const params = new URLSearchParams({ per_page: String(max), orderby: "date", order: "desc" });
+    const res = await fetch(`${PBS_POSTS_API}?${params.toString()}`, {
+      headers: { "User-Agent": "Mozilla/5.0 (compatible; NewsBot/1.0)" },
+      next: { revalidate: revalidateSeconds },
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    });
+    if (!res.ok) {
+      console.error(`[News] PBS Official Releases failed: HTTP ${res.status}`);
+      return [];
+    }
+    const posts = (await res.json()) as PbsPost[];
+    // Not run through the shared withRelevance()/scoreRelevance() — that
+    // heuristic gates most keyword groups on an explicit "Pakistan" context
+    // word appearing in the title (hasPakistanContext), which terse
+    // statistical-bulletin titles like "Monthly Inflation Report for May
+    // 2026" never contain despite being maximally relevant in substance —
+    // confirmed live: every one of PBS's actual recent titles (SPI, Foreign
+    // Trade Statistics, LSM, Inflation Report) scored only 5/10 and got
+    // crowded out of the top-40 pool by less relevant but more
+    // keyword-matching stories. Every post from this source is, by
+    // construction, Pakistan's own official economic statistics — the
+    // maximum relevance score is the accurate one, not a heuristic guess.
+    return posts.map((post) => ({
+      title: decodePbsTitle(post.title.rendered),
+      url: post.link,
+      source: "PBS Official Releases",
+      publishedAt: post.date,
+      category: "Pakistan Economy" as const,
+      relevanceScore: 10,
+    }));
+  } catch (err) {
+    console.error("[News] PBS Official Releases error:", err instanceof Error ? err.message : String(err));
+    return [];
+  }
+}
+
 // ---- Aggregation ------------------------------------------------------------
 
 // Topic-targeted queries replacing the old GNews keyword searches, extended
@@ -197,14 +265,18 @@ const GOOGLE_NEWS_QUERIES: { query: string; revalidate: number }[] = [
 ];
 
 export async function getNews(): Promise<NewsItem[]> {
-  const [googleNewsResults, bbcRss, dawnRss, tribuneRss] = await Promise.all([
+  const [googleNewsResults, bbcRss, dawnRss, tribuneRss, pbsReleases] = await Promise.all([
     Promise.all(GOOGLE_NEWS_QUERIES.map((q) => fetchGoogleNewsRss(q.query, q.revalidate, 6))),
     fetchRss("https://feeds.bbci.co.uk/news/business/rss.xml", "BBC Business", REVALIDATE_GENERAL, 8),
-    fetchRss("https://www.dawn.com/feeds/business", "Dawn Business", REVALIDATE_BREAKING, 8),
-    fetchRss("https://tribune.com.pk/feed/business", "Express Tribune", REVALIDATE_BREAKING, 8),
+    // Dawn/Tribune are general-outlet feeds, same as BBC — moved off the
+    // "breaking" tier they were previously (inconsistently) wired to, per
+    // this file's own stated design intent above.
+    fetchRss("https://www.dawn.com/feeds/business", "Dawn Business", REVALIDATE_GENERAL, 8),
+    fetchRss("https://tribune.com.pk/feed/business", "Express Tribune", REVALIDATE_GENERAL, 8),
+    fetchPbsOfficialReleases(REVALIDATE_BREAKING, 8),
   ]);
 
-  const all = [...googleNewsResults.flat(), ...bbcRss, ...dawnRss, ...tribuneRss];
+  const all = [...googleNewsResults.flat(), ...bbcRss, ...dawnRss, ...tribuneRss, ...pbsReleases];
 
   if (all.length === 0) {
     console.error("[News] All sources returned zero articles — check network access and source availability.");

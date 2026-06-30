@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import HealthScoreGauge from "@/components/HealthScoreGauge";
-import { getHealthStatus } from "@/lib/economicHealth";
+import { healthLabelToRiskLevel, type HealthModelResult } from "@/lib/economicHealth";
 import type { AiEconomicAnalysis } from "@/lib/data/aiEconomicAnalysis";
 
 const SENTIMENT_CLASS: Record<AiEconomicAnalysis["sentiment"], string> = {
@@ -11,21 +11,21 @@ const SENTIMENT_CLASS: Record<AiEconomicAnalysis["sentiment"], string> = {
   Bearish: "border-rose-400/20 bg-rose-400/10 text-rose-400",
 };
 
-const RISK_CLASS: Record<AiEconomicAnalysis["riskLevel"], string> = {
+const RISK_CLASS: Record<"Low" | "Moderate" | "High", string> = {
   Low: "border-emerald-400/20 bg-emerald-400/10 text-emerald-400",
   Moderate: "border-amber-400/20 bg-amber-400/10 text-amber-400",
   High: "border-rose-400/20 bg-rose-400/10 text-rose-400",
 };
 
-export default function HealthScoreCard({
-  economicHealthScore,
-  sentiment,
-  riskLevel,
-  summary,
-  topDrivers,
-  modelDisplayName,
-}: AiEconomicAnalysis) {
-  const status = getHealthStatus(economicHealthScore);
+interface Props {
+  health: HealthModelResult;
+  ai: AiEconomicAnalysis;
+}
+
+export default function HealthScoreCard({ health, ai }: Props) {
+  const { score, status } = health;
+  const { sentiment, summary, topDrivers, modelDisplayName } = ai;
+  const riskLevel = healthLabelToRiskLevel(status.label);
 
   return (
     <motion.section
@@ -35,7 +35,7 @@ export default function HealthScoreCard({
       viewport={{ once: true, amount: 0.3 }}
       transition={{ duration: 0.5, ease: "easeOut" }}
     >
-      <HealthScoreGauge score={economicHealthScore} color={status.ringColor} />
+      <HealthScoreGauge score={score} color={status.ringColor} />
 
       <div className="flex flex-col items-center sm:items-start">
         <div className="flex items-center gap-2">

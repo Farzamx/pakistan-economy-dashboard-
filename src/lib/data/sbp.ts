@@ -1,6 +1,7 @@
 import type { TrendPoint } from "@/components/charts/TrendLineChart";
 import type { Kpi } from "@/data/kpiData";
 import type { DataFrequency } from "@/lib/dataFreshness";
+import type { SourceStatus } from "@/lib/dataQuality";
 import { dedupeInFlight, getFresh, getStale, setCache } from "@/lib/memoryCache";
 import {
   fallbackCoreInflation,
@@ -63,7 +64,7 @@ const REVALIDATE_AS_NEEDED = 60 * 60 * 6; // 6h
 // its own upstream fetch for the exact same series within the same minute.
 const L1_TTL_MS = 10 * 60 * 1000; // 10 min — within the 5-15 min target range
 
-export type SbpSourceStatus = "live" | "cache" | "fallback";
+export type SbpSourceStatus = SourceStatus;
 
 // Logging-only labels (not used for any UI/value logic) so production logs
 // read like "[SBP] Remittances ..." instead of the internal camelCase key.
@@ -230,7 +231,7 @@ function changeLabel(diff: number, previousLabel: string | null, format: (value:
  * Throws on a missing API key, non-200 response, or a series with no usable
  * numeric observations — callers are expected to catch and fall back.
  */
-async function fetchSbpSeries(seriesKey: string, revalidateSeconds: number): Promise<SbpSeries> {
+async function fetchSbpSeries(seriesKey: string, revalidateSeconds: number, cacheTag: string): Promise<SbpSeries> {
   const apiKey = process.env.SBP_EASYDATA_API_KEY;
   if (!apiKey) {
     throw new Error("SBP_EASYDATA_API_KEY is not set");
@@ -243,7 +244,7 @@ async function fetchSbpSeries(seriesKey: string, revalidateSeconds: number): Pro
   });
 
   const response = await fetch(`${SBP_API_BASE}/${seriesKey}/data?${params.toString()}`, {
-    next: { revalidate: revalidateSeconds },
+    next: { revalidate: revalidateSeconds, tags: [cacheTag] },
     signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
   });
 
@@ -745,8 +746,13 @@ const CONFIGS: Record<SbpIndicatorKey, IndicatorConfig> = {
   },
 };
 
-async function buildIndicatorResult(config: IndicatorConfig): Promise<SbpIndicatorResult> {
-  const series = await fetchSbpSeries(config.seriesKey, config.revalidate);
+/** Exported so sbpCacheInvalidation.ts (a separate, server-only module — see its header) can build the matching tag without duplicating this string template. */
+export function sbpCacheTag(key: SbpIndicatorKey): string {
+  return `sbp-${key}`;
+}
+
+async function buildIndicatorResult(key: SbpIndicatorKey, config: IndicatorConfig): Promise<SbpIndicatorResult> {
+  const series = await fetchSbpSeries(config.seriesKey, config.revalidate, sbpCacheTag(key));
   const formatLabel =
     config.frequency === "Monthly" || config.frequency === "Annual"
       ? formatMonthLabel
@@ -777,8 +783,27 @@ async function buildIndicatorResult(config: IndicatorConfig): Promise<SbpIndicat
   };
 }
 
+/**
+ * Stamps both meta.sourceStatus (internal, always accurate) and
+ * kpi.sourceStatus/kpi.source (user-facing — drives DataQualityBadge) with
+ * the same verdict. Previously only meta was updated; the fallback branch
+ * then unconditionally overwrote kpi.source back to the plain live-looking
+ * "SBP EasyData" string, so a card could be silently serving a frozen
+ * snapshot with no visible "Fallback" marker anywhere on it — the Production
+ * Audit's single highest-impact finding. Fixed here, once, for all 20 series.
+ */
 function withSourceStatus(result: SbpIndicatorResult, status: SbpSourceStatus): SbpIndicatorResult {
-  return { ...result, meta: { ...result.meta, sourceStatus: status } };
+  const isFallback = status === "fallback";
+  return {
+    ...result,
+    kpi: {
+      ...result.kpi,
+      source: isFallback ? "SBP EasyData (fallback)" : "SBP EasyData",
+      sourceStatus: status,
+      snapshotDate: isFallback ? result.meta.observationDate : undefined,
+    },
+    meta: { ...result.meta, sourceStatus: status },
+  };
 }
 
 /**
@@ -790,11 +815,15 @@ function withSourceStatus(result: SbpIndicatorResult, status: SbpSourceStatus): 
  *     avoids re-hitting SBP when multiple pages request the same indicator
  *     within a short window. Concurrent misses are de-duped via
  *     dedupeInFlight so a stampede of callers shares one upstream call.
+ *     This is "cache-fresh" — a normal, healthy fast path, not a degraded
+ *     state, since the value is exactly as trustworthy as a live call.
  *  2. A live upstream fetch (buildIndicatorResult -> fetchSbpSeries),
  *     subject to the existing L2 Next.js fetch-cache revalidate window.
  *  3. On any failure: the last-known-good L1 value regardless of age
- *     ("cache", real SBP data, just stale), or — only if there is no cached
- *     value at all — the static snapshot in sbpFallbackData.ts ("fallback").
+ *     ("cache-stale" — real SBP data, but the live refresh just failed, a
+ *     genuinely degraded state worth disclosing), or — only if there is no
+ *     cached value at all — the static snapshot in sbpFallbackData.ts
+ *     ("fallback").
  */
 export async function getSbpIndicator(key: SbpIndicatorKey): Promise<SbpIndicatorResult> {
   const config = CONFIGS[key];
@@ -802,13 +831,13 @@ export async function getSbpIndicator(key: SbpIndicatorKey): Promise<SbpIndicato
 
   const l1 = getFresh<SbpIndicatorResult>(cacheKey, L1_TTL_MS);
   if (l1) {
-    logSbp(key, "cache", `L1 hit, ${Math.round(l1.ageMs / 1000)}s old, observation=${l1.data.meta.observationDate}`);
-    return withSourceStatus(l1.data, "cache");
+    logSbp(key, "cache-fresh", `L1 hit, ${Math.round(l1.ageMs / 1000)}s old, observation=${l1.data.meta.observationDate}`);
+    return withSourceStatus(l1.data, "cache-fresh");
   }
 
   return dedupeInFlight(cacheKey, async () => {
     try {
-      const result = await buildIndicatorResult(config);
+      const result = await buildIndicatorResult(key, config);
       setCache(cacheKey, result);
       logSbp(key, "live", `fetched OK, observation=${result.meta.observationDate}`);
       return withSourceStatus(result, "live");
@@ -816,8 +845,8 @@ export async function getSbpIndicator(key: SbpIndicatorKey): Promise<SbpIndicato
       const reason = err instanceof Error ? err.message : String(err);
       const stale = getStale<SbpIndicatorResult>(cacheKey);
       if (stale) {
-        logSbpError(key, reason, "cache");
-        return withSourceStatus(stale.data, "cache");
+        logSbpError(key, reason, "cache-stale");
+        return withSourceStatus(stale.data, "cache-stale");
       }
       logSbpError(key, reason, "fallback");
       const fb = config.fallback;
@@ -826,7 +855,6 @@ export async function getSbpIndicator(key: SbpIndicatorKey): Promise<SbpIndicato
           ...fb,
           kpi: {
             ...fb.kpi,
-            source: "SBP EasyData",
             seriesId: config.seriesKey,
             latestDate: fb.meta.observationDate,
             frequency: SBP_FREQ_MAP[config.frequency],
@@ -837,6 +865,14 @@ export async function getSbpIndicator(key: SbpIndicatorKey): Promise<SbpIndicato
     }
   });
 }
+
+// invalidateSbpIndicatorCache() lives in sbpCacheInvalidation.ts, a
+// separate module — NOT here — specifically because it needs
+// revalidateTag() from "next/cache", which Next.js refuses to bundle into
+// any client-reachable module. This file is imported by
+// comparisonData.ts -> ComparisonWorkspace.tsx (a Client Component), so a
+// "next/cache" import here breaks the production build entirely (confirmed
+// live: Turbopack build error, not a lint nitpick).
 
 /**
  * Fetches all 20 SBP indicators in parallel. Each indicator falls back
@@ -943,7 +979,7 @@ function parseFallbackMonthLabel(label: string): string {
 async function fetchSbpIndicatorHistoryUncached(key: SbpIndicatorKey): Promise<SbpIndicatorHistory> {
   const config = CONFIGS[key];
   try {
-    const series = await fetchSbpSeries(config.seriesKey, config.revalidate);
+    const series = await fetchSbpSeries(config.seriesKey, config.revalidate, sbpCacheTag(key));
     return {
       points: series.history.map((p) => ({
         date: p.date,
@@ -1000,7 +1036,7 @@ export async function getFoodInflationUrbanHistory(): Promise<FoodInflationUrban
 
   try {
     return await dedupeInFlight(cacheKey, async () => {
-      const series = await fetchSbpSeries(FOOD_INFLATION_URBAN_SERIES_KEY, REVALIDATE_MONTHLY);
+      const series = await fetchSbpSeries(FOOD_INFLATION_URBAN_SERIES_KEY, REVALIDATE_MONTHLY, "sbp-food-inflation-urban");
       const result: FoodInflationUrbanResult = {
         points: series.history.map((p) => ({ date: p.date, value: p.value })),
         source: "SBP EasyData",

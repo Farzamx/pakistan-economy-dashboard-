@@ -1,4 +1,4 @@
-import { FALLBACK_CHAIN, getModelDisplayName, MODEL_TIMEOUT_MS } from "@/lib/openRouterClient";
+import { callOpenRouter } from "@/lib/openRouterClient";
 import type { DashboardSnapshot } from "@/lib/assistantContext";
 import { classifyQuery, type QueryCategory, type RouterResult } from "@/lib/queryRouter";
 import {
@@ -11,8 +11,6 @@ import { getFresh, getStale, setCache } from "@/lib/memoryCache";
 import { getPakEtfKpi } from "@/lib/data/yfinance";
 import type { Kpi } from "@/data/kpiData";
 import { searchKnowledgeBase } from "@/lib/knowledgeBaseSearch";
-
-const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 
 // ── Performance configuration ──────────────────────────────────────────────
 // Search results are cached so repeat/similar queries within the TTL skip
@@ -36,10 +34,6 @@ interface RequestBody {
   message: string;
   context: DashboardSnapshot;
   history: ConvMessage[];
-}
-
-interface OpenRouterApiResponse {
-  choices?: { message?: { content?: string } }[];
 }
 
 export type SourceType =
@@ -453,8 +447,10 @@ function buildCitationItems(
 
 export async function POST(request: Request): Promise<Response> {
   const requestStart = Date.now();
-  const apiKey = process.env.OPENROUTER_API_KEY;
-  if (!apiKey) {
+  // Gates on either key, not specifically OpenRouter's — callOpenRouter()
+  // (Part 8: this route now shares that client like every other AI
+  // feature) falls through to Groq on its own if only that key is set.
+  if (!process.env.OPENROUTER_API_KEY && !process.env.GROQ_API_KEY) {
     return Response.json({
       reply: "The AI assistant is temporarily unavailable (API key not configured).",
       confidence: "Low" as ConfidenceLevel,
@@ -593,86 +589,50 @@ export async function POST(request: Request): Promise<Response> {
     { role: "user" as const, content: message.trim() },
   ];
 
-  // ── Step 5: AI generation via FALLBACK_CHAIN — timeout-protected ─────────
+  // ── Step 5: AI generation via the shared failover client (Production
+  // Audit Part 8 — this route used to reimplement its own retry loop
+  // directly against OpenRouter only; it now gets the exact same
+  // dynamic health-aware ordering, cooldowns, and Groq backstop every
+  // other AI feature on this dashboard gets, from one place. ──────────
   const modelStart = Date.now();
-  for (const model of FALLBACK_CHAIN) {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), MODEL_TIMEOUT_MS);
-    const callStart = Date.now();
-    try {
-      const res = await fetch(OPENROUTER_URL, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model,
-          messages,
-          temperature: 0.3,
-          max_tokens: isDetailedMode ? 900 : 550,
-        }),
-        cache: "no-store",
-        signal: controller.signal,
-      });
-      clearTimeout(timer);
+  const aiResult = await callOpenRouter(
+    messages,
+    parseResponse, // never throws — see its own comment; a parse "miss" just degrades to defaults rather than triggering a retry
+    { revalidate: 0, temperature: 0.3, maxTokens: isDetailedMode ? 900 : 550, taskLabel: "Assistant" },
+  );
 
-      if (!res.ok) {
-        console.warn(`[AI/Assistant] ${model} — HTTP ${res.status} ${res.statusText} (${Date.now() - callStart}ms)`);
-        continue;
-      }
+  if (aiResult) {
+    const { reply, citationUrls } = aiResult.result;
+    const citations = buildCitationItems(citationUrls, search);
 
-      const rawText = await res.text();
-      if (!rawText.trim()) {
-        console.warn(`[AI/Assistant] ${model} — empty body`);
-        continue;
-      }
+    const modelMs = Date.now() - modelStart;
+    const totalMs = Date.now() - requestStart;
+    console.log(`[Timing] model response: ${modelMs}ms | total request: ${totalMs}ms`);
+    console.log(
+      `[AI/Assistant] Succeeded — model: ${aiResult.modelUsed} | source: ${source} | ` +
+      `confidence: ${confidence} | ` +
+      `sources: ${search?.results.length ?? 0} | ` +
+      `focus: ${routerResult.focusDomains?.join(",") ?? "none"}`,
+    );
 
-      const apiData = JSON.parse(rawText) as OpenRouterApiResponse;
-      const rawContent = apiData.choices?.[0]?.message?.content ?? "";
-      if (!rawContent.trim()) {
-        console.warn(`[AI/Assistant] ${model} — empty content`);
-        continue;
-      }
-
-      // source is computed server-side (computeSourceType); ignore the AI-written tag
-      const { reply, citationUrls } = parseResponse(rawContent);
-      const citations = buildCitationItems(citationUrls, search);
-
-      const modelMs = Date.now() - modelStart;
-      const totalMs = Date.now() - requestStart;
-      console.log(`[Timing] model response: ${modelMs}ms | total request: ${totalMs}ms`);
-      console.log(
-        `[AI/Assistant] Succeeded — model: ${model} | source: ${source} | ` +
-        `confidence: ${confidence} | ` +
-        `sources: ${search?.results.length ?? 0} | ` +
-        `focus: ${routerResult.focusDomains?.join(",") ?? "none"}`,
-      );
-
-      return Response.json({
-        reply,
-        confidence,
-        confidenceReason,
-        source,
-        dataSource,
-        queryCategory: routerResult.label,
-        citations,
-        searchPerformed: routerResult.needsSearch,
-        searchLatencyMs: search?.latencyMs ?? null,
-        sourcesFound: search?.results.length ?? 0,
-        modelUsed: model,
-        modelDisplayName: getModelDisplayName(model),
-      });
-    } catch (err) {
-      clearTimeout(timer);
-      const aborted = err instanceof Error && err.name === "AbortError";
-      const reason = aborted ? `timeout after ${MODEL_TIMEOUT_MS}ms` : err instanceof Error ? err.message : String(err);
-      console.warn(`[AI/Assistant] ${model} — ${reason} (${Date.now() - callStart}ms)`);
-    }
+    return Response.json({
+      reply,
+      confidence,
+      confidenceReason,
+      source,
+      dataSource,
+      queryCategory: routerResult.label,
+      citations,
+      searchPerformed: routerResult.needsSearch,
+      searchLatencyMs: search?.latencyMs ?? null,
+      sourcesFound: search?.results.length ?? 0,
+      modelUsed: aiResult.modelUsed,
+      modelDisplayName: aiResult.modelDisplayName,
+    });
   }
 
-  // All models failed
-  console.error(`[AI/Assistant] All models failed (total: ${Date.now() - requestStart}ms)`);
+  // All providers failed
+  console.error(`[AI/Assistant] All providers failed (total: ${Date.now() - requestStart}ms)`);
   return Response.json({
     reply: "I'm having trouble connecting right now. Please try again in a moment.",
     confidence: "Low" as ConfidenceLevel,

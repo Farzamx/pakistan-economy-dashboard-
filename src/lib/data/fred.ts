@@ -14,6 +14,7 @@ import {
   getYfWtiKpi,
 } from "./yfinance";
 import { dedupeInFlight, getFresh, setCache } from "@/lib/memoryCache";
+import { resolveWithPersistedFallback } from "@/lib/marketFallbackSnapshot";
 
 // All series are read from the St. Louis Fed's FRED API:
 // https://api.stlouisfed.org/fred/series/observations?series_id=...&api_key=...
@@ -151,47 +152,62 @@ function buildKpi(
 
 /** West Texas Intermediate crude oil futures (CL=F) — Yahoo Finance primary, FRED daily as fallback. */
 export async function getWtiKpi(): Promise<Kpi> {
-  const yfKpi = await getYfWtiKpi();
-  if (yfKpi) return yfKpi;
-  try {
-    const series = await fetchFredSeries(SERIES_IDS.wti);
-    return buildKpi(series, "WTI Crude", "$/bbl", "blue", 2, SERIES_IDS.wti);
-  } catch {
-    return fallbackWtiKpi;
-  }
+  return resolveWithPersistedFallback(
+    "wti",
+    async () => {
+      const yfKpi = await getYfWtiKpi();
+      if (yfKpi) return yfKpi;
+      const series = await fetchFredSeries(SERIES_IDS.wti);
+      return buildKpi(series, "WTI Crude", "$/bbl", "blue", 2, SERIES_IDS.wti);
+    },
+    fallbackWtiKpi,
+  );
 }
 
 /** Brent crude oil futures (BZ=F) — Yahoo Finance primary, FRED daily as fallback. */
 export async function getBrentKpi(): Promise<Kpi> {
-  const yfKpi = await getYfBrentKpi();
-  if (yfKpi) return yfKpi;
-  try {
-    const series = await fetchFredSeries(SERIES_IDS.brent);
-    return buildKpi(series, "Brent Crude", "$/bbl", "purple", 2, SERIES_IDS.brent);
-  } catch {
-    return fallbackBrentKpi;
-  }
+  return resolveWithPersistedFallback(
+    "brent",
+    async () => {
+      const yfKpi = await getYfBrentKpi();
+      if (yfKpi) return yfKpi;
+      const series = await fetchFredSeries(SERIES_IDS.brent);
+      return buildKpi(series, "Brent Crude", "$/bbl", "purple", 2, SERIES_IDS.brent);
+    },
+    fallbackBrentKpi,
+  );
 }
 
 /** Henry Hub natural gas futures (NG=F) — Yahoo Finance primary, FRED daily as fallback. */
 export async function getNaturalGasKpi(): Promise<Kpi> {
-  const yfKpi = await getYfNaturalGasKpi();
-  if (yfKpi) return yfKpi;
-  try {
-    const series = await fetchFredSeries(SERIES_IDS.naturalGas);
-    return buildKpi(series, "Natural Gas", "$/MMBtu", "blue", 2, SERIES_IDS.naturalGas);
-  } catch {
-    return fallbackNatGasKpi;
-  }
+  return resolveWithPersistedFallback(
+    "natural-gas",
+    async () => {
+      const yfKpi = await getYfNaturalGasKpi();
+      if (yfKpi) return yfKpi;
+      const series = await fetchFredSeries(SERIES_IDS.naturalGas);
+      return buildKpi(series, "Natural Gas", "$/MMBtu", "blue", 2, SERIES_IDS.naturalGas);
+    },
+    fallbackNatGasKpi,
+  );
 }
 
 /** US 10-Year Treasury constant maturity yield, in percent. */
 export async function getUs10yKpi(): Promise<Kpi> {
-  try {
-    const series = await fetchFredSeries(SERIES_IDS.us10y);
-    return buildKpi(series, "US 10Y Treasury", "%", "blue", 2, SERIES_IDS.us10y, "us-treasury");
-  } catch { /* fall through to Yahoo Finance */ }
-  return (await getYfUs10yKpi()) ?? fallbackUs10yKpi;
+  return resolveWithPersistedFallback(
+    "us10y",
+    async () => {
+      try {
+        const series = await fetchFredSeries(SERIES_IDS.us10y);
+        return buildKpi(series, "US 10Y Treasury", "%", "blue", 2, SERIES_IDS.us10y, "us-treasury");
+      } catch {
+        const yfKpi = await getYfUs10yKpi();
+        if (yfKpi) return yfKpi;
+        throw new Error("Both FRED and Yahoo Finance failed for US 10Y");
+      }
+    },
+    fallbackUs10yKpi,
+  );
 }
 
 /** US Federal Funds effective rate, in percent.
@@ -199,12 +215,11 @@ export async function getUs10yKpi(): Promise<Kpi> {
  *  The rate only changes 8 times/year so the fallback stays accurate
  *  between FOMC meetings. */
 export async function getFedFundsKpi(): Promise<Kpi> {
-  try {
-    const series = await fetchFredSeries(SERIES_IDS.fedFunds);
-    return buildKpi(series, "Fed Funds Rate", "%", "purple", 2, SERIES_IDS.fedFunds, "us-treasury");
-  } catch {
-    return fallbackFedFundsKpi;
-  }
+  return resolveWithPersistedFallback(
+    "fed-funds",
+    () => fetchFredSeries(SERIES_IDS.fedFunds).then((series) => buildKpi(series, "Fed Funds Rate", "%", "purple", 2, SERIES_IDS.fedFunds, "us-treasury")),
+    fallbackFedFundsKpi,
+  );
 }
 
 // --- Comparisons feature: historical series ---------------------------------

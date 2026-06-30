@@ -69,20 +69,27 @@ export function getMostRecentEvent(events: EconomicEvent[], titlePrefix: string,
   return sortByDateAsc(past)[past.length - 1];
 }
 
+/** First signed-decimal substring in `value`, or null if none — e.g. "$11.2B" -> 11.2, "11.5% (held)" -> 11.5, "-0.85%" -> -0.85. */
+function extractLeadingNumber(value: string): number | null {
+  const match = value.match(/-?\d+(\.\d+)?/);
+  return match ? Number(match[0]) : null;
+}
+
 /**
  * Whether a live KPI's current value already matches a known event's
  * outcome — e.g. an SBP "hold" decision correctly produces no new
  * SBP EasyData observation, since the rate didn't change, so the existing
  * `latestDate` can be much older than the meeting date without the figure
- * actually being wrong. Plain `parseFloat` is enough here since it stops at
- * the first non-numeric character, so "11.5% (held)" and "11.50" both
- * resolve to comparable numbers.
+ * actually being wrong. Uses a leading-number regex (not raw `parseFloat`)
+ * since several series' actual_value strings start with a non-numeric
+ * prefix the sync pipeline adds — e.g. FX Reserves writes "$11.2B", which
+ * `parseFloat` alone reads as NaN.
  */
 export function valueMatchesEventOutcome(kpiValue: string, eventActual: string | null | undefined): boolean {
   if (!eventActual) return false;
-  const kpiNum = parseFloat(kpiValue);
-  const eventNum = parseFloat(eventActual);
-  if (Number.isNaN(kpiNum) || Number.isNaN(eventNum)) return false;
+  const kpiNum = extractLeadingNumber(kpiValue);
+  const eventNum = extractLeadingNumber(eventActual);
+  if (kpiNum === null || eventNum === null) return false;
   return Math.abs(kpiNum - eventNum) < 0.01;
 }
 

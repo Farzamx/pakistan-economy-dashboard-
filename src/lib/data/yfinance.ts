@@ -9,6 +9,8 @@
 import type { Kpi } from "@/data/kpiData";
 import type { MarketType } from "@/lib/marketCalendar";
 import { dedupeInFlight, getFresh, setCache } from "@/lib/memoryCache";
+import { resolveWithPersistedFallback } from "@/lib/marketFallbackSnapshot";
+import { fallbackPakEtfKpi } from "@/data/globalMarketsFallbackData";
 
 const YF_BASE = "https://query1.finance.yahoo.com/v8/finance/chart";
 const REVALIDATE = 60 * 60; // 1h
@@ -168,16 +170,20 @@ export async function getYfUs10yKpi(): Promise<Kpi | null> {
 // ETF is delisted or has stopped trading on the exchange.
 const PAK_ETF_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
-export async function getPakEtfKpi(): Promise<Kpi | null> {
-  try {
-    const { price, prevClose, updatedAt } = await fetchYfQuote("PAK");
-    const ageMs = Date.now() - updatedAt * 1000;
-    if (ageMs > PAK_ETF_MAX_AGE_MS) {
-      const ageDays = Math.round(ageMs / 86_400_000);
-      throw new Error(`PAK ETF data is ${ageDays} days old — fund may be delisted`);
-    }
-    return buildYfKpi(price, prevClose, updatedAt, "Pakistan ETF (NYSE: PAK)", "$", "blue", 2, "PAK");
-  } catch { return null; }
+export async function getPakEtfKpi(): Promise<Kpi> {
+  return resolveWithPersistedFallback(
+    "pak-etf",
+    async () => {
+      const { price, prevClose, updatedAt } = await fetchYfQuote("PAK");
+      const ageMs = Date.now() - updatedAt * 1000;
+      if (ageMs > PAK_ETF_MAX_AGE_MS) {
+        const ageDays = Math.round(ageMs / 86_400_000);
+        throw new Error(`PAK ETF data is ${ageDays} days old — fund may be delisted`);
+      }
+      return buildYfKpi(price, prevClose, updatedAt, "Pakistan ETF (NYSE: PAK)", "$", "blue", 2, "PAK");
+    },
+    fallbackPakEtfKpi,
+  );
 }
 
 // --- Comparisons feature: historical series ---------------------------------

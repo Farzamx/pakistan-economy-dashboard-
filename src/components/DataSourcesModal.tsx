@@ -15,11 +15,16 @@ interface Props {
   kpis: Kpi[];
 }
 
-// Static entries for sources that don't produce Kpi objects
+// Static entries for sources that don't produce Kpi objects. Corrected per
+// Production Audit Part 9 — these previously named GNews API (removed from
+// the codebase) and Claude/Haiku (never the actual provider), both stale
+// and factually wrong. See src/lib/data/news.ts for the full source list
+// (6 Google News RSS queries + BBC/Dawn/Express Tribune direct feeds) and
+// src/lib/openRouterClient.ts for the actual AI chain.
 const STATIC_ENTRIES = [
-  { indicator: "News Feed (GNews)", source: "GNews API", seriesId: "pakistan economy", latestDate: undefined, frequency: undefined },
-  { indicator: "News Feed (RSS)", source: "Dawn / Reuters", seriesId: "RSS", latestDate: undefined, frequency: undefined },
-  { indicator: "AI Sentiment", source: "Claude (Haiku)", seriesId: "claude-haiku", latestDate: undefined, frequency: undefined },
+  { indicator: "News Feed (Aggregated)", source: "Google News RSS", seriesId: "6 targeted queries", latestDate: undefined, frequency: undefined },
+  { indicator: "News Feed (Direct)", source: "BBC / Dawn / Express Tribune RSS", seriesId: "3 outlet feeds", latestDate: undefined, frequency: undefined },
+  { indicator: "AI Sentiment", source: "OpenRouter (free-tier models) + Groq", seriesId: "gpt-oss-20b/120b, Hermes 3 405B, Groq gpt-oss-120b", latestDate: undefined, frequency: undefined },
 ] as const;
 
 export default function DataSourcesModal({ kpis }: Props) {

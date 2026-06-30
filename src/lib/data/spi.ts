@@ -1,5 +1,6 @@
 import * as XLSX from "xlsx";
-import { dedupeInFlight, getFresh, setCache } from "@/lib/memoryCache";
+import { revalidateTag } from "next/cache";
+import { dedupeInFlight, getFresh, invalidate, setCache } from "@/lib/memoryCache";
 
 // Pakistan Bureau of Statistics — Weekly Sensitive Price Indicator (SPI),
 // base 2015-16=100, "Combined" expenditure group (all quintiles).
@@ -26,9 +27,22 @@ const PBS_SEARCH_QUERY = "Sensitive Price Indicator";
 // SPI is published once a week, always on Friday. A 12h window means the
 // dashboard picks up a new Friday release within at most half a day, and
 // otherwise makes at most two checks a day against PBS — appropriately
-// conservative for an indicator that only ever changes once a week.
+// conservative for an indicator that only ever changes once a week. This is
+// the L2 (Next.js Data Cache) window, tagged so the calendar-sync cron can
+// force an immediate refresh the moment it confirms new PBS data — see
+// invalidateSpiCache() — rather than waiting out this window passively.
 const REVALIDATE_WEEKLY_SECONDS = 60 * 60 * 12;
+const CACHE_TAG = "spi-data";
 const FETCH_TIMEOUT_MS = 10_000;
+
+// L1 (in-memory) fast path — deliberately much shorter than the L2 window
+// above. Production Audit Part 2 traced a real incident to this L1 cache
+// previously sharing L2's full 12h TTL: even after the cron pushed a fresh
+// L2 value, a quiet-traffic Overview KPI request could still be served an
+// L1 entry up to 12h old. A short, SBP-style TTL here bounds that residual
+// staleness to minutes regardless of whether cross-instance L1 invalidation
+// is possible (it isn't, on serverless — see invalidateSpiCache()).
+const L1_TTL_MS = 10 * 60 * 1000;
 
 export interface SpiPoint {
   /** "YYYY-MM-DD", week-ended date. */
@@ -61,7 +75,7 @@ async function discoverLatestSpiReportUrl(): Promise<string> {
     order: "desc",
   });
   const res = await fetch(`${PBS_API_BASE}?${params.toString()}`, {
-    next: { revalidate: REVALIDATE_WEEKLY_SECONDS },
+    next: { revalidate: REVALIDATE_WEEKLY_SECONDS, tags: [CACHE_TAG] },
     signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
   });
   if (!res.ok) throw new Error(`PBS WordPress API returned ${res.status}`);
@@ -135,14 +149,14 @@ function parseCombinedSpiTable(buf: ArrayBuffer): SpiPoint[] {
  */
 export async function getSpiHistory(): Promise<SpiResult | null> {
   const cacheKey = "pbs-spi-history";
-  const cached = getFresh<SpiResult>(cacheKey, REVALIDATE_WEEKLY_SECONDS * 1000);
+  const cached = getFresh<SpiResult>(cacheKey, L1_TTL_MS);
   if (cached) return cached.data;
 
   try {
     return await dedupeInFlight(cacheKey, async () => {
       const reportUrl = await discoverLatestSpiReportUrl();
       const res = await fetch(reportUrl, {
-        next: { revalidate: REVALIDATE_WEEKLY_SECONDS },
+        next: { revalidate: REVALIDATE_WEEKLY_SECONDS, tags: [CACHE_TAG] },
         signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
       });
       if (!res.ok) throw new Error(`PBS SPI report fetch returned ${res.status}`);
@@ -155,4 +169,10 @@ export async function getSpiHistory(): Promise<SpiResult | null> {
   } catch {
     return null;
   }
+}
+
+/** Called by the calendar-sync cron right after it confirms a fresh PBS SPI release — see sbp.ts's invalidateSbpIndicatorCache() for the full reasoning (same pattern, applied to PBS instead of SBP EasyData). */
+export function invalidateSpiCache(): void {
+  invalidate("pbs-spi-history");
+  revalidateTag(CACHE_TAG, "max");
 }

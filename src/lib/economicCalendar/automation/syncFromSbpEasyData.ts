@@ -1,5 +1,6 @@
 import { getSbpIndicator, type SbpIndicatorKey } from "@/lib/data/sbp";
-import { getSpiHistory } from "@/lib/data/spi";
+import { invalidateSbpIndicatorCache } from "@/lib/data/sbpCacheInvalidation";
+import { getSpiHistory, invalidateSpiCache } from "@/lib/data/spi";
 import { createPublicDataClient } from "@/lib/supabase/publicDataClient";
 
 // Phase 2B Priority 1 automation — syncs `actual_value` on already-scheduled
@@ -123,6 +124,14 @@ export async function syncAllFromSbpEasyData(): Promise<SyncResult[]> {
       if (error) {
         results.push({ seriesSlug, status: "error", detail: error.message });
       } else {
+        if (didUpdate) {
+          // Push-based invalidation (Production Audit Part 5): the value
+          // just written here came from getSbpIndicator(target.indicatorKey)
+          // a few lines up — bust that indicator's L1/L2 cache now so the
+          // Overview KPI for the same series can't go on serving a value
+          // older than what this cron run just confirmed to Supabase.
+          invalidateSbpIndicatorCache(target.indicatorKey);
+        }
         results.push({ seriesSlug, status: didUpdate ? "synced" : "skipped-no-due-event", detail: didUpdate ? `Set actual_value=${actualValue} for ${dueEvent.event_date}` : "Event already released or not found at call time." });
       }
     } catch (err) {
@@ -177,6 +186,7 @@ export async function syncSpiFromPbs(): Promise<SyncResult> {
     });
 
     if (error) return { seriesSlug, status: "error", detail: error.message };
+    if (didUpdate) invalidateSpiCache();
     return { seriesSlug, status: didUpdate ? "synced" : "skipped-no-due-event", detail: didUpdate ? `Set actual_value=${actualValue} for ${dueEvent.event_date}` : "Event already released or not found at call time." };
   } catch (err) {
     return { seriesSlug, status: "error", detail: err instanceof Error ? err.message : String(err) };

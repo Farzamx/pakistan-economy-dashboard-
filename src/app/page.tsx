@@ -17,13 +17,13 @@ import Sidebar from "@/components/Sidebar";
 import HashScrollRestore from "@/components/HashScrollRestore";
 import ViewportFadeIn from "@/components/ViewportFadeIn";
 import TrendLineChart from "@/components/charts/TrendLineChart";
-import { fallbackPakEtfKpi } from "@/data/globalMarketsFallbackData";
 import { sectionData } from "@/data/sectionData";
 import { getFreshnessStatus } from "@/lib/dataFreshness";
 import { getMostRecentEvent, valueMatchesEventOutcome } from "@/lib/economicCalendar/economicCalendarData";
 import { getAllScheduledEvents, getHistoricalEvents, toEconomicEvent } from "@/lib/economicCalendar/economicEventsRepo";
-import { getAiEconomicAnalysis } from "@/lib/data/aiEconomicAnalysis";
-import { getAiRiskIntelligence } from "@/lib/data/aiRiskIntelligence";
+import type { AiEconomicAnalysis } from "@/lib/data/aiEconomicAnalysis";
+import type { AiRiskIntelligence } from "@/lib/data/aiRiskIntelligence";
+import { getLatestWeeklyIntelligenceSnapshot } from "@/lib/data/weeklyIntelligence";
 import { getAllSbpIndicators } from "@/lib/data/sbp";
 import { getGdpKpi } from "@/lib/data/worldBank";
 import { getQuarterlyGdpKpi } from "@/lib/data/quarterlyGdp";
@@ -35,19 +35,18 @@ import {
   getWtiKpi,
 } from "@/lib/data/fred";
 import { getFxRates } from "@/lib/data/fxRates";
-import { getTaggedNews } from "@/lib/data/intelligence";
+import { getTaggedNews, NEWS_DISPLAY_LIMIT } from "@/lib/data/intelligence";
 import { getDxyKpi, getGoldKpi, getSilverKpi } from "@/lib/data/metals";
 import { getNews } from "@/lib/data/news";
 import { getPakEtfKpi } from "@/lib/data/yfinance";
 import { getSpiHistory } from "@/lib/data/spi";
 import {
-  calculateRecessionRisk,
-  calculateDefaultRisk,
   computeDataConfidence,
   type IndicatorStatus,
+  type RiskModelResult,
 } from "@/lib/riskModels";
+import { getHealthStatus, healthLabelToRiskLevel, type HealthModelResult } from "@/lib/economicHealth";
 import type { Kpi } from "@/data/kpiData";
-import { unstable_cache } from "next/cache";
 
 function makeTickerItem(
   kpi: Kpi,
@@ -64,6 +63,15 @@ function makeTickerItem(
   return { label, value: kpi.value, unit, changeDisplay, trend: kpi.trend, termKey };
 }
 
+/** "17 Jun · 18:00 PKT" — used for the Weekly Intelligence Engine's "computed"/"next update" framing. */
+function formatPktDate(d: Date): string {
+  const opts: Intl.DateTimeFormatOptions = { timeZone: "Asia/Karachi", hour12: false };
+  const day = d.toLocaleString("en-GB", { ...opts, day: "numeric" });
+  const month = d.toLocaleString("en-GB", { ...opts, month: "short" });
+  const time = d.toLocaleString("en-GB", { ...opts, hour: "2-digit", minute: "2-digit" });
+  return `${day} ${month} · ${time} PKT`;
+}
+
 function getSection(id: string) {
   const section = sectionData.find((item) => item.id === id);
   if (!section) {
@@ -73,7 +81,7 @@ function getSection(id: string) {
 }
 
 export default async function Home() {
-  const [gdpKpi, sbp, goldKpi, silverKpi, brentKpi, wtiKpi, naturalGasKpi, dxyKpi, us10yKpi, fedFundsKpi, newsItems, fxRates, pakEtfKpiRaw, quarterlyGdp, spi, scheduledCalendarEvents, historicalCalendarEvents] =
+  const [gdpKpi, sbp, goldKpi, silverKpi, brentKpi, wtiKpi, naturalGasKpi, dxyKpi, us10yKpi, fedFundsKpi, newsItems, fxRates, pakEtfKpi, quarterlyGdp, spi, scheduledCalendarEvents, historicalCalendarEvents] =
     await Promise.all([
       getGdpKpi(),
       getAllSbpIndicators(),
@@ -93,8 +101,6 @@ export default async function Home() {
       getAllScheduledEvents(),
       getHistoricalEvents(),
     ]);
-
-  const pakEtfKpi = pakEtfKpiRaw ?? fallbackPakEtfKpi;
 
   // Weekly SPI has no static fallback (see spi.ts) — the card simply
   // doesn't render if the live fetch/parse fails, same as the PAK ETF card.
@@ -130,51 +136,6 @@ export default async function Home() {
   const spiYoyTrend = spiPoints.map((p) => {
     const [, month, day] = p.date.split("-");
     return { month: `${Number(day)} ${SPI_MONTH_NAMES[Number(month) - 1]}`, value: p.yoyPct };
-  });
-
-  // ── Quantitative risk model inputs ────────────────────────────────────────
-  // Compute USD/PKR YoY change from the 24-month trend array (index −13 = 12mo ago)
-  const usdPkrTrend = sbp.usdPkr.trend;
-  const currentUsdPkr = parseFloat(sbp.usdPkr.kpi.value);
-  const yearAgoUsdPkr =
-    usdPkrTrend[Math.max(0, usdPkrTrend.length - 13)]?.value ?? currentUsdPkr;
-  const usdPkrYoyPct =
-    yearAgoUsdPkr > 0 ? ((currentUsdPkr - yearAgoUsdPkr) / yearAgoUsdPkr) * 100 : 0;
-
-  // Import cover = total reserves (SBP + banks) / monthly imports
-  const sbpReservesB = parseFloat(sbp.foreignReserves.kpi.value);
-  const bankReservesB = parseFloat(sbp.netBankReserves.kpi.value);
-  const monthlyImportsB = parseFloat(sbp.imports.kpi.value);
-  const importCoverMonths =
-    monthlyImportsB > 0 ? (sbpReservesB + bankReservesB) / monthlyImportsB : 3.0;
-
-  // Private credit growth YoY % — weekly SBP series; replaces PAK ETF day % (too noisy)
-  const privateCreditGrowthPct = parseFloat(sbp.privateCreditGrowth.kpi.value);
-
-  // LSM MoM index points change (change string: "-6.8 vs Feb 2026")
-  const lsmMatch = sbp.lsm.kpi.change.match(/^([+-]?\d+\.?\d*)/);
-  const lsmMomPoints = lsmMatch ? parseFloat(lsmMatch[1]) : 0;
-
-  const recessionResult = calculateRecessionRisk({
-    gdpGrowthPct: parseFloat(gdpKpi.value),
-    quarterlyGdpGrowthPct: parseFloat(quarterlyGdp.kpi.value),
-    cpiInflationPct: parseFloat(sbp.cpiInflation.kpi.value),
-    policyRatePct: parseFloat(sbp.policyRate.kpi.value),
-    importCoverMonths,
-    currentAccountMonthlyB: parseFloat(sbp.currentAccount.kpi.value),
-    usdPkrYoyChangePct: usdPkrYoyPct,
-    privateCreditGrowthPct,
-    lsmMomPoints,
-  });
-
-  // SBP Reserves removed from DefaultModelInputs — it was the numerator of importCoverMonths,
-  // causing double-counting at a combined 0.45 effective weight.
-  const defaultResult = calculateDefaultRisk({
-    importCoverMonths,
-    fiscalBalanceTrn: parseFloat(sbp.fiscalBalance.kpi.value),
-    currentAccountMonthlyB: parseFloat(sbp.currentAccount.kpi.value),
-    usdPkrYoyChangePct: usdPkrYoyPct,
-    policyRatePct: parseFloat(sbp.policyRate.kpi.value),
   });
 
   // ── Data Confidence ───────────────────────────────────────────────────────
@@ -262,78 +223,91 @@ export default async function Home() {
   // This decouples cache lifetime from prompt content and prevents the
   // "new body → cache miss → OpenRouter call" problem that made the 1h
   // next.revalidate setting ineffective.
-  const SIX_HOUR_MS = 6 * 60 * 60 * 1000;
-  const sixHourBucket = Math.floor(Date.now() / SIX_HOUR_MS);
+  //
+  // Weekly Intelligence Engine (Production Audit Part 2): Health Score and
+  // Recession/Default no longer compute on page load or on a 6h AI cache —
+  // they read the latest snapshot a Monday cron
+  // (/api/cron/weekly-intelligence) already computed and stored. See
+  // weeklyIntelligenceCompute.ts for where calculateEconomicHealth/
+  // calculateRecessionRisk/calculateDefaultRisk + AI narration now run.
+  // `weeklySnapshot` is null only before the very first cron run.
+  const weeklySnapshot = await getLatestWeeklyIntelligenceSnapshot();
 
-  // Helper: format a UTC epoch ms as a short PKT string ("17 Jun · 18:00 PKT")
-  function fmtPkt(ms: number): string {
-    const d = new Date(ms);
-    const opts: Intl.DateTimeFormatOptions = { timeZone: "Asia/Karachi", hour12: false };
-    const day   = d.toLocaleString("en-GB", { ...opts, day: "numeric" });
-    const month = d.toLocaleString("en-GB", { ...opts, month: "short" });
-    const time  = d.toLocaleString("en-GB", { ...opts, hour: "2-digit", minute: "2-digit" });
-    return `${day} ${month} · ${time} PKT`;
-  }
+  const health: HealthModelResult | null = weeklySnapshot
+    ? (() => {
+        const factors = weeklySnapshot.health.factors;
+        const sorted = [...factors].sort((a, b) => b.score - a.score);
+        return {
+          score: weeklySnapshot.health.score,
+          status: getHealthStatus(weeklySnapshot.health.score),
+          factors,
+          topStrengthFactors: sorted.slice(0, 3),
+          topWeaknessFactors: sorted.slice(-3).reverse(),
+        };
+      })()
+    : null;
+  const recessionResult: RiskModelResult | null = weeklySnapshot
+    ? {
+        probability: weeklySnapshot.recession.probability,
+        modelScore: weeklySnapshot.recession.modelScore,
+        riskCategory: weeklySnapshot.recession.category,
+        topRiskFactors: weeklySnapshot.recession.factors.topRiskFactors,
+        topCushionFactors: weeklySnapshot.recession.factors.topCushionFactors,
+      }
+    : null;
+  const defaultResult: RiskModelResult | null = weeklySnapshot
+    ? {
+        probability: weeklySnapshot.default.probability,
+        modelScore: weeklySnapshot.default.modelScore,
+        riskCategory: weeklySnapshot.default.category,
+        topRiskFactors: weeklySnapshot.default.factors.topRiskFactors,
+        topCushionFactors: weeklySnapshot.default.factors.topCushionFactors,
+      }
+    : null;
+  const aiAnalysis: AiEconomicAnalysis | null = weeklySnapshot
+    ? {
+        sentiment: weeklySnapshot.ai.sentiment,
+        summary: weeklySnapshot.ai.summary,
+        topDrivers: weeklySnapshot.ai.topDrivers,
+        modelUsed: weeklySnapshot.ai.modelUsed,
+        modelDisplayName: weeklySnapshot.ai.modelDisplayName,
+      }
+    : null;
+  const aiRisk: AiRiskIntelligence | null = weeklySnapshot
+    ? {
+        recession: weeklySnapshot.ai.recessionExplanation,
+        default: weeklySnapshot.ai.defaultExplanation,
+        modelUsed: weeklySnapshot.ai.modelUsed,
+        modelDisplayName: weeklySnapshot.ai.modelDisplayName,
+      }
+    : null;
 
-  const aiCacheIssuedAt  = fmtPkt(sixHourBucket * SIX_HOUR_MS);
-  const aiCacheExpiresAt = fmtPkt((sixHourBucket + 1) * SIX_HOUR_MS);
-
-  // Snapshot of live indicators — used by the health score AI call.
-  // Extracted here so it can be closed over by the unstable_cache wrapper.
-  const indicatorSnapshot = {
-    gdpGrowth:          `${gdpKpi.value}${gdpKpi.unit} (${gdpKpi.change})`,
-    quarterlyGdpGrowth: `${quarterlyGdp.kpi.value}${quarterlyGdp.kpi.unit} YoY (${quarterlyGdp.kpi.change}), ${quarterlyGdp.kpi.latestDate}`,
-    cpiInflation:       `${sbp.cpiInflation.kpi.value}${sbp.cpiInflation.kpi.unit} (${sbp.cpiInflation.kpi.change})`,
-    coreInflation:      `${sbp.coreInflation.kpi.value}${sbp.coreInflation.kpi.unit} (${sbp.coreInflation.kpi.change})`,
-    policyRate:         `${sbp.policyRate.kpi.value}${sbp.policyRate.kpi.unit} (${sbp.policyRate.kpi.change})`,
-    foreignReserves:    `$${sbp.foreignReserves.kpi.value}B (${sbp.foreignReserves.kpi.change})`,
-    tradeBalance:       `${sbp.tradeBalance.kpi.value}${sbp.tradeBalance.kpi.unit} (${sbp.tradeBalance.kpi.change})`,
-    currentAccount:     `${sbp.currentAccount.kpi.value}${sbp.currentAccount.kpi.unit} (${sbp.currentAccount.kpi.change})`,
-    remittances:        `$${sbp.remittances.kpi.value}B (${sbp.remittances.kpi.change})`,
-    usdPkr:             `${sbp.usdPkr.kpi.value} PKR (${sbp.usdPkr.kpi.change})`,
-    kse100:             `${pakEtfKpi.value} (${pakEtfKpi.change})`,
-    brentOil:           `$${brentKpi.value}/bbl (${brentKpi.change})`,
-    wtiOil:             `$${wtiKpi.value}/bbl (${wtiKpi.change})`,
-    gold:               `$${goldKpi.value}/oz (${goldKpi.change})`,
-    dxy:                `${dxyKpi.value} (${dxyKpi.change})`,
-    us10y:              `${us10yKpi.value}% (${us10yKpi.change})`,
-    fedFunds:           `${fedFundsKpi.value}% (${fedFundsKpi.change})`,
-  };
+  // "Computed"/"next update" framing replaces the old 6h AI-cache-window
+  // copy — this is now a weekly cadence, not a rolling cache.
+  const intelligenceComputedAt = weeklySnapshot ? formatPktDate(new Date(weeklySnapshot.computedAt)) : null;
+  const intelligenceNextUpdateAt = weeklySnapshot
+    ? formatPktDate(new Date(new Date(weeklySnapshot.computedAt).getTime() + 7 * 24 * 60 * 60 * 1000))
+    : null;
 
   // ── Layer 2: News Intelligence — tiered cache (news.ts: 10-25 min by
   // source; AI tagging via getTaggedNews: 30 min) — see news.ts/
   // intelligence.ts for the full breakdown from the News & Intelligence audit.
   const newsSourceCount = new Set(newsItems.map((n) => n.source)).size;
-
-  const [taggedNewsResult, aiAnalysis, aiRisk] = await Promise.all([
-    getTaggedNews(newsItems),
-    // Health Score: cached for 6h via time-bucket key (prompt content not in key)
-    unstable_cache(
-      async () => getAiEconomicAnalysis(indicatorSnapshot, newsItems),
-      [`ai-health-${sixHourBucket}`],
-      { revalidate: 6 * 3600, tags: ["ai-risk-engine"] },
-    )(),
-    // Risk Intelligence: cached for 6h — same bucket as health score
-    unstable_cache(
-      async () => getAiRiskIntelligence(recessionResult, defaultResult),
-      [`ai-risk-${sixHourBucket}`],
-      { revalidate: 6 * 3600, tags: ["ai-risk-engine"] },
-    )(),
-  ]);
+  const taggedNewsResult = await getTaggedNews(newsItems);
 
   // ── Dashboard Snapshot for Floating AI Assistant ─────────────────────────
   const dashboardSnapshot: DashboardSnapshot = {
-    economicHealthScore: aiAnalysis.economicHealthScore,
-    sentiment: aiAnalysis.sentiment,
-    riskLevel: aiAnalysis.riskLevel,
-    summary: aiAnalysis.summary,
-    topDrivers: aiAnalysis.topDrivers,
-    recessionProbability: recessionResult.probability,
-    recessionCategory: recessionResult.riskCategory,
-    recessionModelScore: recessionResult.modelScore,
-    defaultProbability: defaultResult.probability,
-    defaultCategory: defaultResult.riskCategory,
-    defaultModelScore: defaultResult.modelScore,
+    economicHealthScore: health?.score ?? 0,
+    sentiment: aiAnalysis?.sentiment ?? "Neutral",
+    riskLevel: health ? healthLabelToRiskLevel(health.status.label) : "Moderate",
+    summary: aiAnalysis?.summary ?? "Weekly intelligence snapshot not yet available.",
+    topDrivers: aiAnalysis?.topDrivers ?? [],
+    recessionProbability: recessionResult?.probability ?? 0,
+    recessionCategory: recessionResult?.riskCategory ?? "Elevated",
+    recessionModelScore: recessionResult?.modelScore ?? 0,
+    defaultProbability: defaultResult?.probability ?? 0,
+    defaultCategory: defaultResult?.riskCategory ?? "Elevated",
+    defaultModelScore: defaultResult?.modelScore ?? 0,
     gdpGrowth: `${gdpKpi.value}${gdpKpi.unit} (${gdpKpi.change})`,
     quarterlyGdpGrowth: `${quarterlyGdp.kpi.value}${quarterlyGdp.kpi.unit} YoY (${quarterlyGdp.kpi.change}), as of ${quarterlyGdp.kpi.latestDate}`,
     cpiInflation: `${sbp.cpiInflation.kpi.value}${sbp.cpiInflation.kpi.unit} (${sbp.cpiInflation.kpi.change})`,
@@ -358,6 +332,54 @@ export default async function Home() {
   };
   // ─────────────────────────────────────────────────────────────────────────
 
+  // Economic-Calendar-aware freshness — every indicator below tracks the
+  // exact same release as a recurring Economic Calendar series, so the
+  // calendar's known due dates let dataFreshness.ts flag a real delay
+  // sooner than each indicator's generic per-frequency threshold would,
+  // without misreading a not-yet-due release as late. Originally applied
+  // only to Policy Rate/T-Bill 3M/PIB; Production Audit Part 4/Part 2
+  // (data lineage) traced the SPI staleness incident to exactly this gap
+  // for every *other* eligible indicator, and confirmed the calendar's
+  // actual_value for FX Reserves/Current Account/Trade Balance/Remittances/
+  // CPI/Core/LSM is synced from this exact same SBP EasyData call
+  // (syncFromSbpEasyData.ts's SYNC_TARGETS) — not a different vintage as an
+  // earlier version of this comment assumed — so cross-referencing them is
+  // safe, not riskier than not doing so.
+  //
+  // releaseAlreadyReflected matters most for Policy Rate (a "hold" produces
+  // no new SBP EasyData observation at all, so an old latestDate isn't
+  // actually wrong), but is applied uniformly since it's a no-op safety
+  // check for series that don't have a "hold" concept.
+  //
+  // Treasury Bill Auction title-prefix bug fix: the Rolling Calendar
+  // refactor split T-Bill into 3M/6M/12M series, all auctioned on the same
+  // date under titles "Treasury Bill Auction (3M)"/"(6M)"/"(12M)" — the
+  // generic "Treasury Bill Auction" prefix used to match all three
+  // indiscriminately, risking pairing the wrong tenor's actual value
+  // against sbp.tbillYield3m specifically. Now matches "(3M)" exactly.
+  const todayForCalendar = new Date();
+  const allCalendarEvents = [...scheduledCalendarEvents, ...historicalCalendarEvents].map(toEconomicEvent);
+  const policyRateEvent = getMostRecentEvent(allCalendarEvents, "SBP Monetary Policy Committee Meeting", todayForCalendar);
+  const tbillEvent = getMostRecentEvent(allCalendarEvents, "Treasury Bill Auction (3M)", todayForCalendar);
+  const pibEvent = getMostRecentEvent(allCalendarEvents, "PIB Auction", todayForCalendar);
+  const cpiEvent = getMostRecentEvent(allCalendarEvents, "CPI Inflation Release", todayForCalendar);
+  const coreInflationEvent = getMostRecentEvent(allCalendarEvents, "Core Inflation Release", todayForCalendar);
+  const fxReservesEvent = getMostRecentEvent(allCalendarEvents, "SBP Foreign Exchange Reserves", todayForCalendar);
+  const currentAccountEvent = getMostRecentEvent(allCalendarEvents, "Current Account Balance", todayForCalendar);
+  const tradeBalanceEvent = getMostRecentEvent(allCalendarEvents, "Trade Balance", todayForCalendar);
+  const remittancesEvent = getMostRecentEvent(allCalendarEvents, "Worker Remittances", todayForCalendar);
+  const lsmEvent = getMostRecentEvent(allCalendarEvents, "Large Scale Manufacturing", todayForCalendar);
+  const spiEvent = getMostRecentEvent(allCalendarEvents, "SPI Weekly Inflation Release", todayForCalendar);
+
+  function withCalendarFreshness(kpi: Kpi, event: typeof policyRateEvent) {
+    if (!event) return kpi;
+    return {
+      ...kpi,
+      expectedReleaseDate: event.date,
+      releaseAlreadyReflected: valueMatchesEventOutcome(kpi.value, event.actual),
+    };
+  }
+
   // SPI's weekly % takes USD/PKR's old headline slot — USD/PKR is still
   // fully visible (Live FX section, market ticker), while SPI's faster,
   // weekly-updating inflation read is more strategically useful as one of
@@ -370,52 +392,21 @@ export default async function Home() {
   const headlineKpis = [
     gdpKpi,
     { ...quarterlyGdp.kpi, sparkline: quarterlyGdp.trend.slice(-12).map((p) => p.value) },
-    { ...sbp.cpiInflation.kpi, sparkline: sbp.cpiInflation.trend.slice(-12).map((p) => p.value) },
-    { ...sbp.foreignReserves.kpi, sparkline: sbp.foreignReserves.trend.slice(-12).map((p) => p.value) },
-    { ...sbp.remittances.kpi, sparkline: sbp.remittances.trend.slice(-12).map((p) => p.value) },
-    ...(spiKpi ? [spiKpi] : []),
+    withCalendarFreshness({ ...sbp.cpiInflation.kpi, sparkline: sbp.cpiInflation.trend.slice(-12).map((p) => p.value) }, cpiEvent),
+    withCalendarFreshness({ ...sbp.foreignReserves.kpi, sparkline: sbp.foreignReserves.trend.slice(-12).map((p) => p.value) }, fxReservesEvent),
+    withCalendarFreshness({ ...sbp.remittances.kpi, sparkline: sbp.remittances.trend.slice(-12).map((p) => p.value) }, remittancesEvent),
+    ...(spiKpi ? [withCalendarFreshness(spiKpi, spiEvent)] : []),
   ];
-
-  // Economic-Calendar-aware freshness — these three "As Needed" indicators
-  // each track the exact same release as a recurring Economic Calendar
-  // series (MPC decisions, T-Bill/PIB auctions), so the calendar's known
-  // dates let dataFreshness.ts flag a real delay sooner than its generic
-  // 90-day As-Needed threshold would, without misreading a not-yet-due
-  // release as late. Not applied to FX Reserves/Current Account/Trade
-  // Balance/Remittances — those are sourced here as SBP EasyData *monthly*
-  // aggregates, a different vintage from the calendar's weekly press-
-  // release series of the same name, so cross-referencing them would risk
-  // an incorrect verdict rather than a more accurate one.
-  //
-  // releaseAlreadyReflected matters specifically for Policy Rate: SBP
-  // EasyData only adds a new dated observation when the rate actually
-  // changes, so a "hold" decision (the common case) never produces a new
-  // latestDate at all — without this check, every hold would eventually
-  // misreport as "Stale" even though the live value is already correct.
-  const todayForCalendar = new Date();
-  const allCalendarEvents = [...scheduledCalendarEvents, ...historicalCalendarEvents].map(toEconomicEvent);
-  const policyRateEvent = getMostRecentEvent(allCalendarEvents, "SBP Monetary Policy Committee Meeting", todayForCalendar);
-  const tbillEvent = getMostRecentEvent(allCalendarEvents, "Treasury Bill Auction", todayForCalendar);
-  const pibEvent = getMostRecentEvent(allCalendarEvents, "PIB Auction", todayForCalendar);
-
-  function withCalendarFreshness(kpi: Kpi, event: typeof policyRateEvent) {
-    if (!event) return kpi;
-    return {
-      ...kpi,
-      expectedReleaseDate: event.date,
-      releaseAlreadyReflected: valueMatchesEventOutcome(kpi.value, event.actual),
-    };
-  }
 
   const secondaryKpis = [
     withCalendarFreshness(sbp.policyRate.kpi, policyRateEvent),
-    sbp.coreInflation.kpi,
+    withCalendarFreshness(sbp.coreInflation.kpi, coreInflationEvent),
     sbp.wpiInflation.kpi,
     sbp.usdPkr.kpi,
     withCalendarFreshness(sbp.tbillYield3m.kpi, tbillEvent),
     withCalendarFreshness(sbp.pibYield3y.kpi, pibEvent),
-    sbp.currentAccount.kpi,
-    sbp.tradeBalance.kpi,
+    withCalendarFreshness(sbp.currentAccount.kpi, currentAccountEvent),
+    withCalendarFreshness(sbp.tradeBalance.kpi, tradeBalanceEvent),
     sbp.moneySupplyM2.kpi,
   ];
 
@@ -446,7 +437,7 @@ export default async function Home() {
     sbp.imports.kpi,
     sbp.fdiInflows.kpi,
     sbp.reer.kpi,
-    sbp.lsm.kpi,
+    withCalendarFreshness(sbp.lsm.kpi, lsmEvent),
     sbp.privateCreditGrowth.kpi,
     sbp.fiscalBalance.kpi,
   ];
@@ -469,7 +460,7 @@ export default async function Home() {
     ...headlineKpis,
     ...secondaryKpis,
     ...globalMarketsKpis,
-    ...(pakEtfKpiRaw !== null ? [pakEtfKpiRaw] : [pakEtfKpi]),
+    pakEtfKpi,
     ...liveFxKpis,
     ...realEconomyKpis,
     sbp.netBankReserves.kpi,
@@ -504,19 +495,29 @@ export default async function Home() {
 
         <KpiGrid items={headlineKpis} cols={3} />
 
-        <HealthScoreCard {...aiAnalysis} />
+        {health && aiAnalysis && recessionResult && defaultResult && aiRisk && intelligenceComputedAt && intelligenceNextUpdateAt ? (
+          <>
+            <HealthScoreCard health={health} ai={aiAnalysis} />
 
-        <HideableSection id="risk-intelligence">
-          <RiskIntelligenceSection
-            recession={recessionResult}
-            defaultRisk={defaultResult}
-            ai={aiRisk}
-            recessionConfidence={recessionConfidence}
-            defaultConfidence={defaultConfidence}
-            aiCacheIssuedAt={aiCacheIssuedAt}
-            aiCacheExpiresAt={aiCacheExpiresAt}
-          />
-        </HideableSection>
+            <HideableSection id="risk-intelligence">
+              <RiskIntelligenceSection
+                recession={recessionResult}
+                defaultRisk={defaultResult}
+                ai={aiRisk}
+                recessionConfidence={recessionConfidence}
+                defaultConfidence={defaultConfidence}
+                computedAt={intelligenceComputedAt}
+                nextUpdateAt={intelligenceNextUpdateAt}
+              />
+            </HideableSection>
+          </>
+        ) : (
+          <div className="glass-card mt-8 p-6 text-center sm:p-8">
+            <p className="text-sm text-white/50 light:text-slate-500">
+              Weekly intelligence snapshot not yet available. The Economic Health Score and Risk Intelligence update every Monday — check back after the next scheduled run.
+            </p>
+          </div>
+        )}
 
         <HideableSection id="gdp">
         <DashboardSection {...getSection("gdp")}>
@@ -757,7 +758,7 @@ export default async function Home() {
 
         <HideableSection id="news-intelligence">
         <NewsIntelligenceSection
-          items={taggedNewsResult.items.slice(0, 24)}
+          items={taggedNewsResult.items.slice(0, NEWS_DISPLAY_LIMIT)}
           modelDisplayName={taggedNewsResult.modelDisplayName}
           newsRefreshedAt={pktTimestamp}
           sourceCount={newsSourceCount}
