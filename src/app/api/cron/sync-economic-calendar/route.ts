@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { syncAllFromSbpEasyData } from "@/lib/economicCalendar/automation/syncFromSbpEasyData";
 import { syncOfficialCalendars } from "@/lib/economicCalendar/automation/syncOfficialCalendars";
+import { detectAndFillCalendarGaps } from "@/lib/economicCalendar/automation/detectCalendarGaps";
 import { processNotificationJobs } from "@/lib/notifications/notificationJobWorker";
 import { logCronRun } from "@/lib/cronLogging";
 
@@ -40,25 +41,47 @@ export async function GET(request: Request) {
     return new NextResponse("Unauthorized", { status: 401 });
   }
 
-  // Official calendar sync runs first: if SBP just postponed a date, the
-  // actual-value sync below must see that the row is no longer 'scheduled'
-  // before it ever tries to release it. Each step is independently
-  // try/caught (Part 5 robustness fix) so a hard throw in one — previously
-  // unguarded, meaning it would have silently skipped the other two steps
-  // entirely and left no log of any of it — can't prevent the other two
-  // independent jobs from running, and every step gets a history entry
-  // even on a genuine crash, not just a clean error-status result.
+  // Step 1: Official calendar sync — if SBP postponed a date, the actual-value
+  // sync below must see the updated row before it tries to release it.
+  //
+  // Step 2: Gap detection — creates missing scheduled events for automated monthly
+  // series. Runs before the actual-value sync so that newly created events can be
+  // filled in the same cron pass. Requires NOTIFICATION_WORKER_SECRET for the
+  // create_missing_scheduled_event() SECURITY DEFINER RPC.
+  //
+  // Step 3: SBP EasyData actual-value sync — fills scheduled events (including
+  // any just created by gap detection) with confirmed actual values.
+  //
+  // Step 4: Notification processing — drains the notification job queue produced
+  // by sync_event_actual()'s trigger in step 3.
+  //
+  // Each step is independently try/caught so a hard throw in one does not prevent
+  // the others from running, and every step gets its own cron_run_log entry.
+  const workerSecret = process.env.NOTIFICATION_WORKER_SECRET ?? "";
+
   let startedAt = new Date();
   let officialCalendars: Awaited<ReturnType<typeof syncOfficialCalendars>> = [];
   try {
     officialCalendars = await syncOfficialCalendars();
     const officialErrors = officialCalendars.filter((r) => r.status === "error");
-    // "skipped-fetch-or-parse-failed" is a graceful degradation (official
-    // source unreachable this run, existing data left untouched) — not a
-    // job failure the way a genuine "error" status is.
+    // "skipped-fetch-or-parse-failed" is graceful degradation — not a job failure.
     await logCronRun("official-calendar-sync", startedAt, officialErrors.length > 0 ? "failure" : "success", officialCalendars.map((r) => `${r.seriesSlug}:${r.status}`).join(", "));
   } catch (err) {
     await logCronRun("official-calendar-sync", startedAt, "failure", err instanceof Error ? err.message : String(err));
+  }
+
+  startedAt = new Date();
+  let gapDetection: Awaited<ReturnType<typeof detectAndFillCalendarGaps>> = [];
+  try {
+    gapDetection = await detectAndFillCalendarGaps(workerSecret);
+    const gapErrors = gapDetection.filter((r) => r.status === "error");
+    const gapsFilled = gapDetection.filter((r) => r.status === "gaps-filled");
+    const summary = gapsFilled.length > 0
+      ? `${gapsFilled.reduce((sum, r) => sum + r.created.length, 0)} event(s) created: ${gapsFilled.flatMap((r) => r.created).join(", ")}`
+      : "no gaps detected";
+    await logCronRun("calendar-gap-detection", startedAt, gapErrors.length > 0 ? "failure" : "success", summary);
+  } catch (err) {
+    await logCronRun("calendar-gap-detection", startedAt, "failure", err instanceof Error ? err.message : String(err));
   }
 
   startedAt = new Date();
@@ -81,5 +104,5 @@ export async function GET(request: Request) {
     await logCronRun("notification-worker", startedAt, "failure", err instanceof Error ? err.message : String(err));
   }
 
-  return NextResponse.json({ ranAt: new Date().toISOString(), officialCalendars, results, notifications });
+  return NextResponse.json({ ranAt: new Date().toISOString(), officialCalendars, gapDetection, results, notifications });
 }
