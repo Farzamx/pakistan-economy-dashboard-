@@ -4,6 +4,7 @@ import { getSpiHistory, invalidateSpiCache } from "@/lib/data/spi";
 import { createPublicDataClient } from "@/lib/supabase/publicDataClient";
 import { validateObservationPeriod } from "@/lib/economicCalendar/observationPeriodValidator";
 import { SERIES_PUBLICATION_META } from "@/lib/economicCalendar/seriesPublicationConfig";
+import { recordSourceAttempt } from "@/lib/economicCalendar/sourceHealthTracker";
 
 // Phase 2B Priority 1 automation — syncs `actual_value` on already-scheduled
 // economic_events rows from SBP EasyData, the same live, already-integrated
@@ -13,10 +14,11 @@ import { SERIES_PUBLICATION_META } from "@/lib/economicCalendar/seriesPublicatio
 //
 // Write path: economic_events has no public INSERT/UPDATE policy (see
 // 0002's RLS) and this project has no service-role key, so this calls the
-// sync_event_actual(...) Postgres function added in
-// 0004_economic_calendar_phase2b.sql — a SECURITY DEFINER function that can
-// only do one narrow thing (mark a matching scheduled event released with
-// an actual value), callable with the anon key via RPC.
+// sync_event_actual(...) Postgres function — a SECURITY DEFINER function that
+// can only do one narrow thing (mark a matching scheduled event released with
+// an actual value). Requires NOTIFICATION_WORKER_SECRET (migration 0027
+// retrofitted the check_internal_secret guard that all other write RPCs have
+// had since migration 0011).
 //
 // Observation-period validation (Phase 1 data-integrity fix, 2026-07-01):
 // every write is gated by validateObservationPeriod(), whose config is read
@@ -178,6 +180,7 @@ export interface SyncResult {
  */
 export async function syncAllFromSbpEasyData(): Promise<SyncResult[]> {
   const supabase = createPublicDataClient();
+  const workerSecret = process.env.NOTIFICATION_WORKER_SECRET ?? "";
   const results: SyncResult[] = [];
 
   for (const [seriesSlug, target] of Object.entries(SYNC_TARGETS)) {
@@ -198,8 +201,25 @@ export async function syncAllFromSbpEasyData(): Promise<SyncResult[]> {
         continue;
       }
 
+      const indicatorFetchStart = new Date();
       const indicator = await getSbpIndicator(target.indicatorKey);
-      if (indicator.meta.source !== "SBP EasyData") {
+      const isFallback = indicator.meta.source !== "SBP EasyData";
+      // Record source health for every fetch — tracks whether the data source
+      // itself is healthy independent of whether there was an event to write.
+      void recordSourceAttempt(
+        {
+          success: !isFallback,
+          observationDate: isFallback ? undefined : indicator.meta.observationDate,
+          sourceName: "SBP EasyData",
+          sourceType: "sbp-easydata",
+          isFallback,
+          error: isFallback ? "EasyData returned fallback snapshot" : undefined,
+        },
+        seriesSlug,
+        indicatorFetchStart,
+        "sbp-actual-value-sync",
+      );
+      if (isFallback) {
         results.push({
           seriesSlug,
           status: "skipped-fallback-data",
@@ -246,9 +266,11 @@ export async function syncAllFromSbpEasyData(): Promise<SyncResult[]> {
 
       const actualValue = target.format(indicator.kpi.value, dueEvent.previous_value);
       const { data: didUpdate, error } = await supabase.rpc("sync_event_actual", {
+        p_internal_secret: workerSecret,
         p_series_slug: seriesSlug,
         p_event_date: dueEvent.event_date,
         p_actual_value: actualValue,
+        p_observation_date: obsDate,
       });
 
       if (error) {
@@ -300,8 +322,23 @@ export async function syncAllFromSbpEasyData(): Promise<SyncResult[]> {
 export async function syncSpiFromPbs(): Promise<SyncResult> {
   const seriesSlug = "spi-weekly-inflation-release";
   try {
+    const spiFetchStart = new Date();
     const spi = await getSpiHistory();
-    if (!spi || spi.points.length === 0) {
+    const spiHealthy = !!(spi && spi.points.length > 0);
+    void recordSourceAttempt(
+      {
+        success: spiHealthy,
+        observationDate: spiHealthy ? spi!.points.at(-1)?.date : undefined,
+        sourceName: "PBS SPI Weekly Report",
+        sourceType: "pbs-web",
+        isFallback: false,
+        error: spiHealthy ? undefined : "PBS SPI fetch returned no points",
+      },
+      seriesSlug,
+      spiFetchStart,
+      "sbp-actual-value-sync",
+    );
+    if (!spiHealthy) {
       return {
         seriesSlug,
         status: "skipped-fallback-data",
@@ -310,6 +347,7 @@ export async function syncSpiFromPbs(): Promise<SyncResult> {
     }
 
     const supabase = createPublicDataClient();
+    const workerSecret = process.env.NOTIFICATION_WORKER_SECRET ?? "";
     const today = new Date().toISOString().slice(0, 10);
     const { data: dueEvents } = await supabase
       .from("economic_events")
@@ -329,21 +367,24 @@ export async function syncSpiFromPbs(): Promise<SyncResult> {
     // match the calendar slot's date. If PBS hasn't published the current
     // week yet, the sync skips cleanly rather than stamping the prior
     // week's figure onto the next slot (the original SPI mis-attribution).
-    const matchingPoint = spi.points.find((p) => p.date === dueEvent.event_date);
+    // spi is non-null here — the !spiHealthy guard above returned early.
+    const matchingPoint = spi!.points.find((p) => p.date === dueEvent.event_date);
     if (!matchingPoint) {
       return {
         seriesSlug,
         status: "skipped-period-mismatch",
-        detail: `PBS has not yet published the report for week ending ${dueEvent.event_date} (latest available: ${spi.points.at(-1)?.date ?? "none"}).`,
+        detail: `PBS has not yet published the report for week ending ${dueEvent.event_date} (latest available: ${spi!.points.at(-1)?.date ?? "none"}).`,
       };
     }
 
     const sign = matchingPoint.wowPct >= 0 ? "+" : "";
     const actualValue = `${sign}${matchingPoint.wowPct.toFixed(2)}% WoW`;
     const { data: didUpdate, error } = await supabase.rpc("sync_event_actual", {
+      p_internal_secret: workerSecret,
       p_series_slug: seriesSlug,
       p_event_date: dueEvent.event_date,
       p_actual_value: actualValue,
+      p_observation_date: dueEvent.event_date,  // SPI: exact weekly date match
     });
 
     if (error) return { seriesSlug, status: "error", detail: error.message };

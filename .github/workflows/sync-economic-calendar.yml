@@ -1,0 +1,76 @@
+# Sync Economic Calendar — Phase 5 (Latest Data First)
+#
+# Fires every 15 minutes and calls the scheduler-agnostic sync pipeline
+# (src/lib/economicCalendar/automation/syncPipeline.ts). All sync logic
+# is in that module — this workflow is a thin cron adapter.
+#
+# With 15-minute polling, official data lands on the dashboard within
+# ~15 minutes of SBP EasyData updating, which itself updates on the same day
+# as each PBS/SBP official release. Previous Vercel-only approach: up to
+# 13-hour lag (release at 10:00 PKT, Vercel cron at 23:00 PKT).
+#
+# The existing Vercel cron (vercel.json, 18:00 UTC daily) remains active as a
+# safety net. The pipeline is idempotent — running it twice does not double-write
+# or overwrite confirmed data.
+#
+# Required GitHub repository configuration:
+#   secrets.CRON_SECRET  — must match CRON_SECRET set on Vercel
+#   vars.APP_URL         — deployed base URL, e.g. https://your-app.vercel.app
+#                          (set in: Settings → Secrets and variables → Variables)
+#
+# The x-github-run-id header enables Phase 4's scheduler detection
+# (schedulerMeta.ts), so each run is logged as "github-actions" with the run ID
+# as schedulerVersion in sync_trigger_log — visible in the System Health dashboard.
+
+name: Sync Economic Calendar
+
+on:
+  schedule:
+    # Every 15 minutes, all day, every day.
+    # GitHub Actions free tier: 2,000 min/month for private repos.
+    # This workflow runs ~2,880 times/month; each run completes in <1 minute
+    # of billable time (mostly waiting on the HTTP response), so it stays
+    # comfortably within the free tier.
+    - cron: '*/15 * * * *'
+
+  workflow_dispatch:
+    # Manual trigger — available from the Actions tab in GitHub UI.
+    # Useful for on-demand refresh immediately after a known PBS/SBP release.
+    # The x-trigger-type header is set to "manual" in this case so the
+    # sync_trigger_log entry is correctly categorized.
+
+jobs:
+  sync:
+    name: Trigger sync pipeline
+    runs-on: ubuntu-latest
+    # Hard ceiling: the sync endpoint has maxDuration=300s (5 min) on Vercel.
+    # Set the job timeout slightly above that to catch genuine hangs without
+    # the workflow itself running forever.
+    timeout-minutes: 8
+
+    steps:
+      - name: Call sync endpoint
+        env:
+          APP_URL: ${{ vars.APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          # GitHub Actions expression evaluated before shell execution — safe
+          # even though the result is embedded in a shell env var.
+          TRIGGER_TYPE: ${{ github.event_name == 'workflow_dispatch' && 'manual' || 'scheduled' }}
+        run: |
+          echo "run=${{ github.run_id }} event=${{ github.event_name }} time=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+          response=$(curl -s -w '\n%{http_code}' \
+            --max-time 420 \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            -H "x-github-run-id: ${{ github.run_id }}" \
+            -H "x-github-workflow: ${{ github.workflow }}" \
+            -H "x-trigger-type: ${TRIGGER_TYPE}" \
+            "${APP_URL}/api/cron/sync-economic-calendar")
+
+          http_code=$(echo "${response}" | tail -1)
+          body=$(echo "${response}" | head -n -1)
+
+          echo "HTTP ${http_code}"
+          echo "${body}" | head -c 2000
+
+          [ "${http_code}" = "200" ] || { echo "Sync failed with HTTP ${http_code}"; exit 1; }

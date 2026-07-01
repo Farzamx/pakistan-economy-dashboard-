@@ -22,6 +22,11 @@ import { getLatestWeeklyIntelligenceSnapshot } from "@/lib/data/weeklyIntelligen
 import { getCronRunHistory, type CronRunRecord } from "@/lib/cronLogging";
 import { checkResendHealth } from "@/lib/email/resend";
 import { createPublicDataClient } from "@/lib/supabase/publicDataClient";
+import { getSourceHealthSummary, type SourceHealthRecord } from "@/lib/economicCalendar/sourceHealthTracker";
+import { getSourceBenchmarkStats, getPublicationLeadStats, computeSourceRankings, generateRecommendations, type SourceBenchmarkStats, type PublicationLeadEntry, type SeriesSourceRanking, type Recommendation } from "@/lib/syncBenchmark";
+import { getSyncTriggerHistory, type SyncTriggerRecord } from "@/lib/syncTriggerLog";
+
+export type { SourceHealthRecord, SourceBenchmarkStats, PublicationLeadEntry, SeriesSourceRanking, Recommendation, SyncTriggerRecord };
 
 export interface DataSourceCheck {
   name: string;
@@ -184,7 +189,7 @@ export interface CronJobInfo {
 // fabricated since nothing was persisted anywhere.
 export const CRON_JOBS: CronJobInfo[] = [
   { jobNames: ["revalidate-fx"], path: "/api/revalidate-fx", schedule: "0 3 * * *  (daily, 03:00 UTC)", description: "Forces an FX rate cache refresh — a freshness floor, not the main mechanism (15min L2 cache already does most of the work)." },
-  { jobNames: ["official-calendar-sync", "sbp-actual-value-sync", "notification-worker"], path: "/api/cron/sync-economic-calendar", schedule: "0 18 * * *  (daily, 18:00 UTC)", description: "Syncs SBP/PBS actual values into the Economic Calendar; also drains pending notification jobs inline. Logged as 3 distinct jobs since they're logically separate, despite sharing one HTTP trigger." },
+  { jobNames: ["official-calendar-sync", "calendar-gap-detection", "sbp-actual-value-sync", "lsm-yoy-sync", "notification-worker"], path: "/api/cron/sync-economic-calendar", schedule: "*/15 * * * *  (every 15 min, GitHub Actions — primary) + 0 18 * * *  (daily safety net, Vercel)", description: "Scheduler-agnostic sync pipeline: official calendar reconciliation, gap detection, SBP EasyData + LSM YoY actual-value sync, notification drain. Primary trigger: GitHub Actions (.github/workflows/sync-economic-calendar.yml) every 15 minutes — detects new SBP/PBS data within ~15 min of publication. Vercel cron (18:00 UTC daily) is a safety net. Each trigger logs to sync_trigger_log with its scheduler identity." },
   { jobNames: ["notification-worker-safety-net"], path: "/api/cron/process-notification-jobs", schedule: "0 20 * * *  (daily, 20:00 UTC)", description: "Safety-net sweep for any notification job the calendar sync's inline drain missed." },
   { jobNames: ["weekly-intelligence"], path: "/api/cron/weekly-intelligence", schedule: "0 6 * * 1  (Mondays, 06:00 UTC)", description: "Computes Health Score + Recession/Default probabilities once, stores the snapshot the homepage reads. Idempotent — a duplicate invocation in the same ISO week is rejected by a DB constraint and logged as 'skipped', not an error." },
 ];
@@ -216,11 +221,23 @@ export interface SystemHealthSnapshot {
   aiProviders: ProviderHealthSnapshot[];
   weeklyIntelligence: WeeklyIntelligenceHealth;
   cronJobs: CronJobHistory[];
+  // Phase 4: Source benchmarking & scheduler intelligence
+  sourceHealth: SourceHealthRecord[];
+  sourceBenchmarks: SourceBenchmarkStats[];
+  sourceRankings: SeriesSourceRanking[];
+  publicationLeads: PublicationLeadEntry[];
+  recommendations: Recommendation[];
+  syncTriggers: SyncTriggerRecord[];
   generatedAt: string;
 }
 
 export async function getSystemHealthSnapshot(): Promise<SystemHealthSnapshot> {
-  const [sbp, pbs, twelveData, fred, worldBank, yahoo, news, supabase, resend, weeklyIntelligence, cronJobs] = await Promise.all([
+  // Live external checks run in parallel with DB reads — neither group blocks the other.
+  const [
+    sbp, pbs, twelveData, fred, worldBank, yahoo, news, supabase, resend,
+    weeklyIntelligence, cronJobs,
+    sourceHealth, sourceBenchmarks, publicationLeads, syncTriggers,
+  ] = await Promise.all([
     checkSbp(),
     checkPbs(),
     checkTwelveData(),
@@ -232,13 +249,28 @@ export async function getSystemHealthSnapshot(): Promise<SystemHealthSnapshot> {
     checkResend(),
     checkWeeklyIntelligence(),
     getCronJobsWithHistory(),
+    // Phase 4: DB reads only — no live external HTTP calls
+    getSourceHealthSummary(168),          // last 7 days
+    getSourceBenchmarkStats(720),         // last 30 days
+    getPublicationLeadStats(90),          // last 90 days
+    getSyncTriggerHistory(20),
   ]);
+
+  // Pure computations from DB data — no I/O
+  const sourceRankings = computeSourceRankings(sourceBenchmarks, publicationLeads);
+  const recommendations = generateRecommendations(sourceBenchmarks, publicationLeads);
 
   return {
     dataSources: [sbp, pbs, twelveData, fred, worldBank, yahoo, news, supabase, resend],
     aiProviders: getProviderHealthSnapshot(),
     weeklyIntelligence,
     cronJobs,
+    sourceHealth,
+    sourceBenchmarks,
+    sourceRankings,
+    publicationLeads,
+    recommendations,
+    syncTriggers,
     generatedAt: new Date().toISOString(),
   };
 }
