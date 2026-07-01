@@ -156,8 +156,7 @@ export async function syncSpiFromPbs(): Promise<SyncResult> {
   const seriesSlug = "spi-weekly-inflation-release";
   try {
     const spi = await getSpiHistory();
-    const latest = spi?.points.at(-1);
-    if (!spi || !latest) {
+    if (!spi || spi.points.length === 0) {
       return { seriesSlug, status: "skipped-fallback-data", detail: "Live PBS SPI fetch failed or returned no points — not safe to mark as confirmed actual." };
     }
 
@@ -177,8 +176,27 @@ export async function syncSpiFromPbs(): Promise<SyncResult> {
       return { seriesSlug, status: "skipped-no-due-event", detail: "No scheduled SPI event is due yet." };
     }
 
-    const sign = latest.wowPct >= 0 ? "+" : "";
-    const actualValue = `${sign}${latest.wowPct.toFixed(2)}% WoW`;
+    // Root-cause fix (2026-06-30): this previously took spi.points.at(-1) —
+    // whichever week PBS has most recently published — and stamped it onto
+    // whichever calendar event happened to be "due" by date, with no check
+    // that the two actually referred to the same week. If PBS is running
+    // behind (its latest report is for an earlier week than the due event
+    // represents), that mismatch silently wrote an old week's % onto a
+    // newer-dated slot and marked it "released" — confirmed live: this
+    // wrote week-ended-2026-06-18's +0.46% WoW onto the 2026-06-26 slot,
+    // a full week premature. Matching by exact date means a not-yet-
+    // published week is correctly skipped instead of faked from stale data.
+    const matchingPoint = spi.points.find((p) => p.date === dueEvent.event_date);
+    if (!matchingPoint) {
+      return {
+        seriesSlug,
+        status: "skipped-no-due-event",
+        detail: `PBS has not yet published the report for week ending ${dueEvent.event_date} (latest available: ${spi.points.at(-1)?.date ?? "none"}).`,
+      };
+    }
+
+    const sign = matchingPoint.wowPct >= 0 ? "+" : "";
+    const actualValue = `${sign}${matchingPoint.wowPct.toFixed(2)}% WoW`;
     const { data: didUpdate, error } = await supabase.rpc("sync_event_actual", {
       p_series_slug: seriesSlug,
       p_event_date: dueEvent.event_date,

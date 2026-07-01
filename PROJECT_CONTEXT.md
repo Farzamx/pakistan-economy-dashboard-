@@ -62,10 +62,7 @@ src/
 │   ├── layout.tsx              # Root layout: GalaxyBackground, fonts, metadata
 │   ├── page.tsx                # THE page — server component, fetches all data, composes UI
 │   ├── globals.css             # Tailwind imports, CSS variables (glass-card, glow-*, neon-*)
-│   ├── ai-test/page.tsx        # Dev-only test page for OpenRouter connectivity
 │   └── api/
-│       ├── ai/test/route.ts                   # POST endpoint for OpenRouter smoke test
-│       └── ai/economic-intelligence/route.ts  # POST endpoint (currently unused by UI)
 │
 ├── components/
 │   ├── AnimatedValue.tsx       # Count-up animation for KPI numbers
@@ -539,7 +536,6 @@ Keys are read **only** on the server side via `process.env.XXX`. Never pass them
 
 ### Technical Debt
 
-- `src/app/ai-test/page.tsx` and `src/app/api/ai/test/route.ts` are development-only pages left in the codebase. They should be removed before any public deployment.
 - The Sidebar's "Settings" nav item (`href="#"`) is a placeholder with no target section.
 - `marketDataSources.ts`'s `SOURCE_CHAINS` table (consumed by `KpiCard`'s source-chain tooltip) has no entries for any SBP-sourced indicator — only Global Markets symbols. Low-priority gap, not a correctness issue.
 - `email_log` has no retention/archival policy and is the only table in the schema with genuine unbounded long-term growth — it logs one row per (subscriber × economic event × email type), so it scales with subscriber_count × release_count indefinitely (e.g. ~150K rows/year at 1,000 subscribers × ~150 releases/year). Reviewed deliberately (2026-06-30) and **not implemented yet**: historical operational data (delivery status, attempt counts) is being preserved on purpose until real production growth actually justifies the complexity of an archival strategy, rather than guessing at a retention window now. Revisit once subscriber count or row count makes it worth the design effort.
@@ -606,8 +602,7 @@ Keys are read **only** on the server side via `process.env.XXX`. Never pass them
 - [ ] Yield curve spread (PIB − T-Bill) as a Recession model factor — identified as well-justified, not yet implemented (Section 5d)
 - [ ] External debt coverage ratio as a Default model factor — needs a new SBP series not currently fetched (Section 5d)
 - [ ] Broader rate-limit-aware handling (Yahoo/Twelve Data/FRED currently treat HTTP 429 the same as a total outage — only the AI provider client has real 429-specific cooldown logic)
-- [ ] Extend the Data Quality badge to the ~12 standalone SEO landing pages (`/usd-pkr-exchange-rate`, `/gold-price-pakistan`, etc.) — they currently render KPI values as plain text with no freshness/fallback indication at all
-- [ ] Remove dev-only endpoints: `/ai-test` page and `/api/ai/test` route
+- [x] Extend the Data Quality badge to the standalone SEO landing pages (completed 2026-06-30, Final Production Hardening) — 17 of 21 now show it; the remaining 4 (SPI/food-inflation/external-debt-derived) have no underlying `Kpi`-shaped object to attach it to
 
 ### New Data / Features
 - [ ] **KSE-100 live index**: Either negotiate a PSX data license (`marketdatarequest@psx.com.pk`) or find an alternative free source. TradingView widget was attempted but PSX blocks the `PSX:KSE100` symbol embed for unlicensed domains.
