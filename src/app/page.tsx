@@ -25,7 +25,7 @@ import { getAllScheduledEvents, getHistoricalEvents, toEconomicEvent } from "@/l
 import type { AiEconomicAnalysis } from "@/lib/data/aiEconomicAnalysis";
 import type { AiRiskIntelligence } from "@/lib/data/aiRiskIntelligence";
 import { getLatestWeeklyIntelligenceSnapshot } from "@/lib/data/weeklyIntelligence";
-import { getAllSbpIndicators } from "@/lib/data/sbp";
+import { getAllSbpIndicators } from "@/lib/data/sbpServer";
 import { getGdpKpi } from "@/lib/data/worldBank";
 import { getQuarterlyGdpKpi } from "@/lib/data/quarterlyGdp";
 import {

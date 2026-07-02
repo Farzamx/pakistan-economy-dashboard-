@@ -1,11 +1,11 @@
-// Weekly Intelligence Engine — computation (Production Reliability &
+﻿// Weekly Intelligence Engine — computation (Production Reliability &
 // Institutional Upgrade, Part 2). Runs only inside the weekly cron route
 // now, never on a page request. Fetches the same indicators page.tsx used
 // to fetch for this exact purpose, runs the three deterministic models,
 // then asks AI to narrate them — identical functions to before, just
 // called from one weekly job instead of every render.
 
-import { getAllSbpIndicators } from "@/lib/data/sbp";
+import { getAllSbpIndicators } from "@/lib/data/sbpServer";
 import { getGdpKpi } from "@/lib/data/worldBank";
 import { getQuarterlyGdpKpi } from "@/lib/data/quarterlyGdp";
 import { getNews } from "@/lib/data/news";

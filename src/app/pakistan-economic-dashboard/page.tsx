@@ -1,5 +1,5 @@
-import type { Metadata } from "next";
-import { getSbpIndicator } from "@/lib/data/sbp";
+﻿import type { Metadata } from "next";
+import { getSbpIndicator } from "@/lib/data/sbpServer";
 import { getGdpKpi } from "@/lib/data/worldBank";
 import SeoPageLayout from "@/components/seo/SeoPageLayout";
 import { SITE_URL, SITE_NAME, relatedSeoLinks } from "@/lib/seoConfig";

@@ -1,6 +1,6 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 import { getExternalDebtHistory } from "@/lib/data/externalDebt";
-import { getSbpIndicator } from "@/lib/data/sbp";
+import { getSbpIndicator } from "@/lib/data/sbpServer";
 import SeoPageLayout from "@/components/seo/SeoPageLayout";
 import type { TrendPoint } from "@/components/charts/TrendLineChart";
 import { SITE_URL, SITE_NAME, relatedSeoLinks } from "@/lib/seoConfig";

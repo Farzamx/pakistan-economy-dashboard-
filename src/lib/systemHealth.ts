@@ -1,4 +1,4 @@
-// System Health diagnostics data (Production Reliability & Institutional
+﻿// System Health diagnostics data (Production Reliability & Institutional
 // Upgrade Part 11; Final Production Hardening Parts 5/6/7) — gathers a
 // real, current snapshot of every external dependency this dashboard
 // relies on. Internal/operational use only; see
@@ -10,7 +10,7 @@
 // history (cron_run_log, written by every cron route — see
 // cronLogging.ts). Nothing here is fabricated.
 
-import { getSbpIndicator } from "@/lib/data/sbp";
+import { getSbpIndicator } from "@/lib/data/sbpServer";
 import { getSpiHistory } from "@/lib/data/spi";
 import { getGoldKpi } from "@/lib/data/metals";
 import { getUs10yKpi } from "@/lib/data/fred";

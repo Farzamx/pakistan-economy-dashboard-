@@ -1,6 +1,6 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 import { getFxRates } from "@/lib/data/fxRates";
-import { getSbpIndicator } from "@/lib/data/sbp";
+import { getSbpIndicator } from "@/lib/data/sbpServer";
 import SeoPageLayout from "@/components/seo/SeoPageLayout";
 import { SITE_URL, SITE_NAME, relatedSeoLinks } from "@/lib/seoConfig";
 

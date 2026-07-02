@@ -1,5 +1,5 @@
-import type { Metadata } from "next";
-import { getFoodInflationUrbanHistory, getSbpIndicator } from "@/lib/data/sbp";
+﻿import type { Metadata } from "next";
+import { getFoodInflationUrbanHistory, getSbpIndicator } from "@/lib/data/sbpServer";
 import SeoPageLayout from "@/components/seo/SeoPageLayout";
 import type { TrendPoint } from "@/components/charts/TrendLineChart";
 import { SITE_URL, SITE_NAME, relatedSeoLinks } from "@/lib/seoConfig";
