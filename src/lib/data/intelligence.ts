@@ -1,17 +1,21 @@
 // AI News Intelligence layer — enriches raw NewsItem objects with sentiment,
 // risk level, impact score, and a one-sentence reason using OpenRouter.
 //
-// Calls are batched (one API call for up to NEWS_DISPLAY_LIMIT articles —
-// matching exactly what page.tsx actually displays, see that constant) on
-// every ISR cycle. Uses the shared failover client — if the primary model
-// fails, it cascades through FALLBACK_CHAIN automatically.
+// Two separate limits govern the pipeline:
 //
-// Production Audit Part 9 fix: this used to cap the batch at a fixed 10
-// articles while the page displayed up to 24 — meaning roughly 14 of 24
-// visible cards silently got the generic NEUTRAL_TAG fallback on every
-// single successful render, indistinguishable from a real AI outage. The
-// cap now matches the page's own display limit exactly, via one shared
-// constant, so the two can't drift apart again.
+//   NEWS_AI_BATCH_SIZE — how many articles the AI actually analyzes per ISR
+//   cycle. Set to match ITEMS_PER_TAB (NewsIntelligenceSection.tsx) so the AI
+//   prompt covers exactly the articles visible in the default "All" tab and no
+//   more. Items beyond this limit receive NEUTRAL_TAG and are shown as "AI
+//   analysis unavailable" in category-specific tabs.
+//
+//   NEWS_DISPLAY_LIMIT — how many tagged items page.tsx passes to the
+//   component. Larger than NEWS_AI_BATCH_SIZE so category tabs have a varied
+//   pool to filter from; the extra items are decorated deterministically
+//   (market impact, source reliability, freshness) without any AI call.
+//
+// Uses the shared failover client — if the primary model fails, it cascades
+// through FALLBACK_CHAIN automatically.
 //
 // Market impact (Phase 6 of the News & Intelligence audit): the AI's
 // free-text "reason" can degrade to generic phrasing ("no direct impact on
@@ -29,7 +33,18 @@ import { callOpenRouter, type AiProvider } from "@/lib/openRouterClient";
 import { getMarketImpact, type MarketImpact } from "@/lib/news/marketImpact";
 import { getSourceReliability } from "@/lib/news/relevanceEngine";
 
-/** Exactly how many tagged items the homepage renders (page.tsx's `taggedNewsResult.items.slice(0, NEWS_DISPLAY_LIMIT)`) — also how many articles get a real AI tag per batch, so every visible card is genuinely analyzed rather than silently falling back past some smaller internal cap. */
+/**
+ * How many articles the AI analyzes per ISR cycle — matches ITEMS_PER_TAB in
+ * NewsIntelligenceSection.tsx so every card in the default "All" view is
+ * genuinely AI-analyzed, and nothing beyond that is sent to the model.
+ * Adjustable from 6 to 10 depending on token-budget / latency targets.
+ */
+export const NEWS_AI_BATCH_SIZE = 8;
+
+/** How many tagged items page.tsx passes to the component. Larger than
+ * NEWS_AI_BATCH_SIZE so category tabs have a varied pool to filter from;
+ * the extra items receive NEUTRAL_TAG (no AI call) and display "AI analysis
+ * unavailable" rather than fabricated analysis. */
 export const NEWS_DISPLAY_LIMIT = 24;
 
 export type Sentiment = "Bullish" | "Neutral" | "Bearish";
@@ -263,7 +278,10 @@ export async function getTaggedNews(items: NewsItem[]): Promise<TaggedNewsResult
   };
 
   try {
-    const batch = items.slice(0, NEWS_DISPLAY_LIMIT);
+    // Only the top NEWS_AI_BATCH_SIZE articles (= "All" tab visible count) go
+    // to the AI. Items beyond that get NEUTRAL_TAG — they are still returned
+    // for category-tab variety but are decorated deterministically only.
+    const batch = items.slice(0, NEWS_AI_BATCH_SIZE);
     const { tags, modelUsed, modelDisplayName } = await tagBatchWithOpenRouter(batch);
     return {
       items: items.map((item, i) => decorate(item, tags[i] ?? NEUTRAL_TAG)),
