@@ -1,4 +1,4 @@
-import { PDFParse } from "pdf-parse";
+import { extractText, getDocumentProxy } from "unpdf";
 import { createPublicDataClient } from "@/lib/supabase/publicDataClient";
 
 // Official Calendar Synchronization System — periodically fetches and
@@ -84,16 +84,14 @@ async function fetchPdfText(url: string): Promise<string | null> {
       signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     });
     if (!res.ok) return null;
-    const buf = Buffer.from(await res.arrayBuffer());
-    // A real PDF starts with "%PDF" — some PBS/SBP paths have been known
-    // to 200 with an HTML error page instead of the actual file (see
-    // spi.ts's own comments on this exact failure mode), and pdf-parse's
-    // error on that input isn't always a clean throw worth depending on.
-    if (buf.subarray(0, 4).toString("ascii") !== "%PDF") return null;
-    const parser = new PDFParse({ data: buf });
-    const result = await parser.getText();
-    await parser.destroy();
-    return result.text;
+    const arrBuf = await res.arrayBuffer();
+    const bytes = new Uint8Array(arrBuf);
+    // A real PDF starts with "%PDF" — some PBS/SBP paths 200 with an HTML
+    // error page instead of the actual file; reject those early.
+    if (String.fromCharCode(...bytes.slice(0, 4)) !== "%PDF") return null;
+    const pdf = await getDocumentProxy(bytes);
+    const { text } = await extractText(pdf, { mergePages: true });
+    return text;
   } catch {
     return null;
   }

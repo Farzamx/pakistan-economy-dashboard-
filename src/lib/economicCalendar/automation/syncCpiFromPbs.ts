@@ -1,5 +1,8 @@
-// pdf-parse v2 exports a class-based API (not the function-based v1 API).
-import { PDFParse } from "pdf-parse";
+// unpdf wraps pdfjs-dist in a serverless-safe bundle (no @napi-rs/canvas,
+// no DOMMatrix at module load) — required because pdfjs-dist v5 crashes at
+// import time on Vercel: `const SCALE_MATRIX = new DOMMatrix()` runs at
+// module level, and Node 18 serverless has no DOMMatrix global.
+import { extractText, getDocumentProxy } from "unpdf";
 import { createPublicDataClient } from "@/lib/supabase/publicDataClient";
 import { validateObservationPeriod } from "@/lib/economicCalendar/observationPeriodValidator";
 import { SERIES_PUBLICATION_META } from "@/lib/economicCalendar/seriesPublicationConfig";
@@ -110,10 +113,9 @@ async function parseCpiPdf(pdfUrl: string, title: string, postDate: string): Pro
   if (!res.ok) throw new Error(`PBS CPI PDF fetch returned ${res.status} for ${pdfUrl}`);
   const buf = await res.arrayBuffer();
 
-  // pdf-parse v2: class-based API. getText() internally loads the doc and extracts all pages.
-  const parser = new PDFParse({ data: Buffer.from(buf) });
-  const parsed = await parser.getText();
-  const text = parsed.text;
+  // unpdf: serverless-safe PDF text extraction (no canvas, no native modules).
+  const pdf = await getDocumentProxy(new Uint8Array(buf));
+  const { text } = await extractText(pdf, { mergePages: true });
 
   const cpiYoYPct = extractPercentage(text, CPI_PATTERNS);
   if (cpiYoYPct === null) {
