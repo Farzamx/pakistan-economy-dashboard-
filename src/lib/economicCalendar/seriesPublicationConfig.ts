@@ -230,9 +230,12 @@ export const SERIES_PUBLICATION_META: Record<string, SeriesPublicationMeta> = {
   "cpi-inflation-release": {
     periodValidation: { cadence: "monthly", lagMonths: 1 },
     publicationSchedule:
-      "PBS releases the national CPI for month M on approximately the 1st–10th of month M+1. " +
-      "lagMonths=1: June 10 event expects May data (obsDate 2026-05-31). " +
-      "Confirmed publication dates: April CPI released May 10, May CPI released June 10.",
+      "PBS releases the national CPI for month M on the 1st of month M+1 at ~14:00 PKT " +
+      "(or the first weekday if the 1st falls on a weekend). " +
+      "lagMonths=1: July 1 event expects June data (obsDate 2026-06-30). " +
+      "Confirmed across 8 months: CPI published exactly on the 1st each month. " +
+      "Data is in the PBS Monthly Inflation Report PDF — not in post HTML text. " +
+      "Primary source: PBS PDF (syncCpiFromPbs.ts). Fallback: SBP EasyData.",
     officialSource: "Pakistan Bureau of Statistics",
     advanceCalendarAvailable: false,
     sourceHierarchy: [
@@ -247,18 +250,21 @@ export const SERIES_PUBLICATION_META: Record<string, SeriesPublicationMeta> = {
           "machine-readable source. SBP publishes before the PBS website is updated in some months.",
       },
       {
-        name: "PBS CPI Monthly Inflation Report",
-        type: "pbs-web",
-        sourceUrl: "https://www.pbs.gov.pk/monthly-inflation-report",
-        implemented: false,
-        note: "Direct PBS source. Not yet implemented — SBP EasyData is sufficient and faster.",
+        name: "PBS Monthly Inflation Report PDF",
+        type: "official-pdf",
+        sourceUrl: "https://www.pbs.gov.pk/",
+        implemented: true,
+        note:
+          "Primary source. PDF attachment linked from PBS WordPress post. " +
+          "Implemented Phase 7 Step 5. Published 1st of M+1 at ~14:00 PKT. " +
+          "See syncCpiFromPbs.ts.",
       },
     ],
     gapDetection: {
       slugPrefix: "cpi",
       lookbackMonths: 3,
       windowDays: 7,
-      expectedDayOfMonth: 10,
+      expectedDayOfMonth: 1,
       eventTimeOfDay: "10:00",
       importance: "High",
       titleTemplate: "CPI Inflation Release ({month})",
@@ -270,9 +276,10 @@ export const SERIES_PUBLICATION_META: Record<string, SeriesPublicationMeta> = {
   "core-inflation-release": {
     periodValidation: { cadence: "monthly", lagMonths: 1 },
     publicationSchedule:
-      "PBS releases Urban NFNE core inflation alongside the headline CPI on the same day " +
-      "(~1st–10th of M+1). lagMonths=1. Confirmed: April core (8.0%) released May 10, " +
-      "May core (9.0%) released June 10.",
+      "PBS releases Urban NFNE core inflation alongside the headline CPI — same day, same PDF. " +
+      "Published 1st of M+1 at ~14:00 PKT. lagMonths=1. " +
+      "Confirmed: April core (8.0%) released May 1, May core (9.0%) released June 1. " +
+      "Primary source: PBS Monthly Inflation Report PDF (syncCpiFromPbs.ts). Fallback: SBP EasyData.",
     officialSource: "Pakistan Bureau of Statistics / SBP EasyData",
     advanceCalendarAvailable: false,
     sourceHierarchy: [
@@ -283,18 +290,18 @@ export const SERIES_PUBLICATION_META: Record<string, SeriesPublicationMeta> = {
         implemented: true,
       },
       {
-        name: "PBS CPI Monthly Inflation Report (NFNE table)",
-        type: "pbs-web",
-        sourceUrl: "https://www.pbs.gov.pk/monthly-inflation-report",
-        implemented: false,
-        note: "NFNE column in the same PBS report as headline CPI.",
+        name: "PBS Monthly Inflation Report PDF (NFNE table)",
+        type: "official-pdf",
+        sourceUrl: "https://www.pbs.gov.pk/",
+        implemented: true,
+        note: "NFNE Urban core inflation extracted from the same PDF as headline CPI. See syncCpiFromPbs.ts.",
       },
     ],
     gapDetection: {
       slugPrefix: "core-inflation",
       lookbackMonths: 3,
       windowDays: 7,
-      expectedDayOfMonth: 10,
+      expectedDayOfMonth: 1,
       eventTimeOfDay: "10:00",
       importance: "High",
       titleTemplate: "Core Inflation Release ({month})",
@@ -407,27 +414,28 @@ export const SERIES_PUBLICATION_META: Record<string, SeriesPublicationMeta> = {
   },
 
   "trade-balance": {
-    // periodValidation undefined — in PENDING_AUTOMATION_REGISTRY (P1-critical).
-    // Source methodology mismatch between PBS (customs-basis) and SBP EasyData (BPM6).
-    periodValidation: undefined,
+    // Blocker resolved Phase 7 Step 4: PBS advance release Excel scraper implemented.
+    // lagMonths=1: PBS publishes M's data on ~16th–18th of M+1 (28–30 days before SBP BPM6).
+    // Methodology: PBS customs-basis (FOB exports, CIF imports) — correct for PBS-labeled series.
+    periodValidation: { cadence: "monthly", lagMonths: 1 },
     publicationSchedule:
-      "PBS publishes monthly Foreign Trade Statistics (advance and final releases). " +
-      "SBP BPM6 goods balance released ~45 days after month-end. " +
-      "Two methodologies: PBS customs (FOB exports, CIF-adjusted imports) and SBP BPM6 " +
-      "(exchange records, all FOB, includes high-sea sales and defense stores). " +
-      "Values differ: March 2026 PBS=-$2.84B, SBP BPM6=-$2.37B (≈$470M gap). " +
-      "Source must be resolved to one methodology before automation.",
+      "PBS publishes advance Foreign Trade Statistics in the middle of M+1 (~16th–18th), " +
+      "28–30 days before SBP BPM6. lagMonths=1: July 17 event expects June 2026 data " +
+      "(obsDate 2026-06-30). Data in Revised_Summary_<Month Year>.xlsx linked from the " +
+      "PBS WordPress advance release post. PBS customs-basis: FOB exports, CIF-adjusted imports. " +
+      "SBP BPM6 differs by ~$470M (March 2026: PBS=-$2.84B, BPM6=-$2.37B).",
     officialSource: "Pakistan Bureau of Statistics",
     advanceCalendarAvailable: false,
     sourceHierarchy: [
       {
-        name: "PBS Foreign Trade Statistics (advance release)",
+        name: "PBS Foreign Trade Statistics (advance release Excel)",
         type: "pbs-web",
-        sourceUrl: "https://www.pbs.gov.pk/trade-summary",
-        implemented: false,
+        sourceUrl: "https://www.pbs.gov.pk/",
+        implemented: true,
         note:
-          "Correct source for the PBS-labeled series. Not yet implemented — requires " +
-          "HTTP scraper targeting the PBS monthly trade statistics page.",
+          "Correct source for PBS-labeled series. Discovered via WordPress REST API search " +
+          "for 'Advance releases on Foreign Trade Statistics'. Excel file: " +
+          "Revised_Summary_<Month Year>.xlsx. See syncTradeBalanceFromPbs.ts.",
       },
       {
         name: "SBP EasyData — BPM6 Goods Balance (P00050)",
@@ -436,33 +444,54 @@ export const SERIES_PUBLICATION_META: Record<string, SeriesPublicationMeta> = {
         implemented: false,
         note:
           "WRONG METHODOLOGY for a PBS-labeled series. March 2026: PBS=-$2.84B, " +
-          "BPM6=-$2.37B (~$470M gap, ~17%). Cannot be used without relabeling the series. " +
-          "See PENDING_AUTOMATION_REGISTRY (P1-critical).",
+          "BPM6=-$2.37B (~$470M gap, ~17%). Cannot be used without relabeling the series.",
       },
     ],
+    gapDetection: {
+      slugPrefix: "trade-balance",
+      lookbackMonths: 3,
+      windowDays: 7,
+      expectedDayOfMonth: 17,
+      eventTimeOfDay: "10:00",
+      importance: "Medium",
+      titleTemplate: "Trade Balance ({month})",
+    },
     notificationPriority: "medium",
     cacheTagsToInvalidate: [],
   },
 
   "sbp-foreign-exchange-reserves": {
-    // periodValidation undefined — in PENDING_AUTOMATION_REGISTRY (P2-high).
-    // EasyData: monthly total (~$17B). Calendar: weekly net-liquid FX (~$11B).
-    periodValidation: undefined,
+    // Blocker resolved Phase 7 Step 3: Forex_Arch.xlsx parser implemented.
+    // Weekly exact-date match. SBP publishes Forex_Arch.xlsx same day as the press release.
+    // Forex_Arch.xlsx URL: https://www.sbp.org.pk/assets/document/Forex_Arch.xlsx (stable).
+    periodValidation: { cadence: "weekly" },
     publicationSchedule:
-      "SBP publishes net liquid FX reserves weekly via an HTML press-release table on " +
-      "sbp.org.pk/ecodata/. Published Thursday or Friday for the week ending that day. " +
-      "Weekly cadence (exact date match) when automation is re-enabled.",
+      "SBP publishes weekly net liquid FX reserves in Forex_Arch.xlsx at a stable direct URL, " +
+      "updated Thursdays/Fridays for the week-ending date. Weekly cadence: exact date match " +
+      "(observation week-ending date must equal the calendar event date). " +
+      "Confirmed measure: net SBP liquid reserves (~$11B), NOT monthly total (~$17B). " +
+      "See syncFxReservesFromSbpExcel.ts.",
     officialSource: "State Bank of Pakistan",
     advanceCalendarAvailable: false,
     sourceHierarchy: [
+      {
+        name: "SBP Forex_Arch.xlsx (weekly net SBP reserves)",
+        type: "official-csv",
+        sourceUrl: "https://www.sbp.org.pk/assets/document/Forex_Arch.xlsx",
+        implemented: true,
+        note:
+          "Correct measure: weekly net SBP liquid FX reserves (~$11B). " +
+          "File is 85KB, updated weekly. Parsed with xlsx library. " +
+          "See syncFxReservesFromSbpExcel.ts.",
+      },
       {
         name: "SBP Weekly FX Reserves Press Release (HTML table)",
         type: "sbp-web",
         sourceUrl: "https://www.sbp.org.pk/ecodata/index2.asp",
         implemented: false,
         note:
-          "Correct source. Requires HTTP scraper targeting the SBP weekly reserves " +
-          "index page and extracting the net SBP reserves figure.",
+          "JavaScript-rendered page — returns 'Showing 0 records' via server-side fetch. " +
+          "Not parseable without headless browser. Forex_Arch.xlsx is the correct alternative.",
       },
       {
         name: "SBP EasyData — Monthly Total Reserves (Z00020)",
@@ -471,8 +500,7 @@ export const SERIES_PUBLICATION_META: Record<string, SeriesPublicationMeta> = {
         implemented: false,
         note:
           "WRONG MEASURE: monthly total including SDR allocations (~$17B). " +
-          "Calendar events show weekly net-liquid SBP reserves (~$11B). " +
-          "Different magnitude AND different frequency. See PENDING_AUTOMATION_REGISTRY.",
+          "Calendar events show weekly net-liquid SBP reserves (~$11B). Different magnitude AND frequency.",
       },
     ],
     notificationPriority: "medium",
@@ -506,11 +534,14 @@ export const SERIES_PUBLICATION_META: Record<string, SeriesPublicationMeta> = {
           "See src/lib/economicCalendar/automation/lsmSync.ts.",
       },
       {
-        name: "PBS LSM Monthly Release",
+        name: "PBS LSM Monthly Release (WordPress)",
         type: "pbs-web",
-        sourceUrl: "https://www.pbs.gov.pk/lsm",
-        implemented: false,
-        note: "Direct YoY figure from PBS. Not yet implemented — EasyData-derived YoY is sufficient.",
+        sourceUrl: "https://www.pbs.gov.pk/",
+        implemented: true,
+        note:
+          "Direct YoY figure from PBS HTML post body. Implemented Phase 7 Step 2. " +
+          "Primary source — SBP EasyData derived YoY is the fallback. " +
+          "See syncLsmFromPbs.ts.",
       },
     ],
     gapDetection: {
@@ -834,64 +865,15 @@ export const SERIES_PUBLICATION_META: Record<string, SeriesPublicationMeta> = {
 export const PENDING_AUTOMATION_REGISTRY: readonly PendingAutomationEntry[] = [
   // ── P1-Critical ────────────────────────────────────────────────────────────
 
-  {
-    seriesSlug: "trade-balance",
-    indicator: "Trade Balance",
-    currentStatus: "semi-automated",
-    automationBlocker:
-      "Source methodology mismatch. The trade-balance calendar series is labeled " +
-      "Pakistan Bureau of Statistics (customs-basis trade). SBP EasyData series " +
-      "TS_GP_BOP_BPM6SUM_M.P00050 provides the BPM6 goods balance from exchange records — " +
-      "a different measure with different valuation (PBS: CIF imports; BPM6: all FOB), " +
-      "timing (customs entry vs exchange realization), and coverage (BPM6 includes defense " +
-      "stores and high-sea fish sales). Magnitude difference confirmed: " +
-      "March 2026 PBS=-$2.84B vs BPM6=-$2.37B (~$470M gap, ~17%). " +
-      "Writing BPM6 values into a PBS-labeled series produces factually wrong data.",
-    requiredSource:
-      "Option A (recommended): PBS monthly Foreign Trade Statistics at pbs.gov.pk/trade-summary. " +
-      "Option B: Formal decision to relabel series source to 'State Bank of Pakistan (BPM6)' — " +
-      "existing historical events would need review and a note added explaining the methodology shift.",
-    plannedMethod:
-      "Option A: PBS website scraper targeting the monthly advance trade statistics page. " +
-      "Parse the headline exports/imports/balance figures. " +
-      "Option B: Update series source_name in DB, re-enable SYNC_TARGETS entry with " +
-      "the BPM6 indicator key and a methodology-disclosure format function.",
-    priority: "P1-critical",
-    estimatedComplexity: "medium",
-    blockedBy: [],
-    addedDate: "2026-07-01",
-  },
+  // trade-balance: RESOLVED Phase 7 Step 4 (2026-07-02).
+  // syncTradeBalanceFromPbs.ts — PBS advance release Excel (customs-basis).
+  // periodValidation: { cadence: "monthly", lagMonths: 1 }.
 
-  // ── P2-High ────────────────────────────────────────────────────────────────
+  // sbp-foreign-exchange-reserves: RESOLVED Phase 7 Step 3 (2026-07-02).
+  // syncFxReservesFromSbpExcel.ts — SBP Forex_Arch.xlsx (weekly net SBP reserves).
+  // periodValidation: { cadence: "weekly" } (exact date match).
 
-  {
-    seriesSlug: "sbp-foreign-exchange-reserves",
-    indicator: "SBP Foreign Exchange Reserves (Weekly)",
-    currentStatus: "semi-automated",
-    automationBlocker:
-      "SBP EasyData series TS_GP_EXT_PAKRES_M.Z00020 reports Monthly Total SBP Reserves " +
-      "including International Monetary Fund SDR allocations and swap lines (~$17B for " +
-      "June 2026). Calendar events represent the Weekly SBP Net Liquid FX Reserves press " +
-      "release (~$11B for the week ending June 18, 2026). These are different measures, " +
-      "different frequencies, and different magnitudes. Writing monthly total reserves into " +
-      "weekly net-liquid-FX slots produces: (a) wrong magnitude ($17B vs $11B), " +
-      "(b) wrong frequency (monthly date in weekly slot), (c) wrong measure label. " +
-      "Existing confirmed events (e.g. fx-reserves-2026-06-18: $11.0B) correctly sourced " +
-      "from the weekly press release — must not be overwritten.",
-    requiredSource:
-      "SBP weekly press-release HTML table ('Statement of Foreign Exchange Reserves') " +
-      "at sbp.org.pk/ecodata/index2.asp, published Thursdays/Fridays. " +
-      "The net-liquid SBP reserves figure (not total), on the date matching the calendar event.",
-    plannedMethod:
-      "HTTP scraper targeting the SBP weekly reserves index page. " +
-      "Parse the latest-week net SBP reserves figure and write to the matching weekly " +
-      "scheduled event via sync_event_actual RPC. Cadence: weekly (exact date match). " +
-      "Implementation in a new file: src/lib/economicCalendar/automation/syncFxReservesFromSbpWeb.ts.",
-    priority: "P2-high",
-    estimatedComplexity: "medium",
-    blockedBy: [],
-    addedDate: "2026-07-01",
-  },
+  // ── P2-High (remaining) ────────────────────────────────────────────────────
   // LSM YoY resolved 2026-07-01 — moved to SERIES_PUBLICATION_META with implemented=true.
   // lsmSync.ts computes YoY from getSbpIndicatorHistory('lsm') full index history.
   // Keeping a stub here for historical reference; remove in next quarterly cleanup.

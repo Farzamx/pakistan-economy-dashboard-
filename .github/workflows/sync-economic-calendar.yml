@@ -26,12 +26,35 @@ name: Sync Economic Calendar
 
 on:
   schedule:
-    # Every 15 minutes, all day, every day.
+    # Every 15 minutes, all day, every day. Catches any release within ~15 min.
     # GitHub Actions free tier: 2,000 min/month for private repos.
-    # This workflow runs ~2,880 times/month; each run completes in <1 minute
-    # of billable time (mostly waiting on the HTTP response), so it stays
-    # comfortably within the free tier.
+    # Baseline: ~2,880 runs/month. Adaptive windows add ~300 runs/month.
     - cron: '*/15 * * * *'
+
+    # ── Adaptive release windows ────────────────────────────────────────────
+    # Each window fires every 5 minutes during the known publication window for
+    # a specific indicator. This cuts detection latency from ~15 min to ~5 min
+    # on the days/hours when it matters most, with minimal extra CI cost.
+
+    # CPI / Core Inflation: PBS publishes on the 1st of each month at ~14:00 PKT
+    # (09:00 UTC). Window: 08:30–13:30 UTC (13:30–18:30 PKT) on the 1st.
+    # Covers late publication, Friday-1st delays, and EasyData propagation lag.
+    - cron: '*/5 8-13 1 * *'
+
+    # SPI: PBS publishes every Thursday at ~11:00–13:00 PKT (06:00–08:00 UTC).
+    - cron: '*/5 6-8 * * 4'
+
+    # Trade Balance (PBS advance release): published ~16th–18th of month
+    # at ~10:00–12:00 PKT (05:00–07:00 UTC).
+    - cron: '*/5 5-8 15,16,17,18 * *'
+
+    # FX Reserves (SBP Forex_Arch.xlsx): updated Thursdays/Fridays alongside
+    # the press release. Thursday window is shared with SPI above. Friday:
+    - cron: '*/5 5-9 * * 5'
+
+    # LSM: PBS publishes 5th–18th of M+2 at ~10:00–12:00 PKT (05:00–07:00 UTC).
+    # 15-minute polling is sufficient here; no dedicated window needed — the
+    # 15-min cron picks up LSM within 15 minutes across the full 5th–18th range.
 
   workflow_dispatch:
     # Manual trigger — available from the Actions tab in GitHub UI.

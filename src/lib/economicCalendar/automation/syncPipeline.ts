@@ -1,20 +1,18 @@
-// Sync Pipeline Engine — Phase 4 (Parts 1-2: Scheduler-Agnostic Synchronization)
+// Sync Pipeline Engine — Phase 4 + Phase 7
 //
 // The pure synchronization engine. It does not know who triggered it (Vercel,
-// GitHub Actions, Railway, or anything else). It simply runs the 5 sync steps
+// GitHub Actions, Railway, or anything else). It simply runs the sync steps
 // sequentially, logs each one, and returns a structured result.
-//
-// The HTTP route (route.ts) is a thin adapter: it authenticates the request,
-// extracts scheduler metadata, calls runSyncPipeline(), then logs the trigger.
-// Any other caller (internal job, test harness, second route) calls the same
-// function with zero changes to sync behavior.
 //
 // Step order is fixed and cannot be reordered:
 //   1. Official calendar sync  — ensures event_dates are current before writes
 //   2. Gap detection           — creates missing scheduled rows for automated series
-//   3. SBP EasyData sync       — fills those rows with confirmed actuals (+ source health)
-//   4. LSM YoY sync            — derived metric from index history (+ source health)
-//   5. Notification worker     — drains jobs created by steps 3-4's DB trigger
+//   3. PBS CPI/Core PDF sync   — primary for CPI + Core (PDF, published 1st of M+1)
+//   4. PBS Trade Balance sync  — primary for trade-balance (advance Excel, 16th–18th of M+1)
+//   5. FX Reserves sync        — SBP Forex_Arch.xlsx (weekly net SBP reserves)
+//   6. SBP EasyData + PBS SPI  — EasyData for all monthly series (CPI/Core skipped if already synced)
+//   7. LSM sync                — PBS WordPress primary → EasyData fallback
+//   8. Notification worker     — drains jobs created by steps 3-7's DB trigger
 //
 // Each step is independently try/caught — a hard throw in one does not prevent
 // the others from running. All outcomes are logged to cron_run_log.
@@ -23,6 +21,10 @@ import { syncAllFromSbpEasyData, type SyncResult } from "@/lib/economicCalendar/
 import { syncOfficialCalendars, type ReconcileSummary } from "@/lib/economicCalendar/automation/syncOfficialCalendars";
 import { detectAndFillCalendarGaps, type GapDetectionResult } from "@/lib/economicCalendar/automation/detectCalendarGaps";
 import { syncLsmYoYFromEasyData } from "@/lib/economicCalendar/automation/lsmSync";
+import { syncLsmYoYFromPbs } from "@/lib/economicCalendar/automation/syncLsmFromPbs";
+import { syncFxReservesFromSbpExcel } from "@/lib/economicCalendar/automation/syncFxReservesFromSbpExcel";
+import { syncTradeBalanceFromPbs } from "@/lib/economicCalendar/automation/syncTradeBalanceFromPbs";
+import { syncCpiFromPbs } from "@/lib/economicCalendar/automation/syncCpiFromPbs";
 import { processNotificationJobs, type JobProcessingSummary } from "@/lib/notifications/notificationJobWorker";
 import { logCronRun } from "@/lib/cronLogging";
 import type { TriggerMeta } from "@/lib/economicCalendar/automation/schedulerMeta";
@@ -39,7 +41,15 @@ export interface PipelineResult {
   schedulerName: string;
   officialCalendars: ReconcileSummary[];
   gapDetection: GapDetectionResult[];
+  /** CPI + Core results from PBS PDF (Step 3 — primary). EasyData is the fallback in syncResults. */
+  cpiPbsResults: SyncResult[];
+  /** Trade balance from PBS advance Excel release (Step 4). */
+  tradeBalanceResult: SyncResult | null;
+  /** FX reserves from SBP Forex_Arch.xlsx (Step 5). */
+  fxReservesResult: SyncResult | null;
+  /** EasyData + PBS SPI sync results (Step 6). CPI/Core are skipped if already synced by PBS. */
   syncResults: SyncResult[];
+  /** LSM result — PBS primary used when available, EasyData fallback otherwise (Step 7). */
   lsmResult: SyncResult | null;
   notifications: JobProcessingSummary[];
   /** Count of SyncResult entries with status="synced" across all sync steps. */
@@ -64,6 +74,9 @@ export async function runSyncPipeline(meta: TriggerMeta): Promise<PipelineResult
 
   let officialCalendars: ReconcileSummary[] = [];
   let gapDetection: GapDetectionResult[] = [];
+  let cpiPbsResults: SyncResult[] = [];
+  let tradeBalanceResult: SyncResult | null = null;
+  let fxReservesResult: SyncResult | null = null;
   let syncResults: SyncResult[] = [];
   let lsmResult: SyncResult | null = null;
   let notifications: JobProcessingSummary[] = [];
@@ -105,7 +118,61 @@ export async function runSyncPipeline(meta: TriggerMeta): Promise<PipelineResult
     }
   }
 
-  // ── Step 3: SBP EasyData + PBS SPI actual-value sync ───────────────────────
+  // ── Step 3: PBS CPI/Core PDF sync (primary for CPI + Core) ─────────────────
+  // Runs before EasyData so PBS is the primary source for inflation data.
+  // If PBS succeeds, EasyData's CPI/Core calls in Step 6 will see the events
+  // already released and return false (idempotent — no double-write).
+  {
+    const stepStart = new Date();
+    try {
+      cpiPbsResults = await syncCpiFromPbs();
+      const hasErrors = cpiPbsResults.some((r) => r.status === "error");
+      const detail = cpiPbsResults.map((r) => `${r.seriesSlug}:${r.status}`).join(", ");
+      const status = hasErrors ? "failure" : "success";
+      await logCronRun("cpi-pbs-sync", stepStart, status, detail);
+      jobsSummary.push({ jobName: "cpi-pbs-sync", status, durationMs: Date.now() - stepStart.getTime(), detail });
+    } catch (err) {
+      const detail = err instanceof Error ? err.message : String(err);
+      await logCronRun("cpi-pbs-sync", stepStart, "failure", detail);
+      jobsSummary.push({ jobName: "cpi-pbs-sync", status: "failure", durationMs: Date.now() - stepStart.getTime(), detail });
+    }
+  }
+
+  // ── Step 4: PBS Trade Balance advance release ────────────────────────────────
+  {
+    const stepStart = new Date();
+    try {
+      tradeBalanceResult = await syncTradeBalanceFromPbs();
+      const status = tradeBalanceResult.status === "error" ? "failure" : "success";
+      const detail = `${tradeBalanceResult.status}: ${tradeBalanceResult.detail}`;
+      await logCronRun("trade-balance-sync", stepStart, status, detail);
+      jobsSummary.push({ jobName: "trade-balance-sync", status, durationMs: Date.now() - stepStart.getTime(), detail });
+    } catch (err) {
+      const detail = err instanceof Error ? err.message : String(err);
+      await logCronRun("trade-balance-sync", stepStart, "failure", detail);
+      jobsSummary.push({ jobName: "trade-balance-sync", status: "failure", durationMs: Date.now() - stepStart.getTime(), detail });
+    }
+  }
+
+  // ── Step 5: FX Reserves from SBP Forex_Arch.xlsx ───────────────────────────
+  {
+    const stepStart = new Date();
+    try {
+      fxReservesResult = await syncFxReservesFromSbpExcel();
+      const status = fxReservesResult.status === "error" ? "failure" : "success";
+      const detail = `${fxReservesResult.status}: ${fxReservesResult.detail}`;
+      await logCronRun("fx-reserves-sync", stepStart, status, detail);
+      jobsSummary.push({ jobName: "fx-reserves-sync", status, durationMs: Date.now() - stepStart.getTime(), detail });
+    } catch (err) {
+      const detail = err instanceof Error ? err.message : String(err);
+      await logCronRun("fx-reserves-sync", stepStart, "failure", detail);
+      jobsSummary.push({ jobName: "fx-reserves-sync", status: "failure", durationMs: Date.now() - stepStart.getTime(), detail });
+    }
+  }
+
+  // ── Step 6: SBP EasyData + PBS SPI actual-value sync ───────────────────────
+  // Handles remittances, current account, T-bills, PIB, and SPI.
+  // CPI/Core entries will return false (already released) if Step 3 wrote them.
   {
     const stepStart = new Date();
     try {
@@ -122,15 +189,26 @@ export async function runSyncPipeline(meta: TriggerMeta): Promise<PipelineResult
     }
   }
 
-  // ── Step 4: LSM YoY sync ────────────────────────────────────────────────────
+  // ── Step 7: LSM sync (PBS primary → EasyData fallback) ─────────────────────
+  // Try PBS WordPress first (YoY from HTML text). Fall back to EasyData-derived
+  // YoY only if PBS fails or the obs period doesn't match the due event.
   {
     const stepStart = new Date();
     try {
-      lsmResult = await syncLsmYoYFromEasyData();
-      const status = lsmResult.status === "error" ? "failure" : "success";
-      const detail = `${lsmResult.status}: ${lsmResult.detail}`;
-      await logCronRun("lsm-yoy-sync", stepStart, status, detail);
-      jobsSummary.push({ jobName: "lsm-yoy-sync", status, durationMs: Date.now() - stepStart.getTime(), detail });
+      const pbsLsm = await syncLsmYoYFromPbs();
+      if (pbsLsm.status === "synced") {
+        lsmResult = pbsLsm;
+        await logCronRun("lsm-pbs-sync", stepStart, "success", `PBS: ${pbsLsm.status}: ${pbsLsm.detail}`);
+        jobsSummary.push({ jobName: "lsm-pbs-sync", status: "success", durationMs: Date.now() - stepStart.getTime(), detail: pbsLsm.detail });
+      } else {
+        // PBS didn't sync (error, period mismatch, no due event) → try EasyData
+        const easyDataLsm = await syncLsmYoYFromEasyData();
+        lsmResult = easyDataLsm;
+        const status = easyDataLsm.status === "error" ? "failure" : "success";
+        const detail = `PBS:${pbsLsm.status} → EasyData:${easyDataLsm.status}: ${easyDataLsm.detail}`;
+        await logCronRun("lsm-yoy-sync", stepStart, status, detail);
+        jobsSummary.push({ jobName: "lsm-yoy-sync", status, durationMs: Date.now() - stepStart.getTime(), detail });
+      }
     } catch (err) {
       const detail = err instanceof Error ? err.message : String(err);
       await logCronRun("lsm-yoy-sync", stepStart, "failure", detail);
@@ -138,7 +216,7 @@ export async function runSyncPipeline(meta: TriggerMeta): Promise<PipelineResult
     }
   }
 
-  // ── Step 5: Notification worker ─────────────────────────────────────────────
+  // ── Step 8: Notification worker ─────────────────────────────────────────────
   {
     const stepStart = new Date();
     try {
@@ -155,7 +233,13 @@ export async function runSyncPipeline(meta: TriggerMeta): Promise<PipelineResult
     }
   }
 
-  const allSyncResults = [...syncResults, ...(lsmResult ? [lsmResult] : [])];
+  const allSyncResults: SyncResult[] = [
+    ...cpiPbsResults,
+    ...(tradeBalanceResult ? [tradeBalanceResult] : []),
+    ...(fxReservesResult ? [fxReservesResult] : []),
+    ...syncResults,
+    ...(lsmResult ? [lsmResult] : []),
+  ];
   const totalSynced = allSyncResults.filter((r) => r.status === "synced").length;
   const totalFailed = allSyncResults.filter((r) => r.status === "error").length;
 
@@ -164,6 +248,9 @@ export async function runSyncPipeline(meta: TriggerMeta): Promise<PipelineResult
     schedulerName: meta.schedulerName,
     officialCalendars,
     gapDetection,
+    cpiPbsResults,
+    tradeBalanceResult,
+    fxReservesResult,
     syncResults,
     lsmResult,
     notifications,
