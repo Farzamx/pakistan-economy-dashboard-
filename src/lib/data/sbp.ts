@@ -3,6 +3,7 @@ import type { Kpi } from "@/data/kpiData";
 import type { DataFrequency } from "@/lib/dataFreshness";
 import type { SourceStatus } from "@/lib/dataQuality";
 import { dedupeInFlight, getFresh, getStale, setCache } from "@/lib/memoryCache";
+import { getLatestCanonicalObservation } from "@/lib/data/canonicalObservation";
 import {
   fallbackCoreInflation,
   fallbackCpiInflation,
@@ -540,14 +541,51 @@ function buildReerKpi(series: SbpSeries): Kpi {
 }
 
 function buildLsmKpi(series: SbpSeries): Kpi {
-  const diff = series.previousValue !== null ? series.latestValue - series.previousValue : 0;
-  const prevLabel = series.previousDate ? formatMonthLabel(series.previousDate) : null;
+  // EasyData LSM series (LSM000160000) returns a quantum index (base FY2015-16=100),
+  // not YoY growth. Compute deterministic YoY: (current / same_month_prior_year − 1) × 100.
+  // Matches the methodology used by syncLsmYoYFromEasyData.ts and PBS official releases.
+  const latestDate    = series.latestDate;
+  const latestYear    = parseInt(latestDate.slice(0, 4), 10);
+  const latestMonth   = latestDate.slice(5, 7);
+  const priorYrPrefix = `${latestYear - 1}-${latestMonth}`;
+  const priorYrPoint  = series.history.find((p) => p.date.startsWith(priorYrPrefix));
+
+  if (!priorYrPoint || priorYrPoint.value === 0) {
+    // No prior-year observation available — show raw quantum index with honest label.
+    const rawDiff  = series.previousValue !== null ? series.latestValue - series.previousValue : 0;
+    const prevLabel = series.previousDate ? formatMonthLabel(series.previousDate) : null;
+    return {
+      title: "LSM Growth",
+      value: series.latestValue.toFixed(1),
+      unit:  "Index (base FY16)",
+      change: changeLabel(rawDiff, prevLabel, (d) => d.toFixed(1)),
+      trend: rawDiff >= 0 ? "up" : "down",
+      glow: "blue",
+    };
+  }
+
+  const yoyPct = ((series.latestValue / priorYrPoint.value) - 1) * 100;
+
+  // Change label = this month's YoY − previous month's YoY (pp difference).
+  let change = "no prior data";
+  if (series.previousDate && series.previousValue !== null) {
+    const prevYear    = parseInt(series.previousDate.slice(0, 4), 10);
+    const prevMonth   = series.previousDate.slice(5, 7);
+    const prevPriorPfx = `${prevYear - 1}-${prevMonth}`;
+    const prevPriorPt  = series.history.find((p) => p.date.startsWith(prevPriorPfx));
+    if (prevPriorPt && prevPriorPt.value !== 0) {
+      const prevYoY = ((series.previousValue / prevPriorPt.value) - 1) * 100;
+      const diff    = yoyPct - prevYoY;
+      change        = changeLabel(diff, formatMonthLabel(series.previousDate), (d) => `${d.toFixed(1)} pp`);
+    }
+  }
+
   return {
-    title: "LSM",
-    value: series.latestValue.toFixed(1),
-    unit: "Index",
-    change: changeLabel(diff, prevLabel, (d) => d.toFixed(1)),
-    trend: diff >= 0 ? "up" : "down",
+    title: "LSM Growth",
+    value: yoyPct.toFixed(1),
+    unit:  "% YoY",
+    change,
+    trend: yoyPct >= 0 ? "up" : "down",
     glow: "blue",
   };
 }
@@ -814,6 +852,105 @@ function withSourceStatus(result: SbpIndicatorResult, status: SbpSourceStatus): 
   };
 }
 
+// Maps from SbpIndicatorKey to the economic_event_series slug in Supabase.
+// Only the 4 PBS-primary indicators appear here; all others skip the
+// canonical check immediately (fast path in applyCanonicalOverride).
+const CANONICAL_SERIES_SLUGS: Partial<Record<SbpIndicatorKey, string>> = {
+  cpiInflation:  "cpi-inflation-release",
+  coreInflation: "core-inflation-release",
+  lsm:           "large-scale-manufacturing-lsm-growth",
+  tradeBalance:  "trade-balance",
+};
+
+/**
+ * Overlays a confirmed PBS observation from economic_events onto an SBP
+ * EasyData result when the canonical observation covers a newer reference
+ * period than SBP has published yet.
+ *
+ * Only the 4 PBS-primary indicators activate this path (CPI, Core, LSM,
+ * Trade Balance). All others return sbpResult unchanged immediately.
+ *
+ * The canonical value comes from syncCpiFromPbs / syncLsmFromPbs /
+ * syncTradeBalanceFromPbs, which all run within 15 min of PBS publishing.
+ * SBP EasyData typically lags PBS by 2–5 days for CPI, 5–10 days for
+ * LSM and Trade Balance.
+ *
+ * On any failure (Supabase unreachable, parse error, stale canonical) the
+ * original sbpResult is returned unchanged — this is best-effort enrichment.
+ *
+ * The SBP trend/sparkline is always preserved unchanged regardless of the
+ * canonical override, since PBS does not publish long time-series.
+ */
+async function applyCanonicalOverride(
+  key: SbpIndicatorKey,
+  sbpResult: SbpIndicatorResult,
+): Promise<SbpIndicatorResult> {
+  const seriesSlug = CANONICAL_SERIES_SLUGS[key];
+  if (!seriesSlug) return sbpResult;
+
+  try {
+    const canonical = await getLatestCanonicalObservation(seriesSlug);
+    if (!canonical) return sbpResult;
+
+    // Only override when canonical covers a newer reference period than SBP.
+    // Lexicographic comparison is valid for ISO dates: "2026-06-30" > "2026-05-31".
+    if (canonical.observationDate <= sbpResult.meta.observationDate) {
+      return sbpResult;
+    }
+
+    const prevLabel      = formatMonthLabel(sbpResult.meta.observationDate);
+    const sbpLatestValue = parseFloat(sbpResult.kpi.value);
+
+    let change: string;
+    let trend: "up" | "down";
+    if (key === "tradeBalance") {
+      // PBS (customs-basis) and SBP (BPM6) use different methodologies.
+      // A cross-method diff label would be misleading; explain the status instead.
+      change = "PBS advance release — SBP BPM6 confirmation pending";
+      trend  = canonical.value >= 0 ? "up" : "down";
+    } else {
+      // CPI, Core, LSM are all % YoY — pp diff vs SBP's last period is valid.
+      const diff = canonical.value - sbpLatestValue;
+      change = changeLabel(diff, prevLabel, (d) => `${d.toFixed(1)} pp`);
+      trend  = diff >= 0 ? "up" : "down";
+    }
+
+    console.log(
+      `[SBP] ${INDICATOR_LABELS[key]} — canonical-override — ` +
+      `PBS obs=${canonical.observationDate} > SBP obs=${sbpResult.meta.observationDate} ` +
+      `— value PBS=${canonical.value} SBP-prev=${sbpLatestValue} (${canonical.sourceName})`,
+    );
+
+    return {
+      ...sbpResult,
+      kpi: {
+        ...sbpResult.kpi,
+        value:        key === "tradeBalance"
+                        ? canonical.value.toFixed(2)
+                        : canonical.value.toFixed(1),
+        unit:         key === "lsm" ? "% YoY" : sbpResult.kpi.unit,
+        change,
+        trend,
+        source:       canonical.sourceName,
+        latestDate:   canonical.observationDate,
+        sourceStatus: "live" as const,
+        snapshotDate: undefined,
+      },
+      meta: {
+        ...sbpResult.meta,
+        observationDate: canonical.observationDate,
+        sourceStatus:    "live" as const,
+      },
+    };
+  } catch (err) {
+    console.error(
+      `[SBP] ${INDICATOR_LABELS[key]} canonical override check failed: ` +
+      (err instanceof Error ? err.message : String(err)),
+    );
+    return sbpResult;
+  }
+}
+
 /**
  * Fetches a single SBP indicator (KPI + trend + source metadata).
  *
@@ -840,7 +977,7 @@ export async function getSbpIndicator(key: SbpIndicatorKey): Promise<SbpIndicato
   const l1 = getFresh<SbpIndicatorResult>(cacheKey, L1_TTL_MS);
   if (l1) {
     logSbp(key, "cache-fresh", `L1 hit, ${Math.round(l1.ageMs / 1000)}s old, observation=${l1.data.meta.observationDate}`);
-    return withSourceStatus(l1.data, "cache-fresh");
+    return applyCanonicalOverride(key, withSourceStatus(l1.data, "cache-fresh"));
   }
 
   return dedupeInFlight(cacheKey, async () => {
@@ -848,27 +985,30 @@ export async function getSbpIndicator(key: SbpIndicatorKey): Promise<SbpIndicato
       const result = await buildIndicatorResult(key, config);
       setCache(cacheKey, result);
       logSbp(key, "live", `fetched OK, observation=${result.meta.observationDate}`);
-      return withSourceStatus(result, "live");
+      return applyCanonicalOverride(key, withSourceStatus(result, "live"));
     } catch (err) {
       const reason = err instanceof Error ? err.message : String(err);
       const stale = getStale<SbpIndicatorResult>(cacheKey);
       if (stale) {
         logSbpError(key, reason, "cache-stale");
-        return withSourceStatus(stale.data, "cache-stale");
+        return applyCanonicalOverride(key, withSourceStatus(stale.data, "cache-stale"));
       }
       logSbpError(key, reason, "fallback");
       const fb = config.fallback;
-      return withSourceStatus(
-        {
-          ...fb,
-          kpi: {
-            ...fb.kpi,
-            seriesId: config.seriesKey,
-            latestDate: fb.meta.observationDate,
-            frequency: SBP_FREQ_MAP[config.frequency],
+      return applyCanonicalOverride(
+        key,
+        withSourceStatus(
+          {
+            ...fb,
+            kpi: {
+              ...fb.kpi,
+              seriesId: config.seriesKey,
+              latestDate: fb.meta.observationDate,
+              frequency: SBP_FREQ_MAP[config.frequency],
+            },
           },
-        },
-        "fallback",
+          "fallback",
+        ),
       );
     }
   });
