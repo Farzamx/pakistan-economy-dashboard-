@@ -76,24 +76,96 @@ jobs:
         env:
           APP_URL: ${{ vars.APP_URL }}
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
-          # GitHub Actions expression evaluated before shell execution — safe
-          # even though the result is embedded in a shell env var.
           TRIGGER_TYPE: ${{ github.event_name == 'workflow_dispatch' && 'manual' || 'scheduled' }}
         run: |
+          echo "=== Sync trigger ==="
           echo "run=${{ github.run_id }} event=${{ github.event_name }} time=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
-          response=$(curl -s -w '\n%{http_code}' \
+          # ── Pre-flight: validate APP_URL is configured ────────────────────────
+          # vars.APP_URL is a GitHub repository variable (not a secret).
+          # If it is unset or empty the curl URL becomes "/api/cron/..." (no scheme),
+          # curl exits with code 3 (URL malformed), and set -e kills the script
+          # before any diagnostic output is printed — which is why the logs show
+          # only "Process completed with exit code 3" with no further detail.
+          if [ -z "${APP_URL}" ]; then
+            echo "FATAL: APP_URL is empty or not configured."
+            echo "Set it in GitHub → Settings → Secrets and variables → Variables → APP_URL"
+            echo "Value must be the full Vercel deployment URL, e.g. https://your-app.vercel.app"
+            exit 1
+          fi
+
+          ENDPOINT="${APP_URL}/api/cron/sync-economic-calendar"
+          # Print endpoint host (safe — APP_URL is a variable, not a secret).
+          echo "endpoint: ${ENDPOINT}"
+
+          # ── Call the sync endpoint ────────────────────────────────────────────
+          # -S: show errors on stderr even in silent mode
+          # -s: suppress progress meter
+          # -D -: dump response headers to stdout
+          # -w: append structured metrics after body
+          # set +e: prevent curl non-zero exit from killing the script before we
+          #   can print diagnostics; we handle the exit code manually below.
+          set +e
+          response=$(curl -sS \
             --max-time 420 \
+            -D - \
             -H "Authorization: Bearer ${CRON_SECRET}" \
             -H "x-github-run-id: ${{ github.run_id }}" \
             -H "x-github-workflow: ${{ github.workflow }}" \
             -H "x-trigger-type: ${TRIGGER_TYPE}" \
-            "${APP_URL}/api/cron/sync-economic-calendar")
+            -w '\n===curl-metrics===\nhttp_code=%{http_code}\ntime_total=%{time_total}s\ntime_connect=%{time_connect}s\ntime_starttransfer=%{time_starttransfer}s\nsize_download=%{size_download}bytes\n' \
+            "${ENDPOINT}" 2>&1)
+          curl_exit=$?
+          set -e
 
-          http_code=$(echo "${response}" | tail -1)
-          body=$(echo "${response}" | head -n -1)
+          # ── Diagnostics: always print before any exit ─────────────────────────
+          echo ""
+          echo "=== curl exit code: ${curl_exit} ==="
+          if [ "${curl_exit}" -ne 0 ]; then
+            echo "curl failed before receiving a response."
+            echo "Common causes:"
+            echo "  exit 3  = URL malformed (APP_URL empty or missing https://)"
+            echo "  exit 6  = could not resolve host (DNS failure or wrong domain)"
+            echo "  exit 7  = connection refused (server not listening)"
+            echo "  exit 28 = timeout (server took >420s)"
+            echo ""
+            echo "=== curl output (may contain error details) ==="
+            echo "${response}" | head -c 4000
+            exit "${curl_exit}"
+          fi
 
-          echo "HTTP ${http_code}"
-          echo "${body}" | head -c 2000
+          # ── Parse headers / body / metrics from combined output ───────────────
+          # curl -D - emits headers then a blank line then body.
+          # We appended the ===curl-metrics=== block at the very end via -w.
+          metrics_block=$(echo "${response}" | sed -n '/^===curl-metrics===/,$p')
+          http_code=$(echo "${metrics_block}" | grep '^http_code=' | cut -d= -f2)
+          time_total=$(echo "${metrics_block}" | grep '^time_total=' | cut -d= -f2)
 
-          [ "${http_code}" = "200" ] || { echo "Sync failed with HTTP ${http_code}"; exit 1; }
+          # Body is everything between the blank header-separator and the metrics block.
+          body=$(echo "${response}" | awk '
+            /^\r?$/ && !body_started { body_started=1; next }
+            /^===curl-metrics===/ { exit }
+            body_started { print }
+          ')
+
+          echo "=== Response headers ==="
+          echo "${response}" | awk '/^===curl-metrics===/{exit} 1' | head -30
+
+          echo ""
+          echo "=== HTTP ${http_code} — request took ${time_total} ==="
+          echo ""
+          echo "=== Response body (first 4000 chars) ==="
+          echo "${body}" | head -c 4000
+
+          echo ""
+          echo "=== curl metrics ==="
+          echo "${metrics_block}"
+
+          # ── Fail the workflow if the endpoint returned non-200 ────────────────
+          if [ "${http_code}" != "200" ]; then
+            echo ""
+            echo "FAIL: sync endpoint returned HTTP ${http_code} (expected 200)"
+            exit 1
+          fi
+
+          echo "OK: sync pipeline completed successfully."
