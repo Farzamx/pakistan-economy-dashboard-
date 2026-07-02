@@ -3,7 +3,13 @@ import * as XLSX from 'xlsx';
 import type { TrendPoint } from '@/components/charts/TrendLineChart';
 import { fallbackQuarterlyGdpKpi, type Kpi } from '@/data/kpiData';
 
-const SBP_QGDP_URL = 'https://www.sbp.org.pk/ecodata/QGDP.xlsx';
+// SBP migrated their economic data files from /ecodata/ to /assets/document/
+// during their website redesign (2025-26). The old /ecodata/QGDP.xlsx URL now
+// returns an HTML SPA shell regardless of the Accept header — the content-type
+// and PK magic-byte guards in getQuarterlyGdpKpi() below detect this and fall
+// back gracefully. Verified 2026-07-02: /assets/document/QGDP.xlsx serves the
+// real xlsx workbook (53.7 KB, Growth_Q sheet identical structure).
+const SBP_QGDP_URL = 'https://www.sbp.org.pk/assets/document/QGDP.xlsx';
 // SBP publishes quarterly — daily revalidation is more than enough.
 const REVALIDATE_SECONDS = 60 * 60 * 24;
 
@@ -48,31 +54,32 @@ export interface QuarterlyGdpResult {
   isFallback: boolean;
 }
 
-// Snapshot of the last 11 quarters of real GVA growth (YoY %) used whenever
-// the live QGDP.xlsx fetch fails. FY23-24 through Q1 FY24-25 are confirmed
-// from PBS official quarterly releases; Q2 FY24-25 onward are period-
-// consistent estimates derived from the published FY24-25 provisional annual
-// figure (3.7% real GDP) and the confirmed Q2-Q3 FY25-26 values sourced from
-// the fallback KPI snapshot (captured 2026-03-31). The chart's DataQuality
-// badge already shows "Fallback" when isFallback=true, so users know the
-// source.  Update this array — and fallbackQuarterlyGdpKpi in kpiData.ts —
-// whenever a new quarter is officially released.
+// Snapshot of 19 quarters of official GVA growth (YoY %) used whenever the
+// live QGDP.xlsx fetch fails. All values are read directly from the Growth_Q
+// sheet of the /assets/document/QGDP.xlsx workbook (captured 2026-07-02).
+// The chart's DataQuality badge shows "Fallback" when isFallback=true.
+// Update this array — and fallbackQuarterlyGdpKpi in kpiData.ts — whenever
+// a new quarter is officially released by SBP/PBS.
 const FALLBACK_TREND: TrendPoint[] = [
-  { month: 'Q1 FY23', value: 4.89 },  // Jul–Sep 2022 — PBS official
-  { month: 'Q2 FY23', value: 3.29 },  // Oct–Dec 2022 — PBS official
-  { month: 'Q3 FY23', value: 3.09 },  // Jan–Mar 2023 — PBS official
-  { month: 'Q4 FY23', value: 0.29 },  // Apr–Jun 2023 — PBS official
-  { month: 'Q1 FY24', value: 2.46 },  // Jul–Sep 2023 — PBS official
-  { month: 'Q2 FY24', value: 1.75 },  // Oct–Dec 2023 — PBS official
-  { month: 'Q3 FY24', value: 2.06 },  // Jan–Mar 2024 — PBS official
-  { month: 'Q4 FY24', value: 3.12 },  // Apr–Jun 2024 — PBS official
-  { month: 'Q1 FY25', value: 3.31 },  // Jul–Sep 2024 — PBS advance estimates
-  { month: 'Q2 FY25', value: 3.70 },  // Oct–Dec 2024 — estimated (FY25 annual provisional ~3.7%)
-  { month: 'Q3 FY25', value: 4.22 },  // Jan–Mar 2025 — estimated
-  { month: 'Q4 FY25', value: 3.91 },  // Apr–Jun 2025 — estimated
-  { month: 'Q1 FY26', value: 3.97 },  // Jul–Sep 2025 — estimated
-  { month: 'Q2 FY26', value: 4.05 },  // Oct–Dec 2025 — captured from QGDP.xlsx (2026-03-31)
-  { month: 'Q3 FY26', value: 3.99 },  // Jan–Mar 2026 — captured from QGDP.xlsx (2026-03-31)
+  { month: 'Q1 FY22', value: 6.40 },  // Jul–Sep 2021 — SBP QGDP.xlsx 2026-07-02
+  { month: 'Q2 FY22', value: 4.60 },  // Oct–Dec 2021 — SBP QGDP.xlsx 2026-07-02
+  { month: 'Q3 FY22', value: 6.70 },  // Jan–Mar 2022 — SBP QGDP.xlsx 2026-07-02
+  { month: 'Q4 FY22', value: 7.02 },  // Apr–Jun 2022 — SBP QGDP.xlsx 2026-07-02
+  { month: 'Q1 FY23', value: 1.28 },  // Jul–Sep 2022 — SBP QGDP.xlsx 2026-07-02
+  { month: 'Q2 FY23', value: 2.35 },  // Oct–Dec 2022 — SBP QGDP.xlsx 2026-07-02
+  { month: 'Q3 FY23', value: -1.22 }, // Jan–Mar 2023 — SBP QGDP.xlsx 2026-07-02
+  { month: 'Q4 FY23', value: -3.14 }, // Apr–Jun 2023 — SBP QGDP.xlsx 2026-07-02
+  { month: 'Q1 FY24', value: 2.55 },  // Jul–Sep 2023 — SBP QGDP.xlsx 2026-07-02
+  { month: 'Q2 FY24', value: 2.03 },  // Oct–Dec 2023 — SBP QGDP.xlsx 2026-07-02
+  { month: 'Q3 FY24', value: 2.78 },  // Jan–Mar 2024 — SBP QGDP.xlsx 2026-07-02
+  { month: 'Q4 FY24', value: 3.14 },  // Apr–Jun 2024 — SBP QGDP.xlsx 2026-07-02
+  { month: 'Q1 FY25', value: 1.60 },  // Jul–Sep 2024 — SBP QGDP.xlsx 2026-07-02
+  { month: 'Q2 FY25', value: 2.47 },  // Oct–Dec 2024 — SBP QGDP.xlsx 2026-07-02
+  { month: 'Q3 FY25', value: 2.56 },  // Jan–Mar 2025 — SBP QGDP.xlsx 2026-07-02
+  { month: 'Q4 FY25', value: 6.14 },  // Apr–Jun 2025 — SBP QGDP.xlsx 2026-07-02
+  { month: 'Q1 FY26', value: 3.92 },  // Jul–Sep 2025 — SBP QGDP.xlsx 2026-07-02
+  { month: 'Q2 FY26', value: 4.05 },  // Oct–Dec 2025 — SBP QGDP.xlsx 2026-07-02
+  { month: 'Q3 FY26', value: 3.99 },  // Jan–Mar 2026 — SBP QGDP.xlsx 2026-07-02
 ];
 
 function parseWorkbook(buf: ArrayBuffer): QuarterlyGdpResult {
