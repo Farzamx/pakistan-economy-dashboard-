@@ -231,7 +231,7 @@ function changeLabel(diff: number, previousLabel: string | null, format: (value:
  * Throws on a missing API key, non-200 response, or a series with no usable
  * numeric observations — callers are expected to catch and fall back.
  */
-async function fetchSbpSeries(seriesKey: string, revalidateSeconds: number, cacheTag: string): Promise<SbpSeries> {
+async function fetchSbpSeries(seriesKey: string, revalidateSeconds: number, cacheTag: string, noCache = false): Promise<SbpSeries> {
   const apiKey = process.env.SBP_EASYDATA_API_KEY;
   if (!apiKey) {
     throw new Error("SBP_EASYDATA_API_KEY is not set");
@@ -243,8 +243,16 @@ async function fetchSbpSeries(seriesKey: string, revalidateSeconds: number, cach
     format: "json",
   });
 
+  // noCache=true uses cache:'no-store' for the sync pipeline — bypasses Next.js
+  // L2 fetch cache so new SBP observations are seen on the next cron run rather
+  // than waiting up to 24h for cache expiry. Options are mutually exclusive per
+  // Next.js docs: { revalidate, tags } and { cache:'no-store' } cannot coexist.
+  const cacheOptions: RequestInit = noCache
+    ? { cache: "no-store" }
+    : { next: { revalidate: revalidateSeconds, tags: [cacheTag] } };
+
   const response = await fetch(`${SBP_API_BASE}/${seriesKey}/data?${params.toString()}`, {
-    next: { revalidate: revalidateSeconds, tags: [cacheTag] },
+    ...cacheOptions,
     signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
   });
 
@@ -751,8 +759,8 @@ export function sbpCacheTag(key: SbpIndicatorKey): string {
   return `sbp-${key}`;
 }
 
-async function buildIndicatorResult(key: SbpIndicatorKey, config: IndicatorConfig): Promise<SbpIndicatorResult> {
-  const series = await fetchSbpSeries(config.seriesKey, config.revalidate, sbpCacheTag(key));
+async function buildIndicatorResult(key: SbpIndicatorKey, config: IndicatorConfig, noCache = false): Promise<SbpIndicatorResult> {
+  const series = await fetchSbpSeries(config.seriesKey, config.revalidate, sbpCacheTag(key), noCache);
   const formatLabel =
     config.frequency === "Monthly" || config.frequency === "Annual"
       ? formatMonthLabel
@@ -864,6 +872,44 @@ export async function getSbpIndicator(key: SbpIndicatorKey): Promise<SbpIndicato
       );
     }
   });
+}
+
+/**
+ * For sync pipeline use only — same logic as getSbpIndicator() but bypasses
+ * the 24h Next.js L2 fetch cache via cache:'no-store'. This ensures the sync
+ * cron detects new SBP observations within one 15-min polling interval rather
+ * than waiting up to 24h for the cache to naturally expire.
+ *
+ * Does NOT update the L1 memoryCache (the pipeline doesn't need to populate
+ * the user-facing cache path; invalidateSbpIndicatorCache() handles clearing
+ * both L1 and L2 after a successful write, so the next user-facing request
+ * gets fresh data).
+ *
+ * Falls back to the static snapshot on any error, identical to getSbpIndicator.
+ */
+export async function getSbpIndicatorFresh(key: SbpIndicatorKey): Promise<SbpIndicatorResult> {
+  const config = CONFIGS[key];
+  try {
+    const result = await buildIndicatorResult(key, config, true);
+    logSbp(key, "live", `no-cache fetch OK, observation=${result.meta.observationDate}`);
+    return withSourceStatus(result, "live");
+  } catch (err) {
+    const reason = err instanceof Error ? err.message : String(err);
+    logSbpError(key, reason, "fallback");
+    const fb = config.fallback;
+    return withSourceStatus(
+      {
+        ...fb,
+        kpi: {
+          ...fb.kpi,
+          seriesId: config.seriesKey,
+          latestDate: fb.meta.observationDate,
+          frequency: SBP_FREQ_MAP[config.frequency],
+        },
+      },
+      "fallback",
+    );
+  }
 }
 
 // invalidateSbpIndicatorCache() lives in sbpCacheInvalidation.ts, a

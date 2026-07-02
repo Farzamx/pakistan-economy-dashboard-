@@ -1,4 +1,4 @@
-import { getSbpIndicator, type SbpIndicatorKey } from "@/lib/data/sbp";
+import { getSbpIndicatorFresh, type SbpIndicatorKey } from "@/lib/data/sbp";
 import { invalidateSbpIndicatorCache } from "@/lib/data/sbpCacheInvalidation";
 import { getSpiHistory, invalidateSpiCache } from "@/lib/data/spi";
 import { createPublicDataClient } from "@/lib/supabase/publicDataClient";
@@ -202,7 +202,7 @@ export async function syncAllFromSbpEasyData(): Promise<SyncResult[]> {
       }
 
       const indicatorFetchStart = new Date();
-      const indicator = await getSbpIndicator(target.indicatorKey);
+      const indicator = await getSbpIndicatorFresh(target.indicatorKey);
       const isFallback = indicator.meta.source !== "SBP EasyData";
       // Record source health for every fetch — tracks whether the data source
       // itself is healthy independent of whether there was an event to write.
