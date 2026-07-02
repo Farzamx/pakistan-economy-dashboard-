@@ -52,36 +52,79 @@ interface CpiPbsResult {
 }
 
 // PDF text patterns for CPI YoY extraction.
-// PBS reports use varying formats across releases — patterns ordered by specificity.
-// All values are YoY percentages published in the Monthly Inflation Report.
+//
+// CRITICAL ORDERING CONSTRAINT — all patterns MUST require an explicit YoY
+// context qualifier. Do NOT add patterns that match a bare percentage after
+// "CPI inflation" without verifying the surrounding text confirms year-on-year.
+//
+// Root cause of the June 2026 mis-read: PBS reports contain BOTH MoM and YoY
+// figures in the same sentence, MoM first:
+//   "CPI inflation recorded at 0.3% (Month-on-Month) and 12.6% (Year-on-Year)"
+// A pattern that matches the first number after "CPI inflation" grabs 0.3 (MoM)
+// and labels it "YoY", producing a bogus surprise vs the forecast.
+//
+// Patterns are ordered: most-restrictive YoY context first, broadest last.
 const CPI_PATTERNS = [
-  // "CPI based inflation recorded at 7.5 percent"
-  /CPI\s+(?:based\s+)?inflation\s+(?:stood\s+at|recorded\s+at|was|is|remained?\s+at)\s+([\d.]+)\s*(?:percent|%)/i,
-  // "General CPI 7.5"  (table format)
-  /general\s+CPI\s+([\d.]+)/i,
-  // "National Consumer Price Index  ...  7.5%" (flexible table capture, no s-flag)
-  /national\s+consumer\s+price\s+index[\s\S]{0,120}?([\d.]+)\s*%/i,
-  // Fallback: percentage immediately following "CPI"
-  /\bCPI\b[^%\n]{0,60}?([\d.]+)\s*%/i,
+  // 1. Number immediately followed by a YoY qualifier — the most common PBS format.
+  //    "6.4 percent on year-on-year basis"  /  "6.4% (YoY)"  /  "6.4% YoY"
+  /([\d.]+)\s*(?:percent|%)\s*(?:\([^)]*\))?\s*(?:on\s+)?(?:year[\s-]on[\s-]year|y[\s.-]?o[\s.-]?y\b|YoY)\b/i,
+
+  // 2. YoY qualifier before the number within the same clause.
+  //    "on year-on-year basis CPI increased by 6.4 percent"
+  /(?:year[\s-]on[\s-]year|y[\s.-]?o[\s.-]?y\b|YoY)\b[^%\n.]{0,100}([\d.]+)\s*(?:percent|%)/i,
+
+  // 3. "same month last year" / "same period last year" phrasing — PBS alternative.
+  //    "compared to 12.6 percent in the same month last year"
+  /([\d.]+)\s*(?:percent|%)[^.]{0,100}same\s+(?:period|month)\s+(?:of\s+|in\s+)?(?:the\s+)?last\s+year/i,
+  /(?:compared\s+to|versus)\s+([\d.]+)\s*(?:percent|%)[^.]{0,50}(?:last\s+year|previous\s+year)/i,
+
+  // 4. Table format: "National CPI (YoY)  6.4"  or  "General CPI (YoY)  6.4"
+  /national\s+(?:consumer\s+price\s+index|CPI)[^0-9(]{0,30}\(YoY\)[^0-9]{0,40}([\d.]+)/i,
+  /general\s+CPI\s+\(YoY\)[^0-9]{0,30}([\d.]+)/i,
+
+  // 5. Annual phrasing: "annual CPI inflation rate of 6.4%"
+  /\bannual\s+(?:CPI\s+)?inflation[^%\n.]{0,60}([\d.]+)\s*(?:percent|%)/i,
 ];
 
 const CORE_PATTERNS = [
-  // "Core inflation (NFNE Urban) 9.0 percent"
-  /core\s+inflation\s*\(NFNE[^)]*\)[^%\n]{0,60}?([\d.]+)\s*(?:percent|%)/i,
-  // "NFNE Urban 9.0"  (table)
+  // 1. NFNE with explicit YoY qualifier — required to avoid MoM matches.
+  //    "Core inflation (NFNE Urban) 9.0% (year-on-year)"
+  /core\s+inflation\s*\(NFNE[^)]*\)[^%\n]{0,80}?([\d.]+)\s*(?:percent|%)[^.]{0,60}(?:year[\s-]on[\s-]year|YoY|y[\s.-]?o[\s.-]?y\b|annual)/i,
+  /([\d.]+)\s*(?:percent|%)\s*(?:\([^)]*\))?\s*(?:on\s+)?(?:year[\s-]on[\s-]year|YoY)\b[^.]{0,60}(?:NFNE|core|non.food)/i,
+
+  // 2. "NFNE Urban" table row — NFNE is distinctive enough that MoM mis-match
+  //    is unlikely, but require a plausible range in extractPercentage.
   /NFNE\s+Urban\s+([\d.]+)/i,
-  // "Non-food Non-energy (NFNE) ... 9.0%"
+
+  // 3. Non-food Non-energy patterns with YoY context where possible.
+  /non.food\s+non.energy[^%]{0,80}?([\d.]+)\s*(?:percent|%)[^.]{0,60}(?:year[\s-]on[\s-]year|YoY|y[\s.-]?o[\s.-]?y\b|annual)/i,
   /non.food\s+non.energy[^%]{0,80}?([\d.]+)\s*(?:percent|%)/i,
-  // "Core (NFNE) inflation 9.0%"
+
+  // 4. "Core (NFNE) inflation" with YoY context.
+  /core\s*\(?NFNE\)?[^%\n]{0,80}?([\d.]+)\s*(?:percent|%)[^.]{0,60}(?:year[\s-]on[\s-]year|YoY|annual)/i,
   /core\s*\(?NFNE\)?[^%\n]{0,80}?([\d.]+)\s*(?:percent|%)/i,
 ];
 
-function extractPercentage(text: string, patterns: RegExp[]): number | null {
+/**
+ * Extract the first plausible percentage from text matching any of the patterns.
+ *
+ * Plausibility bounds:
+ *   minPlausible: defaults to 0 (any positive value accepted). Pass a higher
+ *   value (e.g. 0.5) to guard against MoM figures slipping through if the
+ *   caller knows the expected metric has a higher floor. A value below the
+ *   floor causes the match to be skipped rather than returned — the next
+ *   pattern in the list is tried.
+ *
+ * This guard should NOT be used as a substitute for correct patterns — it is
+ * a last-resort safety net only. If a pattern is firing on MoM text, fix the
+ * pattern first.
+ */
+function extractPercentage(text: string, patterns: RegExp[], minPlausible = 0): number | null {
   for (const pattern of patterns) {
     const m = text.match(pattern);
     if (m?.[1]) {
       const v = parseFloat(m[1]);
-      if (!isNaN(v) && v > 0 && v < 100) return v;
+      if (!isNaN(v) && v > minPlausible && v < 100) return v;
     }
   }
   return null;
@@ -117,15 +160,20 @@ async function parseCpiPdf(pdfUrl: string, title: string, postDate: string): Pro
   const pdf = await getDocumentProxy(new Uint8Array(buf));
   const { text } = await extractText(pdf, { mergePages: true });
 
-  const cpiYoYPct = extractPercentage(text, CPI_PATTERNS);
+  // minPlausible=0.5: guard against MoM figures slipping through if the YoY
+  // patterns somehow match MoM context (Pakistan YoY CPI has never been < 0.5%
+  // in the modern data era — a value this low indicates a MoM/WoW match, not YoY).
+  // If this guard fires, the function throws and EasyData fallback handles the release.
+  const cpiYoYPct = extractPercentage(text, CPI_PATTERNS, 0.5);
   if (cpiYoYPct === null) {
     throw new Error(
-      `CPI PDF: could not extract CPI YoY percentage. ` +
-      `PDF text (first 500 chars): ${text.slice(0, 500)}`,
+      `CPI PDF: could not extract CPI YoY percentage (patterns require explicit year-on-year context). ` +
+      `If the value extracted was < 0.5% it was rejected as implausible for YoY CPI. ` +
+      `PDF text (first 800 chars): ${text.slice(0, 800)}`,
     );
   }
 
-  const coreYoYPct = extractPercentage(text, CORE_PATTERNS);
+  const coreYoYPct = extractPercentage(text, CORE_PATTERNS, 0.5);
 
   const period = parseObsPeriod(text, title);
   if (!period) {

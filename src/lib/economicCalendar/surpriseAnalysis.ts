@@ -22,9 +22,24 @@ interface ParsedValue {
   decimals: number;
   /** The unit text immediately following the number — "%", "B", "bn", etc. */
   unit: string;
+  /**
+   * Frequency/metric qualifier extracted from the full value string, uppercased.
+   * "YOY" from "6.4% YoY", "MOM" from "+0.3% MoM", "WOW" from "+0.5% WoW".
+   * null if no recognised qualifier is present.
+   * Used to detect cross-metric comparisons (YoY actual vs MoM forecast) which
+   * produce numerically well-formed but economically meaningless surprises.
+   */
+  metricLabel: string | null;
 }
 
-/** Pulls the first signed number out of strings like "6.8% YoY", "-$0.4B", "11.0% (hold expected)", "$11.2B". Returns null for non-numeric values ("Federal Budget 2026-27", "Not available"). */
+/** Recognised frequency qualifiers. Comparisons across these labels are invalid. */
+const FREQUENCY_QUALIFIERS = new Set(["YOY", "MOM", "WOW"]);
+
+/**
+ * Pulls the first signed number out of strings like "6.8% YoY", "-$0.4B",
+ * "11.0% (hold expected)", "$11.2B". Returns null for non-numeric values
+ * ("Federal Budget 2026-27", "Not available").
+ */
 export function parseEventValue(value: string | null | undefined): ParsedValue | null {
   if (!value) return null;
   const match = value.match(/(-?\$?-?[\d,]+\.?\d*)\s*([%A-Za-z]*)/);
@@ -33,13 +48,32 @@ export function parseEventValue(value: string | null | undefined): ParsedValue |
   const num = parseFloat(numStr);
   if (Number.isNaN(num)) return null;
   const decimalPart = numStr.split(".")[1];
-  return { num, decimals: decimalPart ? decimalPart.length : 0, unit: match[2] };
+
+  // Detect frequency qualifier anywhere in the full value string.
+  const qualifierMatch = value.match(/\b(YoY|MoM|WoW)\b/i);
+  const metricLabel = qualifierMatch ? qualifierMatch[1].toUpperCase() : null;
+
+  return { num, decimals: decimalPart ? decimalPart.length : 0, unit: match[2], metricLabel };
 }
 
 export function calculateSurprise(actual: string | null | undefined, forecast: string | null | undefined): SurpriseResult {
   const parsedActual = parseEventValue(actual);
   const parsedForecast = parseEventValue(forecast);
   if (!parsedActual || !parsedForecast) {
+    return { direction: "unavailable", delta: null, deltaLabel: null };
+  }
+
+  // Guard: if both values carry a frequency qualifier (YoY/MoM/WoW) and they
+  // differ, the comparison is cross-metric and the surprise is meaningless.
+  // e.g. actual "+0.3% MoM" vs forecast "6.4% YoY" → return unavailable rather
+  // than displaying a nonsensical "-6.1" surprise.
+  // Note: this guard catches mismatches only when the stored label is correct.
+  // If a MoM value is MISLABELED as YoY (the root cause of the June 2026 bug),
+  // both will read "YOY" and this guard won't fire — fixing the parser patterns
+  // in syncCpiFromPbs.ts is the authoritative fix for that case.
+  const aLabel = parsedActual.metricLabel;
+  const fLabel = parsedForecast.metricLabel;
+  if (aLabel && fLabel && FREQUENCY_QUALIFIERS.has(aLabel) && FREQUENCY_QUALIFIERS.has(fLabel) && aLabel !== fLabel) {
     return { direction: "unavailable", delta: null, deltaLabel: null };
   }
 
@@ -51,7 +85,10 @@ export function calculateSurprise(actual: string | null | undefined, forecast: s
   const direction: SurpriseDirection = Math.abs(delta) <= threshold ? "in-line" : delta > 0 ? "positive" : "negative";
   const decimals = Math.max(parsedActual.decimals, parsedForecast.decimals);
   const unit = parsedActual.unit || parsedForecast.unit;
-  const deltaLabel = `${delta >= 0 ? "+" : ""}${delta.toFixed(decimals)}${unit}`;
+  // For percentage-unit series, the delta is in percentage points (pp) not percent —
+  // "−6.1pp" is unambiguous; "−6.1%" could be misread as a relative change.
+  const deltaUnit = unit === "%" ? "pp" : unit;
+  const deltaLabel = `${delta >= 0 ? "+" : ""}${delta.toFixed(decimals)}${deltaUnit}`;
 
   return { direction, delta, deltaLabel };
 }
