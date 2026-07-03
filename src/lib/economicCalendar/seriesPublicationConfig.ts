@@ -526,13 +526,18 @@ export const SERIES_PUBLICATION_META: Record<string, SeriesPublicationMeta> = {
 
   "sbp-foreign-exchange-reserves": {
     // Blocker resolved Phase 7 Step 3: Forex_Arch.xlsx parser implemented.
-    // Weekly exact-date match. SBP publishes Forex_Arch.xlsx same day as the press release.
+    // Phase 9 fix: changed cadence from "weekly" (exact date match) to "as-needed"
+    // with maxDaysVariance: 7. The Forex_Arch.xlsx uses Friday week-ending dates while
+    // calendar events are seeded on Thursday press-release days — a 1-day structural gap
+    // that caused exact-match to permanently fail. A ±7-day tolerance correctly handles
+    // this without risking stale-period writes (SBP only publishes one observation per week).
     // Forex_Arch.xlsx URL: https://www.sbp.org.pk/assets/document/Forex_Arch.xlsx (stable).
-    periodValidation: { cadence: "weekly" },
+    periodValidation: { cadence: "as-needed", maxDaysVariance: 7 },
     publicationSchedule:
       "SBP publishes weekly net liquid FX reserves in Forex_Arch.xlsx at a stable direct URL, " +
-      "updated Thursdays/Fridays for the week-ending date. Weekly cadence: exact date match " +
-      "(observation week-ending date must equal the calendar event date). " +
+      "updated Thursdays/Fridays for the week-ending date. Observation date must be within " +
+      "±7 days of the calendar event date (Forex_Arch uses Friday week-ending dates; events " +
+      "are seeded on Thursday press-release days — 1-day structural gap). " +
       "Confirmed measure: net SBP liquid reserves (~$11B), NOT monthly total (~$17B). " +
       "See syncFxReservesFromSbpExcel.ts.",
     officialSource: "State Bank of Pakistan",

@@ -229,7 +229,10 @@ export async function syncFxReservesFromSbpExcel(): Promise<SyncResult> {
       };
     }
 
-    // Weekly period validation: obs date must equal event date exactly
+    // FX reserves: as-needed with ±7 days. Forex_Arch uses Friday week-ending
+    // dates; events are seeded on Thursday press-release days — exact match
+    // always failed. maxDaysVariance=7 covers the 1-day structural gap and
+    // one missed-week edge case without risking cross-week period confusion.
     const periodCheck = validateObservationPeriod(
       fxRow.weekEndingDate,
       dueEvent.event_date,
