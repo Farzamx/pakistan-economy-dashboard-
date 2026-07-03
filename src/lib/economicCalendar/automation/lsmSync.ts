@@ -4,6 +4,7 @@ import { validateObservationPeriod } from "@/lib/economicCalendar/observationPer
 import { SERIES_PUBLICATION_META } from "@/lib/economicCalendar/seriesPublicationConfig";
 import { recordSourceAttempt } from "@/lib/economicCalendar/sourceHealthTracker";
 import type { SyncResult, SyncProvenance } from "@/lib/economicCalendar/automation/syncFromSbpEasyData";
+import { invalidate } from "@/lib/memoryCache";
 
 // LSM YoY Sync — Part 4 of Phase 3 (Institutional-Grade Source Intelligence)
 //
@@ -195,20 +196,22 @@ export async function syncLsmYoYFromEasyData(): Promise<SyncResult> {
       dataConfidence: "confirmed",
     };
 
-    return didUpdate
-      ? {
-          seriesSlug: SERIES_SLUG,
-          status: "synced",
-          detail:
-            `YoY=${actualValue} | current=${obsDate}:${latest.value.toFixed(2)} | ` +
-            `prior=${priorYearPoint.date}:${priorYearPoint.value.toFixed(2)} | event=${dueEvent.event_date}`,
-          provenance,
-        }
-      : {
-          seriesSlug: SERIES_SLUG,
-          status: "skipped-no-due-event",
-          detail: "LSM event already released or not found at call time.",
-        };
+    if (didUpdate) {
+      invalidate(`canonical-obs:${SERIES_SLUG}`);
+      return {
+        seriesSlug: SERIES_SLUG,
+        status: "synced",
+        detail:
+          `YoY=${actualValue} | current=${obsDate}:${latest.value.toFixed(2)} | ` +
+          `prior=${priorYearPoint.date}:${priorYearPoint.value.toFixed(2)} | event=${dueEvent.event_date}`,
+        provenance,
+      };
+    }
+    return {
+      seriesSlug: SERIES_SLUG,
+      status: "skipped-no-due-event",
+      detail: "LSM event already released or not found at call time.",
+    };
   } catch (err) {
     return {
       seriesSlug: SERIES_SLUG,

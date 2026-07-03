@@ -62,7 +62,7 @@ export async function GET(request: Request) {
     officialCalendars: result.officialCalendars,
     gapDetection: result.gapDetection,
     cpiPbsResults: result.cpiPbsResults,
-    tradeBalanceResult: result.tradeBalanceResult,
+    tradeBalanceResults: result.tradeBalanceResults,
     fxReservesResult: result.fxReservesResult,
     results: result.syncResults,
     lsmResult: result.lsmResult,

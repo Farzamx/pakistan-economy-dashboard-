@@ -182,9 +182,14 @@ export async function getQuarterlyGdpKpi(): Promise<QuarterlyGdpResult> {
       throw new Error('SBP QGDP response is not a valid xlsx file (missing PK magic bytes).');
     }
 
-    return parseWorkbook(buf);
+    const result = parseWorkbook(buf);
+    console.log(
+      `[QGDP] source=Live SBP — latest=${result.kpi.latestDate} ` +
+      `value=${result.kpi.value}% trend-points=${result.trend.length}`,
+    );
+    return result;
   } catch (err) {
-    console.error('[QGDP] Live fetch failed, serving fallback trend:', err instanceof Error ? err.message : String(err));
+    console.error('[QGDP] source=Fallback (live fetch failed):', err instanceof Error ? err.message : String(err));
     return { kpi: fallbackQuarterlyGdpKpi, trend: FALLBACK_TREND, isFallback: true };
   }
 }

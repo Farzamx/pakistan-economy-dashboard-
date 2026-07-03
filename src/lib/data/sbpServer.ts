@@ -9,15 +9,16 @@
 //   - sbp.ts        → client-safe, SBP EasyData only, imported by both server
 //                     and client-reachable code (history, types, fallbacks)
 //   - sbpServer.ts  → this file, server-only, adds the canonical PBS override
-//                     for the 4 PBS-primary indicators (CPI, Core, LSM, Trade
-//                     Balance). All server pages and server-only lib modules
-//                     import from here instead of sbp.ts directly.
+//                     for PBS-primary indicators. All server pages and
+//                     server-only lib modules import from here.
+//
+// Canonical override covers 6 PBS-primary indicators (CANONICAL_SERIES_SLUGS):
+//   CPI, Core Inflation, LSM, Trade Balance: PBS publishes 1–5 days before SBP EasyData.
+//   Exports, Imports: PBS advance release publishes 28–30 days before SBP BPM6.
 //
 // The canonical override is applied after getSbpIndicator / getAllSbpIndicators
-// resolves (whether from L1 cache, live SBP fetch, stale cache, or static
-// fallback). For the 16 non-PBS indicators it is a fast no-op (immediate
-// return on the CANONICAL_SERIES_SLUGS lookup). The SBP trend/sparkline is
-// always preserved — PBS does not publish long time-series.
+// resolves. For all other indicators it is a fast no-op. The SBP trend/sparkline
+// is always preserved — PBS does not publish long time-series.
 //
 // Re-exports: every public export from sbp.ts is re-exported here (except
 // getSbpIndicator and getAllSbpIndicators which are overridden) so callers
@@ -26,8 +27,6 @@
 import "server-only";
 
 // --- Pass-through re-exports from sbp.ts -----------------------------------
-// (getSbpIndicator and getAllSbpIndicators are intentionally excluded — they
-//  are defined locally below with the canonical override applied.)
 export {
   getSbpIndicatorFresh,
   getSbpIndicatorHistory,
@@ -70,12 +69,14 @@ function changeLabel(diff: number, prevLabel: string, format: (d: number) => str
 }
 
 // Maps indicator key → series slug in economic_event_series.
-// Only the 4 PBS-primary indicators are listed; all others skip immediately.
+// All others short-circuit immediately in applyCanonicalOverride.
 const CANONICAL_SERIES_SLUGS: Partial<Record<SbpIndicatorKey, string>> = {
   cpiInflation:  "cpi-inflation-release",
   coreInflation: "core-inflation-release",
   lsm:           "large-scale-manufacturing-lsm-growth",
   tradeBalance:  "trade-balance",
+  exports:       "exports-release",
+  imports:       "imports-release",
 };
 
 const INDICATOR_LABELS: Partial<Record<SbpIndicatorKey, string>> = {
@@ -83,6 +84,8 @@ const INDICATOR_LABELS: Partial<Record<SbpIndicatorKey, string>> = {
   coreInflation: "Core Inflation",
   lsm:           "LSM",
   tradeBalance:  "Trade Balance",
+  exports:       "Exports",
+  imports:       "Imports",
 };
 
 /**
@@ -106,18 +109,17 @@ async function applyCanonicalOverride(
 
     // Only override when canonical covers a newer reference period than SBP.
     // Lexicographic comparison is correct for ISO "YYYY-MM-DD" dates.
-    if (canonical.observationDate <= sbpResult.meta.observationDate) {
-      return sbpResult;
-    }
+    if (canonical.observationDate <= sbpResult.meta.observationDate) return sbpResult;
 
     const prevLabel      = formatMonthLabel(sbpResult.meta.observationDate);
     const sbpLatestValue = parseFloat(sbpResult.kpi.value);
 
     let change: string;
     let trend: "up" | "down";
-    if (key === "tradeBalance") {
-      // PBS (customs-basis) and SBP (BPM6) use different methodologies.
-      // A cross-method pp diff would mislead; explain the status instead.
+
+    if (key === "tradeBalance" || key === "exports" || key === "imports") {
+      // PBS customs-basis vs SBP BPM6 are different methodologies.
+      // A cross-method diff would mislead; explain the status instead.
       change = "PBS advance release — SBP BPM6 confirmation pending";
       trend  = canonical.value >= 0 ? "up" : "down";
     } else {
@@ -133,13 +135,17 @@ async function applyCanonicalOverride(
       `| PBS value=${canonical.value} SBP-prev=${sbpLatestValue} (${canonical.sourceName})`,
     );
 
+    const isBillionsUsd = key === "tradeBalance" || key === "exports" || key === "imports";
+
     return {
       ...sbpResult,
       kpi: {
         ...sbpResult.kpi,
-        value:        key === "tradeBalance"
+        value:        isBillionsUsd
                         ? canonical.value.toFixed(2)
-                        : canonical.value.toFixed(1),
+                        : key === "lsm"
+                          ? canonical.value.toFixed(1)
+                          : canonical.value.toFixed(1),
         unit:         key === "lsm" ? "% YoY" : sbpResult.kpi.unit,
         change,
         trend,
@@ -169,29 +175,28 @@ async function applyCanonicalOverride(
  * Fetches a single SBP indicator with PBS canonical override applied.
  *
  * Drop-in replacement for sbp.getSbpIndicator() for use in server components
- * and server-only lib modules. For the 4 PBS-primary indicators (CPI, Core,
- * LSM, Trade Balance) the KPI headline immediately reflects the PBS value once
- * the sync pipeline has written it to economic_events, without waiting for SBP
- * EasyData to publish (typical lag: 2–5 days for CPI, 5–10 days for LSM/TB).
- * All other indicators are returned unchanged (immediate no-op path).
+ * and server-only lib modules. For the 6 PBS-primary indicators (CPI, Core,
+ * LSM, Trade Balance, Exports, Imports) the KPI headline immediately reflects
+ * the PBS value once the sync pipeline has written it to economic_events,
+ * without waiting for SBP EasyData to publish. All other indicators are
+ * returned unchanged (immediate no-op path).
  *
  * The underlying SBP EasyData trend/sparkline is always preserved.
  */
 export async function getSbpIndicator(key: SbpIndicatorKey): Promise<SbpIndicatorResult> {
-  return applyCanonicalOverride(key, await _getSbpIndicator(key));
+  const sbpResult = await _getSbpIndicator(key);
+  return applyCanonicalOverride(key, sbpResult);
 }
 
 /**
  * Fetches all 20 SBP indicators in parallel with PBS canonical override
- * applied to the 4 PBS-primary indicators.
+ * applied to the 6 PBS-primary indicators.
  *
  * Drop-in replacement for sbp.getAllSbpIndicators() for server components.
  */
 export async function getAllSbpIndicators(): Promise<Record<SbpIndicatorKey, SbpIndicatorResult>> {
   const base = await _getAllSbpIndicators();
 
-  // Apply canonical override only to the 4 PBS-primary indicators in parallel.
-  // The remaining 16 indicators short-circuit immediately in applyCanonicalOverride.
   const canonicalKeys = Object.keys(CANONICAL_SERIES_SLUGS) as SbpIndicatorKey[];
   const overrides = await Promise.all(
     canonicalKeys.map((key) => applyCanonicalOverride(key, base[key])),

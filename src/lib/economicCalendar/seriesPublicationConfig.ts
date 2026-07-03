@@ -413,6 +413,70 @@ export const SERIES_PUBLICATION_META: Record<string, SeriesPublicationMeta> = {
     cacheTagsToInvalidate: ["remittances", "sbp-indicators"],
   },
 
+  "exports-release": {
+    periodValidation: { cadence: "monthly", lagMonths: 1 },
+    publicationSchedule:
+      "PBS publishes advance Foreign Trade Statistics in the middle of M+1 (~16th–18th), " +
+      "28–30 days before SBP BPM6. Same Excel as trade-balance: Revised_Summary_<Month Year>.xlsx. " +
+      "PBS customs-basis FOB exports. lagMonths=1: July 17 event → June 2026 obs (2026-06-30).",
+    officialSource: "Pakistan Bureau of Statistics",
+    advanceCalendarAvailable: false,
+    sourceHierarchy: [
+      {
+        name: "PBS Foreign Trade Statistics (advance release Excel) — Exports",
+        type: "pbs-web",
+        sourceUrl: "https://www.pbs.gov.pk/",
+        implemented: true,
+        note:
+          "Parsed from the same Revised_Summary Excel as trade-balance. " +
+          "See syncTradeBalanceFromPbs.ts. Canonical override activates 28–30 days before SBP BPM6.",
+      },
+    ],
+    gapDetection: {
+      slugPrefix: "exports-release",
+      lookbackMonths: 3,
+      windowDays: 7,
+      expectedDayOfMonth: 17,
+      eventTimeOfDay: "10:00",
+      importance: "Medium",
+      titleTemplate: "Exports Release ({month})",
+    },
+    notificationPriority: "medium",
+    cacheTagsToInvalidate: ["exports", "sbp-indicators"],
+  },
+
+  "imports-release": {
+    periodValidation: { cadence: "monthly", lagMonths: 1 },
+    publicationSchedule:
+      "PBS publishes advance Foreign Trade Statistics in the middle of M+1 (~16th–18th), " +
+      "28–30 days before SBP BPM6. Same Excel as trade-balance: Revised_Summary_<Month Year>.xlsx. " +
+      "PBS customs-basis CIF-adjusted imports. lagMonths=1: July 17 event → June 2026 obs (2026-06-30).",
+    officialSource: "Pakistan Bureau of Statistics",
+    advanceCalendarAvailable: false,
+    sourceHierarchy: [
+      {
+        name: "PBS Foreign Trade Statistics (advance release Excel) — Imports",
+        type: "pbs-web",
+        sourceUrl: "https://www.pbs.gov.pk/",
+        implemented: true,
+        note:
+          "Parsed from the same Revised_Summary Excel as trade-balance. " +
+          "See syncTradeBalanceFromPbs.ts. Canonical override activates 28–30 days before SBP BPM6.",
+      },
+    ],
+    gapDetection: {
+      slugPrefix: "imports-release",
+      lookbackMonths: 3,
+      windowDays: 7,
+      expectedDayOfMonth: 17,
+      eventTimeOfDay: "10:00",
+      importance: "Medium",
+      titleTemplate: "Imports Release ({month})",
+    },
+    notificationPriority: "medium",
+    cacheTagsToInvalidate: ["imports", "sbp-indicators"],
+  },
+
   "trade-balance": {
     // Blocker resolved Phase 7 Step 4: PBS advance release Excel scraper implemented.
     // lagMonths=1: PBS publishes M's data on ~16th–18th of M+1 (28–30 days before SBP BPM6).
@@ -885,6 +949,30 @@ export const PENDING_AUTOMATION_REGISTRY: readonly PendingAutomationEntry[] = [
 
   // ── P3-Medium ──────────────────────────────────────────────────────────────
 
+  {
+    seriesSlug: "wpi-inflation-release",
+    indicator: "WPI (Wholesale Price Index) Inflation",
+    currentStatus: "manual",
+    automationBlocker:
+      "No economic_event_series for WPI exists in the DB. More importantly, SBP EasyData " +
+      "(series TS_GP_PT_CPI_M.P00081516) already updates on the same day as the PBS WPI " +
+      "monthly release — a canonical override would provide zero latency advantage over the " +
+      "existing EasyData source. WPI is published in a separate PBS monthly bulletin (not the " +
+      "CPI PDF), so a new scraper would be required for no staleness gain.",
+    requiredSource:
+      "SBP EasyData series TS_GP_PT_CPI_M.P00081516 is already the fastest available " +
+      "machine-readable source for WPI. A PBS WPI override is not blocked on a source — " +
+      "it is blocked on value: the latency gap is zero.",
+    plannedMethod:
+      "Only worth pursuing if a separate WPI Economic Calendar series is added for display " +
+      "purposes. If so: add economic_event_series slug='wpi-inflation-release', extend " +
+      "syncCpiFromPbs.ts to also scrape the PBS WPI bulletin, add parsePercentYoY parser " +
+      "to canonicalObservation.ts, add wpiInflation to CANONICAL_SERIES_SLUGS in sbpServer.ts.",
+    priority: "P3-medium",
+    estimatedComplexity: "medium",
+    blockedBy: [],
+    addedDate: "2026-07-03",
+  },
   {
     seriesSlug: "treasury-bill-auction-3m",
     indicator: "Treasury Bill Auction (3M) — historical backfill (Apr–May 2026)",

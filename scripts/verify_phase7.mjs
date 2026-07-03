@@ -572,7 +572,7 @@ if (!APP_URL || !CRON_SECRET) {
         ["official-calendar-sync", "officialCalendars"],
         ["calendar-gap-detection", "gapDetection"],
         ["cpi-pbs-sync", "cpiPbsResults"],
-        ["trade-balance-sync", "tradeBalanceResult"],
+        ["trade-balance-sync", "tradeBalanceResults"],
         ["fx-reserves-sync", "fxReservesResult"],
         ["sbp-actual-value-sync", "results"],
         ["lsm-sync", "lsmResult"],
@@ -602,11 +602,12 @@ if (!APP_URL || !CRON_SECRET) {
       }
 
       // Trade balance
-      if (pipelineResult1.tradeBalanceResult) {
-        const tb = pipelineResult1.tradeBalanceResult;
-        if (tb.status === "synced") pass(`Trade Balance: synced`, tb.detail?.slice(0,80));
-        else if (tb.status === "error") fail(`Trade Balance: error`, tb.detail?.slice(0,100));
-        else info(`  Trade Balance: ${tb.status} — ${tb.detail?.slice(0,80)}`);
+      if (Array.isArray(pipelineResult1.tradeBalanceResults) && pipelineResult1.tradeBalanceResults.length > 0) {
+        for (const tb of pipelineResult1.tradeBalanceResults) {
+          if (tb.status === "synced") pass(`${tb.seriesSlug}: synced`, tb.detail?.slice(0,80));
+          else if (tb.status === "error") fail(`${tb.seriesSlug}: error`, tb.detail?.slice(0,100));
+          else info(`  ${tb.seriesSlug}: ${tb.status} — ${tb.detail?.slice(0,80)}`);
+        }
       }
 
       // FX Reserves
@@ -902,7 +903,7 @@ if (pipelineResult1) {
   const pipeRows = [
     ["CPI PBS",      pipelineResult1.cpiPbsResults?.find(r=>r.seriesSlug==="cpi-inflation-release")?.status ?? "—"],
     ["Core PBS",     pipelineResult1.cpiPbsResults?.find(r=>r.seriesSlug==="core-inflation-release")?.status ?? "—"],
-    ["Trade Balance",pipelineResult1.tradeBalanceResult?.status ?? "—"],
+    ["Trade Balance",pipelineResult1.tradeBalanceResults?.find(r=>r.seriesSlug==="trade-balance")?.status ?? "—"],
     ["FX Reserves",  pipelineResult1.fxReservesResult?.status ?? "—"],
     ["LSM",          pipelineResult1.lsmResult?.status ?? "—"],
   ];

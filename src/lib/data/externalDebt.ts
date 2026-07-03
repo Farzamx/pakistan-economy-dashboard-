@@ -1,21 +1,23 @@
 import * as XLSX from "xlsx";
 
 // Pakistan's External Debt and Liabilities — Outstanding, quarterly stock.
-// Downloaded directly from SBP's ecodata directory (same free, no-API-key
-// pattern as quarterlyGdp.ts's QGDP.xlsx — not the EasyData REST API, which
-// has no series key for the *outstanding stock* of external debt; SBP
-// publishes this specific series only as a maintained Excel workbook).
+// Downloaded directly from SBP's /assets/document/ directory (same free,
+// no-API-key pattern as quarterlyGdp.ts's QGDP.xlsx — not the EasyData REST
+// API, which has no series key for the *outstanding stock* of external debt;
+// SBP publishes this specific series only as a maintained Excel workbook).
 //
-// Verified directly (not assumed) before writing this parser:
-// - URL returns HTTP 200, a real .xls workbook.
-// - Sheet "New Archive" row 1 reads literally "Pakistan's External Debt and
-//   Liabilities - Outstanding (Archive)", unit "(Million US$)".
-// - The "Total external debt and liabilities (A+B+C+D+E)" row's values
-//   ($73.9B in Jun 2016 rising to $138.0B in Dec 2025) match Pakistan's
-//   independently known/reported total external debt figures.
-// - Quarterly coverage: 2016-06-30 to 2025-12-31 (24 points) — in line with
-//   every other series in this project's HISTORY_START_DATE convention.
-const SBP_EXTERNAL_DEBT_URL = "https://www.sbp.org.pk/ecodata/pakdebt_Arch.xls";
+// URL history: SBP migrated all economic data files from /ecodata/ to
+// /assets/document/ during their 2025-26 website redesign (same migration
+// confirmed for QGDP.xlsx — see quarterlyGdp.ts). The old URL is no longer
+// accessible from automated clients.
+//
+// Workbook structure (verified when originally written):
+// - Sheet "New Archive" row 1: "Pakistan's External Debt and Liabilities -
+//   Outstanding (Archive)", unit "(Million US$)".
+// - "Total external debt and liabilities (A+B+C+D+E)" row: values from
+//   $73.9B (Jun 2016) to $138.0B (Dec 2025) match independently reported totals.
+// - Quarterly coverage: 2016-06-30 to present (24+ points).
+const SBP_EXTERNAL_DEBT_URL = "https://www.sbp.org.pk/assets/document/pakdebt_Arch.xls";
 const SHEET_NAME = "New Archive";
 const TOTAL_ROW_LABEL = "Total external debt and liabilities";
 
@@ -97,6 +99,10 @@ export async function getExternalDebtHistory(): Promise<ExternalDebtResult | nul
       signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     });
     if (!res.ok) throw new Error(`SBP external debt fetch returned ${res.status}`);
+    const contentType = res.headers.get("content-type") ?? "";
+    if (contentType.includes("text/html")) {
+      throw new Error(`SBP external debt URL returned HTML instead of .xls (content-type: ${contentType}). The file URL may have changed.`);
+    }
     const buf = await res.arrayBuffer();
     return parseWorkbook(buf);
   } catch {

@@ -25,7 +25,9 @@ export interface CanonicalObservation {
 //   syncCpiFromPbs:          "+11.3% YoY" | "11.3% YoY" | "-2.1% YoY"
 //   syncLsmFromPbs:          "+6.1% YoY"  | "-1.4% YoY"
 //   syncLsmYoYFromEasyData:  "+6.1% YoY"  | "-1.4% YoY"
-//   syncTradeBalanceFromPbs: "-$2.84B"    | "+$0.30B"
+//   syncTradeBalanceFromPbs: "-$2.84B"    | "+$0.30B"    (trade balance, signed)
+//                            "$2.69B"                    (exports, always positive)
+//                            "$5.47B"                    (imports, always positive)
 
 function parsePercentYoY(v: string): number | null {
   // Accepts "+11.3% YoY", "11.3% YoY", "-2.1% YoY"
@@ -37,7 +39,7 @@ function parsePercentYoY(v: string): number | null {
 }
 
 function parseBillionsUsd(v: string): number | null {
-  // Accepts "-$2.84B", "+$0.30B", "$2.84B"
+  // Accepts "-$2.84B", "+$0.30B", "$2.84B", "$5.47B"
   const m = v.match(/^([+-]?)\$?([\d.]+)B$/i);
   if (!m) return null;
   const n = parseFloat(m[2]);
@@ -46,10 +48,12 @@ function parseBillionsUsd(v: string): number | null {
 }
 
 const PARSERS: Record<string, (v: string) => number | null> = {
-  "cpi-inflation-release":              parsePercentYoY,
-  "core-inflation-release":             parsePercentYoY,
+  "cpi-inflation-release":                parsePercentYoY,
+  "core-inflation-release":               parsePercentYoY,
   "large-scale-manufacturing-lsm-growth": parsePercentYoY,
-  "trade-balance":                      parseBillionsUsd,
+  "trade-balance":                        parseBillionsUsd,
+  "exports-release":                      parseBillionsUsd,
+  "imports-release":                      parseBillionsUsd,
 };
 
 async function fetchFromDb(seriesSlug: string): Promise<CanonicalObservation | null> {
@@ -97,9 +101,10 @@ async function fetchFromDb(seriesSlug: string): Promise<CanonicalObservation | n
  * Returns the latest confirmed canonical observation for a series from the
  * sync pipeline's economic_events store, or null if none exists.
  *
- * Only meaningful for the 4 PBS-primary series whose sync modules write
- * observation_date (migration 0028): cpi-inflation-release,
- * core-inflation-release, large-scale-manufacturing-lsm-growth, trade-balance.
+ * Covers 6 PBS-primary series whose sync modules write observation_date
+ * (migrations 0028 + 0030): cpi-inflation-release, core-inflation-release,
+ * large-scale-manufacturing-lsm-growth, trade-balance, exports-release,
+ * imports-release.
  *
  * Cached for CANONICAL_CACHE_TTL_MS (5 min) to avoid a Supabase round-trip
  * on every ISR render. Cache is effectively invalidated when the L1 memoryCache

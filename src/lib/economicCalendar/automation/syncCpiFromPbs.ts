@@ -8,6 +8,7 @@ import { validateObservationPeriod } from "@/lib/economicCalendar/observationPer
 import { SERIES_PUBLICATION_META } from "@/lib/economicCalendar/seriesPublicationConfig";
 import { recordSourceAttempt } from "@/lib/economicCalendar/sourceHealthTracker";
 import type { SyncResult, SyncProvenance } from "@/lib/economicCalendar/automation/syncFromSbpEasyData";
+import { invalidate } from "@/lib/memoryCache";
 
 // PBS CPI Sync — Phase 7 Step 5
 //
@@ -303,18 +304,20 @@ async function writeSyncResult(
     dataConfidence: "confirmed",
   };
 
-  return didUpdate
-    ? {
-        seriesSlug,
-        status: "synced",
-        detail: `YoY=${actualValue} | obs=${obsDate} | postDate=${postDate} | pdf=${pdfUrl}`,
-        provenance,
-      }
-    : {
-        seriesSlug,
-        status: "skipped-no-due-event",
-        detail: `${seriesSlug} event already released.`,
-      };
+  if (didUpdate) {
+    invalidate(`canonical-obs:${seriesSlug}`);
+    return {
+      seriesSlug,
+      status: "synced",
+      detail: `YoY=${actualValue} | obs=${obsDate} | postDate=${postDate} | pdf=${pdfUrl}`,
+      provenance,
+    };
+  }
+  return {
+    seriesSlug,
+    status: "skipped-no-due-event",
+    detail: `${seriesSlug} event already released.`,
+  };
 }
 
 /**

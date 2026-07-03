@@ -43,8 +43,8 @@ export interface PipelineResult {
   gapDetection: GapDetectionResult[];
   /** CPI + Core results from PBS PDF (Step 3 — primary). EasyData is the fallback in syncResults. */
   cpiPbsResults: SyncResult[];
-  /** Trade balance from PBS advance Excel release (Step 4). */
-  tradeBalanceResult: SyncResult | null;
+  /** Trade balance, exports, and imports from PBS advance Excel release (Step 4). */
+  tradeBalanceResults: SyncResult[];
   /** FX reserves from SBP Forex_Arch.xlsx (Step 5). */
   fxReservesResult: SyncResult | null;
   /** EasyData + PBS SPI sync results (Step 6). CPI/Core are skipped if already synced by PBS. */
@@ -75,7 +75,7 @@ export async function runSyncPipeline(meta: TriggerMeta): Promise<PipelineResult
   let officialCalendars: ReconcileSummary[] = [];
   let gapDetection: GapDetectionResult[] = [];
   let cpiPbsResults: SyncResult[] = [];
-  let tradeBalanceResult: SyncResult | null = null;
+  let tradeBalanceResults: SyncResult[] = [];
   let fxReservesResult: SyncResult | null = null;
   let syncResults: SyncResult[] = [];
   let lsmResult: SyncResult | null = null;
@@ -138,13 +138,14 @@ export async function runSyncPipeline(meta: TriggerMeta): Promise<PipelineResult
     }
   }
 
-  // ── Step 4: PBS Trade Balance advance release ────────────────────────────────
+  // ── Step 4: PBS Trade Balance + Exports + Imports advance release ───────────
   {
     const stepStart = new Date();
     try {
-      tradeBalanceResult = await syncTradeBalanceFromPbs();
-      const status = tradeBalanceResult.status === "error" ? "failure" : "success";
-      const detail = `${tradeBalanceResult.status}: ${tradeBalanceResult.detail}`;
+      tradeBalanceResults = await syncTradeBalanceFromPbs();
+      const hasErrors = tradeBalanceResults.some((r) => r.status === "error");
+      const detail = tradeBalanceResults.map((r) => `${r.seriesSlug}:${r.status}`).join(", ");
+      const status = hasErrors ? "failure" : "success";
       await logCronRun("trade-balance-sync", stepStart, status, detail);
       jobsSummary.push({ jobName: "trade-balance-sync", status, durationMs: Date.now() - stepStart.getTime(), detail });
     } catch (err) {
@@ -235,7 +236,7 @@ export async function runSyncPipeline(meta: TriggerMeta): Promise<PipelineResult
 
   const allSyncResults: SyncResult[] = [
     ...cpiPbsResults,
-    ...(tradeBalanceResult ? [tradeBalanceResult] : []),
+    ...tradeBalanceResults,
     ...(fxReservesResult ? [fxReservesResult] : []),
     ...syncResults,
     ...(lsmResult ? [lsmResult] : []),
@@ -249,7 +250,7 @@ export async function runSyncPipeline(meta: TriggerMeta): Promise<PipelineResult
     officialCalendars,
     gapDetection,
     cpiPbsResults,
-    tradeBalanceResult,
+    tradeBalanceResults,
     fxReservesResult,
     syncResults,
     lsmResult,

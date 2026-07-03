@@ -4,6 +4,7 @@ import { validateObservationPeriod } from "@/lib/economicCalendar/observationPer
 import { SERIES_PUBLICATION_META } from "@/lib/economicCalendar/seriesPublicationConfig";
 import { recordSourceAttempt } from "@/lib/economicCalendar/sourceHealthTracker";
 import type { SyncResult, SyncProvenance } from "@/lib/economicCalendar/automation/syncFromSbpEasyData";
+import { invalidate } from "@/lib/memoryCache";
 
 // PBS Trade Balance Sync — Phase 7 Step 4
 //
@@ -233,20 +234,29 @@ async function fetchTradeRelease(): Promise<TradeRelease> {
 }
 
 /**
- * Syncs PBS customs-basis trade balance from the monthly advance release Excel.
- * This is the correct source for the trade-balance series (PBS-labeled, not BPM6).
+ * Syncs PBS customs-basis trade balance, exports, and imports from the monthly
+ * advance release Excel. All three values come from the same PBS Revised_Summary
+ * Excel fetched in a single HTTP round-trip.
+ *
+ * Returns an array of up to 3 SyncResult entries (trade-balance, exports-release,
+ * imports-release). If either exports or imports series is not yet in the DB
+ * (e.g., migration 0030 not yet applied), those entries return skipped-no-due-event
+ * rather than error — trade balance is never blocked on them.
+ *
  * Published ~16th–18th of M+1, 28–30 days before SBP BPM6.
  */
-export async function syncTradeBalanceFromPbs(): Promise<SyncResult> {
+export async function syncTradeBalanceFromPbs(): Promise<SyncResult[]> {
   const fetchStart = new Date();
+  const results: SyncResult[] = [];
+
   try {
     const pubMeta = SERIES_PUBLICATION_META[SERIES_SLUG];
     if (!pubMeta?.periodValidation) {
-      return {
+      return [{
         seriesSlug: SERIES_SLUG,
         status: "skipped-not-configured",
         detail: `No period-validation config for ${SERIES_SLUG}. Check seriesPublicationConfig.ts.`,
-      };
+      }];
     }
 
     let release: TradeRelease;
@@ -265,11 +275,11 @@ export async function syncTradeBalanceFromPbs(): Promise<SyncResult> {
         fetchStart,
         "trade-balance-sync",
       );
-      return {
+      return [{
         seriesSlug: SERIES_SLUG,
         status: "error",
         detail: `PBS trade release fetch failed: ${fetchErr instanceof Error ? fetchErr.message : String(fetchErr)}`,
-      };
+      }];
     }
 
     void recordSourceAttempt(
@@ -285,10 +295,19 @@ export async function syncTradeBalanceFromPbs(): Promise<SyncResult> {
       "trade-balance-sync",
     );
 
-    // Find the due event
+    console.log(
+      `[trade-balance-sync] PBS fetch OK — obs=${release.obsDate} | ` +
+      `exports=$${(release.exportsMillionUsd / 1000).toFixed(2)}B | ` +
+      `imports=$${(release.importsMillionUsd / 1000).toFixed(2)}B | ` +
+      `balance=$${(release.tradeBalanceMillionUsd / 1000).toFixed(2)}B`,
+    );
+
     const supabase = createPublicDataClient();
     const workerSecret = process.env.NOTIFICATION_WORKER_SECRET ?? "";
     const today = new Date().toISOString().slice(0, 10);
+
+    // ── Trade Balance ─────────────────────────────────────────────────────────
+
     const { data: dueEvents } = await supabase
       .from("economic_events")
       .select("event_date, economic_event_series!inner(slug)")
@@ -299,75 +318,231 @@ export async function syncTradeBalanceFromPbs(): Promise<SyncResult> {
       .limit(1);
 
     const dueEvent = dueEvents?.[0];
+    console.log(`[trade-balance-sync] trade-balance due event: ${dueEvent?.event_date ?? "none (event_date > " + today + ")"}`);
     if (!dueEvent) {
-      return {
+      results.push({
         seriesSlug: SERIES_SLUG,
         status: "skipped-no-due-event",
         detail: `No scheduled trade balance event is due yet (today=${today}, PBS obs=${release.obsDate}).`,
-      };
-    }
-
-    const periodCheck = validateObservationPeriod(
-      release.obsDate,
-      dueEvent.event_date,
-      pubMeta.periodValidation,
-    );
-    if (!periodCheck.valid) {
-      return {
-        seriesSlug: SERIES_SLUG,
-        status: "skipped-period-mismatch",
-        detail:
-          `${periodCheck.reason} ` +
-          `(PBS obs=${release.obsDate}, event=${dueEvent.event_date})`,
-      };
-    }
-
-    // Format: "-$2.84B" (PBS customs-basis, negative = trade deficit)
-    const balanceBn = release.tradeBalanceMillionUsd / 1000;
-    const sign = balanceBn >= 0 ? "+" : "";
-    const actualValue = `${sign}$${balanceBn.toFixed(2)}B`;
-
-    const { data: didUpdate, error } = await supabase.rpc("sync_event_actual", {
-      p_internal_secret: workerSecret,
-      p_series_slug: SERIES_SLUG,
-      p_event_date: dueEvent.event_date,
-      p_actual_value: actualValue,
-      p_observation_date: release.obsDate,
-    });
-
-    if (error) {
-      return { seriesSlug: SERIES_SLUG, status: "error", detail: error.message };
-    }
-
-    const provenance: SyncProvenance = {
-      sourceName: "PBS Foreign Trade Statistics — Advance Release (customs-basis)",
-      sourceType: "pbs-web",
-      observationPeriod: periodCheck.expectedPeriod ?? release.obsDate,
-      observationDate: release.obsDate,
-      syncTimestamp: new Date().toISOString(),
-      dataConfidence: "confirmed",
-    };
-
-    return didUpdate
-      ? {
+      });
+    } else {
+      const periodCheck = validateObservationPeriod(
+        release.obsDate,
+        dueEvent.event_date,
+        pubMeta.periodValidation,
+      );
+      if (!periodCheck.valid) {
+        results.push({
           seriesSlug: SERIES_SLUG,
-          status: "synced",
+          status: "skipped-period-mismatch",
           detail:
-            `balance=${actualValue} | exports=$${(release.exportsMillionUsd / 1000).toFixed(2)}B | ` +
-            `imports=$${(release.importsMillionUsd / 1000).toFixed(2)}B | ` +
-            `obs=${release.obsDate} | event=${dueEvent.event_date} | src=${release.excelUrl}`,
-          provenance,
+            `${periodCheck.reason} ` +
+            `(PBS obs=${release.obsDate}, event=${dueEvent.event_date})`,
+        });
+      } else {
+        const balanceBn = release.tradeBalanceMillionUsd / 1000;
+        const sign = balanceBn >= 0 ? "+" : "";
+        const balanceValue = `${sign}$${balanceBn.toFixed(2)}B`;
+
+        const { data: didUpdate, error } = await supabase.rpc("sync_event_actual", {
+          p_internal_secret: workerSecret,
+          p_series_slug: SERIES_SLUG,
+          p_event_date: dueEvent.event_date,
+          p_actual_value: balanceValue,
+          p_observation_date: release.obsDate,
+        });
+
+        if (error) {
+          results.push({ seriesSlug: SERIES_SLUG, status: "error", detail: error.message });
+        } else if (didUpdate) {
+          invalidate(`canonical-obs:${SERIES_SLUG}`);
+          results.push({
+            seriesSlug: SERIES_SLUG,
+            status: "synced",
+            detail:
+              `balance=${balanceValue} | exports=$${(release.exportsMillionUsd / 1000).toFixed(2)}B | ` +
+              `imports=$${(release.importsMillionUsd / 1000).toFixed(2)}B | ` +
+              `obs=${release.obsDate} | event=${dueEvent.event_date} | src=${release.excelUrl}`,
+            provenance: {
+              sourceName: "PBS Foreign Trade Statistics — Advance Release (customs-basis)",
+              sourceType: "pbs-web",
+              observationPeriod: periodCheck.expectedPeriod ?? release.obsDate,
+              observationDate: release.obsDate,
+              syncTimestamp: new Date().toISOString(),
+              dataConfidence: "confirmed",
+            } satisfies SyncProvenance,
+          });
+        } else {
+          results.push({
+            seriesSlug: SERIES_SLUG,
+            status: "skipped-no-due-event",
+            detail: "Trade balance event already released or not found at call time.",
+          });
         }
-      : {
-          seriesSlug: SERIES_SLUG,
+      }
+    }
+
+    // ── Exports ───────────────────────────────────────────────────────────────
+    // Same PBS Excel, same obsDate. Separate series and due-event lookup.
+
+    const exportsPubMeta = SERIES_PUBLICATION_META["exports-release"];
+    if (!exportsPubMeta?.periodValidation) {
+      results.push({
+        seriesSlug: "exports-release",
+        status: "skipped-not-configured",
+        detail: "No period-validation config for exports-release. Run migration 0030 and add to SERIES_PUBLICATION_META.",
+      });
+    } else {
+      const { data: exportsDueEvents } = await supabase
+        .from("economic_events")
+        .select("event_date, economic_event_series!inner(slug)")
+        .eq("economic_event_series.slug", "exports-release")
+        .eq("status", "scheduled")
+        .lte("event_date", today)
+        .order("event_date", { ascending: false })
+        .limit(1);
+
+      const exportsDueEvent = exportsDueEvents?.[0];
+      console.log(`[trade-balance-sync] exports-release due event: ${exportsDueEvent?.event_date ?? "none (event_date > " + today + ")"}`);
+      if (!exportsDueEvent) {
+        results.push({
+          seriesSlug: "exports-release",
           status: "skipped-no-due-event",
-          detail: "Trade balance event already released or not found at call time.",
-        };
+          detail: `No scheduled exports event is due yet (today=${today}, PBS obs=${release.obsDate}). Run migration 0031 to seed co-dated events.`,
+        });
+      } else {
+        const exportsPeriodCheck = validateObservationPeriod(
+          release.obsDate,
+          exportsDueEvent.event_date,
+          exportsPubMeta.periodValidation,
+        );
+        if (!exportsPeriodCheck.valid) {
+          results.push({
+            seriesSlug: "exports-release",
+            status: "skipped-period-mismatch",
+            detail: `${exportsPeriodCheck.reason} (PBS obs=${release.obsDate}, event=${exportsDueEvent.event_date})`,
+          });
+        } else {
+          const exportsValue = `$${(release.exportsMillionUsd / 1000).toFixed(2)}B`;
+          const { data: didUpdate, error } = await supabase.rpc("sync_event_actual", {
+            p_internal_secret: workerSecret,
+            p_series_slug: "exports-release",
+            p_event_date: exportsDueEvent.event_date,
+            p_actual_value: exportsValue,
+            p_observation_date: release.obsDate,
+          });
+
+          if (error) {
+            results.push({ seriesSlug: "exports-release", status: "error", detail: error.message });
+          } else if (didUpdate) {
+            invalidate("canonical-obs:exports-release");
+            results.push({
+              seriesSlug: "exports-release",
+              status: "synced",
+              detail: `exports=${exportsValue} | obs=${release.obsDate} | event=${exportsDueEvent.event_date}`,
+              provenance: {
+                sourceName: "PBS Foreign Trade Statistics — Advance Release (customs-basis)",
+                sourceType: "pbs-web",
+                observationPeriod: exportsPeriodCheck.expectedPeriod ?? release.obsDate,
+                observationDate: release.obsDate,
+                syncTimestamp: new Date().toISOString(),
+                dataConfidence: "confirmed",
+              } satisfies SyncProvenance,
+            });
+          } else {
+            results.push({
+              seriesSlug: "exports-release",
+              status: "skipped-no-due-event",
+              detail: "Exports event already released or not found at call time.",
+            });
+          }
+        }
+      }
+    }
+
+    // ── Imports ───────────────────────────────────────────────────────────────
+
+    const importsPubMeta = SERIES_PUBLICATION_META["imports-release"];
+    if (!importsPubMeta?.periodValidation) {
+      results.push({
+        seriesSlug: "imports-release",
+        status: "skipped-not-configured",
+        detail: "No period-validation config for imports-release. Run migration 0030 and add to SERIES_PUBLICATION_META.",
+      });
+    } else {
+      const { data: importsDueEvents } = await supabase
+        .from("economic_events")
+        .select("event_date, economic_event_series!inner(slug)")
+        .eq("economic_event_series.slug", "imports-release")
+        .eq("status", "scheduled")
+        .lte("event_date", today)
+        .order("event_date", { ascending: false })
+        .limit(1);
+
+      const importsDueEvent = importsDueEvents?.[0];
+      console.log(`[trade-balance-sync] imports-release due event: ${importsDueEvent?.event_date ?? "none (event_date > " + today + ")"}`);
+      if (!importsDueEvent) {
+        results.push({
+          seriesSlug: "imports-release",
+          status: "skipped-no-due-event",
+          detail: `No scheduled imports event is due yet (today=${today}, PBS obs=${release.obsDate}). Run migration 0031 to seed co-dated events.`,
+        });
+      } else {
+        const importsPeriodCheck = validateObservationPeriod(
+          release.obsDate,
+          importsDueEvent.event_date,
+          importsPubMeta.periodValidation,
+        );
+        if (!importsPeriodCheck.valid) {
+          results.push({
+            seriesSlug: "imports-release",
+            status: "skipped-period-mismatch",
+            detail: `${importsPeriodCheck.reason} (PBS obs=${release.obsDate}, event=${importsDueEvent.event_date})`,
+          });
+        } else {
+          const importsValue = `$${(release.importsMillionUsd / 1000).toFixed(2)}B`;
+          const { data: didUpdate, error } = await supabase.rpc("sync_event_actual", {
+            p_internal_secret: workerSecret,
+            p_series_slug: "imports-release",
+            p_event_date: importsDueEvent.event_date,
+            p_actual_value: importsValue,
+            p_observation_date: release.obsDate,
+          });
+
+          if (error) {
+            results.push({ seriesSlug: "imports-release", status: "error", detail: error.message });
+          } else if (didUpdate) {
+            invalidate("canonical-obs:imports-release");
+            results.push({
+              seriesSlug: "imports-release",
+              status: "synced",
+              detail: `imports=${importsValue} | obs=${release.obsDate} | event=${importsDueEvent.event_date}`,
+              provenance: {
+                sourceName: "PBS Foreign Trade Statistics — Advance Release (customs-basis)",
+                sourceType: "pbs-web",
+                observationPeriod: importsPeriodCheck.expectedPeriod ?? release.obsDate,
+                observationDate: release.obsDate,
+                syncTimestamp: new Date().toISOString(),
+                dataConfidence: "confirmed",
+              } satisfies SyncProvenance,
+            });
+          } else {
+            results.push({
+              seriesSlug: "imports-release",
+              status: "skipped-no-due-event",
+              detail: "Imports event already released or not found at call time.",
+            });
+          }
+        }
+      }
+    }
+
+    return results;
   } catch (err) {
-    return {
+    return [...results, {
       seriesSlug: SERIES_SLUG,
       status: "error",
       detail: err instanceof Error ? err.message : String(err),
-    };
+    }];
   }
 }
