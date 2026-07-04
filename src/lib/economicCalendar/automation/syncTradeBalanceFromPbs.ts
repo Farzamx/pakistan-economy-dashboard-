@@ -247,6 +247,7 @@ async function fetchTradeRelease(): Promise<TradeRelease> {
  */
 export async function syncTradeBalanceFromPbs(): Promise<SyncResult[]> {
   const fetchStart = new Date();
+  const entryMs = fetchStart.getTime();
   const results: SyncResult[] = [];
 
   try {
@@ -256,6 +257,7 @@ export async function syncTradeBalanceFromPbs(): Promise<SyncResult[]> {
         seriesSlug: SERIES_SLUG,
         status: "skipped-not-configured",
         detail: `No period-validation config for ${SERIES_SLUG}. Check seriesPublicationConfig.ts.`,
+        durationMs: Date.now() - entryMs,
       }];
     }
 
@@ -279,6 +281,7 @@ export async function syncTradeBalanceFromPbs(): Promise<SyncResult[]> {
         seriesSlug: SERIES_SLUG,
         status: "error",
         detail: `PBS trade release fetch failed: ${fetchErr instanceof Error ? fetchErr.message : String(fetchErr)}`,
+        durationMs: Date.now() - entryMs,
       }];
     }
 
@@ -324,6 +327,8 @@ export async function syncTradeBalanceFromPbs(): Promise<SyncResult[]> {
         seriesSlug: SERIES_SLUG,
         status: "skipped-no-due-event",
         detail: `No scheduled trade balance event is due yet (today=${today}, PBS obs=${release.obsDate}).`,
+        durationMs: Date.now() - entryMs,
+        observationPeriod: release.obsDate,
       });
     } else {
       const periodCheck = validateObservationPeriod(
@@ -338,6 +343,9 @@ export async function syncTradeBalanceFromPbs(): Promise<SyncResult[]> {
           detail:
             `${periodCheck.reason} ` +
             `(PBS obs=${release.obsDate}, event=${dueEvent.event_date})`,
+          durationMs: Date.now() - entryMs,
+          observationPeriod: release.obsDate,
+          dueEventDate: dueEvent.event_date,
         });
       } else {
         const balanceBn = release.tradeBalanceMillionUsd / 1000;
@@ -353,9 +361,19 @@ export async function syncTradeBalanceFromPbs(): Promise<SyncResult[]> {
         });
 
         if (error) {
-          results.push({ seriesSlug: SERIES_SLUG, status: "error", detail: error.message });
+          results.push({ seriesSlug: SERIES_SLUG, status: "error", detail: error.message, durationMs: Date.now() - entryMs });
         } else if (didUpdate) {
           invalidate(`canonical-obs:${SERIES_SLUG}`);
+          let tbNextDate: string | undefined;
+          const { data: tbNext } = await supabase
+            .from("economic_events")
+            .select("event_date, economic_event_series!inner(slug)")
+            .eq("economic_event_series.slug", SERIES_SLUG)
+            .eq("status", "scheduled")
+            .gt("event_date", dueEvent.event_date)
+            .order("event_date", { ascending: true })
+            .limit(1);
+          tbNextDate = (tbNext?.[0] as { event_date?: string } | undefined)?.event_date;
           results.push({
             seriesSlug: SERIES_SLUG,
             status: "synced",
@@ -371,12 +389,18 @@ export async function syncTradeBalanceFromPbs(): Promise<SyncResult[]> {
               syncTimestamp: new Date().toISOString(),
               dataConfidence: "confirmed",
             } satisfies SyncProvenance,
+            durationMs: Date.now() - entryMs,
+            observationPeriod: periodCheck.expectedPeriod ?? release.obsDate,
+            dueEventDate: dueEvent.event_date,
+            nextEventDate: tbNextDate,
           });
         } else {
           results.push({
             seriesSlug: SERIES_SLUG,
             status: "skipped-no-due-event",
             detail: "Trade balance event already released or not found at call time.",
+            durationMs: Date.now() - entryMs,
+            dueEventDate: dueEvent.event_date,
           });
         }
       }
@@ -409,6 +433,8 @@ export async function syncTradeBalanceFromPbs(): Promise<SyncResult[]> {
           seriesSlug: "exports-release",
           status: "skipped-no-due-event",
           detail: `No scheduled exports event is due yet (today=${today}, PBS obs=${release.obsDate}). Run migration 0031 to seed co-dated events.`,
+          durationMs: Date.now() - entryMs,
+          observationPeriod: release.obsDate,
         });
       } else {
         const exportsPeriodCheck = validateObservationPeriod(
@@ -421,6 +447,9 @@ export async function syncTradeBalanceFromPbs(): Promise<SyncResult[]> {
             seriesSlug: "exports-release",
             status: "skipped-period-mismatch",
             detail: `${exportsPeriodCheck.reason} (PBS obs=${release.obsDate}, event=${exportsDueEvent.event_date})`,
+            durationMs: Date.now() - entryMs,
+            observationPeriod: release.obsDate,
+            dueEventDate: exportsDueEvent.event_date,
           });
         } else {
           const exportsValue = `$${(release.exportsMillionUsd / 1000).toFixed(2)}B`;
@@ -433,9 +462,19 @@ export async function syncTradeBalanceFromPbs(): Promise<SyncResult[]> {
           });
 
           if (error) {
-            results.push({ seriesSlug: "exports-release", status: "error", detail: error.message });
+            results.push({ seriesSlug: "exports-release", status: "error", detail: error.message, durationMs: Date.now() - entryMs });
           } else if (didUpdate) {
             invalidate("canonical-obs:exports-release");
+            let exNextDate: string | undefined;
+            const { data: exNext } = await supabase
+              .from("economic_events")
+              .select("event_date, economic_event_series!inner(slug)")
+              .eq("economic_event_series.slug", "exports-release")
+              .eq("status", "scheduled")
+              .gt("event_date", exportsDueEvent.event_date)
+              .order("event_date", { ascending: true })
+              .limit(1);
+            exNextDate = (exNext?.[0] as { event_date?: string } | undefined)?.event_date;
             results.push({
               seriesSlug: "exports-release",
               status: "synced",
@@ -448,12 +487,18 @@ export async function syncTradeBalanceFromPbs(): Promise<SyncResult[]> {
                 syncTimestamp: new Date().toISOString(),
                 dataConfidence: "confirmed",
               } satisfies SyncProvenance,
+              durationMs: Date.now() - entryMs,
+              observationPeriod: exportsPeriodCheck.expectedPeriod ?? release.obsDate,
+              dueEventDate: exportsDueEvent.event_date,
+              nextEventDate: exNextDate,
             });
           } else {
             results.push({
               seriesSlug: "exports-release",
               status: "skipped-no-due-event",
               detail: "Exports event already released or not found at call time.",
+              durationMs: Date.now() - entryMs,
+              dueEventDate: exportsDueEvent.event_date,
             });
           }
         }
@@ -486,6 +531,8 @@ export async function syncTradeBalanceFromPbs(): Promise<SyncResult[]> {
           seriesSlug: "imports-release",
           status: "skipped-no-due-event",
           detail: `No scheduled imports event is due yet (today=${today}, PBS obs=${release.obsDate}). Run migration 0031 to seed co-dated events.`,
+          durationMs: Date.now() - entryMs,
+          observationPeriod: release.obsDate,
         });
       } else {
         const importsPeriodCheck = validateObservationPeriod(
@@ -498,6 +545,9 @@ export async function syncTradeBalanceFromPbs(): Promise<SyncResult[]> {
             seriesSlug: "imports-release",
             status: "skipped-period-mismatch",
             detail: `${importsPeriodCheck.reason} (PBS obs=${release.obsDate}, event=${importsDueEvent.event_date})`,
+            durationMs: Date.now() - entryMs,
+            observationPeriod: release.obsDate,
+            dueEventDate: importsDueEvent.event_date,
           });
         } else {
           const importsValue = `$${(release.importsMillionUsd / 1000).toFixed(2)}B`;
@@ -510,9 +560,19 @@ export async function syncTradeBalanceFromPbs(): Promise<SyncResult[]> {
           });
 
           if (error) {
-            results.push({ seriesSlug: "imports-release", status: "error", detail: error.message });
+            results.push({ seriesSlug: "imports-release", status: "error", detail: error.message, durationMs: Date.now() - entryMs });
           } else if (didUpdate) {
             invalidate("canonical-obs:imports-release");
+            let imNextDate: string | undefined;
+            const { data: imNext } = await supabase
+              .from("economic_events")
+              .select("event_date, economic_event_series!inner(slug)")
+              .eq("economic_event_series.slug", "imports-release")
+              .eq("status", "scheduled")
+              .gt("event_date", importsDueEvent.event_date)
+              .order("event_date", { ascending: true })
+              .limit(1);
+            imNextDate = (imNext?.[0] as { event_date?: string } | undefined)?.event_date;
             results.push({
               seriesSlug: "imports-release",
               status: "synced",
@@ -525,12 +585,18 @@ export async function syncTradeBalanceFromPbs(): Promise<SyncResult[]> {
                 syncTimestamp: new Date().toISOString(),
                 dataConfidence: "confirmed",
               } satisfies SyncProvenance,
+              durationMs: Date.now() - entryMs,
+              observationPeriod: importsPeriodCheck.expectedPeriod ?? release.obsDate,
+              dueEventDate: importsDueEvent.event_date,
+              nextEventDate: imNextDate,
             });
           } else {
             results.push({
               seriesSlug: "imports-release",
               status: "skipped-no-due-event",
               detail: "Imports event already released or not found at call time.",
+              durationMs: Date.now() - entryMs,
+              dueEventDate: importsDueEvent.event_date,
             });
           }
         }
@@ -543,6 +609,7 @@ export async function syncTradeBalanceFromPbs(): Promise<SyncResult[]> {
       seriesSlug: SERIES_SLUG,
       status: "error",
       detail: err instanceof Error ? err.message : String(err),
+      durationMs: Date.now() - entryMs,
     }];
   }
 }

@@ -1,4 +1,4 @@
-import { getSbpIndicatorHistory } from "@/lib/data/sbp";
+import { getSbpIndicatorHistoryFresh } from "@/lib/data/sbp";
 import { createPublicDataClient } from "@/lib/supabase/publicDataClient";
 import { validateObservationPeriod } from "@/lib/economicCalendar/observationPeriodValidator";
 import { SERIES_PUBLICATION_META } from "@/lib/economicCalendar/seriesPublicationConfig";
@@ -49,6 +49,7 @@ const SERIES_SLUG = "large-scale-manufacturing-lsm-growth";
  * Skips with "skipped-no-due-event" if no LSM event is currently due.
  */
 export async function syncLsmYoYFromEasyData(): Promise<SyncResult> {
+  const entryMs = Date.now();
   try {
     const pubMeta = SERIES_PUBLICATION_META[SERIES_SLUG];
     if (!pubMeta?.periodValidation) {
@@ -65,7 +66,7 @@ export async function syncLsmYoYFromEasyData(): Promise<SyncResult> {
     // getSbpIndicator('lsm') so no extra SBP EasyData call is made when the
     // cron also runs other SBP syncs in the same invocation.
     const lsmFetchStart = new Date();
-    const history = await getSbpIndicatorHistory("lsm");
+    const history = await getSbpIndicatorHistoryFresh("lsm");
 
     // Guard: if the underlying live fetch failed, we're serving a fallback
     // snapshot from sbpFallbackData.ts. Fallback dates are approximate
@@ -92,6 +93,7 @@ export async function syncLsmYoYFromEasyData(): Promise<SyncResult> {
         detail:
           "SBP EasyData LSM series is serving fallback snapshot — " +
           "prior-year index lookup may be unreliable. Not safe to write.",
+        durationMs: Date.now() - entryMs,
       };
     }
 
@@ -101,6 +103,7 @@ export async function syncLsmYoYFromEasyData(): Promise<SyncResult> {
         seriesSlug: SERIES_SLUG,
         status: "error",
         detail: `LSM history too short for YoY computation (${points.length} points, need ≥13).`,
+        durationMs: Date.now() - entryMs,
       };
     }
 
@@ -121,6 +124,7 @@ export async function syncLsmYoYFromEasyData(): Promise<SyncResult> {
         detail:
           `No prior-year LSM observation found for ${priorYearPrefix} — ` +
           `history starts at ${points[0]?.date ?? "unknown"}. Cannot compute YoY.`,
+        durationMs: Date.now() - entryMs,
       };
     }
 
@@ -129,6 +133,7 @@ export async function syncLsmYoYFromEasyData(): Promise<SyncResult> {
         seriesSlug: SERIES_SLUG,
         status: "error",
         detail: `Prior-year LSM index is zero for ${priorYearPoint.date} — division undefined.`,
+        durationMs: Date.now() - entryMs,
       };
     }
 
@@ -157,6 +162,8 @@ export async function syncLsmYoYFromEasyData(): Promise<SyncResult> {
         seriesSlug: SERIES_SLUG,
         status: "skipped-no-due-event",
         detail: `No scheduled LSM event is due yet (today=${today}, latest EasyData obs=${obsDate}).`,
+        durationMs: Date.now() - entryMs,
+        observationPeriod: obsDate,
       };
     }
 
@@ -171,6 +178,9 @@ export async function syncLsmYoYFromEasyData(): Promise<SyncResult> {
         detail:
           `${periodCheck.reason} ` +
           `(current: ${obsDate} [${latest.value.toFixed(2)}] vs prior year: ${priorYearPoint.date} [${priorYearPoint.value.toFixed(2)}])`,
+        durationMs: Date.now() - entryMs,
+        observationPeriod: obsDate,
+        dueEventDate: dueEvent.event_date,
       };
     }
 
@@ -184,7 +194,7 @@ export async function syncLsmYoYFromEasyData(): Promise<SyncResult> {
     });
 
     if (error) {
-      return { seriesSlug: SERIES_SLUG, status: "error", detail: error.message };
+      return { seriesSlug: SERIES_SLUG, status: "error", detail: error.message, durationMs: Date.now() - entryMs };
     }
 
     const provenance: SyncProvenance = {
@@ -196,8 +206,18 @@ export async function syncLsmYoYFromEasyData(): Promise<SyncResult> {
       dataConfidence: "confirmed",
     };
 
+    let nextEventDate: string | undefined;
     if (didUpdate) {
       invalidate(`canonical-obs:${SERIES_SLUG}`);
+      const { data: nextEvt } = await supabase
+        .from("economic_events")
+        .select("event_date, economic_event_series!inner(slug)")
+        .eq("economic_event_series.slug", SERIES_SLUG)
+        .eq("status", "scheduled")
+        .gt("event_date", dueEvent.event_date)
+        .order("event_date", { ascending: true })
+        .limit(1);
+      nextEventDate = (nextEvt?.[0] as { event_date?: string } | undefined)?.event_date;
       return {
         seriesSlug: SERIES_SLUG,
         status: "synced",
@@ -205,18 +225,25 @@ export async function syncLsmYoYFromEasyData(): Promise<SyncResult> {
           `YoY=${actualValue} | current=${obsDate}:${latest.value.toFixed(2)} | ` +
           `prior=${priorYearPoint.date}:${priorYearPoint.value.toFixed(2)} | event=${dueEvent.event_date}`,
         provenance,
+        durationMs: Date.now() - entryMs,
+        observationPeriod: periodCheck.expectedPeriod ?? obsDate,
+        dueEventDate: dueEvent.event_date,
+        nextEventDate,
       };
     }
     return {
       seriesSlug: SERIES_SLUG,
       status: "skipped-no-due-event",
       detail: "LSM event already released or not found at call time.",
+      durationMs: Date.now() - entryMs,
+      dueEventDate: dueEvent.event_date,
     };
   } catch (err) {
     return {
       seriesSlug: SERIES_SLUG,
       status: "error",
       detail: err instanceof Error ? err.message : String(err),
+      durationMs: Date.now() - entryMs,
     };
   }
 }

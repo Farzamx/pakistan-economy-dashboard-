@@ -203,6 +203,16 @@ async function reconcile(seriesSlug: string, dates: OfficialDate[] | null): Prom
   return { seriesSlug, status: "reconciled", detail: JSON.stringify(data) };
 }
 
+// treasury-bill-auction-6m and treasury-bill-auction-12m are deliberately
+// excluded from this reconcile list (Phase 10 fix, 2026-07-03). The SBP
+// auction PDF contains dates for all three tenors and reconcile() would
+// create scheduled events for all of them — but only 3M has a confirmed
+// SBP EasyData indicator key (TB0040). 6M and 12M have no automated
+// actual-value source, so every event would be permanently stuck as
+// "scheduled" after its date passed. See PENDING_AUTOMATION_REGISTRY in
+// seriesPublicationConfig.ts (treasury-bill-auction-6m / -12m entries).
+// Migration 0034 cancels all pre-existing scheduled events for those series.
+
 /** Entry point called from the daily cron alongside syncAllFromSbpEasyData(). Fetches all four genuinely-machine-readable official calendars and reconciles each independently — one source failing (e.g. SBP's site being briefly down) never blocks the others. */
 export async function syncOfficialCalendars(): Promise<ReconcileSummary[]> {
   const [{ mpc, report }, tbill, pib] = await Promise.all([syncMpcAndReportCalendar(), syncTbillAuctionCalendar(), syncPibAuctionCalendar()]);
@@ -211,8 +221,6 @@ export async function syncOfficialCalendars(): Promise<ReconcileSummary[]> {
     reconcile("sbp-monetary-policy-committee-meeting", mpc),
     reconcile("sbp-monetary-policy-report", report),
     reconcile("treasury-bill-auction-3m", tbill),
-    reconcile("treasury-bill-auction-6m", tbill),
-    reconcile("treasury-bill-auction-12m", tbill),
     reconcile("pib-auction", pib),
   ]);
 }

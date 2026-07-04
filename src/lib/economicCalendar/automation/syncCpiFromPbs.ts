@@ -245,10 +245,11 @@ async function writeSyncResult(
   pdfUrl: string,
   postDate: string,
   sourceName: string,
+  entryMs: number,
 ): Promise<SyncResult> {
   const pubMeta = SERIES_PUBLICATION_META[seriesSlug];
   if (!pubMeta?.periodValidation) {
-    return { seriesSlug, status: "skipped-not-configured", detail: `No period-validation config for ${seriesSlug}.` };
+    return { seriesSlug, status: "skipped-not-configured", detail: `No period-validation config for ${seriesSlug}.`, durationMs: Date.now() - entryMs };
   }
 
   const supabase = createPublicDataClient();
@@ -270,6 +271,8 @@ async function writeSyncResult(
       seriesSlug,
       status: "skipped-no-due-event",
       detail: `No scheduled ${seriesSlug} event is due yet (today=${today}, PBS obs=${obsDate}).`,
+      durationMs: Date.now() - entryMs,
+      observationPeriod: obsDate,
     };
   }
 
@@ -279,6 +282,9 @@ async function writeSyncResult(
       seriesSlug,
       status: "skipped-period-mismatch",
       detail: `${periodCheck.reason} (PBS obs=${obsDate}, event=${dueEvent.event_date})`,
+      durationMs: Date.now() - entryMs,
+      observationPeriod: obsDate,
+      dueEventDate: dueEvent.event_date,
     };
   }
 
@@ -293,7 +299,7 @@ async function writeSyncResult(
     p_observation_date: obsDate,
   });
 
-  if (error) return { seriesSlug, status: "error", detail: error.message };
+  if (error) return { seriesSlug, status: "error", detail: error.message, durationMs: Date.now() - entryMs };
 
   const provenance: SyncProvenance = {
     sourceName,
@@ -306,17 +312,32 @@ async function writeSyncResult(
 
   if (didUpdate) {
     invalidate(`canonical-obs:${seriesSlug}`);
+    const { data: nextEvt } = await supabase
+      .from("economic_events")
+      .select("event_date, economic_event_series!inner(slug)")
+      .eq("economic_event_series.slug", seriesSlug)
+      .eq("status", "scheduled")
+      .gt("event_date", dueEvent.event_date)
+      .order("event_date", { ascending: true })
+      .limit(1);
+    const nextEventDate = (nextEvt?.[0] as { event_date?: string } | undefined)?.event_date;
     return {
       seriesSlug,
       status: "synced",
       detail: `YoY=${actualValue} | obs=${obsDate} | postDate=${postDate} | pdf=${pdfUrl}`,
       provenance,
+      durationMs: Date.now() - entryMs,
+      observationPeriod: periodCheck.expectedPeriod ?? obsDate,
+      dueEventDate: dueEvent.event_date,
+      nextEventDate,
     };
   }
   return {
     seriesSlug,
     status: "skipped-no-due-event",
     detail: `${seriesSlug} event already released.`,
+    durationMs: Date.now() - entryMs,
+    dueEventDate: dueEvent.event_date,
   };
 }
 
@@ -329,6 +350,7 @@ async function writeSyncResult(
  */
 export async function syncCpiFromPbs(): Promise<SyncResult[]> {
   const fetchStart = new Date();
+  const entryMs = fetchStart.getTime();
   const results: SyncResult[] = [];
 
   let pbsData: CpiPbsResult;
@@ -343,7 +365,7 @@ export async function syncCpiFromPbs(): Promise<SyncResult[]> {
       fetchStart,
       "cpi-pbs-sync",
     );
-    const errResult: SyncResult = { seriesSlug: CPI_SERIES_SLUG, status: "error", detail: `PBS CPI PDF failed: ${errMsg}` };
+    const errResult: SyncResult = { seriesSlug: CPI_SERIES_SLUG, status: "error", detail: `PBS CPI PDF failed: ${errMsg}`, durationMs: Date.now() - entryMs };
     return [errResult, { ...errResult, seriesSlug: CORE_SERIES_SLUG }];
   }
 
@@ -363,6 +385,7 @@ export async function syncCpiFromPbs(): Promise<SyncResult[]> {
       pbsData.pdfUrl,
       pbsData.postDate,
       "PBS Monthly Inflation Report PDF — Headline CPI",
+      entryMs,
     ),
   );
 
@@ -376,6 +399,7 @@ export async function syncCpiFromPbs(): Promise<SyncResult[]> {
         pbsData.pdfUrl,
         pbsData.postDate,
         "PBS Monthly Inflation Report PDF — Urban NFNE Core",
+        entryMs,
       ),
     );
   } else {
@@ -383,6 +407,8 @@ export async function syncCpiFromPbs(): Promise<SyncResult[]> {
       seriesSlug: CORE_SERIES_SLUG,
       status: "error",
       detail: "PBS CPI PDF: NFNE core inflation not found in PDF text — EasyData fallback will handle core.",
+      durationMs: Date.now() - entryMs,
+      observationPeriod: pbsData.obsDate,
     });
   }
 

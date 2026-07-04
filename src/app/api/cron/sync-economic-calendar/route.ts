@@ -67,5 +67,6 @@ export async function GET(request: Request) {
     results: result.syncResults,
     lsmResult: result.lsmResult,
     notifications: result.notifications,
+    summary: result.summary,
   });
 }

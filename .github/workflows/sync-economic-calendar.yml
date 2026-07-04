@@ -158,6 +158,11 @@ jobs:
           echo "${body}" | head -c 4000
 
           echo ""
+          echo "=== Pipeline Summary ==="
+          echo "${body}" | jq -r '.summary // "No summary in response"' 2>/dev/null \
+            || echo "(jq unavailable — raw body above)"
+
+          echo ""
           echo "=== curl metrics ==="
           echo "${metrics_block}"
 

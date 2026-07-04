@@ -329,7 +329,7 @@ export const SERIES_PUBLICATION_META: Record<string, SeriesPublicationMeta> = {
       },
     ],
     notificationPriority: "low",
-    cacheTagsToInvalidate: ["spiHistory", "sbp-indicators"],
+    cacheTagsToInvalidate: ["spi-data"],
   },
 
   // ── External Sector ────────────────────────────────────────────────────────
@@ -713,12 +713,18 @@ export const SERIES_PUBLICATION_META: Record<string, SeriesPublicationMeta> = {
   },
 
   "treasury-bill-auction-6m": {
-    periodValidation: { cadence: "as-needed", maxDaysVariance: 3 },
+    // Phase 10 fix (2026-07-03): periodValidation set to undefined — this series cannot
+    // auto-release because the SBP EasyData indicator key for 6M T-bill yield is not yet
+    // confirmed. syncOfficialCalendars.ts no longer reconciles this series (removed from
+    // the reconcile call list), and migration 0034 cancels all pre-existing scheduled
+    // events. See PENDING_AUTOMATION_REGISTRY for the resolution path.
+    periodValidation: undefined,
     publicationSchedule:
       "Same auction event as 3M, run simultaneously. 6M cut-off yield from same SBP EasyData " +
-      "auction results. Official calendar at sbp.org.pk/ecodata/auction-treasurybills.pdf.",
+      "auction results. Official calendar at sbp.org.pk/ecodata/auction-treasurybills.pdf. " +
+      "Automation pending EasyData indicator key confirmation — see PENDING_AUTOMATION_REGISTRY.",
     officialSource: "State Bank of Pakistan",
-    advanceCalendarAvailable: true,
+    advanceCalendarAvailable: false,
     sourceHierarchy: [
       {
         name: "SBP EasyData — 6M T-Bill Cut-Off Yield",
@@ -733,12 +739,18 @@ export const SERIES_PUBLICATION_META: Record<string, SeriesPublicationMeta> = {
   },
 
   "treasury-bill-auction-12m": {
-    periodValidation: { cadence: "as-needed", maxDaysVariance: 3 },
+    // Phase 10 fix (2026-07-03): periodValidation set to undefined — this series cannot
+    // auto-release because the SBP EasyData indicator key for 12M T-bill yield is not yet
+    // confirmed. syncOfficialCalendars.ts no longer reconciles this series (removed from
+    // the reconcile call list), and migration 0034 cancels all pre-existing scheduled
+    // events. See PENDING_AUTOMATION_REGISTRY for the resolution path.
+    periodValidation: undefined,
     publicationSchedule:
       "Same auction event as 3M/6M, run simultaneously. 12M cut-off yield from same SBP " +
-      "EasyData auction results. Official calendar at sbp.org.pk/ecodata/auction-treasurybills.pdf.",
+      "EasyData auction results. Official calendar at sbp.org.pk/ecodata/auction-treasurybills.pdf. " +
+      "Automation pending EasyData indicator key confirmation — see PENDING_AUTOMATION_REGISTRY.",
     officialSource: "State Bank of Pakistan",
-    advanceCalendarAvailable: true,
+    advanceCalendarAvailable: false,
     sourceHierarchy: [
       {
         name: "SBP EasyData — 12M T-Bill Cut-Off Yield",
@@ -954,6 +966,49 @@ export const PENDING_AUTOMATION_REGISTRY: readonly PendingAutomationEntry[] = [
 
   // ── P3-Medium ──────────────────────────────────────────────────────────────
 
+  {
+    seriesSlug: "treasury-bill-auction-6m",
+    indicator: "Treasury Bill Auction (6M) — automation blocked on EasyData indicator key",
+    currentStatus: "manual",
+    automationBlocker:
+      "SBP EasyData indicator key for the 6M T-bill cut-off yield has not been confirmed. " +
+      "The 3M T-bill uses TS_GP_BAM_SIRTBIL_AH.TB0040, but the equivalent 6M series ID " +
+      "has not been verified against live EasyData responses. " +
+      "Additionally, syncOfficialCalendars.ts was reconciling this series from the SBP auction " +
+      "PDF, creating scheduled events that could never auto-release (Phase 10 bug). Migration 0034 " +
+      "cancelled those stuck events; the reconcile call has been removed.",
+    requiredSource:
+      "SBP EasyData 6M T-bill cut-off yield series. Check the SBP EasyData portal " +
+      "(sbp.org.pk/ecodata/index2.asp) or the DMMD auction results API for the correct " +
+      "series code. The 3M equivalent is TB0040.",
+    plannedMethod:
+      "1. Confirm EasyData series ID for 6M cut-off yield. " +
+      "2. Add 'tbillYield6m' to SbpIndicatorKey union in src/lib/data/sbp.ts. " +
+      "3. Add SYNC_TARGETS entry in syncFromSbpEasyData.ts. " +
+      "4. Restore 'treasury-bill-auction-6m' to the reconcile list in syncOfficialCalendars.ts. " +
+      "5. Set periodValidation: { cadence: 'as-needed', maxDaysVariance: 3 } in seriesPublicationConfig.ts.",
+    priority: "P3-medium",
+    estimatedComplexity: "low",
+    blockedBy: [],
+    addedDate: "2026-07-03",
+  },
+  {
+    seriesSlug: "treasury-bill-auction-12m",
+    indicator: "Treasury Bill Auction (12M) — automation blocked on EasyData indicator key",
+    currentStatus: "manual",
+    automationBlocker:
+      "SBP EasyData indicator key for the 12M T-bill cut-off yield has not been confirmed. " +
+      "Same root cause as treasury-bill-auction-6m. " +
+      "Phase 10 bug: reconcile calls were creating stuck scheduled events — fixed in migration 0034.",
+    requiredSource:
+      "SBP EasyData 12M T-bill cut-off yield series ID (not yet confirmed).",
+    plannedMethod:
+      "Same 5-step path as treasury-bill-auction-6m — confirm EasyData series ID, then wire up sync.",
+    priority: "P3-medium",
+    estimatedComplexity: "low",
+    blockedBy: ["treasury-bill-auction-6m"],
+    addedDate: "2026-07-03",
+  },
   {
     seriesSlug: "wpi-inflation-release",
     indicator: "WPI (Wholesale Price Index) Inflation",

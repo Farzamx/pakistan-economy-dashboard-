@@ -27,6 +27,7 @@ import { syncTradeBalanceFromPbs } from "@/lib/economicCalendar/automation/syncT
 import { syncCpiFromPbs } from "@/lib/economicCalendar/automation/syncCpiFromPbs";
 import { processNotificationJobs, type JobProcessingSummary } from "@/lib/notifications/notificationJobWorker";
 import { logCronRun } from "@/lib/cronLogging";
+import { formatPipelineSummary, formatDetailBlocks } from "@/lib/economicCalendar/automation/pipelineLogger";
 import type { TriggerMeta } from "@/lib/economicCalendar/automation/schedulerMeta";
 
 export interface JobSummaryEntry {
@@ -58,6 +59,8 @@ export interface PipelineResult {
   totalFailed: number;
   totalDurationMs: number;
   jobsSummary: JobSummaryEntry[];
+  /** Pre-formatted pipeline summary for GitHub Actions / Vercel logs. */
+  summary: string;
 }
 
 /**
@@ -243,6 +246,28 @@ export async function runSyncPipeline(meta: TriggerMeta): Promise<PipelineResult
   ];
   const totalSynced = allSyncResults.filter((r) => r.status === "synced").length;
   const totalFailed = allSyncResults.filter((r) => r.status === "error").length;
+  const totalDurationMs = Date.now() - pipelineStart.getTime();
+
+  const logInput = {
+    triggeredAt: pipelineStart.toISOString(),
+    schedulerName: meta.schedulerName,
+    totalDurationMs,
+    cpiPbsResults,
+    tradeBalanceResults,
+    fxReservesResult,
+    syncResults,
+    lsmResult,
+    officialCalendars,
+    gapDetection,
+    notifications,
+    totalSynced,
+    totalFailed,
+  };
+
+  const summary = formatPipelineSummary(logInput);
+  const detailBlocks = formatDetailBlocks(logInput);
+  console.log(summary);
+  console.log(detailBlocks);
 
   return {
     triggeredAt: pipelineStart.toISOString(),
@@ -257,7 +282,8 @@ export async function runSyncPipeline(meta: TriggerMeta): Promise<PipelineResult
     notifications,
     totalSynced,
     totalFailed,
-    totalDurationMs: Date.now() - pipelineStart.getTime(),
+    totalDurationMs,
     jobsSummary,
+    summary,
   };
 }

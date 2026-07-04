@@ -171,6 +171,58 @@ export async function getSpiHistory(): Promise<SpiResult | null> {
   }
 }
 
+/**
+ * Live fetch from PBS — bypasses both the L1 in-memory cache and the L2
+ * Next.js Data Cache (uses cache:"no-store" on both fetch calls). Intended
+ * exclusively for the cron sync path so it detects a new PBS publication
+ * immediately rather than waiting up to 12 h for the Data Cache to expire
+ * naturally. Warms L1 on success so page-render calls to getSpiHistory()
+ * that happen shortly after a cron run are served from memory rather than
+ * from the potentially stale L2 entry.
+ *
+ * Why a separate function rather than a flag on getSpiHistory(): mixing
+ * cache:"no-store" and next:{revalidate,tags} in the same code path is
+ * error-prone — the two options are mutually exclusive in Next.js fetch.
+ * Keeping them in separate functions makes the intent unambiguous.
+ */
+export async function getSpiHistoryFresh(): Promise<SpiResult | null> {
+  try {
+    const params = new URLSearchParams({
+      search: PBS_SEARCH_QUERY,
+      per_page: "1",
+      orderby: "date",
+      order: "desc",
+    });
+    const postRes = await fetch(`${PBS_API_BASE}?${params.toString()}`, {
+      cache: "no-store",
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    });
+    if (!postRes.ok) throw new Error(`PBS WordPress API returned ${postRes.status}`);
+
+    const posts = (await postRes.json()) as WpPost[];
+    const post = posts[0];
+    if (!post || !/sensitive price indicator|\bSPI\b/i.test(post.title.rendered)) {
+      throw new Error("PBS WordPress API did not return a matching SPI post");
+    }
+    const hrefs = [...post.content.rendered.matchAll(/href="([^"]+\.xlsx)"/gi)].map((m) => m[1]);
+    const reportUrl = hrefs.find((h) => /report/i.test(h));
+    if (!reportUrl) throw new Error("PBS SPI post has no linked .xlsx Report file");
+
+    const fileRes = await fetch(reportUrl, {
+      cache: "no-store",
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    });
+    if (!fileRes.ok) throw new Error(`PBS SPI report fetch returned ${fileRes.status}`);
+    const buf = await fileRes.arrayBuffer();
+    const points = parseCombinedSpiTable(buf);
+    const result: SpiResult = { points, source: "PBS" };
+    setCache("pbs-spi-history", result);
+    return result;
+  } catch {
+    return null;
+  }
+}
+
 /** Called by the calendar-sync cron right after it confirms a fresh PBS SPI release — see sbp.ts's invalidateSbpIndicatorCache() for the full reasoning (same pattern, applied to PBS instead of SBP EasyData). */
 export function invalidateSpiCache(): void {
   invalidate("pbs-spi-history");

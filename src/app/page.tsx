@@ -399,13 +399,31 @@ export default async function Home() {
   // points) — never a separate fetch or fabricated data. gdpKpi (annual,
   // World Bank) has no trend array in scope here, so it simply renders
   // without one rather than inventing a shape.
+  //
+  // SPI freshness: the homepage KPI shows YoY% but the calendar event
+  // stores WoW% as actual_value, so valueMatchesEventOutcome() would always
+  // return false (comparing 2.89 YoY against 0.42 WoW). Instead, compare
+  // latestDate directly — if the PBS data's week-end date is >= the most
+  // recent calendar event's date, the homepage is already reflecting the
+  // latest release.
+  const spiReleaseReflected = spiKpi && spiEvent
+    ? (spiKpi.latestDate ?? "") >= spiEvent.date
+    : false;
+
   const headlineKpis = [
     gdpKpi,
     { ...quarterlyGdp.kpi, sparkline: quarterlyGdp.trend.slice(-12).map((p) => p.value) },
     withCalendarFreshness({ ...sbp.cpiInflation.kpi, sparkline: sbp.cpiInflation.trend.slice(-12).map((p) => p.value) }, cpiEvent),
     withCalendarFreshness({ ...sbp.foreignReserves.kpi, sparkline: sbp.foreignReserves.trend.slice(-12).map((p) => p.value) }, fxReservesEvent),
     withCalendarFreshness({ ...sbp.remittances.kpi, sparkline: sbp.remittances.trend.slice(-12).map((p) => p.value) }, remittancesEvent),
-    ...(spiKpi ? [withCalendarFreshness(spiKpi, spiEvent)] : []),
+    ...(spiKpi
+      ? [{
+          ...spiKpi,
+          sparkline: spiYoyTrend.slice(-12).map((p) => p.value),
+          expectedReleaseDate: spiEvent?.date,
+          releaseAlreadyReflected: spiReleaseReflected,
+        }]
+      : []),
   ];
 
   const secondaryKpis = [

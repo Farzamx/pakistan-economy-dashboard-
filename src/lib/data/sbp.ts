@@ -1021,6 +1021,47 @@ export async function getSbpIndicatorHistory(key: SbpIndicatorKey): Promise<SbpI
   });
 }
 
+/**
+ * Live fetch of full SBP indicator history — bypasses L1 in-memory cache and
+ * forces a no-cache upstream fetch (Next.js L2 also bypassed via noCache=true).
+ * Used exclusively by sync paths (lsmSync.ts) that compute YoY from the full
+ * time series and must detect new observations without waiting 24 h for the
+ * cached history to expire. Warms L1 on success so subsequent comparison-chart
+ * renders share the already-fetched result rather than re-fetching SBP.
+ */
+export async function getSbpIndicatorHistoryFresh(key: SbpIndicatorKey): Promise<SbpIndicatorHistory> {
+  const config = CONFIGS[key];
+  const cacheKey = `sbp-indicator-history:${key}`;
+  try {
+    const series = await fetchSbpSeries(config.seriesKey, config.revalidate, sbpCacheTag(key), true);
+    const result: SbpIndicatorHistory = {
+      points: series.history.map((p) => ({
+        date: p.date,
+        value: Number(config.toTrendValue(p.value).toFixed(4)),
+      })),
+      meta: {
+        source: "SBP EasyData",
+        seriesKey: series.seriesKey,
+        seriesName: series.seriesName,
+        unit: series.unit,
+        frequency: config.frequency,
+        observationDate: series.latestDate,
+        lastUpdated: series.lastUpdated,
+        sourceStatus: "live",
+      },
+    };
+    setCache(cacheKey, result);
+    return result;
+  } catch (err) {
+    logSbpError(key, err instanceof Error ? err.message : String(err), "fallback");
+    const fb = config.fallback;
+    return {
+      points: fb.trend.map((p) => ({ date: parseFallbackMonthLabel(p.month), value: p.value })),
+      meta: { ...fb.meta, source: "SBP EasyData", sourceStatus: "fallback" },
+    };
+  }
+}
+
 const MONTH_ABBR: Record<string, number> = {
   Jan: 1, Feb: 2, Mar: 3, Apr: 4, May: 5, Jun: 6,
   Jul: 7, Aug: 8, Sep: 9, Oct: 10, Nov: 11, Dec: 12,

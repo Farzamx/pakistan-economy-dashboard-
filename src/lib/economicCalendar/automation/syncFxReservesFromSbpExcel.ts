@@ -153,6 +153,7 @@ function parseFxReservesSheet(wb: XLSX.WorkBook): FxReservesRow {
  */
 export async function syncFxReservesFromSbpExcel(): Promise<SyncResult> {
   const fetchStart = new Date();
+  const entryMs = fetchStart.getTime();
   try {
     const pubMeta = SERIES_PUBLICATION_META[SERIES_SLUG];
     if (!pubMeta?.periodValidation) {
@@ -160,6 +161,7 @@ export async function syncFxReservesFromSbpExcel(): Promise<SyncResult> {
         seriesSlug: SERIES_SLUG,
         status: "skipped-not-configured",
         detail: `No period-validation config for ${SERIES_SLUG}. Check seriesPublicationConfig.ts.`,
+        durationMs: Date.now() - entryMs,
       };
     }
 
@@ -191,6 +193,7 @@ export async function syncFxReservesFromSbpExcel(): Promise<SyncResult> {
         seriesSlug: SERIES_SLUG,
         status: "error",
         detail: `Forex_Arch.xlsx fetch/parse failed: ${fetchErr instanceof Error ? fetchErr.message : String(fetchErr)}`,
+        durationMs: Date.now() - entryMs,
       };
     }
 
@@ -226,6 +229,8 @@ export async function syncFxReservesFromSbpExcel(): Promise<SyncResult> {
         seriesSlug: SERIES_SLUG,
         status: "skipped-no-due-event",
         detail: `No scheduled FX reserves event is due yet (today=${today}, Forex_Arch obs=${fxRow.weekEndingDate}).`,
+        durationMs: Date.now() - entryMs,
+        observationPeriod: fxRow.weekEndingDate,
       };
     }
 
@@ -245,6 +250,9 @@ export async function syncFxReservesFromSbpExcel(): Promise<SyncResult> {
         detail:
           `${periodCheck.reason} ` +
           `(Forex_Arch obs=${fxRow.weekEndingDate}, event=${dueEvent.event_date})`,
+        durationMs: Date.now() - entryMs,
+        observationPeriod: fxRow.weekEndingDate,
+        dueEventDate: dueEvent.event_date,
       };
     }
 
@@ -260,7 +268,7 @@ export async function syncFxReservesFromSbpExcel(): Promise<SyncResult> {
     });
 
     if (error) {
-      return { seriesSlug: SERIES_SLUG, status: "error", detail: error.message };
+      return { seriesSlug: SERIES_SLUG, status: "error", detail: error.message, durationMs: Date.now() - entryMs };
     }
 
     const provenance: SyncProvenance = {
@@ -272,23 +280,43 @@ export async function syncFxReservesFromSbpExcel(): Promise<SyncResult> {
       dataConfidence: "confirmed",
     };
 
+    let nextEventDate: string | undefined;
+    if (didUpdate) {
+      const { data: nextEvt } = await supabase
+        .from("economic_events")
+        .select("event_date, economic_event_series!inner(slug)")
+        .eq("economic_event_series.slug", SERIES_SLUG)
+        .eq("status", "scheduled")
+        .gt("event_date", dueEvent.event_date)
+        .order("event_date", { ascending: true })
+        .limit(1);
+      nextEventDate = (nextEvt?.[0] as { event_date?: string } | undefined)?.event_date;
+    }
+
     return didUpdate
       ? {
           seriesSlug: SERIES_SLUG,
           status: "synced",
           detail: `reserves=${actualValue} | weekEnding=${fxRow.weekEndingDate} | event=${dueEvent.event_date}`,
           provenance,
+          durationMs: Date.now() - entryMs,
+          observationPeriod: fxRow.weekEndingDate,
+          dueEventDate: dueEvent.event_date,
+          nextEventDate,
         }
       : {
           seriesSlug: SERIES_SLUG,
           status: "skipped-no-due-event",
           detail: "FX reserves event already released or not found at call time.",
+          durationMs: Date.now() - entryMs,
+          dueEventDate: dueEvent.event_date,
         };
   } catch (err) {
     return {
       seriesSlug: SERIES_SLUG,
       status: "error",
       detail: err instanceof Error ? err.message : String(err),
+      durationMs: Date.now() - entryMs,
     };
   }
 }

@@ -1,6 +1,6 @@
 import { getSbpIndicatorFresh, type SbpIndicatorKey } from "@/lib/data/sbp";
 import { invalidateSbpIndicatorCache } from "@/lib/data/sbpCacheInvalidation";
-import { getSpiHistory, invalidateSpiCache } from "@/lib/data/spi";
+import { getSpiHistoryFresh, invalidateSpiCache } from "@/lib/data/spi";
 import { createPublicDataClient } from "@/lib/supabase/publicDataClient";
 import { validateObservationPeriod } from "@/lib/economicCalendar/observationPeriodValidator";
 import { SERIES_PUBLICATION_META } from "@/lib/economicCalendar/seriesPublicationConfig";
@@ -162,6 +162,14 @@ export interface SyncResult {
   detail: string;
   /** Populated on status="synced"; undefined for all other statuses. */
   provenance?: SyncProvenance;
+  /** Milliseconds from sync function entry to return. */
+  durationMs?: number;
+  /** Human-readable observation period found in source data (e.g. "June 2026" or "2026-07-02"). */
+  observationPeriod?: string;
+  /** event_date of the due calendar event targeted by this sync attempt. */
+  dueEventDate?: string;
+  /** event_date of the next scheduled event created by generate_next_occurrence() after sync. Status="synced" only. */
+  nextEventDate?: string;
 }
 
 /**
@@ -184,6 +192,7 @@ export async function syncAllFromSbpEasyData(): Promise<SyncResult[]> {
   const results: SyncResult[] = [];
 
   for (const [seriesSlug, target] of Object.entries(SYNC_TARGETS)) {
+    const entryMs = Date.now();
     try {
       // ── Central config lookup ────────────────────────────────────────────
       // All timing rules live in seriesPublicationConfig.ts. If a series has
@@ -197,6 +206,7 @@ export async function syncAllFromSbpEasyData(): Promise<SyncResult[]> {
           detail:
             `No period-validation config in SERIES_PUBLICATION_META for ${seriesSlug}. ` +
             `Check PENDING_AUTOMATION_REGISTRY in seriesPublicationConfig.ts for the resolution path.`,
+          durationMs: Date.now() - entryMs,
         });
         continue;
       }
@@ -224,6 +234,7 @@ export async function syncAllFromSbpEasyData(): Promise<SyncResult[]> {
           seriesSlug,
           status: "skipped-fallback-data",
           detail: "Live SBP EasyData call failed; serving fallback — not safe to mark as confirmed actual.",
+          durationMs: Date.now() - entryMs,
         });
         continue;
       }
@@ -244,6 +255,8 @@ export async function syncAllFromSbpEasyData(): Promise<SyncResult[]> {
           seriesSlug,
           status: "skipped-no-due-event",
           detail: `No scheduled event for ${seriesSlug} is due yet.`,
+          durationMs: Date.now() - entryMs,
+          observationPeriod: indicator.meta.observationDate,
         });
         continue;
       }
@@ -260,6 +273,9 @@ export async function syncAllFromSbpEasyData(): Promise<SyncResult[]> {
           seriesSlug,
           status: "skipped-period-mismatch",
           detail: periodCheck.reason,
+          durationMs: Date.now() - entryMs,
+          observationPeriod: obsDate,
+          dueEventDate: dueEvent.event_date,
         });
         continue;
       }
@@ -274,11 +290,25 @@ export async function syncAllFromSbpEasyData(): Promise<SyncResult[]> {
       });
 
       if (error) {
-        results.push({ seriesSlug, status: "error", detail: error.message });
+        results.push({ seriesSlug, status: "error", detail: error.message, durationMs: Date.now() - entryMs });
       } else {
         if (didUpdate) {
           invalidateSbpIndicatorCache(target.indicatorKey);
         }
+
+        let nextEventDate: string | undefined;
+        if (didUpdate) {
+          const { data: nextEvt } = await supabase
+            .from("economic_events")
+            .select("event_date, economic_event_series!inner(slug)")
+            .eq("economic_event_series.slug", seriesSlug)
+            .eq("status", "scheduled")
+            .gt("event_date", dueEvent.event_date)
+            .order("event_date", { ascending: true })
+            .limit(1);
+          nextEventDate = (nextEvt?.[0] as { event_date?: string } | undefined)?.event_date;
+        }
+
         const syncedEntry: SyncResult = didUpdate
           ? {
               seriesSlug,
@@ -292,16 +322,22 @@ export async function syncAllFromSbpEasyData(): Promise<SyncResult[]> {
                 syncTimestamp: new Date().toISOString(),
                 dataConfidence: "confirmed",
               },
+              durationMs: Date.now() - entryMs,
+              observationPeriod: periodCheck.expectedPeriod ?? obsDate,
+              dueEventDate: dueEvent.event_date,
+              nextEventDate,
             }
           : {
               seriesSlug,
               status: "skipped-no-due-event",
               detail: "Event already released or not found at call time.",
+              durationMs: Date.now() - entryMs,
+              dueEventDate: dueEvent.event_date,
             };
         results.push(syncedEntry);
       }
     } catch (err) {
-      results.push({ seriesSlug, status: "error", detail: err instanceof Error ? err.message : String(err) });
+      results.push({ seriesSlug, status: "error", detail: err instanceof Error ? err.message : String(err), durationMs: Date.now() - entryMs });
     }
   }
 
@@ -321,14 +357,16 @@ export async function syncAllFromSbpEasyData(): Promise<SyncResult[]> {
  */
 export async function syncSpiFromPbs(): Promise<SyncResult> {
   const seriesSlug = "spi-weekly-inflation-release";
+  const entryMs = Date.now();
   try {
     const spiFetchStart = new Date();
-    const spi = await getSpiHistory();
+    const spi = await getSpiHistoryFresh();
     const spiHealthy = !!(spi && spi.points.length > 0);
+    const latestSpiDate = spiHealthy ? spi!.points.at(-1)?.date : undefined;
     void recordSourceAttempt(
       {
         success: spiHealthy,
-        observationDate: spiHealthy ? spi!.points.at(-1)?.date : undefined,
+        observationDate: latestSpiDate,
         sourceName: "PBS SPI Weekly Report",
         sourceType: "pbs-web",
         isFallback: false,
@@ -343,6 +381,7 @@ export async function syncSpiFromPbs(): Promise<SyncResult> {
         seriesSlug,
         status: "skipped-fallback-data",
         detail: "Live PBS SPI fetch failed or returned no points — not safe to mark as confirmed actual.",
+        durationMs: Date.now() - entryMs,
       };
     }
 
@@ -360,7 +399,13 @@ export async function syncSpiFromPbs(): Promise<SyncResult> {
 
     const dueEvent = dueEvents?.[0];
     if (!dueEvent) {
-      return { seriesSlug, status: "skipped-no-due-event", detail: "No scheduled SPI event is due yet." };
+      return {
+        seriesSlug,
+        status: "skipped-no-due-event",
+        detail: "No scheduled SPI event is due yet.",
+        durationMs: Date.now() - entryMs,
+        observationPeriod: latestSpiDate,
+      };
     }
 
     // Weekly cadence: the PBS data point's week-ended date must exactly
@@ -373,7 +418,10 @@ export async function syncSpiFromPbs(): Promise<SyncResult> {
       return {
         seriesSlug,
         status: "skipped-period-mismatch",
-        detail: `PBS has not yet published the report for week ending ${dueEvent.event_date} (latest available: ${spi!.points.at(-1)?.date ?? "none"}).`,
+        detail: `PBS has not yet published the report for week ending ${dueEvent.event_date} (latest available: ${latestSpiDate ?? "none"}).`,
+        durationMs: Date.now() - entryMs,
+        observationPeriod: latestSpiDate,
+        dueEventDate: dueEvent.event_date,
       };
     }
 
@@ -387,8 +435,22 @@ export async function syncSpiFromPbs(): Promise<SyncResult> {
       p_observation_date: dueEvent.event_date,  // SPI: exact weekly date match
     });
 
-    if (error) return { seriesSlug, status: "error", detail: error.message };
+    if (error) return { seriesSlug, status: "error", detail: error.message, durationMs: Date.now() - entryMs };
     if (didUpdate) invalidateSpiCache();
+
+    let nextEventDate: string | undefined;
+    if (didUpdate) {
+      const { data: nextEvt } = await supabase
+        .from("economic_events")
+        .select("event_date, economic_event_series!inner(slug)")
+        .eq("economic_event_series.slug", seriesSlug)
+        .eq("status", "scheduled")
+        .gt("event_date", dueEvent.event_date)
+        .order("event_date", { ascending: true })
+        .limit(1);
+      nextEventDate = (nextEvt?.[0] as { event_date?: string } | undefined)?.event_date;
+    }
+
     return didUpdate
       ? {
           seriesSlug,
@@ -402,13 +464,19 @@ export async function syncSpiFromPbs(): Promise<SyncResult> {
             syncTimestamp: new Date().toISOString(),
             dataConfidence: "confirmed",
           },
+          durationMs: Date.now() - entryMs,
+          observationPeriod: dueEvent.event_date,
+          dueEventDate: dueEvent.event_date,
+          nextEventDate,
         }
       : {
           seriesSlug,
           status: "skipped-no-due-event",
           detail: "Event already released or not found at call time.",
+          durationMs: Date.now() - entryMs,
+          dueEventDate: dueEvent.event_date,
         };
   } catch (err) {
-    return { seriesSlug, status: "error", detail: err instanceof Error ? err.message : String(err) };
+    return { seriesSlug, status: "error", detail: err instanceof Error ? err.message : String(err), durationMs: Date.now() - entryMs };
   }
 }
