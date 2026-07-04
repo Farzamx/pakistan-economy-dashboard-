@@ -90,12 +90,24 @@ async function discoverLatestSpiReportUrl(): Promise<string> {
     throw new Error("PBS WordPress API did not return a matching SPI post");
   }
 
-  // The post body links both the item-level "Annex" file and the
+  // The post body normally links both the item-level "Annex" file and the
   // aggregate "Report" file — only the Report file has the Combined SPI
-  // index table this function needs.
+  // index table this function needs. Occasionally PBS omits the Report
+  // link (e.g., Eid-week July 2026: Annex ×2, no Report link). In that
+  // case we construct the expected Report URL from the week-ended date in
+  // the post title and the uploads base path from the Annex href — PBS has
+  // always uploaded both files to the same WordPress media directory.
   const hrefs = [...post.content.rendered.matchAll(/href="([^"]+\.xlsx)"/gi)].map((m) => m[1]);
-  const reportUrl = hrefs.find((h) => /report/i.test(h));
-  if (!reportUrl) throw new Error("PBS SPI post has no linked .xlsx Report file");
+  let reportUrl = hrefs.find((h) => /report/i.test(h)) ?? null;
+  if (!reportUrl) {
+    const titleDateMatch = post.title.rendered.match(/week ended on (\d{1,2})-(\d{2})-(\d{4})/i);
+    const baseDir = hrefs[0] ? hrefs[0].slice(0, hrefs[0].lastIndexOf("/") + 1) : null;
+    if (titleDateMatch && baseDir) {
+      const [, dd, mm, yyyy] = titleDateMatch;
+      reportUrl = `${baseDir}3.-SPI-Report-${dd.padStart(2, "0")}.${mm}.${yyyy}.xlsx`;
+    }
+  }
+  if (!reportUrl) throw new Error("PBS SPI post has no .xlsx links and title date could not be parsed");
   return reportUrl;
 }
 
@@ -166,7 +178,8 @@ export async function getSpiHistory(): Promise<SpiResult | null> {
       setCache(cacheKey, result);
       return result;
     });
-  } catch {
+  } catch (err) {
+    console.error(`[SPI] getSpiHistory failed: ${err instanceof Error ? err.message : String(err)}`);
     return null;
   }
 }
@@ -205,8 +218,17 @@ export async function getSpiHistoryFresh(): Promise<SpiResult | null> {
       throw new Error("PBS WordPress API did not return a matching SPI post");
     }
     const hrefs = [...post.content.rendered.matchAll(/href="([^"]+\.xlsx)"/gi)].map((m) => m[1]);
-    const reportUrl = hrefs.find((h) => /report/i.test(h));
-    if (!reportUrl) throw new Error("PBS SPI post has no linked .xlsx Report file");
+    let reportUrl = hrefs.find((h) => /report/i.test(h)) ?? null;
+    if (!reportUrl) {
+      const titleDateMatch = post.title.rendered.match(/week ended on (\d{1,2})-(\d{2})-(\d{4})/i);
+      const baseDir = hrefs[0] ? hrefs[0].slice(0, hrefs[0].lastIndexOf("/") + 1) : null;
+      if (titleDateMatch && baseDir) {
+        const [, dd, mm, yyyy] = titleDateMatch;
+        reportUrl = `${baseDir}3.-SPI-Report-${dd.padStart(2, "0")}.${mm}.${yyyy}.xlsx`;
+        console.log(`[SPI] getSpiHistoryFresh: no Report link in post — using constructed URL: ${reportUrl}`);
+      }
+    }
+    if (!reportUrl) throw new Error("PBS SPI post has no .xlsx links and title date could not be parsed");
 
     const fileRes = await fetch(reportUrl, {
       cache: "no-store",
@@ -218,7 +240,8 @@ export async function getSpiHistoryFresh(): Promise<SpiResult | null> {
     const result: SpiResult = { points, source: "PBS" };
     setCache("pbs-spi-history", result);
     return result;
-  } catch {
+  } catch (err) {
+    console.error(`[SPI] getSpiHistoryFresh failed: ${err instanceof Error ? err.message : String(err)}`);
     return null;
   }
 }
