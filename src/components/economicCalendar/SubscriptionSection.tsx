@@ -60,7 +60,7 @@ function AudienceStatement({ count }: { count: number | null }) {
 
 export default function SubscriptionSection() {
   return (
-    <section aria-labelledby="subscribe-heading" className="rounded-3xl border border-white/10 bg-[#05060f] p-6 sm:p-10">
+    <section id="email-alerts" aria-labelledby="subscribe-heading" className="rounded-3xl border border-white/10 bg-[#05060f] p-6 sm:p-10">
       <ViewportFadeIn>
         <div className="mx-auto max-w-2xl text-center">
           <p className="text-xs font-semibold uppercase tracking-[0.25em] text-sky-400">Economic Release Notifications</p>

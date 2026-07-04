@@ -23,8 +23,8 @@ import { isProtectedPath } from "@/lib/protectedSections";
 interface DrawerLink {
   label: string;
   href: string;
-  /** "purple" | "blue" | "emerald" | "cyan" match the desktop Sidebar's four premium sections exactly; omitted for the plain items (Rankings, News, Indicators, Overview). */
-  premium?: "purple" | "blue" | "emerald" | "cyan";
+  /** "purple" | "blue" | "emerald" | "cyan" | "rose" match the desktop Sidebar's premium sections exactly; omitted for the plain items (Rankings, News, Indicators, Overview). */
+  premium?: "purple" | "blue" | "emerald" | "cyan" | "rose";
   icon: React.ReactNode;
 }
 
@@ -48,6 +48,11 @@ const PREMIUM_STYLES: Record<string, { active: string; inactive: string; iconCol
     active: "border-cyan-400/40 bg-cyan-400/15 text-white shadow-[0_0_16px_rgba(34,211,238,0.35)]",
     inactive: "border-cyan-400/20 bg-cyan-400/5 text-white/85",
     iconColor: "text-cyan-400",
+  },
+  rose: {
+    active: "border-rose-400/40 bg-rose-400/15 text-white shadow-[0_0_16px_rgba(251,113,133,0.35)]",
+    inactive: "border-rose-400/20 bg-rose-400/5 text-white/85",
+    iconColor: "text-rose-400",
   },
 };
 
@@ -110,6 +115,17 @@ const LINKS: DrawerLink[] = [
     ),
   },
   {
+    label: "Free Subscription",
+    href: "/economic-calendar#email-alerts",
+    premium: "rose",
+    icon: (
+      <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="2" y="5" width="20" height="14" rx="2" />
+        <path d="M2 8l10 6 10-6" />
+      </svg>
+    ),
+  },
+  {
     label: "Rankings",
     href: "/provincial-budget/rankings",
     icon: (
@@ -152,6 +168,16 @@ export default function MobileNav() {
   const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const [lastPathname, setLastPathname] = useState(pathname);
+  const [hash, setHash] = useState("");
+
+  // Mirrors the hash-tracking in Sidebar.tsx so the Free Subscription item's
+  // active state works correctly in the mobile drawer.
+  useEffect(() => {
+    function onHashChange() { setHash(window.location.hash); }
+    onHashChange();
+    window.addEventListener("hashchange", onHashChange);
+    return () => window.removeEventListener("hashchange", onHashChange);
+  }, []);
   // See SidebarAuthCard.tsx for why this guard exists — closing the modal
   // must not depend solely on `user` flipping to null and this drawer's
   // footer re-rendering into its guest branch; the try/finally in
@@ -202,6 +228,26 @@ export default function MobileNav() {
       setGuestDestination(href);
       setGuestModalOpen(true);
       return;
+    }
+    // Same-route hash navigation (e.g. /economic-calendar#email-alerts while
+    // already on /economic-calendar): close the drawer, then smooth-scroll to
+    // the section. Push the hash into the history stack manually so the URL
+    // stays accurate and the active-state hash listener fires. Hash-only
+    // links like /#overview are handled by the deferred setTimeout below.
+    if (!href.startsWith("/#") && href.includes("#")) {
+      const hashIdx = href.indexOf("#");
+      const path = href.slice(0, hashIdx);
+      const fragment = href.slice(hashIdx + 1);
+      if (pathname === path && fragment) {
+        e.preventDefault();
+        setOpen(false);
+        setTimeout(() => {
+          document.getElementById(fragment)?.scrollIntoView({ behavior: "smooth" });
+          window.history.pushState(null, "", href);
+          setHash(`#${fragment}`);
+        }, 270); // let the drawer slide-out animation finish first
+        return;
+      }
     }
     // Deliberately NOT calling setOpen(false) here for a real navigation.
     // Next's <Link> drives the route transition off this same click event;
@@ -319,7 +365,21 @@ export default function MobileNav() {
 
               <nav className="flex flex-col gap-1.5">
                 {LINKS.map((link) => {
-                  const isActive = link.href.startsWith("/#") ? false : pathname?.startsWith(link.href.split("?")[0]);
+                  // Three cases:
+                  //   "/#section" — hash-only homepage anchor → never active by route
+                  //   "/route#section" — route + hash (e.g. Free Subscription) → active
+                  //                      when on the right route AND hash matches
+                  //   "/route" — pure route → active when pathname starts with it
+                  const isActive = (() => {
+                    if (link.href.startsWith("/#")) return false;
+                    const hashIdx = link.href.indexOf("#");
+                    if (hashIdx !== -1) {
+                      const path = link.href.slice(0, hashIdx);
+                      const fragment = `#${link.href.slice(hashIdx + 1)}`;
+                      return pathname === path && hash === fragment;
+                    }
+                    return !!pathname?.startsWith(link.href.split("?")[0]);
+                  })();
                   const style = link.premium ? PREMIUM_STYLES[link.premium] : null;
                   return (
                     <Link

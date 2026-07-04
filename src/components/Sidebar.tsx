@@ -63,6 +63,18 @@ export default function Sidebar() {
   const [activeId, setActiveId] = useState<string>(NAV_ITEMS[0].id);
   const [guestModalOpen, setGuestModalOpen] = useState(false);
   const [guestDestination, setGuestDestination] = useState("/");
+  const [hash, setHash] = useState("");
+
+  // Tracks the URL hash so the Free Subscription item can show as active
+  // when the user navigates to /economic-calendar#email-alerts, and return
+  // to inactive (while Economic Calendar stays active) when they scroll
+  // elsewhere on the page.
+  useEffect(() => {
+    function onHashChange() { setHash(window.location.hash); }
+    onHashChange();
+    window.addEventListener("hashchange", onHashChange);
+    return () => window.removeEventListener("hashchange", onHashChange);
+  }, []);
 
   // Intercepts a click on a protected section's Link while signed out:
   // prevents the navigation and opens the GuestAccessModal instead, so a
@@ -71,6 +83,21 @@ export default function Sidebar() {
   // still loading) navigate normally — showing the modal during `loading`
   // would misfire for users who are actually signed in but whose session
   // hasn't resolved on this render yet.
+  // When the user clicks "Free Subscription" while already on the calendar
+  // page, smooth-scroll to the section instead of doing a hard navigation
+  // (which would jump instantly). On any other page, let the Link navigate
+  // normally — the browser will anchor-scroll on arrival.
+  function handleSubscriptionClick(e: React.MouseEvent<HTMLAnchorElement>) {
+    if (pathname !== "/economic-calendar") return;
+    e.preventDefault();
+    const el = document.getElementById("email-alerts");
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth" });
+      window.history.pushState(null, "", "/economic-calendar#email-alerts");
+      setHash("#email-alerts");
+    }
+  }
+
   function handleProtectedNav(e: React.MouseEvent<HTMLAnchorElement>, href: string) {
     if (!isProtectedPath(href)) return;
     if (loading || user) return;
@@ -267,7 +294,10 @@ export default function Sidebar() {
             </Link>
           </motion.div>
 
-          {/* Economic Calendar — cyan, fourth premium placement. */}
+          {/* Economic Calendar — cyan, fourth premium placement.
+              Active only when on the calendar page but NOT viewing the
+              subscription section — when the user clicks "Free Subscription"
+              the calendar item yields and the subscription item lights up. */}
           <motion.div
             whileHover={{ x: 4, scale: 1.015 }}
             transition={{ type: "spring", stiffness: 400, damping: 25 }}
@@ -276,9 +306,9 @@ export default function Sidebar() {
             <Link
               href="/economic-calendar"
               onClick={(e) => handleProtectedNav(e, "/economic-calendar")}
-              aria-current={pathname?.startsWith("/economic-calendar") ? "true" : undefined}
+              aria-current={pathname?.startsWith("/economic-calendar") && hash !== "#email-alerts" ? "true" : undefined}
               className={`group relative flex items-center gap-2.5 overflow-hidden rounded-lg border px-4 py-2.5 text-sm font-semibold transition-all duration-300 ${
-                pathname?.startsWith("/economic-calendar")
+                pathname?.startsWith("/economic-calendar") && hash !== "#email-alerts"
                   ? "border-cyan-400/40 bg-cyan-400/15 text-white shadow-[0_0_16px_rgba(34,211,238,0.35)] light:text-slate-900"
                   : "border-cyan-400/20 bg-cyan-400/5 text-white/85 hover:border-cyan-400/35 hover:bg-cyan-400/10 hover:text-white light:text-slate-700 light:hover:text-slate-900"
               }`}
@@ -296,6 +326,43 @@ export default function Sidebar() {
                 <path d="M3 10h18M8 3v4M16 3v4" />
               </svg>
               <span>Economic Calendar</span>
+            </Link>
+          </motion.div>
+
+          {/* Free Subscription — rose, fifth premium placement.
+              Links to the email alert sign-up section on the Economic Calendar
+              page. Smooth-scrolls when the user is already on that page;
+              navigates normally otherwise. Active only when hash is
+              #email-alerts so it never conflicts with the Calendar item. */}
+          <motion.div
+            whileHover={{ x: 4, scale: 1.015 }}
+            transition={{ type: "spring", stiffness: 400, damping: 25 }}
+            className="mb-1"
+          >
+            <Link
+              href="/economic-calendar#email-alerts"
+              onClick={handleSubscriptionClick}
+              aria-label="Free email subscription — get alerts for Pakistan economic releases"
+              aria-current={pathname === "/economic-calendar" && hash === "#email-alerts" ? "true" : undefined}
+              className={`group relative flex items-center gap-2.5 overflow-hidden rounded-lg border px-4 py-2.5 text-sm font-semibold transition-all duration-300 ${
+                pathname === "/economic-calendar" && hash === "#email-alerts"
+                  ? "border-rose-400/40 bg-rose-400/15 text-white shadow-[0_0_16px_rgba(251,113,133,0.35)] light:text-slate-900"
+                  : "border-rose-400/20 bg-rose-400/5 text-white/85 hover:border-rose-400/35 hover:bg-rose-400/10 hover:text-white light:text-slate-700 light:hover:text-slate-900"
+              }`}
+            >
+              <svg
+                className="h-4 w-4 shrink-0 text-rose-400 transition-transform duration-300 group-hover:scale-110"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.75"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <rect x="2" y="5" width="20" height="14" rx="2" />
+                <path d="M2 8l10 6 10-6" />
+              </svg>
+              <span>Free Subscription</span>
             </Link>
           </motion.div>
 
