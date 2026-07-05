@@ -67,22 +67,24 @@ export default function SeoPageLayout({
   relatedLinks,
   canonicalPath,
 }: SeoPageLayoutProps) {
-  const faqJsonLd = {
+  const structuredDataJsonLd = {
     "@context": "https://schema.org",
-    "@type": "FAQPage",
-    mainEntity: faq.map((item) => ({
-      "@type": "Question",
-      name: item.question,
-      acceptedAnswer: { "@type": "Answer", text: item.answer },
-    })),
-  };
-
-  const breadcrumbJsonLd = {
-    "@context": "https://schema.org",
-    "@type": "BreadcrumbList",
-    itemListElement: [
-      { "@type": "ListItem", position: 1, name: "Pakistan Economic Intelligence", item: SITE_URL },
-      { "@type": "ListItem", position: 2, name: title, item: `${SITE_URL}${canonicalPath}` },
+    "@graph": [
+      {
+        "@type": "FAQPage",
+        mainEntity: faq.map((item) => ({
+          "@type": "Question",
+          name: item.question,
+          acceptedAnswer: { "@type": "Answer", text: item.answer },
+        })),
+      },
+      {
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          { "@type": "ListItem", position: 1, name: "Pakistan Economic Intelligence", item: SITE_URL },
+          { "@type": "ListItem", position: 2, name: title, item: `${SITE_URL}${canonicalPath}` },
+        ],
+      },
     ],
   };
 
@@ -90,11 +92,7 @@ export default function SeoPageLayout({
     <div className="min-h-screen w-full px-6 py-8 sm:px-10 lg:px-16">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd).replace(/</g, "\\u003c") }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd).replace(/</g, "\\u003c") }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredDataJsonLd).replace(/</g, "\\u003c") }}
       />
 
       {/* Minimal header — not the dashboard sidebar, just a way back to it */}
