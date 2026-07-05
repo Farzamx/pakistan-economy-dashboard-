@@ -22,6 +22,13 @@ import { createPublicDataClient } from "@/lib/supabase/publicDataClient";
 // overwriting a 'delivered' row's status with 'opened' would lose
 // deliverability information for an engagement signal this MVP doesn't
 // otherwise use.
+//
+// Error handling contract: return 200 for every internal failure that
+// occurs AFTER signature verification succeeds. Resend auto-disables the
+// webhook endpoint after consecutive non-2xx responses, so internal
+// errors (missing env vars, transient DB failures) must not propagate as
+// 5xx. The only legitimate non-2xx is 401 for a bad signature (i.e., the
+// request did not actually come from Resend).
 
 const STATUS_BY_EVENT: Record<string, string> = {
   "email.delivered": "delivered",
@@ -34,8 +41,10 @@ const STATUS_BY_EVENT: Record<string, string> = {
 export async function POST(request: Request) {
   const webhookSecret = process.env.RESEND_WEBHOOK_SECRET;
   if (!webhookSecret) {
-    console.error("[Webhooks/Resend] RESEND_WEBHOOK_SECRET is not configured — rejecting");
-    return NextResponse.json({ error: "not_configured" }, { status: 500 });
+    // Misconfigured server — return 200 so Resend does not count this as a
+    // delivery failure and disable the webhook. The error is logged for ops.
+    console.error("[Webhooks/Resend] RESEND_WEBHOOK_SECRET is not set — cannot verify; skipping");
+    return NextResponse.json({ received: true, handled: false, error: "not_configured" });
   }
 
   const payload = await request.text();
@@ -44,6 +53,7 @@ export async function POST(request: Request) {
   const svixSignature = request.headers.get("svix-signature");
 
   if (!svixId || !svixTimestamp || !svixSignature) {
+    // No Svix headers — reject; this request did not come from Resend.
     return NextResponse.json({ error: "missing_signature_headers" }, { status: 400 });
   }
 
@@ -64,6 +74,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "invalid_signature" }, { status: 401 });
   }
 
+  // --- Signature verified. From here on, always return 200. ---
+  // Internal failures (missing env vars, DB errors) must not result in a
+  // non-2xx response because Resend has no way to re-deliver this event
+  // (it already considers it delivered once we receive it), and repeated
+  // non-2xx responses will cause Resend to auto-disable the webhook.
+
   const newStatus = STATUS_BY_EVENT[event.type];
   if (!newStatus) {
     // email.sent / email.opened / email.clicked / anything else — no-op, see header.
@@ -72,6 +88,7 @@ export async function POST(request: Request) {
 
   const emailId = "data" in event && "email_id" in event.data ? event.data.email_id : undefined;
   if (!emailId) {
+    console.warn(`[Webhooks/Resend] ${event.type} event has no email_id — skipping DB update`);
     return NextResponse.json({ received: true, handled: false });
   }
 
@@ -79,8 +96,8 @@ export async function POST(request: Request) {
 
   const workerSecret = process.env.NOTIFICATION_WORKER_SECRET;
   if (!workerSecret) {
-    console.error("[Webhooks/Resend] NOTIFICATION_WORKER_SECRET is not configured — rejecting");
-    return NextResponse.json({ error: "not_configured" }, { status: 500 });
+    console.error(`[Webhooks/Resend] NOTIFICATION_WORKER_SECRET is not set — cannot update ${emailId} to ${newStatus}`);
+    return NextResponse.json({ received: true, handled: false, error: "worker_secret_not_configured" });
   }
 
   const supabase = createPublicDataClient();
@@ -92,8 +109,11 @@ export async function POST(request: Request) {
   });
 
   if (error) {
+    // Transient DB error — log it but return 200. Resend does not retry on
+    // 200, so this event is lost for tracking purposes; that is preferable
+    // to letting DB hiccups accumulate toward the auto-disable threshold.
     console.error(`[Webhooks/Resend] update_email_delivery_status failed for ${emailId}: ${error.message}`);
-    return NextResponse.json({ error: "db_update_failed" }, { status: 500 });
+    return NextResponse.json({ received: true, handled: false, error: "db_error" });
   }
 
   const result = data as { success: boolean; error?: string };
