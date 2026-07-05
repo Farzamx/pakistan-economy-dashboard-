@@ -2,7 +2,7 @@
 import { getSbpIndicator } from "@/lib/data/sbpServer";
 import { getGdpKpi } from "@/lib/data/worldBank";
 import SeoPageLayout from "@/components/seo/SeoPageLayout";
-import { SITE_URL, SITE_NAME, relatedSeoLinks } from "@/lib/seoConfig";
+import { SITE_URL, SITE_NAME, getRelatedLinks } from "@/lib/seoConfig";
 
 const SLUG = "pakistan-economic-dashboard";
 const PAGE_URL = `${SITE_URL}/${SLUG}`;
@@ -67,12 +67,7 @@ export default async function PakistanEconomicDashboardPage() {
           answer: "Yes — a built-in AI assistant can answer questions about Pakistan's economy, combining live dashboard data, a local knowledge base of common economics questions, and web search for current events, with transparent source citations.",
         },
       ]}
-      relatedLinks={relatedSeoLinks(SLUG, [
-        "pakistan-economic-indicators",
-        "gdp-growth-pakistan",
-        "inflation-rate-pakistan",
-        "usd-pkr-exchange-rate",
-      ])}
+      relatedLinks={getRelatedLinks(SLUG)}
     />
   );
 }

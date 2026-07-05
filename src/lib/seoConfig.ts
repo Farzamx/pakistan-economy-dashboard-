@@ -70,3 +70,213 @@ export function relatedSeoLinks(excludeSlug: string, slugs: string[]): { href: s
     label: p.label,
   }));
 }
+
+// Comprehensive bidirectional relationship graph — defines which indicator
+// pages are meaningfully related to each other. Drives getRelatedLinks() so
+// pages never need manual slug lists: adding a new page here automatically
+// surfaces it on every related page without touching page.tsx files.
+//
+// Design rules:
+//   - Max 8 related slugs per page (enough to be useful, not overwhelming)
+//   - Order by thematic proximity, not alphabetically
+//   - If A lists B, B should list A (bidirectional consistency)
+//   - Hub pages (economic-indicators, economic-dashboard) appear on most pages
+//     because they are the natural "see all" destination
+export const RELATED_INDICATORS: Record<string, string[]> = {
+  "gdp-growth-pakistan": [
+    "inflation-rate-pakistan",
+    "pakistan-fiscal-deficit",
+    "pakistan-trade-deficit",
+    "pakistan-stock-market",
+    "fdi-in-pakistan",
+    "pakistan-economic-indicators",
+    "pakistan-economic-dashboard",
+  ],
+  "inflation-rate-pakistan": [
+    "pakistan-interest-rate",
+    "weekly-inflation-pakistan",
+    "pakistan-food-inflation",
+    "spi-index-pakistan",
+    "usd-pkr-exchange-rate",
+    "gdp-growth-pakistan",
+    "pakistan-economic-indicators",
+  ],
+  "pakistan-interest-rate": [
+    "inflation-rate-pakistan",
+    "pakistan-bond-yields",
+    "usd-pkr-exchange-rate",
+    "current-account-deficit-pakistan",
+    "pakistan-fiscal-deficit",
+    "gold-price-pakistan",
+    "pakistan-economic-indicators",
+  ],
+  "usd-pkr-exchange-rate": [
+    "foreign-exchange-reserves-pakistan",
+    "current-account-deficit-pakistan",
+    "pakistan-remittances",
+    "pakistan-external-debt",
+    "eur-to-pkr-exchange-rate",
+    "gbp-to-pkr-exchange-rate",
+    "sar-to-pkr-exchange-rate",
+    "pakistan-economic-indicators",
+  ],
+  "foreign-exchange-reserves-pakistan": [
+    "usd-pkr-exchange-rate",
+    "current-account-deficit-pakistan",
+    "pakistan-external-debt",
+    "pakistan-remittances",
+    "pakistan-trade-deficit",
+    "pakistan-economic-indicators",
+  ],
+  "current-account-deficit-pakistan": [
+    "pakistan-trade-deficit",
+    "pakistan-remittances",
+    "foreign-exchange-reserves-pakistan",
+    "usd-pkr-exchange-rate",
+    "fdi-in-pakistan",
+    "pakistan-external-debt",
+    "pakistan-economic-indicators",
+  ],
+  "pakistan-bond-yields": [
+    "pakistan-interest-rate",
+    "pakistan-fiscal-deficit",
+    "pakistan-stock-market",
+    "gold-price-pakistan",
+    "usd-pkr-exchange-rate",
+    "pakistan-economic-indicators",
+  ],
+  "pakistan-stock-market": [
+    "pakistan-bond-yields",
+    "gdp-growth-pakistan",
+    "fdi-in-pakistan",
+    "usd-pkr-exchange-rate",
+    "pakistan-interest-rate",
+    "pakistan-economic-indicators",
+    "pakistan-economic-dashboard",
+  ],
+  "pakistan-economic-indicators": [
+    "gdp-growth-pakistan",
+    "inflation-rate-pakistan",
+    "pakistan-interest-rate",
+    "foreign-exchange-reserves-pakistan",
+    "usd-pkr-exchange-rate",
+    "pakistan-trade-deficit",
+    "pakistan-external-debt",
+    "pakistan-economic-dashboard",
+  ],
+  "pakistan-economic-dashboard": [
+    "pakistan-economic-indicators",
+    "gdp-growth-pakistan",
+    "inflation-rate-pakistan",
+    "usd-pkr-exchange-rate",
+    "foreign-exchange-reserves-pakistan",
+    "pakistan-interest-rate",
+    "pakistan-stock-market",
+  ],
+  "pakistan-remittances": [
+    "current-account-deficit-pakistan",
+    "usd-pkr-exchange-rate",
+    "foreign-exchange-reserves-pakistan",
+    "gbp-to-pkr-exchange-rate",
+    "sar-to-pkr-exchange-rate",
+    "pakistan-economic-indicators",
+  ],
+  "gold-price-pakistan": [
+    "usd-pkr-exchange-rate",
+    "pakistan-interest-rate",
+    "inflation-rate-pakistan",
+    "pakistan-bond-yields",
+    "pakistan-economic-indicators",
+  ],
+  "pakistan-external-debt": [
+    "foreign-exchange-reserves-pakistan",
+    "current-account-deficit-pakistan",
+    "pakistan-fiscal-deficit",
+    "usd-pkr-exchange-rate",
+    "gdp-growth-pakistan",
+    "pakistan-economic-indicators",
+  ],
+  "pakistan-trade-deficit": [
+    "current-account-deficit-pakistan",
+    "usd-pkr-exchange-rate",
+    "gdp-growth-pakistan",
+    "fdi-in-pakistan",
+    "foreign-exchange-reserves-pakistan",
+    "pakistan-economic-indicators",
+  ],
+  "sar-to-pkr-exchange-rate": [
+    "usd-pkr-exchange-rate",
+    "eur-to-pkr-exchange-rate",
+    "gbp-to-pkr-exchange-rate",
+    "pakistan-remittances",
+    "foreign-exchange-reserves-pakistan",
+    "pakistan-economic-indicators",
+  ],
+  "pakistan-fiscal-deficit": [
+    "pakistan-bond-yields",
+    "current-account-deficit-pakistan",
+    "pakistan-external-debt",
+    "gdp-growth-pakistan",
+    "pakistan-interest-rate",
+    "pakistan-economic-indicators",
+  ],
+  "pakistan-food-inflation": [
+    "inflation-rate-pakistan",
+    "weekly-inflation-pakistan",
+    "spi-index-pakistan",
+    "pakistan-interest-rate",
+    "pakistan-economic-indicators",
+  ],
+  "fdi-in-pakistan": [
+    "pakistan-trade-deficit",
+    "current-account-deficit-pakistan",
+    "gdp-growth-pakistan",
+    "pakistan-stock-market",
+    "usd-pkr-exchange-rate",
+    "pakistan-economic-indicators",
+  ],
+  "eur-to-pkr-exchange-rate": [
+    "usd-pkr-exchange-rate",
+    "gbp-to-pkr-exchange-rate",
+    "sar-to-pkr-exchange-rate",
+    "pakistan-trade-deficit",
+    "pakistan-remittances",
+    "pakistan-economic-indicators",
+  ],
+  "gbp-to-pkr-exchange-rate": [
+    "usd-pkr-exchange-rate",
+    "eur-to-pkr-exchange-rate",
+    "pakistan-remittances",
+    "sar-to-pkr-exchange-rate",
+    "foreign-exchange-reserves-pakistan",
+    "pakistan-economic-indicators",
+  ],
+  "weekly-inflation-pakistan": [
+    "inflation-rate-pakistan",
+    "spi-index-pakistan",
+    "pakistan-food-inflation",
+    "pakistan-interest-rate",
+    "pakistan-economic-indicators",
+  ],
+  "spi-index-pakistan": [
+    "weekly-inflation-pakistan",
+    "inflation-rate-pakistan",
+    "pakistan-food-inflation",
+    "pakistan-interest-rate",
+    "pakistan-economic-indicators",
+  ],
+};
+
+// Returns related indicator links for a given page slug, looked up from the
+// comprehensive RELATED_INDICATORS graph. Zero manual lists in page files —
+// adding a new entry to RELATED_INDICATORS is the only maintenance step.
+export function getRelatedLinks(slug: string): { href: string; label: string }[] {
+  const related = RELATED_INDICATORS[slug] ?? [];
+  return related
+    .filter((s) => s !== slug)
+    .map((s) => {
+      const page = SEO_PAGES.find((p) => p.slug === s);
+      return page ? { href: `/${s}`, label: page.label } : null;
+    })
+    .filter((link): link is { href: string; label: string } => link !== null);
+}

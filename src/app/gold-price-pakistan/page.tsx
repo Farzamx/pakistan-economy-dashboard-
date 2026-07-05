@@ -4,7 +4,7 @@ import { getGoldHistory } from "@/lib/data/yfinance";
 import { getSbpIndicator } from "@/lib/data/sbpServer";
 import SeoPageLayout from "@/components/seo/SeoPageLayout";
 import type { TrendPoint } from "@/components/charts/TrendLineChart";
-import { SITE_URL, SITE_NAME, relatedSeoLinks } from "@/lib/seoConfig";
+import { SITE_URL, SITE_NAME, getRelatedLinks } from "@/lib/seoConfig";
 
 const SLUG = "gold-price-pakistan";
 const PAGE_URL = `${SITE_URL}/${SLUG}`;
@@ -93,7 +93,7 @@ export default async function GoldPricePage() {
         },
       ]}
       relatedLinks={[
-        ...relatedSeoLinks(SLUG, ["usd-pkr-exchange-rate", "pakistan-interest-rate", "pakistan-economic-indicators"]),
+        ...getRelatedLinks(SLUG),
         { href: "/comparisons/gold-vs-usd-pkr", label: "Gold vs USD/PKR" },
         { href: "/comparisons/gold-vs-treasury-bills", label: "Gold vs Treasury Bills" },
       ]}

@@ -1,7 +1,7 @@
 ﻿import type { Metadata } from "next";
 import { getSbpIndicator } from "@/lib/data/sbpServer";
 import SeoPageLayout from "@/components/seo/SeoPageLayout";
-import { SITE_URL, SITE_NAME, relatedSeoLinks } from "@/lib/seoConfig";
+import { SITE_URL, SITE_NAME, getRelatedLinks } from "@/lib/seoConfig";
 
 const SLUG = "pakistan-remittances";
 const PAGE_URL = `${SITE_URL}/${SLUG}`;
@@ -62,11 +62,7 @@ export default async function RemittancesPage() {
           answer: "Remittances are not counted in GDP (which measures domestic production), but they are a major contributor to Gross National Income (GNI) and household consumption, and they directly affect the current account balance.",
         },
       ]}
-      relatedLinks={relatedSeoLinks(SLUG, [
-        "current-account-deficit-pakistan",
-        "usd-pkr-exchange-rate",
-        "foreign-exchange-reserves-pakistan",
-      ])}
+      relatedLinks={getRelatedLinks(SLUG)}
     />
   );
 }

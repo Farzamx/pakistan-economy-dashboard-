@@ -2,7 +2,7 @@
 import { getFoodInflationUrbanHistory, getSbpIndicator } from "@/lib/data/sbpServer";
 import SeoPageLayout from "@/components/seo/SeoPageLayout";
 import type { TrendPoint } from "@/components/charts/TrendLineChart";
-import { SITE_URL, SITE_NAME, relatedSeoLinks } from "@/lib/seoConfig";
+import { SITE_URL, SITE_NAME, getRelatedLinks } from "@/lib/seoConfig";
 
 const SLUG = "pakistan-food-inflation";
 const PAGE_URL = `${SITE_URL}/${SLUG}`;
@@ -90,12 +90,7 @@ export default async function FoodInflationPage() {
           answer: "Key drivers include domestic harvest yields (especially wheat and other staples), global commodity prices for imported items like edible oil, fuel costs that feed into transport and farming input prices, and exchange rate movements that affect the cost of imported food.",
         },
       ]}
-      relatedLinks={relatedSeoLinks(SLUG, [
-        "inflation-rate-pakistan",
-        "weekly-inflation-pakistan",
-        "pakistan-interest-rate",
-        "pakistan-economic-indicators",
-      ])}
+      relatedLinks={getRelatedLinks(SLUG)}
     />
   );
 }

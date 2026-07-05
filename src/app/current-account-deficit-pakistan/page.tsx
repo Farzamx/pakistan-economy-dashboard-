@@ -1,7 +1,7 @@
 ﻿import type { Metadata } from "next";
 import { getSbpIndicator } from "@/lib/data/sbpServer";
 import SeoPageLayout from "@/components/seo/SeoPageLayout";
-import { SITE_URL, SITE_NAME, relatedSeoLinks } from "@/lib/seoConfig";
+import { SITE_URL, SITE_NAME, getRelatedLinks } from "@/lib/seoConfig";
 
 const SLUG = "current-account-deficit-pakistan";
 const PAGE_URL = `${SITE_URL}/${SLUG}`;
@@ -63,12 +63,7 @@ export default async function CurrentAccountPage() {
           answer: "Trade balance only covers goods and services. The current account is broader, also including income flows (like profit repatriation) and transfers (like remittances and foreign grants).",
         },
       ]}
-      relatedLinks={relatedSeoLinks(SLUG, [
-        "foreign-exchange-reserves-pakistan",
-        "usd-pkr-exchange-rate",
-        "pakistan-external-debt",
-        "pakistan-economic-indicators",
-      ])}
+      relatedLinks={getRelatedLinks(SLUG)}
     />
   );
 }

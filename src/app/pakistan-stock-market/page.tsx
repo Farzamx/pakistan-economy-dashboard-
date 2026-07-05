@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { getPakEtfKpi } from "@/lib/data/yfinance";
 import SeoPageLayout from "@/components/seo/SeoPageLayout";
-import { SITE_URL, SITE_NAME, relatedSeoLinks } from "@/lib/seoConfig";
+import { SITE_URL, SITE_NAME, getRelatedLinks } from "@/lib/seoConfig";
 
 const SLUG = "pakistan-stock-market";
 const PAGE_URL = `${SITE_URL}/${SLUG}`;
@@ -67,11 +67,7 @@ export default async function PakistanStockMarketPage() {
           answer: "For live, accurate KSE-100 levels, visit the official PSX website (psx.com.pk) or a licensed financial data terminal — this is the only way to guarantee an accurate, real-time figure.",
         },
       ]}
-      relatedLinks={relatedSeoLinks(SLUG, [
-        "pakistan-bond-yields",
-        "pakistan-economic-indicators",
-        "pakistan-economic-dashboard",
-      ])}
+      relatedLinks={getRelatedLinks(SLUG)}
     />
   );
 }

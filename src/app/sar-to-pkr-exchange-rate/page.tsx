@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { getFxRates } from "@/lib/data/fxRates";
 import SeoPageLayout from "@/components/seo/SeoPageLayout";
-import { SITE_URL, SITE_NAME, relatedSeoLinks } from "@/lib/seoConfig";
+import { SITE_URL, SITE_NAME, getRelatedLinks } from "@/lib/seoConfig";
 
 const SLUG = "sar-to-pkr-exchange-rate";
 const PAGE_URL = `${SITE_URL}/${SLUG}`;
@@ -68,11 +68,7 @@ export default async function SarPkrPage() {
           answer: "Yes — Saudi Arabia is one of the largest sources of remittances to Pakistan. A weaker Rupee against the Dollar (and therefore against the pegged Riyal) means each Riyal sent home converts to more Rupees for the receiving family.",
         },
       ]}
-      relatedLinks={relatedSeoLinks(SLUG, [
-        "usd-pkr-exchange-rate",
-        "pakistan-remittances",
-        "eur-to-pkr-exchange-rate",
-      ])}
+      relatedLinks={getRelatedLinks(SLUG)}
     />
   );
 }

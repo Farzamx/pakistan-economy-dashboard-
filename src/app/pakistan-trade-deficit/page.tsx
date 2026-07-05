@@ -1,7 +1,7 @@
 ﻿import type { Metadata } from "next";
 import { getSbpIndicator } from "@/lib/data/sbpServer";
 import SeoPageLayout from "@/components/seo/SeoPageLayout";
-import { SITE_URL, SITE_NAME, relatedSeoLinks } from "@/lib/seoConfig";
+import { SITE_URL, SITE_NAME, getRelatedLinks } from "@/lib/seoConfig";
 
 const SLUG = "pakistan-trade-deficit";
 const PAGE_URL = `${SITE_URL}/${SLUG}`;
@@ -71,11 +71,7 @@ export default async function TradeDeficitPage() {
           answer: "A wider trade deficit means more demand for US Dollars to pay for imports, which puts depreciation pressure on the Rupee unless offset by inflows like remittances, foreign investment, or borrowing.",
         },
       ]}
-      relatedLinks={relatedSeoLinks(SLUG, [
-        "current-account-deficit-pakistan",
-        "pakistan-remittances",
-        "usd-pkr-exchange-rate",
-      ])}
+      relatedLinks={getRelatedLinks(SLUG)}
     />
   );
 }

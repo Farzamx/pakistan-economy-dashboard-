@@ -3,7 +3,7 @@ import { getSpiHistory } from "@/lib/data/spi";
 import { getSbpIndicator } from "@/lib/data/sbpServer";
 import SeoPageLayout from "@/components/seo/SeoPageLayout";
 import type { TrendPoint } from "@/components/charts/TrendLineChart";
-import { SITE_URL, SITE_NAME, relatedSeoLinks } from "@/lib/seoConfig";
+import { SITE_URL, SITE_NAME, getRelatedLinks } from "@/lib/seoConfig";
 
 const SLUG = "weekly-inflation-pakistan";
 const PAGE_URL = `${SITE_URL}/${SLUG}`;
@@ -101,8 +101,7 @@ export default async function WeeklyInflationPage() {
         },
       ]}
       relatedLinks={[
-        { href: "/spi-index-pakistan", label: "SPI Index (Raw Level)" },
-        ...relatedSeoLinks(SLUG, ["inflation-rate-pakistan", "pakistan-food-inflation"]),
+        ...getRelatedLinks(SLUG),
         { href: "/comparisons/inflation-vs-urban-food-inflation", label: "CPI vs Urban Food Inflation Comparison" },
       ]}
     />

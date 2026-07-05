@@ -1,7 +1,7 @@
 ﻿import type { Metadata } from "next";
 import { getSbpIndicator } from "@/lib/data/sbpServer";
 import SeoPageLayout from "@/components/seo/SeoPageLayout";
-import { SITE_URL, SITE_NAME, relatedSeoLinks } from "@/lib/seoConfig";
+import { SITE_URL, SITE_NAME, getRelatedLinks } from "@/lib/seoConfig";
 
 const SLUG = "pakistan-fiscal-deficit";
 const PAGE_URL = `${SITE_URL}/${SLUG}`;
@@ -63,12 +63,7 @@ export default async function FiscalDeficitPage() {
           answer: "The fiscal deficit measures the government's own spending versus revenue gap. The current account deficit measures the whole country's international transactions. The two are related — a large fiscal deficit can spill over into a wider current account deficit — but they are measured and financed differently.",
         },
       ]}
-      relatedLinks={relatedSeoLinks(SLUG, [
-        "pakistan-bond-yields",
-        "current-account-deficit-pakistan",
-        "pakistan-external-debt",
-        "pakistan-economic-indicators",
-      ])}
+      relatedLinks={getRelatedLinks(SLUG)}
     />
   );
 }

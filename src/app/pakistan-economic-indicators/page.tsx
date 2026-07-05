@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { getAllSbpIndicators } from "@/lib/data/sbpServer";
 import { getGdpKpi } from "@/lib/data/worldBank";
 import SeoPageLayout from "@/components/seo/SeoPageLayout";
-import { SITE_URL, SITE_NAME, relatedSeoLinks } from "@/lib/seoConfig";
+import { SITE_URL, SITE_NAME, getRelatedLinks } from "@/lib/seoConfig";
 
 const SLUG = "pakistan-economic-indicators";
 const PAGE_URL = `${SITE_URL}/${SLUG}`;
@@ -70,17 +70,7 @@ export default async function EconomicIndicatorsPage() {
           answer: "This depends on the specific time period and indicator — check the full live dashboard's Economic Health Score and Risk Intelligence sections for an up-to-date, data-driven assessment.",
         },
       ]}
-      relatedLinks={relatedSeoLinks(SLUG, [
-        "gdp-growth-pakistan",
-        "inflation-rate-pakistan",
-        "pakistan-interest-rate",
-        "foreign-exchange-reserves-pakistan",
-        "pakistan-external-debt",
-        "spi-index-pakistan",
-        "pakistan-stock-market",
-        "fdi-in-pakistan",
-        "pakistan-economic-dashboard",
-      ])}
+      relatedLinks={getRelatedLinks(SLUG)}
     />
   );
 }

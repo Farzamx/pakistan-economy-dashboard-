@@ -3,7 +3,7 @@ import { getExternalDebtHistory } from "@/lib/data/externalDebt";
 import { getSbpIndicator } from "@/lib/data/sbpServer";
 import SeoPageLayout from "@/components/seo/SeoPageLayout";
 import type { TrendPoint } from "@/components/charts/TrendLineChart";
-import { SITE_URL, SITE_NAME, relatedSeoLinks } from "@/lib/seoConfig";
+import { SITE_URL, SITE_NAME, getRelatedLinks } from "@/lib/seoConfig";
 
 const SLUG = "pakistan-external-debt";
 const PAGE_URL = `${SITE_URL}/${SLUG}`;
@@ -99,11 +99,7 @@ export default async function ExternalDebtPage() {
           answer: "Most of Pakistan's external debt is denominated in US Dollars or other foreign currencies. When the Rupee depreciates, the same foreign-currency debt costs more in Rupee terms to service, increasing the effective domestic burden even if the Dollar amount owed hasn't changed.",
         },
       ]}
-      relatedLinks={relatedSeoLinks(SLUG, [
-        "foreign-exchange-reserves-pakistan",
-        "current-account-deficit-pakistan",
-        "pakistan-fiscal-deficit",
-      ])}
+      relatedLinks={getRelatedLinks(SLUG)}
     />
   );
 }

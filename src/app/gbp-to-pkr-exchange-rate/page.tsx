@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { getFxRates } from "@/lib/data/fxRates";
 import SeoPageLayout from "@/components/seo/SeoPageLayout";
-import { SITE_URL, SITE_NAME, relatedSeoLinks } from "@/lib/seoConfig";
+import { SITE_URL, SITE_NAME, getRelatedLinks } from "@/lib/seoConfig";
 
 const SLUG = "gbp-to-pkr-exchange-rate";
 const PAGE_URL = `${SITE_URL}/${SLUG}`;
@@ -68,11 +68,7 @@ export default async function GbpPkrPage() {
           answer: "GBP/PKR is a combination of two separate exchange rates — USD/PKR and GBP/USD. If the Pound strengthens or weakens against the Dollar globally, GBP/PKR will move even on a day when the Rupee itself is flat against the Dollar.",
         },
       ]}
-      relatedLinks={relatedSeoLinks(SLUG, [
-        "usd-pkr-exchange-rate",
-        "eur-to-pkr-exchange-rate",
-        "pakistan-remittances",
-      ])}
+      relatedLinks={getRelatedLinks(SLUG)}
     />
   );
 }

@@ -1,7 +1,7 @@
 ﻿import type { Metadata } from "next";
 import { getSbpIndicator } from "@/lib/data/sbpServer";
 import SeoPageLayout from "@/components/seo/SeoPageLayout";
-import { SITE_URL, SITE_NAME, relatedSeoLinks } from "@/lib/seoConfig";
+import { SITE_URL, SITE_NAME, getRelatedLinks } from "@/lib/seoConfig";
 
 const SLUG = "fdi-in-pakistan";
 const PAGE_URL = `${SITE_URL}/${SLUG}`;
@@ -62,11 +62,7 @@ export default async function FdiPage() {
           answer: "Pakistan's FDI as a share of GDP has lagged regional peers, commonly attributed to policy inconsistency, security perceptions, energy shortages, and a challenging ease-of-doing-business environment relative to competitors like Bangladesh and Vietnam.",
         },
       ]}
-      relatedLinks={relatedSeoLinks(SLUG, [
-        "pakistan-trade-deficit",
-        "current-account-deficit-pakistan",
-        "pakistan-economic-indicators",
-      ])}
+      relatedLinks={getRelatedLinks(SLUG)}
     />
   );
 }

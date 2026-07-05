@@ -1,7 +1,7 @@
 ﻿import type { Metadata } from "next";
 import { getSbpIndicator } from "@/lib/data/sbpServer";
 import SeoPageLayout from "@/components/seo/SeoPageLayout";
-import { SITE_URL, SITE_NAME, relatedSeoLinks } from "@/lib/seoConfig";
+import { SITE_URL, SITE_NAME, getRelatedLinks } from "@/lib/seoConfig";
 
 const SLUG = "foreign-exchange-reserves-pakistan";
 const PAGE_URL = `${SITE_URL}/${SLUG}`;
@@ -73,12 +73,7 @@ export default async function ForeignReservesPage() {
           answer: "Low reserves limit the central bank's ability to defend the currency and pay for essential imports, often forcing import restrictions, sharp currency depreciation, and an IMF program to secure bridge financing.",
         },
       ]}
-      relatedLinks={relatedSeoLinks(SLUG, [
-        "usd-pkr-exchange-rate",
-        "current-account-deficit-pakistan",
-        "pakistan-external-debt",
-        "pakistan-economic-indicators",
-      ])}
+      relatedLinks={getRelatedLinks(SLUG)}
     />
   );
 }

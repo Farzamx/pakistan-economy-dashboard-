@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { getFxRates } from "@/lib/data/fxRates";
 import SeoPageLayout from "@/components/seo/SeoPageLayout";
-import { SITE_URL, SITE_NAME, relatedSeoLinks } from "@/lib/seoConfig";
+import { SITE_URL, SITE_NAME, getRelatedLinks } from "@/lib/seoConfig";
 
 const SLUG = "eur-to-pkr-exchange-rate";
 const PAGE_URL = `${SITE_URL}/${SLUG}`;
@@ -68,11 +68,7 @@ export default async function EurPkrPage() {
           answer: "EUR/PKR reflects two moving exchange rates layered together — USD/PKR and EUR/USD — so it can show more day-to-day movement than USD/PKR alone, which only reflects the Rupee's own moves against a single currency.",
         },
       ]}
-      relatedLinks={relatedSeoLinks(SLUG, [
-        "usd-pkr-exchange-rate",
-        "gbp-to-pkr-exchange-rate",
-        "pakistan-trade-deficit",
-      ])}
+      relatedLinks={getRelatedLinks(SLUG)}
     />
   );
 }

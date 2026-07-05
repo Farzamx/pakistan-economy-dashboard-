@@ -1,7 +1,7 @@
 ﻿import type { Metadata } from "next";
 import { getSbpIndicator } from "@/lib/data/sbpServer";
 import SeoPageLayout from "@/components/seo/SeoPageLayout";
-import { SITE_URL, SITE_NAME, relatedSeoLinks } from "@/lib/seoConfig";
+import { SITE_URL, SITE_NAME, getRelatedLinks } from "@/lib/seoConfig";
 
 const SLUG = "inflation-rate-pakistan";
 const PAGE_URL = `${SITE_URL}/${SLUG}`;
@@ -62,14 +62,7 @@ export default async function InflationRatePage() {
           answer: "Pakistan's CPI inflation data is released monthly by the Pakistan Bureau of Statistics, typically within the first few days of the following month.",
         },
       ]}
-      relatedLinks={relatedSeoLinks(SLUG, [
-        "weekly-inflation-pakistan",
-        "pakistan-food-inflation",
-        "spi-index-pakistan",
-        "pakistan-interest-rate",
-        "pakistan-economic-indicators",
-        "gdp-growth-pakistan",
-      ])}
+      relatedLinks={getRelatedLinks(SLUG)}
     />
   );
 }

@@ -1,7 +1,7 @@
 ﻿import type { Metadata } from "next";
 import { getSbpIndicator } from "@/lib/data/sbpServer";
 import SeoPageLayout from "@/components/seo/SeoPageLayout";
-import { SITE_URL, SITE_NAME, relatedSeoLinks } from "@/lib/seoConfig";
+import { SITE_URL, SITE_NAME, getRelatedLinks } from "@/lib/seoConfig";
 
 const SLUG = "pakistan-interest-rate";
 const PAGE_URL = `${SITE_URL}/${SLUG}`;
@@ -62,11 +62,7 @@ export default async function InterestRatePage() {
           answer: "Pakistan's policy rate peaked at 22% in 2023 during a severe inflation and balance-of-payments crisis, one of the highest levels in the country's history.",
         },
       ]}
-      relatedLinks={relatedSeoLinks(SLUG, [
-        "inflation-rate-pakistan",
-        "pakistan-bond-yields",
-        "pakistan-economic-indicators",
-      ])}
+      relatedLinks={getRelatedLinks(SLUG)}
     />
   );
 }

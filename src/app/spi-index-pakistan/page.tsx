@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { getSpiHistory } from "@/lib/data/spi";
 import SeoPageLayout from "@/components/seo/SeoPageLayout";
 import type { TrendPoint } from "@/components/charts/TrendLineChart";
-import { SITE_URL, SITE_NAME, relatedSeoLinks } from "@/lib/seoConfig";
+import { SITE_URL, SITE_NAME, getRelatedLinks } from "@/lib/seoConfig";
 
 const SLUG = "spi-index-pakistan";
 const PAGE_URL = `${SITE_URL}/${SLUG}`;
@@ -95,10 +95,7 @@ export default async function SpiIndexPage() {
           answer: "Every figure on this page comes directly from the Pakistan Bureau of Statistics' official weekly SPI report (an Excel file PBS publishes every Friday), discovered automatically via PBS's own public WordPress API — nothing here is estimated or scraped from page text.",
         },
       ]}
-      relatedLinks={[
-        { href: "/weekly-inflation-pakistan", label: "Weekly Inflation Rate (SPI %)" },
-        ...relatedSeoLinks(SLUG, ["inflation-rate-pakistan", "pakistan-food-inflation"]),
-      ]}
+      relatedLinks={getRelatedLinks(SLUG)}
     />
   );
 }

@@ -2,7 +2,7 @@
 import { getFxRates } from "@/lib/data/fxRates";
 import { getSbpIndicator } from "@/lib/data/sbpServer";
 import SeoPageLayout from "@/components/seo/SeoPageLayout";
-import { SITE_URL, SITE_NAME, relatedSeoLinks } from "@/lib/seoConfig";
+import { SITE_URL, SITE_NAME, getRelatedLinks } from "@/lib/seoConfig";
 
 const SLUG = "usd-pkr-exchange-rate";
 const PAGE_URL = `${SITE_URL}/${SLUG}`;
@@ -72,12 +72,7 @@ export default async function UsdPkrPage() {
           answer: "SBP officially operates a market-determined exchange rate regime, though it can intervene periodically to smooth excessive volatility using its foreign reserves.",
         },
       ]}
-      relatedLinks={relatedSeoLinks(SLUG, [
-        "foreign-exchange-reserves-pakistan",
-        "current-account-deficit-pakistan",
-        "sar-to-pkr-exchange-rate",
-        "pakistan-economic-indicators",
-      ])}
+      relatedLinks={getRelatedLinks(SLUG)}
     />
   );
 }

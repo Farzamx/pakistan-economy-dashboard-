@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { getGdpKpi } from "@/lib/data/worldBank";
 import { getQuarterlyGdpKpi } from "@/lib/data/quarterlyGdp";
 import SeoPageLayout from "@/components/seo/SeoPageLayout";
-import { SITE_URL, SITE_NAME, relatedSeoLinks } from "@/lib/seoConfig";
+import { SITE_URL, SITE_NAME, getRelatedLinks } from "@/lib/seoConfig";
 
 const SLUG = "gdp-growth-pakistan";
 const PAGE_URL = `${SITE_URL}/${SLUG}`;
@@ -77,11 +77,7 @@ export default async function GdpGrowthPage() {
           answer: "Annual GDP growth covers a full fiscal year (July-June in Pakistan). Quarterly GDP growth (YoY) compares a single quarter to the same quarter a year earlier, revealing momentum faster than the annual figure.",
         },
       ]}
-      relatedLinks={relatedSeoLinks(SLUG, [
-        "pakistan-economic-indicators",
-        "inflation-rate-pakistan",
-        "pakistan-economic-dashboard",
-      ])}
+      relatedLinks={getRelatedLinks(SLUG)}
     />
   );
 }
