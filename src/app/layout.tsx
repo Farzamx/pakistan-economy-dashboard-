@@ -23,7 +23,7 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const SITE_URL = "https://pakeconintel.com";
+const SITE_URL = "https://www.pakeconintel.com";
 const SITE_NAME = "Pakistan Economic Intelligence Center";
 // Shorter description used for social sharing (OG/Twitter) — distinct from
 // the longer search-engine meta description below.

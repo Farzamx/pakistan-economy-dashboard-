@@ -37,7 +37,7 @@ export function renderConfirmationPage(opts: ConfirmationPageOptions): string {
   const buttons: string[] = [];
   if (opts.buttonLabel && opts.buttonHref) buttons.push(`<a href="${opts.buttonHref}" class="btn btn-primary">${escapeHtml(opts.buttonLabel)}</a>`);
   if (opts.secondaryButtonLabel && opts.secondaryButtonHref) buttons.push(`<a href="${opts.secondaryButtonHref}" class="btn btn-secondary">${escapeHtml(opts.secondaryButtonLabel)}</a>`);
-  if (buttons.length === 0) buttons.push(`<a href="https://pakeconintel.com/economic-calendar" class="link">Back to the Economic Calendar</a>`);
+  if (buttons.length === 0) buttons.push(`<a href="https://www.pakeconintel.com/economic-calendar" class="link">Back to the Economic Calendar</a>`);
 
   return `<!DOCTYPE html>
 <html lang="en">

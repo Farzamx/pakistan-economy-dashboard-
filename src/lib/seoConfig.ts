@@ -2,7 +2,7 @@
 // Kept separate from layout.tsx's own copies to avoid touching the existing
 // root layout — these are additive, standalone pages.
 
-export const SITE_URL = "https://pakeconintel.com";
+export const SITE_URL = "https://www.pakeconintel.com";
 export const SITE_NAME = "Pakistan Economic Intelligence Center";
 
 export interface SeoPageMeta {
