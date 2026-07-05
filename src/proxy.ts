@@ -15,13 +15,14 @@ export function proxy(request: NextRequest) {
 export const config = {
   matcher: [
     /*
-     * Run on every request except static assets and image optimization —
-     * Proxy still needs to run on the rest, including API/data routes, per
-     * Next's own guidance not to rely on a matcher alone for protecting
-     * Server Functions on excluded paths (none of ours touch protected
-     * data, but this keeps the session-refresh behavior consistent
-     * everywhere it matters).
+     * Run on every request EXCEPT:
+     *   - Static assets and image optimisation (_next/static, _next/image, favicon, images)
+     *   - API routes (/api/...) — server-to-server callers (Resend webhooks,
+     *     cron workers, etc.) have no session cookies, so auth.getUser() would
+     *     always return null and add a pointless Supabase round-trip. Protected
+     *     data is gated at the RPC layer via NOTIFICATION_WORKER_SECRET, not
+     *     via session cookies, so skipping the proxy on API routes loses nothing.
      */
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
+    "/((?!api/|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
   ],
 };
