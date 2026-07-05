@@ -340,3 +340,14 @@ body {
   background: var(--neon-blue);
   animation: assistant-dot-pulse 1.2s ease-in-out infinite;
 }
+
+/* Urdu text — Nastaliq font, right-aligned, RTL direction.
+   Applied to any element carrying the .urdu-text class so the surrounding
+   LTR layout is unchanged (RTL text only, not RTL layout). */
+.urdu-text {
+  font-family: var(--font-nastaliq), 'Noto Nastaliq Urdu', serif;
+  direction: rtl;
+  text-align: right;
+  line-height: 2;
+  font-size: 1.05em;
+}

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Noto_Nastaliq_Urdu } from "next/font/google";
 import Script from "next/script";
 import { GoogleAnalytics } from "@next/third-parties/google";
 import "./globals.css";
@@ -9,6 +9,7 @@ import MotionProvider from "@/components/MotionProvider";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { AuthProvider } from "@/components/AuthProvider";
 import { PreferencesProvider } from "@/components/PreferencesProvider";
+import { LanguageProvider } from "@/components/LanguageProvider";
 import MobileNav from "@/components/MobileNav";
 import MobileStickyCta from "@/components/MobileStickyCta";
 import BfcacheGuard from "@/components/BfcacheGuard";
@@ -16,6 +17,15 @@ import BfcacheGuard from "@/components/BfcacheGuard";
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
+});
+
+// Loaded at build time so the font is available immediately when Urdu is
+// selected — no layout shift or flash of unstyled Urdu text.
+const notoNastaliqUrdu = Noto_Nastaliq_Urdu({
+  variable: "--font-nastaliq",
+  subsets: ["arabic"],
+  weight: ["400", "700"],
+  display: "swap",
 });
 
 const geistMono = Geist_Mono({
@@ -105,7 +115,7 @@ export default function RootLayout({
       data-theme="dark"
       data-scroll-behavior="smooth"
       suppressHydrationWarning
-      className={`${geistSans.variable} ${geistMono.variable} h-full scroll-smooth antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${notoNastaliqUrdu.variable} h-full scroll-smooth antialiased`}
     >
       <head>
         {/* Runs before hydration — reads localStorage and sets data-theme on
@@ -125,6 +135,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col">
         <BfcacheGuard />
         <ThemeProvider>
+          <LanguageProvider>
           <AuthProvider>
             <PreferencesProvider>
               <GalaxyBackground />
@@ -136,6 +147,7 @@ export default function RootLayout({
               </MotionProvider>
             </PreferencesProvider>
           </AuthProvider>
+          </LanguageProvider>
         </ThemeProvider>
       </body>
       {GA_MEASUREMENT_ID && <GoogleAnalytics gaId={GA_MEASUREMENT_ID} />}

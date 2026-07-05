@@ -11,6 +11,7 @@ import SidebarAuthCard from "@/components/SidebarAuthCard";
 import GlobalSearch from "@/components/GlobalSearch";
 import { useAuth } from "@/components/AuthProvider";
 import { isProtectedPath } from "@/lib/protectedSections";
+import { useLanguage } from "@/components/LanguageProvider";
 
 // `id` is the homepage section's element id. The rendered href is always
 // "/#id" (absolute, never a bare "#id") — these are anchors on `/` only,
@@ -18,21 +19,22 @@ import { isProtectedPath } from "@/lib/protectedSections";
 // /comparisons (or any future non-homepage route) that silently produces
 // "/comparisons#id", which matches nothing and leaves the current page
 // mounted instead of navigating away — the bug this fixes.
-const NAV_ITEMS = [
-  { label: "Overview",        id: "overview" },
-  { label: "Risk Intel",      id: "risk-intelligence" },
-  { label: "GDP",             id: "gdp" },
-  { label: "Inflation",       id: "inflation" },
-  { label: "Prices",          id: "price-indices" },
-  { label: "Monetary Policy", id: "monetary-policy" },
-  { label: "Global Markets",  id: "global-markets" },
-  { label: "Real Economy",    id: "real-economy" },
-  { label: "Reserves",        id: "reserves" },
-  { label: "Live FX",         id: "live-fx" },
-  { label: "Exchange Rate",   id: "exchange-rate" },
-  { label: "Remittances",     id: "remittances" },
-  { label: "External Sector", id: "external-sector" },
-  { label: "News",            id: "news-intelligence" },
+// Maps section id → translation key under nav.*
+const NAV_ITEMS: { key: string; id: string }[] = [
+  { key: "overview",        id: "overview" },
+  { key: "riskIntel",       id: "risk-intelligence" },
+  { key: "gdp",             id: "gdp" },
+  { key: "inflation",       id: "inflation" },
+  { key: "prices",          id: "price-indices" },
+  { key: "monetaryPolicy",  id: "monetary-policy" },
+  { key: "globalMarkets",   id: "global-markets" },
+  { key: "realEconomy",     id: "real-economy" },
+  { key: "reserves",        id: "reserves" },
+  { key: "liveFX",          id: "live-fx" },
+  { key: "exchangeRate",    id: "exchange-rate" },
+  { key: "remittances",     id: "remittances" },
+  { key: "externalSector",  id: "external-sector" },
+  { key: "news",            id: "news-intelligence" },
 ];
 
 // Sidebar Information Architecture grouping — purely a rendering split of
@@ -58,6 +60,7 @@ export default function Sidebar() {
   const pathname = usePathname();
   const isHomepage = pathname === "/";
   const { user, loading } = useAuth();
+  const { t } = useLanguage();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [psxOpen, setPsxOpen] = useState(false);
   const [activeId, setActiveId] = useState<string>(NAV_ITEMS[0].id);
@@ -186,7 +189,7 @@ export default function Sidebar() {
             gradient/glow treatment as its three siblings here, just its
             own color (cyan) so all four stay visually distinct. */}
         <nav className="flex flex-col gap-1">
-          <SidebarSectionLabel>Premium Tools</SidebarSectionLabel>
+          <SidebarSectionLabel>{t("nav.premiumTools")}</SidebarSectionLabel>
 
           {/* Comparisons — purple, same Link + usePathname pattern as the
               other premium routes (real routes, not same-page anchors, so
@@ -219,7 +222,7 @@ export default function Sidebar() {
                 <path d="M3 16l4.5-7L12 13l4-6L21 8" />
                 <path d="M19 4l2 2-2 2M5 16l-2 2 2 2" />
               </svg>
-              <span>Comparisons</span>
+              <span>{t("nav.comparisons")}</span>
               <span
                 aria-hidden="true"
                 className="ml-auto text-xs text-neon-blue opacity-80 transition-opacity group-hover:opacity-100"
@@ -258,7 +261,7 @@ export default function Sidebar() {
                 <rect x="10" y="6" width="4" height="14" />
                 <rect x="17" y="13" width="4" height="7" />
               </svg>
-              <span>Budget Tracker</span>
+              <span>{t("nav.budgetTracker")}</span>
             </Link>
           </motion.div>
 
@@ -290,7 +293,7 @@ export default function Sidebar() {
                 <path d="M3 3v18h18" />
                 <path d="M7 14l3-3 3 2 4-5" />
               </svg>
-              <span>Provincial Budget</span>
+              <span>{t("nav.provincialBudget")}</span>
             </Link>
           </motion.div>
 
@@ -325,7 +328,7 @@ export default function Sidebar() {
                 <rect x="3" y="5" width="18" height="16" rx="2" />
                 <path d="M3 10h18M8 3v4M16 3v4" />
               </svg>
-              <span>Economic Calendar</span>
+              <span>{t("nav.economicCalendar")}</span>
             </Link>
           </motion.div>
 
@@ -362,7 +365,39 @@ export default function Sidebar() {
                 <rect x="2" y="5" width="20" height="14" rx="2" />
                 <path d="M2 8l10 6 10-6" />
               </svg>
-              <span>Free Subscription</span>
+              <span>{t("nav.freeSubscription")}</span>
+            </Link>
+          </motion.div>
+
+          {/* Economic Workshop — amber/gold, educational premium section */}
+          <motion.div
+            whileHover={{ x: 4, scale: 1.015 }}
+            transition={{ type: "spring", stiffness: 400, damping: 25 }}
+            className="mb-1"
+          >
+            <Link
+              href="/workshop"
+              aria-current={pathname?.startsWith("/workshop") ? "true" : undefined}
+              className={`group relative flex items-center gap-2.5 overflow-hidden rounded-lg border px-4 py-2.5 text-sm font-semibold transition-all duration-300 ${
+                pathname?.startsWith("/workshop")
+                  ? "border-amber-400/40 bg-amber-400/15 text-white shadow-[0_0_16px_rgba(251,191,36,0.35)] light:text-slate-900"
+                  : "border-amber-400/20 bg-amber-400/5 text-white/85 hover:border-amber-400/35 hover:bg-amber-400/10 hover:text-white light:text-slate-700 light:hover:text-slate-900"
+              }`}
+            >
+              <svg
+                className="h-4 w-4 shrink-0 text-amber-400 transition-transform duration-300 group-hover:scale-110"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.75"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M12 2L2 7l10 5 10-5-10-5z" />
+                <path d="M2 17l10 5 10-5" />
+                <path d="M2 12l10 5 10-5" />
+              </svg>
+              <span>{t("nav.workshop")}</span>
             </Link>
           </motion.div>
 
@@ -381,14 +416,11 @@ export default function Sidebar() {
             PSX
           </motion.button>
 
-          <SidebarSectionLabel>Main</SidebarSectionLabel>
+          <SidebarSectionLabel>{t("nav.main")}</SidebarSectionLabel>
           {MAIN_NAV_ITEMS.map((item) => {
-            // Only ever "active" while actually on the homepage — otherwise
-            // "Overview" (the scroll-spy's unchanged default) would show as
-            // active while on an unrelated route like /comparisons.
             const isActive = isHomepage && activeId === item.id;
             return (
-              <motion.div key={item.label} whileHover={{ x: 4 }} transition={{ type: "spring", stiffness: 400, damping: 25 }}>
+              <motion.div key={item.key} whileHover={{ x: 4 }} transition={{ type: "spring", stiffness: 400, damping: 25 }}>
                 <Link
                   href={`/#${item.id}`}
                   aria-current={isActive ? "true" : undefined}
@@ -398,18 +430,18 @@ export default function Sidebar() {
                       : "border-transparent text-white/50 light:text-slate-500 hover:bg-white/5 light:hover:bg-slate-100 hover:text-white light:hover:text-slate-900"
                   }`}
                 >
-                  {item.label}
+                  {t(`nav.${item.key}`)}
                 </Link>
               </motion.div>
             );
           })}
 
-          <SidebarSectionLabel>Analytics</SidebarSectionLabel>
+          <SidebarSectionLabel>{t("nav.analytics")}</SidebarSectionLabel>
 
           {ANALYTICS_NAV_ITEMS.map((item) => {
             const isActive = isHomepage && activeId === item.id;
             return (
-              <motion.div key={item.label} whileHover={{ x: 4 }} transition={{ type: "spring", stiffness: 400, damping: 25 }}>
+              <motion.div key={item.key} whileHover={{ x: 4 }} transition={{ type: "spring", stiffness: 400, damping: 25 }}>
                 <Link
                   href={`/#${item.id}`}
                   aria-current={isActive ? "true" : undefined}
@@ -419,7 +451,7 @@ export default function Sidebar() {
                       : "border-transparent text-white/50 light:text-slate-500 hover:bg-white/5 light:hover:bg-slate-100 hover:text-white light:hover:text-slate-900"
                   }`}
                 >
-                  {item.label}
+                  {t(`nav.${item.key}`)}
                 </Link>
               </motion.div>
             );
@@ -437,7 +469,7 @@ export default function Sidebar() {
               <circle cx="8" cy="8" r="2.5" />
               <path d="M8 1v1.5M8 13.5V15M1 8h1.5M13.5 8H15M3.05 3.05l1.06 1.06M11.89 11.89l1.06 1.06M3.05 12.95l1.06-1.06M11.89 4.11l1.06-1.06" strokeLinecap="round" />
             </svg>
-            Settings
+            {t("nav.settings")}
           </motion.button>
         </nav>
 

@@ -5,6 +5,8 @@ import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { useTheme, type Theme } from "@/components/ThemeProvider";
 import { useAuth } from "@/components/AuthProvider";
+import { useLanguage } from "@/components/LanguageProvider";
+import { LANGUAGE_OPTIONS, type Language } from "@/lib/i18n/types";
 
 interface Props {
   open: boolean;
@@ -77,9 +79,48 @@ function ThemeOption({
   );
 }
 
+function LanguageOption({
+  value,
+  current,
+  onSelect,
+}: {
+  value: Language;
+  current: Language;
+  onSelect: (l: Language) => void;
+}) {
+  const option = LANGUAGE_OPTIONS.find((o) => o.code === value)!;
+  const selected = value === current;
+  return (
+    <button
+      type="button"
+      onClick={() => onSelect(value)}
+      className={`flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left transition-all ${
+        selected
+          ? "border-sky-500/40 bg-sky-500/10"
+          : "border-[var(--border)] bg-[var(--surface-raised)] hover:bg-[var(--surface-hover)]"
+      }`}
+    >
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium text-[var(--text-primary)]">{option.nativeLabel}</p>
+        {option.nativeLabel !== option.label && (
+          <p className="text-xs text-[var(--text-muted)]">{option.label}</p>
+        )}
+      </div>
+      <div
+        className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 ${
+          selected ? "border-sky-500" : "border-[var(--border)]"
+        }`}
+      >
+        {selected && <div className="h-2 w-2 rounded-full bg-sky-500" />}
+      </div>
+    </button>
+  );
+}
+
 export default function SettingsModal({ open, onClose }: Props) {
   const { theme, setTheme } = useTheme();
   const { user } = useAuth();
+  const { language, setLanguage, t } = useLanguage();
 
   // Close on Escape key
   useEffect(() => {
@@ -134,7 +175,7 @@ export default function SettingsModal({ open, onClose }: Props) {
               {/* Header */}
               <div className="flex items-center justify-between">
                 <h2 className="text-lg font-semibold text-[var(--text-primary)]">
-                  Settings
+                  {t("settings.title")}
                 </h2>
                 <button
                   type="button"
@@ -151,30 +192,47 @@ export default function SettingsModal({ open, onClose }: Props) {
               {/* Section — Appearance */}
               <div className="mt-6">
                 <p className="mb-3 text-[10px] font-semibold uppercase tracking-widest text-[var(--text-muted)]">
-                  Appearance
+                  {t("settings.appearance")}
                 </p>
                 <div className="space-y-2">
                   <ThemeOption
                     value="dark"
                     current={theme}
                     onSelect={setTheme}
-                    label="Dark Mode"
-                    description="Deep space background — easier on the eyes in low light"
+                    label={t("settings.darkMode")}
+                    description={t("settings.darkModeDesc")}
                   />
                   <ThemeOption
                     value="light"
                     current={theme}
                     onSelect={setTheme}
-                    label="Light Mode"
-                    description="Clean white cards on a soft gray background — Bloomberg style"
+                    label={t("settings.lightMode")}
+                    description={t("settings.lightModeDesc")}
                   />
+                </div>
+              </div>
+
+              {/* Section — Language */}
+              <div className="mt-6">
+                <p className="mb-3 text-[10px] font-semibold uppercase tracking-widest text-[var(--text-muted)]">
+                  {t("settings.language")}
+                </p>
+                <div className="space-y-2">
+                  {LANGUAGE_OPTIONS.map((opt) => (
+                    <LanguageOption
+                      key={opt.code}
+                      value={opt.code}
+                      current={language}
+                      onSelect={setLanguage}
+                    />
+                  ))}
                 </div>
               </div>
 
               {/* Section — Dashboard Preferences */}
               <div className="mt-6">
                 <p className="mb-3 text-[10px] font-semibold uppercase tracking-widest text-[var(--text-muted)]">
-                  Dashboard Preferences
+                  {t("settings.preferences")}
                 </p>
                 {user ? (
                   <Link
@@ -182,16 +240,16 @@ export default function SettingsModal({ open, onClose }: Props) {
                     onClick={onClose}
                     className="flex items-center justify-between rounded-xl border border-neon-blue/20 bg-neon-blue/5 px-4 py-3 text-sm font-medium text-neon-blue transition-colors hover:bg-neon-blue/10"
                   >
-                    Pin indicators, hide widgets, set your default province
+                    {t("settings.preferencesLink")}
                     <span aria-hidden="true">→</span>
                   </Link>
                 ) : (
                   <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-raised)] px-4 py-3">
                     <p className="text-xs text-[var(--text-muted)]">
                       <Link href="/login?redirect=/settings/preferences" onClick={onClose} className="text-neon-blue hover:underline">
-                        Log in
+                        {t("settings.loginLink")}
                       </Link>{" "}
-                      to pin indicators, hide widgets, and set a default province.
+                      {t("settings.preferencesGuest")}
                     </p>
                   </div>
                 )}
@@ -200,15 +258,14 @@ export default function SettingsModal({ open, onClose }: Props) {
               {/* Section — About */}
               <div className="mt-6">
                 <p className="mb-3 text-[10px] font-semibold uppercase tracking-widest text-[var(--text-muted)]">
-                  About
+                  {t("settings.about")}
                 </p>
                 <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-raised)] px-4 py-3 space-y-1">
                   <p className="text-xs text-[var(--text-secondary)]">
-                    Pakistan Economic Intelligence Center
+                    {t("settings.aboutName")}
                   </p>
                   <p className="text-xs text-[var(--text-muted)]">
-                    Live data from SBP EasyData, World Bank, FRED, and GNews.
-                    AI analysis via OpenRouter.
+                    {t("settings.aboutSources")}
                   </p>
                 </div>
               </div>
@@ -220,7 +277,7 @@ export default function SettingsModal({ open, onClose }: Props) {
                   onClick={onClose}
                   className="rounded-lg bg-sky-500 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-sky-600"
                 >
-                  Done
+                  {t("settings.done")}
                 </button>
               </div>
             </motion.div>

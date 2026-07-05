@@ -17,14 +17,16 @@ import GuestAccessModal from "@/components/GuestAccessModal";
 import LogoutConfirmModal from "@/components/LogoutConfirmModal";
 import GlobalSearch from "@/components/GlobalSearch";
 import { useAuth } from "@/components/AuthProvider";
+import { useLanguage } from "@/components/LanguageProvider";
 import { signOutAction } from "@/app/auth/actions";
 import { isProtectedPath } from "@/lib/protectedSections";
 
 interface DrawerLink {
-  label: string;
+  /** Translation key under nav.* — used for display label */
+  navKey: string;
   href: string;
-  /** "purple" | "blue" | "emerald" | "cyan" | "rose" match the desktop Sidebar's premium sections exactly; omitted for the plain items (Rankings, News, Indicators, Overview). */
-  premium?: "purple" | "blue" | "emerald" | "cyan" | "rose";
+  /** "purple" | "blue" | "emerald" | "cyan" | "rose" | "amber" match the desktop Sidebar's premium sections exactly; omitted for the plain items (Rankings, News, Indicators, Overview). */
+  premium?: "purple" | "blue" | "emerald" | "cyan" | "rose" | "amber";
   icon: React.ReactNode;
 }
 
@@ -54,11 +56,16 @@ const PREMIUM_STYLES: Record<string, { active: string; inactive: string; iconCol
     inactive: "border-rose-400/20 bg-rose-400/5 text-white/85",
     iconColor: "text-rose-400",
   },
+  amber: {
+    active: "border-amber-400/40 bg-amber-400/15 text-white shadow-[0_0_16px_rgba(251,191,36,0.35)]",
+    inactive: "border-amber-400/20 bg-amber-400/5 text-white/85",
+    iconColor: "text-amber-400",
+  },
 };
 
 const LINKS: DrawerLink[] = [
   {
-    label: "Overview",
+    navKey: "overview",
     href: "/#overview",
     icon: (
       <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
@@ -70,7 +77,7 @@ const LINKS: DrawerLink[] = [
     ),
   },
   {
-    label: "Comparisons",
+    navKey: "comparisons",
     href: "/comparisons",
     premium: "purple",
     icon: (
@@ -81,7 +88,7 @@ const LINKS: DrawerLink[] = [
     ),
   },
   {
-    label: "Budget Tracker",
+    navKey: "budgetTracker",
     href: "/budget",
     premium: "blue",
     icon: (
@@ -93,7 +100,7 @@ const LINKS: DrawerLink[] = [
     ),
   },
   {
-    label: "Provincial Budget",
+    navKey: "provincialBudget",
     href: "/provincial-budget",
     premium: "emerald",
     icon: (
@@ -104,7 +111,7 @@ const LINKS: DrawerLink[] = [
     ),
   },
   {
-    label: "Economic Calendar",
+    navKey: "economicCalendar",
     href: "/economic-calendar",
     premium: "cyan",
     icon: (
@@ -115,7 +122,7 @@ const LINKS: DrawerLink[] = [
     ),
   },
   {
-    label: "Free Subscription",
+    navKey: "freeSubscription",
     href: "/economic-calendar#email-alerts",
     premium: "rose",
     icon: (
@@ -126,7 +133,19 @@ const LINKS: DrawerLink[] = [
     ),
   },
   {
-    label: "Rankings",
+    navKey: "workshop",
+    href: "/workshop",
+    premium: "amber",
+    icon: (
+      <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 2L2 7l10 5 10-5-10-5z" />
+        <path d="M2 17l10 5 10-5" />
+        <path d="M2 12l10 5 10-5" />
+      </svg>
+    ),
+  },
+  {
+    navKey: "rankings",
     href: "/provincial-budget/rankings",
     icon: (
       <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
@@ -135,7 +154,7 @@ const LINKS: DrawerLink[] = [
     ),
   },
   {
-    label: "News",
+    navKey: "news",
     href: "/#news-intelligence",
     icon: (
       <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
@@ -145,7 +164,7 @@ const LINKS: DrawerLink[] = [
     ),
   },
   {
-    label: "Indicators",
+    navKey: "indicators",
     href: "/pakistan-economic-indicators",
     icon: (
       <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
@@ -162,6 +181,7 @@ export default function MobileNav() {
   const pathname = usePathname();
   const router = useRouter();
   const { user, loading, signOut } = useAuth();
+  const { t } = useLanguage();
   const [open, setOpen] = useState(false);
   const [guestModalOpen, setGuestModalOpen] = useState(false);
   const [guestDestination, setGuestDestination] = useState("/");
@@ -383,7 +403,7 @@ export default function MobileNav() {
                   const style = link.premium ? PREMIUM_STYLES[link.premium] : null;
                   return (
                     <Link
-                      key={link.label}
+                      key={link.navKey}
                       href={link.href}
                       onClick={(e) => handleLinkClick(e, link.href)}
                       aria-current={isActive ? "true" : undefined}
@@ -396,7 +416,7 @@ export default function MobileNav() {
                       }`}
                     >
                       <span className={style ? style.iconColor : "text-white/40 light:text-slate-400"}>{link.icon}</span>
-                      <span className={link.premium ? "font-semibold" : undefined}>{link.label}</span>
+                      <span className={link.premium ? "font-semibold" : undefined}>{t(`nav.${link.navKey}`)}</span>
                     </Link>
                   );
                 })}
@@ -412,7 +432,7 @@ export default function MobileNav() {
                         onClick={requestSignOut}
                         className="w-full rounded-lg border border-[var(--border)] px-4 py-2.5 text-sm font-medium text-white/80 light:text-slate-700 transition-colors hover:bg-white/5 light:hover:bg-slate-100"
                       >
-                        Log Out
+                        {t("common.logout")}
                       </button>
                     </>
                   ) : (
@@ -422,14 +442,14 @@ export default function MobileNav() {
                         onClick={() => setOpen(false)}
                         className="flex-1 rounded-lg border border-[var(--border)] px-4 py-2.5 text-center text-sm font-medium text-white/80 light:text-slate-700 transition-colors hover:bg-white/5 light:hover:bg-slate-100"
                       >
-                        Log In
+                        {t("common.login")}
                       </Link>
                       <Link
                         href="/signup"
                         onClick={() => setOpen(false)}
                         className="flex-1 rounded-lg bg-neon-blue px-4 py-2.5 text-center text-sm font-semibold text-[#05060f] transition-opacity hover:opacity-90"
                       >
-                        Sign Up
+                        {t("common.signup")}
                       </Link>
                     </div>
                   )
