@@ -1,4 +1,5 @@
 import DashboardSection from "@/components/DashboardSection";
+import { T } from "@/components/T";
 import DataSourcesModal from "@/components/DataSourcesModal";
 import FloatingAssistant from "@/components/assistant/FloatingAssistant";
 import type { DashboardSnapshot } from "@/lib/assistantContext";
@@ -517,7 +518,7 @@ export default async function Home() {
         <PinnedIndicatorsRow />
 
         <p className="mt-6 text-xs text-white/35 light:text-slate-400" suppressHydrationWarning>
-          <span className="font-medium text-white/50 light:text-slate-600">Market Status</span> &middot; Updated {marketStatusUpdatedAt} PKT
+          <span className="font-medium text-white/50 light:text-slate-600"><T tKey="dashboard.marketStatus" /></span> &middot; <T tKey="dashboard.marketStatusUpdated" /> {marketStatusUpdatedAt} PKT
         </p>
         <MarketTicker items={tickerItems} />
 
@@ -542,7 +543,7 @@ export default async function Home() {
         ) : (
           <div className="glass-card mt-8 p-6 text-center sm:p-8">
             <p className="text-sm text-white/50 light:text-slate-500">
-              Weekly intelligence snapshot not yet available. The Economic Health Score and Risk Intelligence update every Monday — check back after the next scheduled run.
+              <T tKey="dashboard.healthScoreFallback" />
             </p>
           </div>
         )}
@@ -635,11 +636,10 @@ export default async function Home() {
 
         <ViewportFadeIn>
           <h2 className="mt-12 text-xl font-semibold text-white light:text-slate-900 sm:text-2xl">
-            Monetary &amp; External Indicators
+            <T tKey="dashboard.monetaryExternal" />
           </h2>
           <p className="mt-2 max-w-2xl text-sm text-white/60 light:text-slate-500">
-            Policy rate, money market yields, core and wholesale prices, and the
-            external accounts that shape Pakistan&apos;s financing needs.
+            <T tKey="dashboard.monetaryExternalDesc" />
           </p>
         </ViewportFadeIn>
         <KpiGrid items={secondaryKpis} />
@@ -649,11 +649,10 @@ export default async function Home() {
         <div id="global-markets" className="scroll-mt-8">
           <ViewportFadeIn>
             <h2 className="mt-12 text-xl font-semibold text-white light:text-slate-900 sm:text-2xl">
-              Global Markets
+              <T tKey="dashboard.globalMarkets" />
             </h2>
             <p className="mt-2 max-w-2xl text-sm text-white/60 light:text-slate-500">
-              Precious metals, energy benchmarks, and US rates that drive
-              global risk appetite and Pakistan&apos;s import bill.
+              <T tKey="dashboard.globalMarketsDesc" />
             </p>
           </ViewportFadeIn>
           <KpiGrid items={globalMarketsKpis} />
@@ -664,11 +663,10 @@ export default async function Home() {
         <div id="real-economy" className="scroll-mt-8">
           <ViewportFadeIn>
             <h2 className="mt-12 text-xl font-semibold text-white light:text-slate-900 sm:text-2xl">
-              Real Economy &amp; Fiscal
+              <T tKey="dashboard.realEconomyFiscal" />
             </h2>
             <p className="mt-2 max-w-2xl text-sm text-white/60 light:text-slate-500">
-              Trade flows, investment, competitiveness, industrial output, credit
-              expansion, and Pakistan&apos;s fiscal position.
+              <T tKey="dashboard.realEconomyFiscalDesc" />
             </p>
           </ViewportFadeIn>
           <KpiGrid items={realEconomyKpis} />
@@ -689,7 +687,7 @@ export default async function Home() {
               { label: "SBP Reserves", value: `$${sbpB.toFixed(1)}B` },
               { label: "Commercial Banks", value: `$${bankB.toFixed(1)}B` },
               { label: "Total Reserves", value: `$${totalB.toFixed(1)}B` },
-              { label: "Import Cover", value: `${importCoverMonths.toFixed(1)} months · ${obsDate}` },
+              { label: "Import Cover", value: `${importCoverMonths.toFixed(1)} months · ${obsDate}` }, // stat labels are translated by KpiCard via InfoTooltip termKey lookup
             ];
           })()}
         >
@@ -711,12 +709,10 @@ export default async function Home() {
         <div id="live-fx" className="scroll-mt-8">
           <ViewportFadeIn>
             <h2 className="mt-12 text-xl font-semibold text-white light:text-slate-900 sm:text-2xl">
-              Live Exchange Rates
+              <T tKey="dashboard.liveExchangeRates" />
             </h2>
             <p className="mt-2 max-w-2xl text-sm text-white/60 light:text-slate-500">
-              Current interbank market rates for PKR cross-pairs, refreshed
-              intraday from Yahoo Finance market data. Distinct from the SBP monthly-average series
-              shown in the historical trend below.
+              <T tKey="dashboard.liveExchangeRatesDesc" />
             </p>
           </ViewportFadeIn>
           <KpiGrid items={liveFxKpis} />
@@ -732,7 +728,7 @@ export default async function Home() {
           statsCaption={
             <div className="flex items-center gap-1.5">
               <span className="text-[10px] font-semibold uppercase tracking-wider text-white/35 light:text-slate-500">
-                Previous Close / Monthly Average
+                <T tKey="dashboard.previousClose" />
               </span>
               <InfoTooltip termKey="Previous Close / Monthly Average" size="xs" />
             </div>

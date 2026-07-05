@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import type { CalendarKpis } from "@/lib/economicCalendar/economicCalendarData";
+import { useLanguage } from "@/components/LanguageProvider";
 
 interface KpiTileProps {
   label: string;
@@ -22,14 +23,15 @@ function KpiTile({ label, value, accent }: KpiTileProps) {
 
 /** Summary counts — extracted out of the Hero so they sit below the actual economic information (Recent Releases, Current Week, Remaining This Month) rather than above it. Useful context, not the first thing an investor needs to see. */
 export default function CalendarStatistics({ kpis }: { kpis: CalendarKpis }) {
+  const { t } = useLanguage();
   return (
     <section className="flex flex-col gap-3">
-      <h2 className="text-sm font-semibold uppercase tracking-wide text-white/40 light:text-slate-500">Calendar Statistics</h2>
+      <h2 className="text-sm font-semibold uppercase tracking-wide text-white/40 light:text-slate-500">{t("calendar.statistics")}</h2>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <KpiTile label="Upcoming Events" value={kpis.upcomingCount} accent="#38bdf8" />
-        <KpiTile label="High Impact Events" value={kpis.highImpactCount} accent="#fb7185" />
-        <KpiTile label="Current Week" value={kpis.thisWeekCount} accent="#34d399" />
-        <KpiTile label="Remaining This Month" value={kpis.remainingThisMonthCount} accent="#a855f7" />
+        <KpiTile label={t("calendar.upcomingEvents")} value={kpis.upcomingCount} accent="#38bdf8" />
+        <KpiTile label={t("calendar.highImpactEvents")} value={kpis.highImpactCount} accent="#fb7185" />
+        <KpiTile label={t("calendar.currentWeek")} value={kpis.thisWeekCount} accent="#34d399" />
+        <KpiTile label={t("calendar.remainingThisMonth")} value={kpis.remainingThisMonthCount} accent="#a855f7" />
       </div>
     </section>
   );

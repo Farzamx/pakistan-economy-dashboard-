@@ -11,6 +11,7 @@ import { COMPARISON_METRICS, rankProvincesByFieldForYear, getAllRankableFiscalYe
 import type { ProvincialTrendField } from "@/lib/provincial/provincialBudgetData";
 import Dropdown from "@/components/Dropdown";
 import ProvincialRankingBarChart from "./ProvincialRankingBarChart";
+import { useLanguage } from "@/components/LanguageProvider";
 
 /** Phase 6 explicitly lists 8 of the 11 tracked metrics as rankable — Current Expenditure and Infrastructure are left out of the default set (still reachable via the Growth Explorer's Ranking view) since the audit found their basis varies most across provinces, making a flat cross-province rank more likely to mislead. */
 const RANKING_METRICS: ProvincialComparisonMetric[] = COMPARISON_METRICS.filter(
@@ -24,6 +25,7 @@ interface ProvincialRankingDashboardProps {
 }
 
 export default function ProvincialRankingDashboard({ lockedMetric, title }: ProvincialRankingDashboardProps) {
+  const { t } = useLanguage();
   const rankableYears = useMemo(() => getAllRankableFiscalYears(), []);
   const [metric, setMetric] = useState<ProvincialTrendField>(lockedMetric ?? "totalOutlay");
   const [year, setYear] = useState<string>(rankableYears[rankableYears.length - 1]);
@@ -34,9 +36,9 @@ export default function ProvincialRankingDashboard({ lockedMetric, title }: Prov
   return (
     <section className="glass-card flex flex-col gap-5 rounded-2xl p-6 sm:p-8">
       <div>
-        <h2 className="text-xl font-semibold text-white light:text-slate-900">{title ?? "Province Ranking Dashboard"}</h2>
+        <h2 className="text-xl font-semibold text-white light:text-slate-900">{title ?? t("provincial.rankingDashboard")}</h2>
         <p className="mt-1 text-sm text-white/60 light:text-slate-500">
-          Rank Punjab, Sindh, Khyber Pakhtunkhwa, and Balochistan against each other for any fiscal year both provinces have a verified record for.
+          {t("provincial.rankingDesc")}
         </p>
       </div>
 
@@ -59,8 +61,8 @@ export default function ProvincialRankingDashboard({ lockedMetric, title }: Prov
           </div>
         )}
         <div className="flex items-center gap-2 text-xs font-medium text-[var(--text-muted)]">
-          Fiscal Year
-          <Dropdown label="Fiscal Year" value={year} onChange={setYear} options={rankableYears.map((y) => ({ value: y, label: `FY${y}` }))} />
+          {t("provincial.fiscalYear")}
+          <Dropdown label={t("provincial.fiscalYear")} value={year} onChange={setYear} options={rankableYears.map((y) => ({ value: y, label: `FY${y}` }))} />
         </div>
       </div>
 

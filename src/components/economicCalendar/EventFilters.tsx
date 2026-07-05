@@ -4,6 +4,7 @@ import Dropdown from "@/components/Dropdown";
 import { EVENT_CATEGORY_LIST, IMPORTANCE_LEVEL_LIST } from "@/lib/economicCalendar/economicCalendarRegistry";
 import type { EventFilterState } from "@/lib/economicCalendar/economicCalendarData";
 import type { EventCategory, ImportanceLevel } from "@/lib/economicCalendar/economicCalendarTypes";
+import { useLanguage } from "@/components/LanguageProvider";
 
 interface Props {
   filters: EventFilterState;
@@ -12,15 +13,20 @@ interface Props {
   onSearchChange: (query: string) => void;
 }
 
-const CATEGORY_OPTIONS = [{ value: "All", label: "All Categories" }, ...EVENT_CATEGORY_LIST.map((c) => ({ value: c, label: c }))];
-const IMPORTANCE_OPTIONS = [{ value: "All", label: "All Importance" }, ...IMPORTANCE_LEVEL_LIST.map((i) => ({ value: i, label: `${i} Impact` }))];
-const DATE_RANGE_OPTIONS = [
-  { value: "All", label: "All Upcoming" },
-  { value: "Current Week", label: "Current Week" },
-  { value: "Remaining This Month", label: "Remaining This Month" },
-];
-
 export default function EventFilters({ filters, onChange, searchQuery, onSearchChange }: Props) {
+  const { t } = useLanguage();
+  const impactLabel: Record<ImportanceLevel, string> = {
+    High: t("calendar.highImpact"),
+    Medium: t("calendar.mediumImpact"),
+    Low: t("calendar.lowImpact"),
+  };
+  const CATEGORY_OPTIONS = [{ value: "All", label: t("calendar.allCategories") }, ...EVENT_CATEGORY_LIST.map((c) => ({ value: c, label: c }))];
+  const IMPORTANCE_OPTIONS = [{ value: "All", label: t("calendar.allImportance") }, ...IMPORTANCE_LEVEL_LIST.map((i) => ({ value: i as string, label: impactLabel[i as ImportanceLevel] ?? `${i} Impact` }))];
+  const DATE_RANGE_OPTIONS = [
+    { value: "All", label: t("calendar.allUpcoming") },
+    { value: "Current Week", label: t("calendar.currentWeek") },
+    { value: "Remaining This Month", label: t("calendar.remainingThisMonth") },
+  ];
   return (
     <section className="glass-card flex flex-col gap-3 rounded-2xl p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
       <div className="relative flex-1 sm:max-w-xs">
@@ -38,26 +44,26 @@ export default function EventFilters({ filters, onChange, searchQuery, onSearchC
           type="search"
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
-          placeholder="Search events or categories..."
+          placeholder={t("calendar.searchPlaceholder")}
           className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] py-2 pl-8 pr-3 text-xs text-[var(--text-primary)] outline-none transition-colors placeholder:text-[var(--text-muted)] focus:border-neon-blue/40"
         />
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
         <Dropdown
-          label="Category"
+          label={t("common.category")}
           value={filters.category}
           onChange={(value) => onChange({ ...filters, category: value as EventCategory | "All" })}
           options={CATEGORY_OPTIONS}
         />
         <Dropdown
-          label="Importance"
+          label={t("calendar.importance")}
           value={filters.importance}
           onChange={(value) => onChange({ ...filters, importance: value as ImportanceLevel | "All" })}
           options={IMPORTANCE_OPTIONS}
         />
         <Dropdown
-          label="Date Range"
+          label={t("calendar.dateRange")}
           value={filters.dateRange}
           onChange={(value) => onChange({ ...filters, dateRange: value as EventFilterState["dateRange"] })}
           options={DATE_RANGE_OPTIONS}

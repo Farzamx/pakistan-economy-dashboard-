@@ -4,6 +4,7 @@ import { useId, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import Link from "next/link";
 import { useSafeReducedMotion } from "@/hooks/useSafeReducedMotion";
+import { useLanguage } from "@/components/LanguageProvider";
 
 type Phase = "form" | "success" | "already-verified";
 type FormStatus = "idle" | "submitting" | "error";
@@ -57,6 +58,7 @@ const phaseTransition = { duration: 0.35, ease: "easeOut" as const };
  * showing the email input while a resend is in flight.
  */
 export default function SubscriptionForm() {
+  const { t } = useLanguage();
   const [email, setEmail] = useState("");
   const [phase, setPhase] = useState<Phase>("form");
   const [formStatus, setFormStatus] = useState<FormStatus>("idle");
@@ -152,23 +154,23 @@ export default function SubscriptionForm() {
           </div>
           {phase === "already-verified" ? (
             <>
-              <h3 className="text-lg font-semibold text-white">You&apos;re already subscribed</h3>
+              <h3 className="text-lg font-semibold text-white">{t("subscription.alreadySubscribed")}</h3>
               <p className="text-sm leading-relaxed text-slate-400">
-                <span className="font-medium text-slate-200">{submittedEmail}</span> is already receiving official Pakistan economic releases. No further action is needed.
+                <span className="font-medium text-slate-200">{submittedEmail}</span> {t("subscription.alreadySubscribedDesc")}
               </p>
             </>
           ) : (
             <>
-              <h3 className="text-lg font-semibold text-white">Check your inbox</h3>
+              <h3 className="text-lg font-semibold text-white">{t("subscription.checkInbox")}</h3>
               <p className="text-sm leading-relaxed text-slate-400">
-                We&apos;ve sent a verification email to <span className="font-medium text-slate-200">{submittedEmail}</span>. Verify your address to begin receiving official Pakistan Economic Calendar alerts.
+                {t("subscription.checkInboxDesc")} <span className="font-medium text-slate-200">{submittedEmail}</span>.
               </p>
             </>
           )}
 
           {phase === "success" && (
             <div aria-live="polite">
-              {resendStatus === "sent" && <p className="text-sm text-emerald-400">Verification email resent — please check your inbox.</p>}
+              {resendStatus === "sent" && <p className="text-sm text-emerald-400">{t("subscription.resent")}</p>}
               {resendStatus === "error" && resendError && (
                 <p role="alert" className="text-sm text-rose-400">
                   {resendError.message}
@@ -187,7 +189,7 @@ export default function SubscriptionForm() {
                 aria-busy={resendStatus === "sending"}
                 className="rounded-xl border border-white/10 bg-white/[0.03] px-5 py-3 text-sm font-medium text-slate-300 transition-colors hover:bg-white/[0.06] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {resendStatus === "sending" ? "Resending…" : "Resend verification email"}
+                {resendStatus === "sending" ? t("subscription.resending") : t("subscription.resendBtn")}
               </button>
             )}
             <button
@@ -195,7 +197,7 @@ export default function SubscriptionForm() {
               onClick={handleChangeEmail}
               className="rounded-xl border border-white/10 bg-white/[0.03] px-5 py-3 text-sm font-medium text-slate-300 transition-colors hover:bg-white/[0.06] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400"
             >
-              Change email
+              {t("subscription.changeEmail")}
             </button>
           </div>
         </motion.div>
@@ -203,7 +205,7 @@ export default function SubscriptionForm() {
         <motion.div key="form" {...animProps} className="flex flex-col gap-3">
           <form onSubmit={handleSubmit} className="flex flex-col gap-3" noValidate>
             <label htmlFor={inputId} className="sr-only">
-              Email address
+              {t("auth.email")}
             </label>
             <div className="flex flex-col gap-3 sm:flex-row">
               <input
@@ -212,7 +214,7 @@ export default function SubscriptionForm() {
                 inputMode="email"
                 autoComplete="email"
                 required
-                placeholder="you@email.com"
+                placeholder={t("subscription.emailPlaceholder")}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 aria-invalid={formStatus === "error"}
@@ -227,7 +229,7 @@ export default function SubscriptionForm() {
                 className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-sky-400 px-7 py-3.5 text-base font-semibold text-slate-950 transition-colors hover:bg-sky-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400 disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.98]"
               >
                 {formStatus === "submitting" && <span className="h-4 w-4 animate-spin rounded-full border-2 border-slate-950/30 border-t-slate-950" aria-hidden="true" />}
-                {formStatus === "submitting" ? "Subscribing…" : "Subscribe"}
+                {formStatus === "submitting" ? t("subscription.subscribing") : t("subscription.subscribe")}
               </button>
             </div>
             {formStatus === "error" && formError && (
@@ -239,13 +241,13 @@ export default function SubscriptionForm() {
           </form>
 
           <p className="text-center text-[11px] leading-relaxed text-slate-500">
-            We never sell your email · One-click unsubscribe anytime · Official economic releases only
+            {t("subscription.privacyNote")}
           </p>
 
           <p className="text-center text-xs text-slate-500">
-            Already subscribed?{" "}
+            {t("subscription.managePrompt")}{" "}
             <Link href="/subscriptions/manage" className="font-medium text-sky-400 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400 rounded">
-              Manage your subscription
+              {t("subscription.manageLink")}
             </Link>
           </p>
         </motion.div>

@@ -4,6 +4,7 @@ import { SITE_NAME, SITE_URL, SEO_PAGES } from "@/lib/seoConfig";
 import { COMPARISONS, SECTOR_COMPOSITION } from "@/lib/comparisons/comparisonRegistry";
 import { BUDGET_CATEGORIES, BUDGET_EXTRA_SEO_SLUGS } from "@/lib/budget/budgetRegistry";
 import { PROVINCIAL_SEO_SLUGS } from "@/lib/provincial/provincialBudgetRegistry";
+import { T } from "@/components/T";
 
 export const metadata: Metadata = {
   title: `Site Map | ${SITE_NAME}`,
@@ -65,7 +66,7 @@ const PROVINCIAL_LABELS: Record<string, string> = {
   "own-revenue-rankings": "Own Revenue Rankings",
 };
 
-function Section({ title, links }: { title: string; links: { href: string; label: string }[] }) {
+function Section({ title, links }: { title: React.ReactNode; links: { href: string; label: string }[] }) {
   return (
     <section className="glass-card p-6 sm:p-8">
       <h2 className="mb-4 text-base font-semibold text-white/70 light:text-slate-700 uppercase tracking-widest text-xs">
@@ -131,22 +132,22 @@ export default function SiteMapPage() {
         </div>
 
         <h1 className="mt-8 text-3xl font-bold tracking-tight text-white light:text-slate-900 sm:text-4xl">
-          Site Map
+          <T tKey="sitemap.title" />
         </h1>
         <p className="mt-3 text-sm text-white/60 light:text-slate-500">
-          Every public page on Pakistan Economic Intelligence, organised by category.
+          <T tKey="sitemap.description" />
         </p>
 
         <div className="mt-8 space-y-6">
           <Section
-            title="Economic Indicators"
+            title={<T tKey="sitemap.indicators" />}
             links={SEO_PAGES.map((p) => ({ href: `/${p.slug}`, label: p.label }))}
           />
-          <Section title="Comparisons &amp; Charts" links={comparisonLinks} />
-          <Section title="Federal Budget" links={budgetLinks} />
-          <Section title="Provincial Budgets" links={provincialLinks} />
+          <Section title={<T tKey="sitemap.comparisons" />} links={comparisonLinks} />
+          <Section title={<T tKey="sitemap.budget" />} links={budgetLinks} />
+          <Section title={<T tKey="sitemap.provincial" />} links={provincialLinks} />
           <Section
-            title="Main Dashboard"
+            title={<T tKey="sitemap.mainDashboard" />}
             links={[
               { href: "/", label: "Live Economic Dashboard" },
               { href: "/economic-calendar", label: "Economic Calendar" },
@@ -159,7 +160,7 @@ export default function SiteMapPage() {
             href="/"
             className="inline-flex items-center gap-2 rounded-lg bg-neon-blue/10 border border-neon-blue/20 px-5 py-2.5 text-sm font-medium text-neon-blue transition-colors hover:bg-neon-blue/20"
           >
-            Open the full live dashboard →
+            <T tKey="sitemap.openDashboard" />
           </Link>
         </div>
       </div>

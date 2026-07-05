@@ -13,13 +13,8 @@ import {
   type ConfidenceLevel,
 } from "@/lib/riskModels";
 import type { AiRiskExplanation, AiRiskIntelligence } from "@/lib/data/aiRiskIntelligence";
+import { useLanguage } from "@/components/LanguageProvider";
 
-const CATEGORY_LABEL: Record<RiskCategory, string> = {
-  Low:      "Low Risk",
-  Elevated: "Elevated Risk",
-  High:     "High Risk",
-  Severe:   "Severe Risk",
-};
 
 const CONFIDENCE_DOT: Record<ConfidenceLevel, string> = {
   High:     "text-emerald-400",
@@ -33,15 +28,16 @@ interface ConfidencePanelProps {
 }
 
 function ConfidencePanel({ confidence, modelScore }: ConfidencePanelProps) {
+  const { t } = useLanguage();
   return (
     <div className="rounded-lg border border-white/5 light:border-slate-200 bg-white/[0.02] light:bg-slate-50 px-4 py-3">
       <p className="mb-2.5 text-[9px] font-semibold uppercase tracking-widest text-white/25 light:text-slate-400">
-        Transparency
+        {t("riskIntel.transparency")}
       </p>
       <div className="grid grid-cols-3 gap-x-4 gap-y-0.5">
         <div>
           <p className="text-[9px] font-medium uppercase tracking-wider text-white/25 light:text-slate-400">
-            Last Calculated
+            {t("riskIntel.lastCalculated")}
           </p>
           <p className="mt-1 text-[10px] leading-tight text-white/50 light:text-slate-500">
             {confidence.calculatedAt.split(" · ")[0]}
@@ -53,19 +49,19 @@ function ConfidencePanel({ confidence, modelScore }: ConfidencePanelProps) {
 
         <div>
           <p className="text-[9px] font-medium uppercase tracking-wider text-white/25 light:text-slate-400">
-            Indicators
+            {t("riskIntel.indicators")}
           </p>
           <p className="mt-1 text-[10px] leading-tight text-white/50 light:text-slate-500">
             {confidence.currentCount}/{confidence.totalCount} Current
           </p>
           <p className="text-[10px] leading-tight text-white/35 light:text-slate-400">
-            {confidence.staleCount === 0 ? "None stale" : `${confidence.staleCount} Stale`}
+            {confidence.staleCount === 0 ? t("riskIntel.noneStale") : `${confidence.staleCount} ${t("riskIntel.stale")}`}
           </p>
         </div>
 
         <div>
           <p className="text-[9px] font-medium uppercase tracking-wider text-white/25 light:text-slate-400">
-            Confidence
+            {t("riskIntel.confidence")}
           </p>
           <p className="mt-1 font-mono text-[10px] leading-tight text-white/50 light:text-slate-500">
             {confidence.score}%
@@ -77,7 +73,7 @@ function ConfidencePanel({ confidence, modelScore }: ConfidencePanelProps) {
       </div>
 
       <p className="mt-2.5 text-[9px] text-white/20 light:text-slate-400">
-        Model score {modelScore}/100 · −10 pts per fallback indicator · −5 pts per stale indicator · AI explanation via OpenRouter
+        {t("riskIntel.modelScore")} {modelScore}/100 · −5 pts per stale indicator · AI explanation via OpenRouter
       </p>
     </div>
   );
@@ -85,6 +81,7 @@ function ConfidencePanel({ confidence, modelScore }: ConfidencePanelProps) {
 
 interface RiskCardProps {
   title: string;
+  termKey: string;
   result: RiskModelResult;
   ai: AiRiskExplanation;
   confidence: DataConfidence;
@@ -92,9 +89,16 @@ interface RiskCardProps {
   delay?: number;
 }
 
-function RiskCard({ title, result, ai, confidence, modelDisplayName, delay = 0 }: RiskCardProps) {
+function RiskCard({ title, termKey, result, ai, confidence, modelDisplayName, delay = 0 }: RiskCardProps) {
   const gaugeColor = getRiskGaugeColor(result.riskCategory);
   const categoryClass = getRiskCategoryClass(result.riskCategory);
+  const { t } = useLanguage();
+  const categoryLabel: Record<RiskCategory, string> = {
+    Low: t("riskIntel.lowRisk"),
+    Elevated: t("riskIntel.elevatedRisk"),
+    High: t("riskIntel.highRisk"),
+    Severe: t("riskIntel.severeRisk"),
+  };
 
   return (
     <motion.div
@@ -116,9 +120,9 @@ function RiskCard({ title, result, ai, confidence, modelDisplayName, delay = 0 }
             <span className="text-xs font-semibold uppercase tracking-[0.3em] text-white/40 light:text-slate-500">
               {title}
             </span>
-            <InfoTooltip termKey={title} size="xs" />
+            <InfoTooltip termKey={termKey} size="xs" />
             <span className="rounded-full border border-neon-purple/20 bg-neon-purple/10 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-widest text-neon-purple/70">
-              QUANT
+              {t("riskIntel.quant")}
             </span>
             <span className="rounded-full border border-neon-blue/20 bg-neon-blue/10 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-widest text-neon-blue/70">
               {modelDisplayName}
@@ -130,7 +134,7 @@ function RiskCard({ title, result, ai, confidence, modelDisplayName, delay = 0 }
             <span
               className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium ${categoryClass}`}
             >
-              {CATEGORY_LABEL[result.riskCategory]}
+              {categoryLabel[result.riskCategory]}
             </span>
           </div>
 
@@ -144,7 +148,7 @@ function RiskCard({ title, result, ai, confidence, modelDisplayName, delay = 0 }
         {/* Key risks column */}
         <div>
           <p className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-rose-400/60 light:text-rose-600">
-            Key Risks
+            {t("riskIntel.keyRisks")}
           </p>
           <ul className="space-y-1.5">
             {ai.keyRisks.map((risk, i) => (
@@ -168,7 +172,7 @@ function RiskCard({ title, result, ai, confidence, modelDisplayName, delay = 0 }
         {/* Strengths column */}
         <div>
           <p className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-emerald-400/60 light:text-emerald-700">
-            Strengths
+            {t("riskIntel.strengths")}
           </p>
           <ul className="space-y-1.5">
             {ai.keyPositives.map((pos, i) => (
@@ -217,37 +221,38 @@ export default function RiskIntelligenceSection({
   computedAt,
   nextUpdateAt,
 }: RiskIntelligenceSectionProps) {
+  const { t } = useLanguage();
   return (
     <div id="risk-intelligence" className="scroll-mt-8">
       <ViewportFadeIn>
         <h2 className="mt-12 text-xl font-semibold text-white light:text-slate-900 sm:text-2xl">
-          Risk Intelligence
+          {t("riskIntel.title")}
         </h2>
         <p className="mt-2 max-w-2xl text-sm text-white/60 light:text-slate-500">
-          Deterministic probability estimates derived from economic indicators.
-          AI explains the model output — it never generates the probabilities.
+          {t("riskIntel.description")}
         </p>
         {/* Weekly Intelligence Engine — updated every Monday, not on page load */}
         <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1">
           <span className="text-[10px] text-white/25 light:text-slate-400">
-            <span className="text-white/35 light:text-slate-500">Last computed</span>{" "}
+            <span className="text-white/35 light:text-slate-500">{t("riskIntel.lastComputed")}</span>{" "}
             {computedAt}
           </span>
           <span className="text-[10px] text-white/15 light:text-slate-300">·</span>
           <span className="text-[10px] text-white/25 light:text-slate-400">
-            <span className="text-white/35 light:text-slate-500">Next update</span>{" "}
+            <span className="text-white/35 light:text-slate-500">{t("riskIntel.nextUpdate")}</span>{" "}
             {nextUpdateAt}
           </span>
           <span className="text-[10px] text-white/15 light:text-slate-300">·</span>
           <span className="text-[10px] text-white/25 light:text-slate-400">
-            Updated weekly, every Monday — not recalculated on page load
+            {t("riskIntel.updateNote")}
           </span>
         </div>
       </ViewportFadeIn>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
         <RiskCard
-          title="Recession Probability"
+          title={t("riskIntel.recession")}
+          termKey="Recession Probability"
           result={recession}
           ai={ai.recession}
           confidence={recessionConfidence}
@@ -255,7 +260,8 @@ export default function RiskIntelligenceSection({
           delay={0}
         />
         <RiskCard
-          title="Sovereign Default Probability"
+          title={t("riskIntel.default")}
+          termKey="Sovereign Default Probability"
           result={defaultRisk}
           ai={ai.default}
           confidence={defaultConfidence}

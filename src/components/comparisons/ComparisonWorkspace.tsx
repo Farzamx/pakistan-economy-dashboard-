@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import ComparisonCard from "./ComparisonCard";
 import ComparisonControls from "./ComparisonControls";
+import { useLanguage } from "@/components/LanguageProvider";
 import CustomComparisonBuilder from "./CustomComparisonBuilder";
 import PerformanceCalculator from "./PerformanceCalculator";
 import SectorCompositionChart, { type SectorCompositionPoint } from "./SectorCompositionChart";
@@ -26,6 +27,7 @@ export default function ComparisonWorkspace({
   sectorComposition,
   performanceTimeline,
 }: ComparisonWorkspaceProps) {
+  const { t } = useLanguage();
   const [timeRange, setTimeRange] = useState<TimeRange>("5y");
   const [chartMode, setChartMode] = useState<ChartMode>("raw");
 
@@ -51,10 +53,8 @@ export default function ComparisonWorkspace({
     <div className="flex flex-col gap-10">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-[var(--text-primary)]">Comparisons</h1>
-          <p className="mt-1 max-w-2xl text-sm text-[var(--text-muted)]">
-            Live, source-attributed comparisons between Pakistan&apos;s key indicators, international peers, and investable assets — every chart traces back to a real data source, with no estimated or fabricated values.
-          </p>
+          <h1 className="text-2xl font-semibold text-[var(--text-primary)]">{t("comparisons.title")}</h1>
+          <p className="mt-1 max-w-2xl text-sm text-[var(--text-muted)]">{t("comparisons.description")}</p>
         </div>
         <ComparisonControls
           timeRange={timeRange}
@@ -104,12 +104,12 @@ export default function ComparisonWorkspace({
                     <p className="mt-1 text-xs text-[var(--text-muted)]">{SECTOR_COMPOSITION.description}</p>
                   </div>
                   <SectorCompositionChart data={sectorWindowed} />
-                  <p className="text-[11px] text-[var(--text-muted)]">Source: World Bank</p>
+                  <p className="text-[11px] text-[var(--text-muted)]">{t("comparisons.worldBankSource")}</p>
                 </div>
               )}
               {isSectorGroup && !sectorWindowed && (
                 <div className="glass-card flex h-[320px] items-center justify-center rounded-2xl p-5 text-center sm:col-span-2">
-                  <p className="text-sm text-[var(--text-muted)]">GDP sector composition data is unavailable right now.</p>
+                  <p className="text-sm text-[var(--text-muted)]">{t("comparisons.gdpUnavailable")}</p>
                 </div>
               )}
             </div>

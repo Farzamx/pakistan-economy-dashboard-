@@ -3,6 +3,7 @@
 import { Fragment, useState } from "react";
 import Link from "next/link";
 import type { BudgetToolkitContent } from "@/data/budgetEducation";
+import { useLanguage } from "@/components/LanguageProvider";
 
 interface BudgetToolkitProps {
   toolkit: BudgetToolkitContent;
@@ -30,6 +31,7 @@ function renderWithLinks(paragraph: string): React.ReactNode[] {
 }
 
 export default function BudgetToolkit({ toolkit }: BudgetToolkitProps) {
+  const { t } = useLanguage();
   const [urduVisible, setUrduVisible] = useState(false);
   const englishParagraphs = toolkit.content.split("\n\n");
   const urduParagraphs = toolkit.contentRomanUrdu.split("\n\n");
@@ -44,7 +46,7 @@ export default function BudgetToolkit({ toolkit }: BudgetToolkitProps) {
           aria-pressed={urduVisible}
           className="shrink-0 rounded-lg border border-[var(--border)] px-3 py-1.5 text-xs font-medium text-[var(--text-muted)] transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]"
         >
-          {urduVisible ? "Hide Roman Urdu" : "Roman Urdu"}
+          {urduVisible ? t("budget.hideRomanUrdu") : t("budget.romanUrdu")}
         </button>
       </div>
 
@@ -58,7 +60,7 @@ export default function BudgetToolkit({ toolkit }: BudgetToolkitProps) {
 
       {urduVisible && (
         <div className="mt-2 space-y-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface)] p-4">
-          <p className="text-xs font-semibold uppercase tracking-widest text-[var(--text-muted)]">Roman Urdu</p>
+          <p className="text-xs font-semibold uppercase tracking-widest text-[var(--text-muted)]">{t("budget.romanUrdu")}</p>
           {urduParagraphs.map((p, i) => (
             <p key={i} className="text-sm leading-relaxed text-white/70 light:text-slate-600">
               {p}

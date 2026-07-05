@@ -22,6 +22,7 @@ import {
 } from "@/lib/budget/budgetData";
 import { BUDGET_CATEGORIES, BUDGET_FIELD_META } from "@/lib/budget/budgetRegistry";
 import type { BudgetYearRecord } from "@/data/budgetHistorical";
+import { useLanguage } from "@/components/LanguageProvider";
 
 interface BudgetWorkspaceProps {
   years: BudgetYearRecord[];
@@ -29,18 +30,18 @@ interface BudgetWorkspaceProps {
 
 const DEFAULT_FIELDS: BudgetTrendField[] = ["debtServicing", "defence", "federalPsdp", "subsidies"];
 
-const KPI_FIELDS: { label: string; field: BudgetTrendField }[] = [
-  { label: "Total Outlay", field: "totalOutlay" },
-  { label: "FBR Revenue", field: "fbrTaxRevenue" },
-  { label: "PSDP", field: "federalPsdp" },
-  { label: "Defence", field: "defence" },
-  { label: "Debt Servicing", field: "debtServicing" },
-  { label: "Subsidies", field: "subsidies" },
-  { label: "Provincial Transfers", field: "provincialTransfer" },
-  { label: "Fiscal Deficit", field: "fiscalDeficitRs" },
-];
-
 export default function BudgetWorkspace({ years }: BudgetWorkspaceProps) {
+  const { t } = useLanguage();
+  const KPI_FIELDS: { label: string; field: BudgetTrendField }[] = [
+    { label: t("budget.totalOutlay"), field: "totalOutlay" },
+    { label: t("budget.fbr"), field: "fbrTaxRevenue" },
+    { label: t("budget.psdp"), field: "federalPsdp" },
+    { label: t("budget.defence"), field: "defence" },
+    { label: t("budget.debtServicing"), field: "debtServicing" },
+    { label: t("budget.subsidies"), field: "subsidies" },
+    { label: t("budget.provincialTransfers"), field: "provincialTransfer" },
+    { label: t("budget.fiscalDeficit"), field: "fiscalDeficitRs" },
+  ];
   const latestYear = years[years.length - 1].fiscalYear;
   const [selectedFy, setSelectedFy] = useState(latestYear);
   const [fields, setFields] = useState<BudgetTrendField[]>(DEFAULT_FIELDS);
@@ -66,15 +67,13 @@ export default function BudgetWorkspace({ years }: BudgetWorkspaceProps) {
     <div className="flex flex-col gap-10">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-[var(--text-primary)]">Budget Workshop</h1>
-          <p className="mt-1 max-w-2xl text-sm text-[var(--text-muted)]">
-            Pakistan&apos;s federal budget, FY2010-11 through FY2026-27 — every figure traced back to that year&apos;s own official Budget in Brief, Budget Estimate only. No revised or actual figures are mixed in.
-          </p>
+          <h1 className="text-2xl font-semibold text-[var(--text-primary)]">{t("budget.workshopTitle")}</h1>
+          <p className="mt-1 max-w-2xl text-sm text-[var(--text-muted)]">{t("budget.workshopDesc")}</p>
         </div>
         <div className="flex items-center gap-2 text-xs font-medium text-[var(--text-muted)]">
-          Fiscal Year
+          {t("budget.fiscalYear")}
           <Dropdown
-            label="Fiscal Year"
+            label={t("budget.fiscalYear")}
             value={selectedFy}
             onChange={setSelectedFy}
             options={years.map((y) => ({ value: y.fiscalYear, label: `FY${y.fiscalYear}` }))}
@@ -94,9 +93,9 @@ export default function BudgetWorkspace({ years }: BudgetWorkspaceProps) {
 
         {debtShare && (
           <BudgetKpiCard
-            title="Debt Servicing Share of Budget"
+            title={t("budget.debtShare")}
             valueRs={debtShare.valueRs}
-            subValue={`${debtShare.pctOfBudget.toFixed(0)}% of Budget`}
+            subValue={`${debtShare.pctOfBudget.toFixed(0)}% ${t("budget.shareOfBudget")}`}
             yoy={getYoyChange("debtServicing", yearRecord, prevYearRecord)}
             fiscalYear={yearRecord.fiscalYear}
             highlight
@@ -107,13 +106,13 @@ export default function BudgetWorkspace({ years }: BudgetWorkspaceProps) {
       {/* Allocation breakdown */}
       <section className="flex flex-col gap-4">
         <div>
-          <h2 className="text-lg font-semibold text-[var(--text-primary)]">Where Does the Budget Go?</h2>
-          <p className="text-sm text-[var(--text-muted)]">FY{yearRecord.fiscalYear} federal budget allocation by major category.</p>
+          <h2 className="text-lg font-semibold text-[var(--text-primary)]">{t("budget.whereDoesGo")}</h2>
+          <p className="text-sm text-[var(--text-muted)]">{t("budget.whereDoesGoDesc")}</p>
         </div>
         <div className="glass-card rounded-2xl p-5">
           <BudgetAllocationChart data={allocation} />
           <p className="mt-2 text-[11px] text-[var(--text-muted)]">
-            Source: Budget in Brief, FY{yearRecord.fiscalYear} Budget Estimate. &quot;Other&quot; includes Grants &amp; Transfers, Running of Civil Government, Net Lending, and contingency provisions.
+            {t("budget.sourceNote")}
           </p>
         </div>
       </section>
@@ -126,8 +125,8 @@ export default function BudgetWorkspace({ years }: BudgetWorkspaceProps) {
       {/* Historical Explorer */}
       <section className="flex flex-col gap-4">
         <div>
-          <h2 className="text-lg font-semibold text-[var(--text-primary)]">Historical Budget Explorer</h2>
-          <p className="text-sm text-[var(--text-muted)]">FY2010-11 through FY2026-27 — select one or more categories to compare.</p>
+          <h2 className="text-lg font-semibold text-[var(--text-primary)]">{t("budget.historicalExplorer")}</h2>
+          <p className="text-sm text-[var(--text-muted)]">{t("budget.historicalExplorerDesc")}</p>
         </div>
         <BudgetControls selectedFields={fields} onFieldsChange={setFields} mode={mode} onModeChange={setMode} />
         <div className="glass-card flex flex-col gap-4 rounded-2xl p-5">
@@ -137,32 +136,32 @@ export default function BudgetWorkspace({ years }: BudgetWorkspaceProps) {
               onClick={() => trendChartRef.current && exportChartAsPng(trendChartRef.current, "pakistan-budget-trend.png", "#05060f")}
               className="rounded-lg border border-[var(--border)] px-2.5 py-1 text-[11px] font-medium text-[var(--text-muted)] transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]"
             >
-              PNG
+              {t("budget.exportPng")}
             </button>
             <button
               type="button"
               onClick={() => exportTrendAsCsv(trendPoints, fieldLabels, "pakistan-budget-trend.csv")}
               className="rounded-lg border border-[var(--border)] px-2.5 py-1 text-[11px] font-medium text-[var(--text-muted)] transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]"
             >
-              CSV
+              {t("budget.exportCsv")}
             </button>
           </div>
           <div ref={trendChartRef}>
             <BudgetTrendChart points={trendPoints} fields={fields} mode={mode} />
           </div>
-          <p className="text-[11px] text-[var(--text-muted)]">Source: Budget in Brief, each fiscal year&apos;s own Budget Estimate.</p>
+          <p className="text-[11px] text-[var(--text-muted)]">{t("budget.sourceNote")}</p>
         </div>
       </section>
 
       {/* Insights */}
       <section className="flex flex-col gap-4">
-        <h2 className="text-lg font-semibold text-[var(--text-primary)]">Budget Insights</h2>
+        <h2 className="text-lg font-semibold text-[var(--text-primary)]">{t("budget.budgetInsights")}</h2>
         <BudgetInsightsPanel insights={insights} title="" />
       </section>
 
       {/* Category detail links */}
       <section className="flex flex-col gap-4">
-        <h2 className="text-lg font-semibold text-[var(--text-primary)]">Explore by Category</h2>
+        <h2 className="text-lg font-semibold text-[var(--text-primary)]">{t("budget.exploreByCategory")}</h2>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {BUDGET_CATEGORIES.map((cat) => (
             <Link
@@ -172,7 +171,7 @@ export default function BudgetWorkspace({ years }: BudgetWorkspaceProps) {
             >
               <span className="text-sm font-semibold text-[var(--text-primary)]">{cat.shortTitle}</span>
               <span className="text-xs text-[var(--text-muted)]">{cat.description}</span>
-              {cat.disclaimer && <span className="mt-1 text-[10px] text-amber-400">* Federal only — see disclaimer</span>}
+              {cat.disclaimer && <span className="mt-1 text-[10px] text-amber-400">{t("budget.federalNote")}</span>}
             </Link>
           ))}
         </div>

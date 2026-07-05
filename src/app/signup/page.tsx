@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import AuthShell from "@/components/auth/AuthShell";
 import SignUpForm from "@/components/auth/SignUpForm";
+import { T } from "@/components/T";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
@@ -10,14 +11,6 @@ export const metadata: Metadata = {
   description: "Create a free account to access Comparisons, the Federal Budget Workshop, and the Provincial Budget Workshop.",
   robots: { index: false, follow: false },
 };
-
-const BENEFITS = [
-  "Access Budget Workshops",
-  "Compare Economic Indicators",
-  "Provincial Budget Intelligence",
-  "Save Preferences",
-  "Future Premium Features",
-];
 
 interface PageProps {
   searchParams: Promise<{ redirect?: string }>;
@@ -34,25 +27,17 @@ export default async function SignUpPage({ searchParams }: PageProps) {
 
   return (
     <AuthShell
-      title="Create Free Account"
-      subtitle="Unlock the full dashboard."
+      title={<T tKey="auth.signupTitle" />}
+      subtitle={<T tKey="auth.signupSubtitle" />}
       footer={
         <>
-          Already have an account?{" "}
+          <T tKey="auth.haveAccountLink" />{" "}
           <Link href="/login" className="font-medium text-neon-blue hover:underline">
-            Log in
+            <T tKey="common.login" />
           </Link>
         </>
       }
     >
-      <ul className="mb-6 flex flex-col gap-2">
-        {BENEFITS.map((b) => (
-          <li key={b} className="flex items-center gap-2.5 text-sm text-[var(--text-secondary)]">
-            <span className="text-emerald-400">✓</span>
-            {b}
-          </li>
-        ))}
-      </ul>
       <SignUpForm />
     </AuthShell>
   );

@@ -6,6 +6,7 @@ import BudgetToolkit from "@/components/budget/BudgetToolkit";
 import { BUDGET_HISTORICAL } from "@/data/budgetHistorical";
 import { getBudgetToolkit } from "@/data/budgetEducation";
 import { SITE_URL, SITE_NAME } from "@/lib/seoConfig";
+import { T } from "@/components/T";
 
 const PAGE_URL = `${SITE_URL}/budget`;
 const TITLE = "Budget Workshop — Pakistan Federal Budget, FY2010-11 to FY2026-27";
@@ -64,14 +65,14 @@ export default function BudgetPage() {
             className="glass-card flex items-center justify-between rounded-2xl border-emerald-400/30 p-6 transition-all hover:scale-[1.005]"
           >
             <div>
-              <h2 className="text-lg font-semibold text-white light:text-slate-900">Looking for Provincial Budgets?</h2>
-              <p className="text-sm text-white/60 light:text-slate-500">Punjab, Sindh, Khyber Pakhtunkhwa, and Balochistan each publish their own separate budget — explore them in the Provincial Budget Intelligence Workshop.</p>
+              <h2 className="text-lg font-semibold text-white light:text-slate-900"><T tKey="budget.lookingForProvincial" /></h2>
+              <p className="text-sm text-white/60 light:text-slate-500"><T tKey="budget.lookingForProvincialDesc" /></p>
             </div>
             <span className="text-emerald-400">→</span>
           </Link>
 
           <section className="glass-card flex flex-col gap-4 rounded-2xl p-6 sm:p-8">
-            <h2 className="text-xl font-semibold text-white light:text-slate-900">Frequently Asked Questions</h2>
+            <h2 className="text-xl font-semibold text-white light:text-slate-900"><T tKey="budget.faq" /></h2>
             <div className="space-y-5">
               {FAQ.map((item, i) => (
                 <div key={i}>

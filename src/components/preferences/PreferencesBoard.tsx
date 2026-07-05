@@ -16,11 +16,12 @@ import { useTheme, type Theme } from "@/components/ThemeProvider";
 import { DASHBOARD_WIDGETS, getWidgetLabel } from "@/lib/dashboardWidgets";
 import { PROVINCES } from "@/lib/provincial/provincialBudgetRegistry";
 import type { ProvinceId } from "@/data/provincialBudgetHistorical";
+import { useLanguage } from "@/components/LanguageProvider";
 
-function SavedBadge({ saving }: { saving: boolean }) {
+function SavedBadge({ saving, label }: { saving: boolean; label: string }) {
   return (
     <span className={`text-xs transition-opacity ${saving ? "opacity-100 text-[var(--text-muted)]" : "opacity-0"}`}>
-      Saving…
+      {label}
     </span>
   );
 }
@@ -28,6 +29,7 @@ function SavedBadge({ saving }: { saving: boolean }) {
 export default function PreferencesBoard() {
   const { preferences, loading, updatePreferences } = usePreferences();
   const { theme, setTheme } = useTheme();
+  const { t } = useLanguage();
   const [saving, setSaving] = useState(false);
 
   const pinned = preferences?.favoriteIndicators ?? [];
@@ -109,26 +111,26 @@ export default function PreferencesBoard() {
   return (
     <div className="mt-8 flex flex-col gap-8">
       <div className="flex items-center justify-end">
-        <SavedBadge saving={saving} />
+        <SavedBadge saving={saving} label={t("prefs.saving")} />
       </div>
 
       {/* Theme */}
       <section>
-        <h2 className="mb-3 text-[10px] font-semibold uppercase tracking-widest text-[var(--text-muted)]">Theme</h2>
+        <h2 className="mb-3 text-[10px] font-semibold uppercase tracking-widest text-[var(--text-muted)]">{t("prefs.theme")}</h2>
         <div className="flex gap-2.5">
-          {(["dark", "light"] as Theme[]).map((t) => (
+          {(["dark", "light"] as Theme[]).map((themeOpt) => (
             <button
-              key={t}
+              key={themeOpt}
               type="button"
-              onClick={() => handleThemeChange(t)}
-              aria-pressed={theme === t}
+              onClick={() => handleThemeChange(themeOpt)}
+              aria-pressed={theme === themeOpt}
               className={`rounded-xl border px-4 py-2 text-sm font-medium capitalize transition-colors ${
-                theme === t
+                theme === themeOpt
                   ? "border-neon-blue/40 bg-neon-blue/15 text-neon-blue"
                   : "border-[var(--border)] bg-[var(--surface)] text-[var(--text-secondary)] hover:bg-[var(--surface-hover)]"
               }`}
             >
-              {t} Mode
+              {themeOpt === "dark" ? t("settings.darkMode") : t("settings.lightMode")}
             </button>
           ))}
         </div>
@@ -136,7 +138,7 @@ export default function PreferencesBoard() {
 
       {/* Default province */}
       <section>
-        <h2 className="mb-3 text-[10px] font-semibold uppercase tracking-widest text-[var(--text-muted)]">Default Province</h2>
+        <h2 className="mb-3 text-[10px] font-semibold uppercase tracking-widest text-[var(--text-muted)]">{t("prefs.defaultProvince")}</h2>
         <div className="flex flex-wrap gap-2.5">
           {PROVINCES.map((p) => (
             <button
@@ -157,14 +159,14 @@ export default function PreferencesBoard() {
 
       {/* Widget board */}
       <section>
-        <h2 className="mb-1 text-[10px] font-semibold uppercase tracking-widest text-[var(--text-muted)]">Dashboard Sections</h2>
+        <h2 className="mb-1 text-[10px] font-semibold uppercase tracking-widest text-[var(--text-muted)]">{t("prefs.sectionsTitle")}</h2>
         <p className="mb-3 text-xs text-[var(--text-muted)]">
-          Drag to reorder Pinned indicators — they&apos;ll appear first on your homepage. Hidden sections won&apos;t render at all.
+          {t("prefs.sectionsDesc")}
         </p>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           {/* Pinned — drag to reorder */}
           <div className="rounded-xl border border-neon-blue/20 bg-neon-blue/5 p-3">
-            <p className="mb-2 text-xs font-semibold text-neon-blue">Pinned ({pinned.length})</p>
+            <p className="mb-2 text-xs font-semibold text-neon-blue">{t("prefs.pinned")} ({pinned.length})</p>
             <Reorder.Group axis="y" values={pinned} onReorder={reorderPinned} className="flex flex-col gap-1.5">
               {pinned.map((id) => (
                 <Reorder.Item
@@ -174,48 +176,48 @@ export default function PreferencesBoard() {
                 >
                   <span className="text-[var(--text-primary)]">{getWidgetLabel(id)}</span>
                   <button type="button" onClick={() => unpin(id)} className="text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)]">
-                    Unpin
+                    {t("prefs.unpin")}
                   </button>
                 </Reorder.Item>
               ))}
-              {pinned.length === 0 && <p className="text-xs text-[var(--text-muted)]">No pinned sections yet.</p>}
+              {pinned.length === 0 && <p className="text-xs text-[var(--text-muted)]">{t("prefs.noPinned")}</p>}
             </Reorder.Group>
           </div>
 
           {/* Visible (default) */}
           <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3">
-            <p className="mb-2 text-xs font-semibold text-[var(--text-secondary)]">Visible ({visible.length})</p>
+            <p className="mb-2 text-xs font-semibold text-[var(--text-secondary)]">{t("prefs.visible")} ({visible.length})</p>
             <div className="flex flex-col gap-1.5">
               {visible.map((id) => (
                 <div key={id} className="flex items-center justify-between gap-2 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-raised)] px-3 py-2 text-sm">
                   <span className="text-[var(--text-primary)]">{getWidgetLabel(id)}</span>
                   <div className="flex shrink-0 gap-2">
                     <button type="button" onClick={() => pin(id)} className="text-xs text-neon-blue hover:underline">
-                      Pin
+                      {t("prefs.pin")}
                     </button>
                     <button type="button" onClick={() => hide(id)} className="text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)]">
-                      Hide
+                      {t("prefs.hide")}
                     </button>
                   </div>
                 </div>
               ))}
-              {visible.length === 0 && <p className="text-xs text-[var(--text-muted)]">Nothing left here.</p>}
+              {visible.length === 0 && <p className="text-xs text-[var(--text-muted)]">{t("prefs.noneLeft")}</p>}
             </div>
           </div>
 
           {/* Hidden */}
           <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3 opacity-70">
-            <p className="mb-2 text-xs font-semibold text-[var(--text-secondary)]">Hidden ({hidden.length})</p>
+            <p className="mb-2 text-xs font-semibold text-[var(--text-secondary)]">{t("prefs.hidden")} ({hidden.length})</p>
             <div className="flex flex-col gap-1.5">
               {hidden.map((id) => (
                 <div key={id} className="flex items-center justify-between gap-2 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-raised)] px-3 py-2 text-sm">
                   <span className="text-[var(--text-secondary)]">{getWidgetLabel(id)}</span>
                   <button type="button" onClick={() => unhide(id)} className="shrink-0 text-xs text-neon-blue hover:underline">
-                    Show
+                    {t("prefs.show")}
                   </button>
                 </div>
               ))}
-              {hidden.length === 0 && <p className="text-xs text-[var(--text-muted)]">Nothing hidden.</p>}
+              {hidden.length === 0 && <p className="text-xs text-[var(--text-muted)]">{t("prefs.noneHidden")}</p>}
             </div>
           </div>
         </div>

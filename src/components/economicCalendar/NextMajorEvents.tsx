@@ -1,5 +1,8 @@
+"use client";
+
 import Link from "next/link";
 import type { EventRecord } from "@/lib/economicCalendar/economicEventsRepo";
+import { useLanguage } from "@/components/LanguageProvider";
 import { formatEventDate, daysUntil } from "@/lib/economicCalendar/economicCalendarData";
 import { getMarketImpactScore } from "@/lib/economicCalendar/marketImpactScore";
 import EventCategoryBadge from "./EventCategoryBadge";
@@ -15,14 +18,15 @@ import ImpactScoreBadge from "./ImpactScoreBadge";
  * from "Major Upcoming Events" above it (one card per headline TYPE).
  */
 export default function NextMajorEvents({ events }: { events: EventRecord[] }) {
+  const { t } = useLanguage();
   if (events.length === 0) return null;
   const today = new Date();
 
   return (
     <section className="glass-card flex flex-col gap-4 rounded-2xl p-6 sm:p-8">
       <div>
-        <h2 className="text-xl font-semibold text-white light:text-slate-900">Next Major Market-Moving Events</h2>
-        <p className="mt-1 text-sm text-white/50 light:text-slate-500">Ranked by Market Impact Score, then by how soon they land.</p>
+        <h2 className="text-xl font-semibold text-white light:text-slate-900">{t("calendar.nextMajor")}</h2>
+        <p className="mt-1 text-sm text-white/50 light:text-slate-500">{t("calendar.nextMajorDesc")}</p>
       </div>
 
       <div className="flex flex-col gap-2.5">
@@ -46,20 +50,20 @@ export default function NextMajorEvents({ events }: { events: EventRecord[] }) {
               </div>
               <div className="flex shrink-0 items-center gap-5 border-t border-white/5 light:border-slate-100 pt-3 sm:border-t-0 sm:pt-0">
                 <div className="flex flex-col gap-0.5">
-                  <span className="text-[10px] uppercase tracking-wide text-white/35 light:text-slate-400">Previous</span>
+                  <span className="text-[10px] uppercase tracking-wide text-white/35 light:text-slate-400">{t("calendar.previousCol")}</span>
                   <span className="text-sm font-medium text-white/70 light:text-slate-600">{event.previousValue ?? "—"}</span>
                 </div>
                 <div className="flex flex-col gap-0.5">
-                  <span className="text-[10px] uppercase tracking-wide text-white/35 light:text-slate-400">Forecast</span>
+                  <span className="text-[10px] uppercase tracking-wide text-white/35 light:text-slate-400">{t("calendar.forecastCol")}</span>
                   <span className="text-sm font-medium text-neon-blue">{event.forecastValue ?? "—"}</span>
                 </div>
                 <div className="flex flex-col gap-0.5">
-                  <span className="text-[10px] uppercase tracking-wide text-white/35 light:text-slate-400">Actual</span>
-                  <span className="text-sm font-medium text-white/30 light:text-slate-400">{event.actualValue ?? "Pending"}</span>
+                  <span className="text-[10px] uppercase tracking-wide text-white/35 light:text-slate-400">{t("calendar.actualCol")}</span>
+                  <span className="text-sm font-medium text-white/30 light:text-slate-400">{event.actualValue ?? t("calendar.pending")}</span>
                 </div>
                 <div className="flex flex-col gap-0.5">
-                  <span className="text-[10px] uppercase tracking-wide text-white/35 light:text-slate-400">Days Remaining</span>
-                  <span className="text-sm font-medium text-white/70 light:text-slate-600">{remaining <= 0 ? "Today" : remaining}</span>
+                  <span className="text-[10px] uppercase tracking-wide text-white/35 light:text-slate-400">{t("calendar.daysRemaining")}</span>
+                  <span className="text-sm font-medium text-white/70 light:text-slate-600">{remaining <= 0 ? t("common.today") : remaining}</span>
                 </div>
               </div>
             </Link>

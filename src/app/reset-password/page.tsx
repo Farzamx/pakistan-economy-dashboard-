@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import AuthShell from "@/components/auth/AuthShell";
 import ResetPasswordForm from "@/components/auth/ResetPasswordForm";
+import { T } from "@/components/T";
 
 export const metadata: Metadata = {
   title: "Set New Password — Pakistan Economic Intelligence Center",
@@ -14,7 +15,7 @@ export const metadata: Metadata = {
 // why this page has no "forgot password" link of its own.
 export default function ResetPasswordPage() {
   return (
-    <AuthShell title="Set a new password" subtitle="Choose a new password for your account.">
+    <AuthShell title={<T tKey="auth.resetPasswordTitle" />} subtitle={<T tKey="auth.resetPasswordSubtitle" />}>
       <ResetPasswordForm />
     </AuthShell>
   );

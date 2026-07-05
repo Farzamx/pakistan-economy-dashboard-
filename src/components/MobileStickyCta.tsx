@@ -19,11 +19,13 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { useAuth } from "@/components/AuthProvider";
+import { useLanguage } from "@/components/LanguageProvider";
 
 const HIDDEN_ON = ["/login", "/signup", "/forgot-password", "/reset-password"];
 
 export default function MobileStickyCta() {
   const { user, loading } = useAuth();
+  const { t } = useLanguage();
   const pathname = usePathname();
   const [scrolledPast, setScrolledPast] = useState(false);
 
@@ -70,7 +72,7 @@ export default function MobileStickyCta() {
               <path d="M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z" />
               <path d="M4 21c0-4 3.5-7 8-7s8 3 8 7" />
             </svg>
-            Create Free Account
+            {t("hero.createAccount")}
           </Link>
         </motion.div>
       )}

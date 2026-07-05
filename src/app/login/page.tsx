@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import AuthShell from "@/components/auth/AuthShell";
 import LoginForm from "@/components/auth/LoginForm";
+import { T } from "@/components/T";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
@@ -33,13 +34,13 @@ export default async function LoginPage({ searchParams }: PageProps) {
 
   return (
     <AuthShell
-      title="Welcome back"
-      subtitle="Log in to continue to your dashboard."
+      title={<T tKey="auth.welcomeBack" />}
+      subtitle={<T tKey="auth.loginSubtitle" />}
       footer={
         <>
-          Don&apos;t have an account?{" "}
+          <T tKey="auth.noAccountLink" />{" "}
           <Link href="/signup" className="font-medium text-neon-blue hover:underline">
-            Create one free
+            <T tKey="auth.createOneLink" />
           </Link>
         </>
       }

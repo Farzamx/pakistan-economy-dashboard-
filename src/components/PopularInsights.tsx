@@ -1,4 +1,7 @@
+"use client";
+
 import ProtectedLink from "@/components/ProtectedLink";
+import { useLanguage } from "@/components/LanguageProvider";
 
 // Homepage discovery module (SEO Architecture Migration, Phase B) — the
 // single highest-leverage internal-linking fix available: the homepage is
@@ -35,13 +38,19 @@ const CATEGORY_COLOR: Record<InsightLink["category"], string> = {
 };
 
 export default function PopularInsights() {
+  const { t } = useLanguage();
+  const categoryLabel: Record<InsightLink["category"], string> = {
+    Comparison: t("popularInsights.comparison"),
+    Budget: t("popularInsights.budget"),
+    Provincial: t("popularInsights.provincial"),
+  };
   return (
     <section className="mt-8" aria-labelledby="popular-insights-heading">
       <h2
         id="popular-insights-heading"
         className="mb-3 text-sm font-semibold uppercase tracking-[0.12em] text-white/40 light:text-slate-500"
       >
-        Popular Insights
+        {t("popularInsights.title")}
       </h2>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         {INSIGHTS.map((item) => (
@@ -57,11 +66,11 @@ export default function PopularInsights() {
               className="text-[9px] font-semibold uppercase tracking-widest"
               style={{ color: CATEGORY_COLOR[item.category] }}
             >
-              {item.category}
+              {categoryLabel[item.category]}
             </span>
             <span className="text-sm font-medium leading-snug text-white light:text-slate-900">{item.label}</span>
             <span className="mt-auto text-xs text-neon-blue opacity-0 transition-opacity group-hover:opacity-100">
-              Explore →
+              {t("popularInsights.explore")}
             </span>
           </ProtectedLink>
         ))}

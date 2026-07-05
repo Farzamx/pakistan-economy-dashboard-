@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import AuthShell from "@/components/auth/AuthShell";
 import ForgotPasswordForm from "@/components/auth/ForgotPasswordForm";
+import { T } from "@/components/T";
 
 export const metadata: Metadata = {
   title: "Reset Password — Pakistan Economic Intelligence Center",
@@ -12,11 +13,11 @@ export const metadata: Metadata = {
 export default function ForgotPasswordPage() {
   return (
     <AuthShell
-      title="Forgot your password?"
-      subtitle="Enter your email and we'll send you a reset link."
+      title={<T tKey="auth.forgotPasswordTitle" />}
+      subtitle={<T tKey="auth.forgotPasswordSubtitle" />}
       footer={
         <Link href="/login" className="font-medium text-neon-blue hover:underline">
-          ← Back to login
+          <T tKey="auth.backToLoginLink" />
         </Link>
       }
     >

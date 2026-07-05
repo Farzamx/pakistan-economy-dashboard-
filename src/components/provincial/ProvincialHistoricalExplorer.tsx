@@ -16,21 +16,10 @@ import { getCagr, getYoyGrowthSeries, getPerCapitaHistory } from "@/lib/provinci
 import Dropdown from "@/components/Dropdown";
 import ProvincialTrendChart from "./ProvincialTrendChart";
 import ProvincialRankingBarChart from "./ProvincialRankingBarChart";
+import { useLanguage } from "@/components/LanguageProvider";
 
 type ViewMode = "trend" | "growth" | "percapita" | "ranking";
-const VIEW_MODES: { id: ViewMode; label: string }[] = [
-  { id: "trend", label: "Trend" },
-  { id: "growth", label: "Growth" },
-  { id: "percapita", label: "Per Capita" },
-  { id: "ranking", label: "Ranking" },
-];
-
 type TimeRange = "full" | "last5" | "last10";
-const TIME_RANGES: { id: TimeRange; label: string }[] = [
-  { id: "full", label: "Full History" },
-  { id: "last5", label: "Last 5 Years" },
-  { id: "last10", label: "Last 10 Years" },
-];
 
 /** "Last N years" means the N most recent entries in THAT province's own array — provinces have different latest years (Balochistan's is FY2025-26, the others FY2026-27) and different earliest years, so a global calendar cutoff would silently drop more years for some provinces than others. */
 function applyTimeRange<T>(items: T[], range: TimeRange): T[] {
@@ -45,6 +34,18 @@ interface ProvincialHistoricalExplorerProps {
 }
 
 export default function ProvincialHistoricalExplorer({ lockedProvince }: ProvincialHistoricalExplorerProps) {
+  const { t } = useLanguage();
+  const VIEW_MODES: { id: ViewMode; label: string }[] = [
+    { id: "trend", label: t("provincial.trendMode") },
+    { id: "growth", label: t("provincial.growthMode") },
+    { id: "percapita", label: t("provincial.perCapitaMode") },
+    { id: "ranking", label: t("provincial.rankingMode") },
+  ];
+  const TIME_RANGES: { id: TimeRange; label: string }[] = [
+    { id: "full", label: t("provincial.fullHistory") },
+    { id: "last5", label: t("provincial.last5Years") },
+    { id: "last10", label: t("provincial.last10Years") },
+  ];
   const [province, setProvince] = useState<ProvinceId>(lockedProvince ?? "punjab");
   const [metric, setMetric] = useState<ProvincialTrendField>("totalOutlay");
   const [timeRange, setTimeRange] = useState<TimeRange>("full");
@@ -75,9 +76,9 @@ export default function ProvincialHistoricalExplorer({ lockedProvince }: Provinc
   return (
     <div className="glass-card flex flex-col gap-6 rounded-2xl p-6 sm:p-8">
       <div>
-        <h2 className="text-xl font-semibold text-white light:text-slate-900">Province Growth Explorer</h2>
+        <h2 className="text-xl font-semibold text-white light:text-slate-900">{t("provincial.growthExplorerTitle")}</h2>
         <p className="mt-1 text-sm text-white/60 light:text-slate-500">
-          Explore historical budget trends, growth rates, per-citizen spending, and cross-province rankings — all from verified provincial budget documents.
+          {t("provincial.growthExplorerDesc")}
         </p>
       </div>
 
@@ -166,23 +167,23 @@ export default function ProvincialHistoricalExplorer({ lockedProvince }: Provinc
         <div className="flex flex-col gap-4">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <GrowthKpi
-              title={`${metricMeta.label} Growth Since FY${cagr?.fromYear ?? "—"}`}
-              value={cagr ? `${(((cagr.toValue - cagr.fromValue) / cagr.fromValue) * 100).toFixed(0)}%` : "Not available"}
+              title={`${metricMeta.label} ${t("provincial.growthSince")}${cagr?.fromYear ?? "—"}`}
+              value={cagr ? `${(((cagr.toValue - cagr.fromValue) / cagr.fromValue) * 100).toFixed(0)}%` : t("provincial.notAvailable")}
             />
-            <GrowthKpi title="CAGR (Compound Annual Growth Rate)" value={cagr ? `${cagr.cagrPct.toFixed(1)}%/yr` : "Not available"} />
+            <GrowthKpi title={t("provincial.cagrFull")} value={cagr ? `${cagr.cagrPct.toFixed(1)}%/yr` : t("provincial.notAvailable")} />
             <GrowthKpi
-              title="Largest YoY Increase"
-              value={largestIncrease?.pctChange != null ? `+${largestIncrease.pctChange.toFixed(1)}% (FY${largestIncrease.fiscalYear})` : "Not available"}
+              title={t("provincial.largestIncrease")}
+              value={largestIncrease?.pctChange != null ? `+${largestIncrease.pctChange.toFixed(1)}% (FY${largestIncrease.fiscalYear})` : t("provincial.notAvailable")}
             />
             <GrowthKpi
-              title="Largest YoY Decline"
-              value={largestDecline?.pctChange != null && largestDecline.pctChange < 0 ? `${largestDecline.pctChange.toFixed(1)}% (FY${largestDecline.fiscalYear})` : "No decline in range"}
+              title={t("provincial.largestDecline")}
+              value={largestDecline?.pctChange != null && largestDecline.pctChange < 0 ? `${largestDecline.pctChange.toFixed(1)}% (FY${largestDecline.fiscalYear})` : t("provincial.noDecline")}
             />
           </div>
           <div>
-            <p className="mb-2 text-sm text-[var(--text-muted)]">Year-over-year change — {provinceMeta.name}, {metricMeta.label}</p>
+            <p className="mb-2 text-sm text-[var(--text-muted)]">{t("provincial.yoyChangeDesc")} — {provinceMeta.name}, {metricMeta.label}</p>
             {visibleYoy.length === 0 ? (
-              <p className="text-sm text-[var(--text-muted)]">No verified data available for this range.</p>
+              <p className="text-sm text-[var(--text-muted)]">{t("provincial.noData")}</p>
             ) : (
               <div className="flex flex-col gap-1.5">
                 {visibleYoy.map((p) => (
@@ -216,8 +217,8 @@ export default function ProvincialHistoricalExplorer({ lockedProvince }: Provinc
       {viewMode === "ranking" && (
         <div className="flex flex-col gap-4">
           <div className="flex items-center gap-2 text-xs font-medium text-[var(--text-muted)]">
-            Fiscal Year
-            <Dropdown label="Fiscal Year" value={rankingYear} onChange={setRankingYear} options={rankingYearOptions.map((y) => ({ value: y, label: `FY${y}` }))} />
+            {t("provincial.fiscalYear")}
+            <Dropdown label={t("provincial.fiscalYear")} value={rankingYear} onChange={setRankingYear} options={rankingYearOptions.map((y) => ({ value: y, label: `FY${y}` }))} />
           </div>
           <p className="text-sm text-[var(--text-muted)]">{metricMeta.label} — all 4 provinces, FY{rankingYear}</p>
           <ProvincialRankingBarChart entries={rankingEntries} />

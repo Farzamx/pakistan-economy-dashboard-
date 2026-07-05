@@ -1,12 +1,14 @@
 "use client";
 
 import type { ProvincialAllocationSlice } from "@/lib/provincial/provincialBudgetData";
+import { useLanguage } from "@/components/LanguageProvider";
 
 interface ProvincialAllocationTableProps {
   data: ProvincialAllocationSlice[];
 }
 
 export default function ProvincialAllocationTable({ data }: ProvincialAllocationTableProps) {
+  const { t } = useLanguage();
   const sorted = [...data].sort((a, b) => b.value - a.value);
 
   return (
@@ -14,9 +16,9 @@ export default function ProvincialAllocationTable({ data }: ProvincialAllocation
       <table className="w-full min-w-[420px] text-sm">
         <thead>
           <tr className="border-b border-white/5 light:border-slate-200 text-left text-xs text-white/40 light:text-slate-500">
-            <th className="px-4 py-3 font-medium">Category</th>
-            <th className="px-4 py-3 font-medium text-right">Rs Billion</th>
-            <th className="px-4 py-3 font-medium text-right">Share</th>
+            <th className="px-4 py-3 font-medium">{t("provincial.category")}</th>
+            <th className="px-4 py-3 font-medium text-right">{t("provincial.rsBillion")}</th>
+            <th className="px-4 py-3 font-medium text-right">{t("provincial.share")}</th>
           </tr>
         </thead>
         <tbody>

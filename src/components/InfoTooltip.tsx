@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { TERMINOLOGY } from "@/data/terminology";
 import { TOOLKIT_TRANSLATIONS } from "@/data/toolkitTranslations";
 import { useTheme } from "@/components/ThemeProvider";
+import { useLanguage } from "@/components/LanguageProvider";
 
 // Session-level cache: termKey → Roman Urdu formatted string
 const urduCache = new Map<string, string>();
@@ -101,6 +102,7 @@ function computePlacement(rect: DOMRect, arrowColor: string): Placement {
 
 export default function InfoTooltip({ termKey, size = "sm" }: Props) {
   const { theme } = useTheme();
+  const { t } = useLanguage();
   const isLight = theme === "light";
 
   // All hooks before any conditional return
@@ -283,19 +285,19 @@ export default function InfoTooltip({ termKey, size = "sm" }: Props) {
 
               {/* WHAT */}
               <p className="mb-1 text-[9px] font-semibold uppercase tracking-wider text-white/30 light:text-slate-400">
-                What is it?
+                {t("tooltip.whatIs")}
               </p>
               <p className="mb-3 text-xs leading-relaxed text-white/75 light:text-slate-700">{entry.what}</p>
 
               {/* WHY */}
               <p className="mb-1 text-[9px] font-semibold uppercase tracking-wider text-white/30 light:text-slate-400">
-                Why it matters?
+                {t("tooltip.whyMatters")}
               </p>
               <p className="mb-3 text-xs leading-relaxed text-white/65 light:text-slate-600">{entry.why}</p>
 
               {/* HOW */}
               <p className="mb-1.5 text-[9px] font-semibold uppercase tracking-wider text-white/30 light:text-slate-400">
-                How to read it?
+                {t("tooltip.howToRead")}
               </p>
               <ul className="mb-3 space-y-1">
                 {entry.how.map((bullet, i) => (
@@ -317,12 +319,12 @@ export default function InfoTooltip({ termKey, size = "sm" }: Props) {
                 {translating ? (
                   <>
                     <span className="assistant-dot-pulse" />
-                    <span>Translating…</span>
+                    <span>{t("tooltip.translating")}</span>
                   </>
                 ) : (
                   <>
                     <span>🌐</span>
-                    <span>{urduVisible ? "Hide Roman Urdu" : "Roman Urdu"}</span>
+                    <span>{urduVisible ? t("tooltip.hideRomanUrdu") : t("tooltip.showRomanUrdu")}</span>
                   </>
                 )}
               </button>
@@ -331,7 +333,7 @@ export default function InfoTooltip({ termKey, size = "sm" }: Props) {
               {urduVisible && urduCache.has(termKey) && (
                 <div className="mt-2.5 rounded-lg border border-white/5 light:border-blue-100 bg-[#071420] light:bg-blue-50 p-3" style={{ maxHeight: 160, overflowY: "auto" }}>
                   <p className="mb-1.5 text-[9px] font-semibold uppercase tracking-wider text-neon-blue/40 light:text-blue-500">
-                    Roman Urdu
+                    {t("tooltip.romanUrdu")}
                   </p>
                   <p className="whitespace-pre-wrap text-xs leading-relaxed text-white/60 light:text-slate-700">
                     {urduCache.get(termKey)}

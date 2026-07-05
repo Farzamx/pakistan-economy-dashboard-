@@ -7,6 +7,7 @@ import { getDataQuality, DATA_QUALITY_DOT } from "@/lib/dataQuality";
 import { getRetrievalMethod } from "@/lib/retrievalMethod";
 import { SOURCE_CHAINS, getActiveTier } from "@/lib/marketDataSources";
 import { useTheme } from "@/components/ThemeProvider";
+import { useLanguage } from "@/components/LanguageProvider";
 
 interface Props {
   kpis: Kpi[];
@@ -28,6 +29,7 @@ export default function DataSourcesModal({ kpis }: Props) {
   const [open, setOpen] = useState(false);
   const overlayRef = useRef<HTMLDivElement>(null);
   const { theme } = useTheme();
+  const { t } = useLanguage();
   const isLight = theme === "light";
 
   // Close on Escape
@@ -55,7 +57,7 @@ export default function DataSourcesModal({ kpis }: Props) {
         aria-label="Open data sources audit table"
       >
         <span className="text-[9px] opacity-70">⬡</span>
-        Data Sources
+        {t("modal.dsTitle")}
       </button>
 
       {/* Modal overlay — backdrop stays the same dim/blur in both themes,
@@ -68,7 +70,7 @@ export default function DataSourcesModal({ kpis }: Props) {
           onClick={(e) => { if (e.target === overlayRef.current) setOpen(false); }}
           role="dialog"
           aria-modal="true"
-          aria-label="Data Sources Audit"
+          aria-label={t("modal.dsTitle")}
         >
           <div
             className="relative flex max-h-[80vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-white/10 light:border-slate-200 shadow-2xl"
@@ -80,37 +82,37 @@ export default function DataSourcesModal({ kpis }: Props) {
             {/* Header */}
             <div className="flex shrink-0 items-center justify-between border-b border-white/5 light:border-slate-200 px-6 py-4">
               <div>
-                <h2 className="text-base font-semibold text-white light:text-slate-900">Data Sources</h2>
+                <h2 className="text-base font-semibold text-white light:text-slate-900">{t("modal.dsTitle")}</h2>
                 <p className="mt-0.5 text-xs text-white/40 light:text-slate-500">
-                  All {kpis.length} indicators audited · freshness computed server-side
+                  {kpis.length} {t("modal.dsSubtitle")}
                 </p>
               </div>
               <button
                 onClick={() => setOpen(false)}
                 className="rounded-lg border border-white/10 light:border-slate-300 px-3 py-1.5 text-xs text-white/50 light:text-slate-600 transition hover:border-white/20 light:hover:border-slate-400 hover:text-white/80 light:hover:text-slate-900 light:hover:bg-slate-100"
-                aria-label="Close"
+                aria-label={t("modal.close")}
               >
-                Close ✕
+                {t("modal.close")} ✕
               </button>
             </div>
 
             {/* Legend — the same 5-state Data Quality vocabulary used everywhere else on the dashboard (KpiCard, SEO pages, MarketTicker) */}
             <div className="flex shrink-0 flex-wrap items-center gap-4 border-b border-white/5 light:border-slate-200 px-6 py-2.5">
-              <span className="text-[10px] font-medium uppercase tracking-wider text-white/30 light:text-slate-400">Legend</span>
+              <span className="text-[10px] font-medium uppercase tracking-wider text-white/30 light:text-slate-400">{t("modal.dsLegend")}</span>
               <span className="flex items-center gap-1 text-xs text-emerald-400 light:text-emerald-700">
-                <span className="text-[8px]">●</span> Verified
+                <span className="text-[8px]">●</span> {t("modal.dsVerified")}
               </span>
               <span className="flex items-center gap-1 text-xs text-amber-400 light:text-amber-600">
-                <span className="text-[8px]">●</span> Delayed
+                <span className="text-[8px]">●</span> {t("modal.dsDelayed")}
               </span>
               <span className="flex items-center gap-1 text-xs text-sky-400 light:text-sky-700">
-                <span className="text-[8px]">●</span> Cached
+                <span className="text-[8px]">●</span> {t("modal.dsCached")}
               </span>
               <span className="flex items-center gap-1 text-xs text-orange-400 light:text-orange-600">
-                <span className="text-[8px]">●</span> Fallback
+                <span className="text-[8px]">●</span> {t("modal.dsFallback")}
               </span>
               <span className="flex items-center gap-1 text-xs text-slate-400">
-                <span className="text-[8px]">●</span> Unavailable
+                <span className="text-[8px]">●</span> {t("modal.dsUnavailable")}
               </span>
               <span className="ml-auto text-[10px] text-white/25 light:text-slate-400">
                 Hover any Status cell for the exact reason · weekends/holidays never count as Delayed for market data
@@ -125,14 +127,14 @@ export default function DataSourcesModal({ kpis }: Props) {
                   style={{ background: isLight ? "#F8FAFC" : "rgba(8, 10, 26, 0.98)" }}
                 >
                   <tr className="text-left text-[10px] font-medium uppercase tracking-wider text-white/30 light:text-slate-600">
-                    <th className="px-6 py-3">Indicator</th>
-                    <th className="px-4 py-3">Source</th>
-                    <th className="px-4 py-3">Retrieval Method</th>
-                    <th className="px-4 py-3">Series ID</th>
-                    <th className="px-4 py-3">Primary / Secondary / Fallback</th>
-                    <th className="px-4 py-3">Last Updated</th>
-                    <th className="px-4 py-3">Frequency</th>
-                    <th className="px-4 py-3">Status</th>
+                    <th className="px-6 py-3">{t("modal.dsColIndicator")}</th>
+                    <th className="px-4 py-3">{t("modal.dsColSource")}</th>
+                    <th className="px-4 py-3">{t("modal.dsColMethod")}</th>
+                    <th className="px-4 py-3">{t("modal.dsColId")}</th>
+                    <th className="px-4 py-3">{t("modal.dsColPrimary")}</th>
+                    <th className="px-4 py-3">{t("modal.dsColUpdated")}</th>
+                    <th className="px-4 py-3">{t("modal.dsColFreq")}</th>
+                    <th className="px-4 py-3">{t("modal.dsColStatus")}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/[0.04] light:divide-slate-100">

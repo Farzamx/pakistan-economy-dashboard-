@@ -5,6 +5,7 @@ import {
   calculatePerformance,
   type AssetTimelinePoint,
 } from "@/lib/comparisons/performanceCalculator";
+import { useLanguage } from "@/components/LanguageProvider";
 
 interface PerformanceCalculatorProps {
   timeline: AssetTimelinePoint[];
@@ -21,6 +22,7 @@ function formatKeyLabel(key: string): string {
 }
 
 export default function PerformanceCalculator({ timeline }: PerformanceCalculatorProps) {
+  const { t } = useLanguage();
   // Offer one start-date option per year, to keep the dropdown short rather
   // than listing all ~120 months. Each asset has its own real start date
   // (e.g. Gold's Yahoo Finance history is a rolling 10-year window, while
@@ -58,16 +60,16 @@ export default function PerformanceCalculator({ timeline }: PerformanceCalculato
     <div className="glass-card flex flex-col gap-5 rounded-2xl p-6">
       <div>
         <h3 className="text-base font-semibold text-[var(--text-primary)]">
-          Performance Calculator
+          {t("comparisons.perfTitle")}
         </h3>
         <p className="mt-1 text-sm text-[var(--text-muted)]">
-          If PKR 100,000 had been invested on the selected date, how would each asset have performed by now?
+          {t("comparisons.perfDesc")}
         </p>
       </div>
 
       <div className="flex items-center gap-3">
         <label htmlFor="perf-start-date" className="text-sm text-[var(--text-secondary)]">
-          Starting from:
+          {t("comparisons.startFrom")}
         </label>
         <select
           id="perf-start-date"
@@ -88,7 +90,7 @@ export default function PerformanceCalculator({ timeline }: PerformanceCalculato
       </div>
 
       {results.length === 0 ? (
-        <p className="text-sm text-[var(--text-muted)]">No overlapping data for the selected start date.</p>
+        <p className="text-sm text-[var(--text-muted)]">{t("comparisons.noOverlap")}</p>
       ) : (
         <div className="grid gap-4 sm:grid-cols-3">
           {results.map((r) => (

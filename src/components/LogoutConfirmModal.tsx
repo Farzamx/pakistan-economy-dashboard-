@@ -19,6 +19,7 @@
 
 import { useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import { useLanguage } from "@/components/LanguageProvider";
 
 interface Props {
   open: boolean;
@@ -48,6 +49,7 @@ function Spinner() {
 }
 
 export default function LogoutConfirmModal({ open, onClose, onConfirm, loading = false }: Props) {
+  const { t } = useLanguage();
   // Close on Escape — suppressed while signing out so it can't be
   // dismissed mid-request and leave the caller's loading state dangling.
   useEffect(() => {
@@ -95,7 +97,7 @@ export default function LogoutConfirmModal({ open, onClose, onConfirm, loading =
             <motion.div
               role="dialog"
               aria-modal="true"
-              aria-label="Sign out?"
+              aria-label={t("modal.logoutTitle")}
               className="pointer-events-auto w-full max-w-md rounded-2xl border border-neon-blue/30 light:border-slate-200 bg-[#070912] light:bg-white p-8 text-center shadow-[0_0_60px_rgba(56,189,248,0.22),0_25px_60px_-12px_rgba(0,0,0,0.85)] light:shadow-2xl"
               variants={PANEL}
               initial="hidden"
@@ -126,9 +128,9 @@ export default function LogoutConfirmModal({ open, onClose, onConfirm, loading =
                 </svg>
               </div>
 
-              <h2 className="mt-6 text-xl font-bold text-[var(--text-primary)]">Sign out?</h2>
+              <h2 className="mt-6 text-xl font-bold text-[var(--text-primary)]">{t("modal.logoutTitle")}</h2>
               <p className="mx-auto mt-3 max-w-xs text-sm leading-relaxed text-[var(--text-muted)]">
-                Are you sure you want to log out of your Pakistan Economic Intelligence Dashboard?
+                {t("modal.logoutDesc")}
               </p>
 
               <div className="mt-9 flex flex-col gap-3 sm:flex-row">
@@ -138,7 +140,7 @@ export default function LogoutConfirmModal({ open, onClose, onConfirm, loading =
                   disabled={loading}
                   className="flex-1 rounded-xl border border-white/10 bg-[#13151f] px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#1b1e2c] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30 disabled:pointer-events-none disabled:opacity-50"
                 >
-                  Cancel
+                  {t("modal.cancel")}
                 </button>
                 <button
                   type="button"
@@ -147,7 +149,7 @@ export default function LogoutConfirmModal({ open, onClose, onConfirm, loading =
                   className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-neon-blue px-4 py-2.5 text-sm font-semibold text-[#05060f] transition-all duration-150 hover:bg-sky-400 hover:shadow-[0_0_24px_rgba(56,189,248,0.55)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon-blue/60 focus-visible:ring-offset-2 focus-visible:ring-offset-[#070912] active:scale-[0.97] disabled:pointer-events-none disabled:opacity-70"
                 >
                   {loading && <Spinner />}
-                  {loading ? "Logging out…" : "Logout"}
+                  {loading ? t("modal.loggingOut") : t("modal.logout")}
                 </button>
               </div>
             </motion.div>

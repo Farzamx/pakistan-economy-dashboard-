@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import HealthScoreGauge from "@/components/HealthScoreGauge";
 import { healthLabelToRiskLevel, type HealthModelResult } from "@/lib/economicHealth";
 import type { AiEconomicAnalysis } from "@/lib/data/aiEconomicAnalysis";
+import { useLanguage } from "@/components/LanguageProvider";
 
 const SENTIMENT_CLASS: Record<AiEconomicAnalysis["sentiment"], string> = {
   Bullish: "border-emerald-400/20 bg-emerald-400/10 text-emerald-400",
@@ -26,6 +27,7 @@ export default function HealthScoreCard({ health, ai }: Props) {
   const { score, status } = health;
   const { sentiment, summary, topDrivers, modelDisplayName } = ai;
   const riskLevel = healthLabelToRiskLevel(status.label);
+  const { t } = useLanguage();
 
   return (
     <motion.section
@@ -40,7 +42,7 @@ export default function HealthScoreCard({ health, ai }: Props) {
       <div className="flex flex-col items-center sm:items-start">
         <div className="flex items-center gap-2">
           <span className="text-xs font-semibold uppercase tracking-[0.3em] text-white/40 light:text-slate-400">
-            Economic Health Score
+            {t("health.title")}
           </span>
           <span className="rounded-full border border-neon-blue/20 bg-neon-blue/10 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-widest text-neon-blue/70">
             {modelDisplayName}
@@ -61,7 +63,7 @@ export default function HealthScoreCard({ health, ai }: Props) {
           <span
             className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium ${RISK_CLASS[riskLevel]}`}
           >
-            {riskLevel} Risk
+            {riskLevel} {t("health.risk")}
           </span>
         </div>
 

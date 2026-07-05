@@ -17,6 +17,7 @@
 import { useId, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useLanguage } from "@/components/LanguageProvider";
 
 export interface SearchEntry {
   label: string;
@@ -61,7 +62,9 @@ interface Props {
   className?: string;
 }
 
-export default function GlobalSearch({ onLinkClick, placeholder = "Search GDP, Inflation, Budget...", className }: Props) {
+export default function GlobalSearch({ onLinkClick, placeholder, className }: Props) {
+  const { t } = useLanguage();
+  const resolvedPlaceholder = placeholder ?? t("search.placeholder");
   const [query, setQuery] = useState("");
   const [focused, setFocused] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(0);
@@ -140,7 +143,7 @@ export default function GlobalSearch({ onLinkClick, placeholder = "Search GDP, I
             onFocus={() => setFocused(true)}
             onBlur={() => setTimeout(() => setFocused(false), 120)}
             onKeyDown={handleKeyDown}
-            placeholder={placeholder}
+            placeholder={resolvedPlaceholder}
             className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] py-2 pl-8 pr-3 text-xs text-[var(--text-primary)] outline-none transition-colors placeholder:text-[var(--text-muted)] focus:border-neon-blue/40"
           />
         </div>
@@ -159,7 +162,7 @@ export default function GlobalSearch({ onLinkClick, placeholder = "Search GDP, I
           className="absolute left-0 right-0 top-full isolate z-40 mt-1.5 max-h-72 overflow-y-auto rounded-xl border border-neon-blue/25 bg-[#05060f] light:bg-white py-1.5 shadow-[0_12px_32px_rgba(0,0,0,0.55),0_0_0_1px_rgba(56,189,248,0.08)] light:shadow-xl"
         >
           {results.length === 0 ? (
-            <li className="px-3 py-2 text-xs text-[var(--text-muted)]">No matches</li>
+            <li className="px-3 py-2 text-xs text-[var(--text-muted)]">{t("search.noMatches")}</li>
           ) : (
             results.map((entry, i) => (
               <li key={entry.href} id={`${listId}-${i}`} role="option" aria-selected={i === highlightedIndex}>

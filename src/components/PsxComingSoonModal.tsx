@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import { useLanguage } from "@/components/LanguageProvider";
 
 interface Props {
   open: boolean;
@@ -19,6 +20,7 @@ const PANEL = {
 };
 
 export default function PsxComingSoonModal({ open, onClose }: Props) {
+  const { t } = useLanguage();
   // Close on Escape key
   useEffect(() => {
     if (!open) return;
@@ -63,7 +65,7 @@ export default function PsxComingSoonModal({ open, onClose }: Props) {
             <motion.div
               role="dialog"
               aria-modal="true"
-              aria-label="PSX — Coming Soon"
+              aria-label={t("modal.comingSoon")}
               className="pointer-events-auto w-full max-w-md rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-8 text-center shadow-2xl"
               variants={PANEL}
               initial="hidden"
@@ -94,32 +96,28 @@ export default function PsxComingSoonModal({ open, onClose }: Props) {
                 </svg>
               </div>
 
-              {/* Badge */}
               <span className="mt-5 inline-flex items-center rounded-full border border-neon-blue/20 bg-neon-blue/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-widest text-neon-blue/80">
-                Coming Soon
+                {t("modal.comingSoon")}
               </span>
 
-              {/* Title */}
               <h2 className="mt-4 text-lg font-semibold text-[var(--text-primary)]">
-                Pakistan Stock Exchange (PSX)
+                {t("modal.psxTitle")}
               </h2>
 
-              {/* Body */}
               <p className="mt-3 text-sm text-[var(--text-secondary)]">
-                This feature is currently under development.
+                {t("modal.psxDesc")}
               </p>
               <p className="mt-2 text-sm text-[var(--text-muted)]">
-                Live PSX index tracking and market analytics will be available in a future update.
+                {t("modal.psxSubDesc")}
               </p>
 
-              {/* Footer */}
               <div className="mt-7 flex justify-center">
                 <button
                   type="button"
                   onClick={onClose}
                   className="rounded-lg bg-sky-500 px-6 py-2 text-sm font-medium text-white transition-colors hover:bg-sky-600"
                 >
-                  Got it
+                  {t("modal.gotIt")}
                 </button>
               </div>
             </motion.div>

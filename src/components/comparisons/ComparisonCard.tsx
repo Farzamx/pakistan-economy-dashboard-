@@ -3,6 +3,7 @@
 import { useMemo, useRef } from "react";
 import ComparisonChart from "./ComparisonChart";
 import { exportChartAsCsv, exportChartAsPng } from "@/lib/comparisons/exportUtils";
+import { useLanguage } from "@/components/LanguageProvider";
 import {
   applyChartMode,
   applyTimeRange,
@@ -32,6 +33,7 @@ export default function ComparisonCard({
   timeRange,
   chartMode,
 }: ComparisonCardProps) {
+  const { t } = useLanguage();
   const chartContainerRef = useRef<HTMLDivElement>(null);
 
   const windowed = useMemo(() => applyTimeRange(merged, timeRange), [merged, timeRange]);
@@ -54,14 +56,14 @@ export default function ComparisonCard({
               onClick={() => chartContainerRef.current && exportChartAsPng(chartContainerRef.current, `${def.slug}.png`, "#05060f")}
               className="rounded-lg border border-[var(--border)] px-2.5 py-1 text-[11px] font-medium text-[var(--text-muted)] transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]"
             >
-              PNG
+              {t("budget.exportPng")}
             </button>
             <button
               type="button"
               onClick={() => exportChartAsCsv(chartData, def.seriesA, def.seriesB, `${def.slug}.csv`)}
               className="rounded-lg border border-[var(--border)] px-2.5 py-1 text-[11px] font-medium text-[var(--text-muted)] transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]"
             >
-              CSV
+              {t("budget.exportCsv")}
             </button>
           </div>
         )}
@@ -69,16 +71,16 @@ export default function ComparisonCard({
 
       {hasError && (
         <div className="flex h-[320px] flex-col items-center justify-center gap-2 rounded-xl border border-red-500/15 bg-red-500/[0.04] text-center">
-          <p className="text-sm font-medium text-red-400">Data unavailable right now</p>
+          <p className="text-sm font-medium text-red-400">{t("comparisons.dataUnavailable")}</p>
           <p className="max-w-xs text-xs text-[var(--text-muted)]">
-            One of the live sources for this comparison didn&apos;t respond. No estimated or cached values are shown in its place.
+            {t("comparisons.dataUnavailableDesc")}
           </p>
         </div>
       )}
 
       {isEmpty && (
         <div className="flex h-[320px] items-center justify-center rounded-xl border border-[var(--border)] bg-[var(--surface)]">
-          <p className="text-sm text-[var(--text-muted)]">No overlapping data in this time range.</p>
+          <p className="text-sm text-[var(--text-muted)]">{t("comparisons.noOverlap")}</p>
         </div>
       )}
 

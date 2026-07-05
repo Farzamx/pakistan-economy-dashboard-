@@ -9,9 +9,11 @@
 import Link from "next/link";
 import { usePreferences } from "@/components/PreferencesProvider";
 import { getWidgetLabel } from "@/lib/dashboardWidgets";
+import { useLanguage } from "@/components/LanguageProvider";
 
 export default function PinnedIndicatorsRow() {
   const { preferences, loading } = usePreferences();
+  const { t } = useLanguage();
   const pinned = preferences?.favoriteIndicators ?? [];
 
   if (loading || pinned.length === 0) return null;
@@ -19,7 +21,7 @@ export default function PinnedIndicatorsRow() {
   return (
     <section className="mt-6" data-cta-source="pinned-indicators">
       <h2 className="mb-2 text-sm font-semibold uppercase tracking-[0.12em] text-white/40 light:text-slate-500">
-        Pinned for You
+        {t("pinnedIndicators.title")}
       </h2>
       <div className="flex flex-wrap gap-2">
         {pinned.map((id) => (

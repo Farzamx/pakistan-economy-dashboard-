@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { useSafeReducedMotion } from "@/hooks/useSafeReducedMotion";
 import type { ProvincialRs100Slice } from "@/lib/provincial/provincialBudgetData";
+import { useLanguage } from "@/components/LanguageProvider";
 
 interface ProvincialRs100CardProps {
   data: ProvincialRs100Slice[];
@@ -12,6 +13,7 @@ interface ProvincialRs100CardProps {
 }
 
 export default function ProvincialRs100Card({ data, provinceName, fiscalYear, sourceLabel }: ProvincialRs100CardProps) {
+  const { t } = useLanguage();
   const prefersReducedMotion = useSafeReducedMotion();
   const sorted = [...data].sort((a, b) => b.rsPerHundred - a.rsPerHundred);
 
@@ -19,10 +21,10 @@ export default function ProvincialRs100Card({ data, provinceName, fiscalYear, so
     <div className="glass-card flex flex-col gap-6 rounded-2xl border-neon-blue/20 p-6 shadow-[0_0_36px_rgba(56,189,248,0.18)] sm:p-8">
       <div>
         <h3 className="text-lg font-semibold text-white light:text-slate-900 sm:text-xl">
-          Where Does Rs100 of {provinceName}&apos;s Spending Go?
+          {t("provincial.rs100Title")}
         </h3>
         <p className="mt-1 text-xs text-white/50 light:text-slate-500">
-          FY{fiscalYear} Budget Estimate — for every Rs100 {provinceName} spends.
+          FY{fiscalYear} — {t("provincial.rs100Desc")}
         </p>
       </div>
 
@@ -54,7 +56,7 @@ export default function ProvincialRs100Card({ data, provinceName, fiscalYear, so
       </div>
 
       <p className="text-[11px] text-white/40 light:text-slate-400">
-        Source: {sourceLabel}, FY{fiscalYear} Budget Estimate. Figures rounded to the nearest Rupee; rounding residue is absorbed into &quot;Other (Combined Categories)&quot;.
+        {t("budget.sourceNote")}
       </p>
     </div>
   );

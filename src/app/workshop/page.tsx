@@ -3,6 +3,7 @@ import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
 import { CATEGORY_META, getLessonsByCategory } from "@/lib/workshop/registry";
 import { SITE_URL, SITE_NAME } from "@/lib/seoConfig";
+import { T } from "@/components/T";
 
 const PAGE_URL = `${SITE_URL}/workshop`;
 const TITLE = "Economic Workshop — Learn Pakistan Economics";
@@ -59,15 +60,15 @@ export default function WorkshopPage() {
           {/* Header */}
           <div className="mb-10">
             <div className="mb-3 flex items-center gap-2 text-xs text-white/40 light:text-slate-400">
-              <Link href="/" className="hover:text-white light:hover:text-slate-700 transition-colors">Home</Link>
+              <Link href="/" className="hover:text-white light:hover:text-slate-700 transition-colors"><T tKey="workshop.home" /></Link>
               <span>/</span>
-              <span>Economic Workshop</span>
+              <span><T tKey="workshop.title" /></span>
             </div>
             <h1 className="text-3xl font-bold text-white light:text-slate-900 sm:text-4xl">
-              Economic Workshop
+              <T tKey="workshop.title" />
             </h1>
             <p className="mt-3 text-base text-white/60 light:text-slate-500 max-w-2xl">
-              Learn Pakistan economics from the ground up — beginner to advanced, available in English, اردو, and Roman Urdu.
+              <T tKey="workshop.subtitle" />
             </p>
           </div>
 
@@ -93,7 +94,7 @@ export default function WorkshopPage() {
                   </div>
                   <div className="mt-auto flex items-center justify-between">
                     <span className="text-xs text-white/40 light:text-slate-400">
-                      {lessons.length > 0 ? `${lessons.length} lesson${lessons.length !== 1 ? "s" : ""}` : "Coming soon"}
+                      {lessons.length > 0 ? `${lessons.length} ${lessons.length !== 1 ? "lessons" : "lesson"}` : <T tKey="workshop.comingSoon" />}
                     </span>
                     <svg
                       className={`h-4 w-4 transition-transform group-hover:translate-x-1 ${c.text}`}
@@ -115,9 +116,8 @@ export default function WorkshopPage() {
           {/* Language note */}
           <div className="mt-10 rounded-xl border border-amber-400/20 bg-amber-400/5 px-5 py-4">
             <p className="text-sm text-white/70 light:text-slate-600">
-              <span className="font-semibold text-amber-400">Multilingual:</span>{" "}
-              All lessons are available in English, اردو (Urdu), and Roman Urdu. Switch languages in{" "}
-              <span className="text-amber-400">Settings → Language</span>.
+              <span className="font-semibold text-amber-400"><T tKey="workshop.multilingual" />:</span>{" "}
+              <T tKey="workshop.switchLanguage" />
             </p>
           </div>
         </div>

@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import ComparisonChart from "./ComparisonChart";
 import { ALL_SERIES_OPTIONS, getSeriesOption } from "@/lib/comparisons/seriesOptions";
+import { useLanguage } from "@/components/LanguageProvider";
 import {
   applyChartMode,
   applyTimeRange,
@@ -21,6 +22,7 @@ type FetchState =
   | { status: "success"; merged: MergedPoint[]; sourceA: string; sourceB: string };
 
 export default function CustomComparisonBuilder() {
+  const { t } = useLanguage();
   const [aId, setAId] = useState<SeriesProviderId>(ALL_SERIES_OPTIONS[0].id);
   const [bId, setBId] = useState<SeriesProviderId>(ALL_SERIES_OPTIONS[1].id);
   const [timeRange, setTimeRange] = useState<TimeRange>("5y");
@@ -58,15 +60,15 @@ export default function CustomComparisonBuilder() {
   return (
     <div className="glass-card flex flex-col gap-5 rounded-2xl p-6">
       <div>
-        <h3 className="text-base font-semibold text-[var(--text-primary)]">Build Your Own Comparison</h3>
+        <h3 className="text-base font-semibold text-[var(--text-primary)]">{t("comparisons.buildTitle")}</h3>
         <p className="mt-1 text-sm text-[var(--text-muted)]">
-          Pick any two indicators tracked by this dashboard and compare them directly.
+          {t("comparisons.buildDesc")}
         </p>
       </div>
 
       <div className="flex flex-wrap items-end gap-3">
         <div className="flex flex-col gap-1">
-          <label htmlFor="custom-series-a" className="text-xs text-[var(--text-muted)]">Indicator A</label>
+          <label htmlFor="custom-series-a" className="text-xs text-[var(--text-muted)]">{t("comparisons.indicatorA")}</label>
           <select
             id="custom-series-a"
             value={aId}
@@ -85,7 +87,7 @@ export default function CustomComparisonBuilder() {
           </select>
         </div>
         <div className="flex flex-col gap-1">
-          <label htmlFor="custom-series-b" className="text-xs text-[var(--text-muted)]">Indicator B</label>
+          <label htmlFor="custom-series-b" className="text-xs text-[var(--text-muted)]">{t("comparisons.indicatorB")}</label>
           <select
             id="custom-series-b"
             value={bId}
@@ -109,12 +111,12 @@ export default function CustomComparisonBuilder() {
           disabled={aId === bId || state.status === "loading"}
           className="rounded-lg bg-neon-blue/15 px-4 py-1.5 text-sm font-medium text-neon-blue transition-colors hover:bg-neon-blue/25 disabled:cursor-not-allowed disabled:opacity-40"
         >
-          {state.status === "loading" ? "Loading…" : "Compare"}
+          {state.status === "loading" ? t("comparisons.loading") : t("comparisons.compareBtn")}
         </button>
       </div>
 
       {aId === bId && (
-        <p className="text-xs text-amber-400">Pick two different indicators to compare.</p>
+        <p className="text-xs text-amber-400">{t("comparisons.pickDifferent")}</p>
       )}
 
       {state.status === "error" && (

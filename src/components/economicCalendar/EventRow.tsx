@@ -1,5 +1,8 @@
+"use client";
+
 import Link from "next/link";
 import type { EconomicEvent } from "@/lib/economicCalendar/economicCalendarTypes";
+import { useLanguage } from "@/components/LanguageProvider";
 import { formatEventDate, formatEventTime, resolveStatus } from "@/lib/economicCalendar/economicCalendarData";
 import EventCategoryBadge from "./EventCategoryBadge";
 import EventImportanceBadge from "./EventImportanceBadge";
@@ -25,6 +28,7 @@ interface Props {
  */
 export default function EventRow({ event, showDate = true }: Props) {
   const status = resolveStatus(event);
+  const { t } = useLanguage();
   return (
     <div className="glass-card flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:gap-4 sm:p-4">
       <div className="flex flex-1 flex-col gap-1.5">
@@ -46,16 +50,16 @@ export default function EventRow({ event, showDate = true }: Props) {
 
       <div className="flex shrink-0 items-center gap-6 border-t border-white/5 light:border-slate-100 pt-3 sm:border-t-0 sm:pt-0">
         <div className="flex flex-col gap-0.5">
-          <span className="text-[10px] uppercase tracking-wide text-white/35 light:text-slate-400">Previous</span>
+          <span className="text-[10px] uppercase tracking-wide text-white/35 light:text-slate-400">{t("calendar.previousCol")}</span>
           <span className="text-sm font-medium text-white/80 light:text-slate-700">{event.previous ?? "—"}</span>
         </div>
         <div className="flex flex-col gap-0.5">
-          <span className="text-[10px] uppercase tracking-wide text-white/35 light:text-slate-400">Forecast</span>
+          <span className="text-[10px] uppercase tracking-wide text-white/35 light:text-slate-400">{t("calendar.forecastCol")}</span>
           <span className="text-sm font-medium text-neon-blue">{event.forecast ?? "—"}</span>
         </div>
         <div className="flex flex-col gap-0.5">
-          <span className="text-[10px] uppercase tracking-wide text-white/35 light:text-slate-400">Actual</span>
-          <span className={`text-sm font-medium ${event.actual ? "text-white" : "text-white/30 light:text-slate-400"}`}>{event.actual ?? "Pending"}</span>
+          <span className="text-[10px] uppercase tracking-wide text-white/35 light:text-slate-400">{t("calendar.actualCol")}</span>
+          <span className={`text-sm font-medium ${event.actual ? "text-white" : "text-white/30 light:text-slate-400"}`}>{event.actual ?? t("calendar.pending")}</span>
         </div>
       </div>
     </div>

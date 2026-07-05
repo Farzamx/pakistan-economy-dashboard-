@@ -160,8 +160,8 @@ export default function Sidebar() {
             P
           </div>
           <div>
-            <p className="text-sm font-semibold text-white light:text-slate-900">Pakistan EIC</p>
-            <p className="text-xs text-white/40 light:text-slate-400">Economic Dashboard</p>
+            <p className="text-sm font-semibold text-white light:text-slate-900">{t("nav.logoName")}</p>
+            <p className="text-xs text-white/40 light:text-slate-400">{t("nav.logoSubtitle")}</p>
           </div>
         </div>
 
@@ -171,7 +171,7 @@ export default function Sidebar() {
             CTA in the same sidebar). */}
         <SidebarAuthCard />
 
-        <GlobalSearch onLinkClick={handleProtectedNav} />
+        <GlobalSearch onLinkClick={handleProtectedNav} placeholder={t("search.placeholder")} />
 
         {/* Navigation — grouped per the Sidebar Information Architecture
             pass into Main / Analytics / Premium Tools bands. Premium Tools

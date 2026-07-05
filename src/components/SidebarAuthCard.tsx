@@ -13,9 +13,11 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
 import { signOutAction } from "@/app/auth/actions";
 import LogoutConfirmModal from "@/components/LogoutConfirmModal";
+import { useLanguage } from "@/components/LanguageProvider";
 
 export default function SidebarAuthCard() {
   const { user, loading, signOut } = useAuth();
+  const { t } = useLanguage();
   const router = useRouter();
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
@@ -87,7 +89,7 @@ export default function SidebarAuthCard() {
           data-cta-source="sidebar"
           className="w-full rounded-lg border border-[var(--border)] py-1.5 text-xs font-medium text-[var(--text-secondary)] transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]"
         >
-          Logout
+          {t("common.logout")}
         </button>
         <LogoutConfirmModal open={confirmOpen} onClose={() => setConfirmOpen(false)} onConfirm={handleSignOut} loading={signingOut} />
       </div>
@@ -102,7 +104,7 @@ export default function SidebarAuthCard() {
         data-cta-source="sidebar"
         className="glow-blue w-full rounded-lg bg-gradient-to-r from-neon-blue to-neon-purple py-2 text-center text-xs font-semibold text-white transition-opacity hover:opacity-90"
       >
-        Create Free Account
+        {t("hero.createAccount")}
       </Link>
       <Link
         href="/login"
@@ -110,7 +112,7 @@ export default function SidebarAuthCard() {
         data-cta-source="sidebar"
         className="w-full rounded-lg border border-[var(--border)] py-1.5 text-center text-xs font-medium text-[var(--text-secondary)] transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]"
       >
-        Login
+        {t("common.login")}
       </Link>
     </div>
   );

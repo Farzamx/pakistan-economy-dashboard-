@@ -6,6 +6,7 @@ import type { TaggedNewsItem } from "@/lib/data/intelligence";
 import { NEWS_CATEGORIES, type NewsCategory } from "@/lib/news/relevanceEngine";
 import InfoTooltip from "@/components/InfoTooltip";
 import { useSafeReducedMotion } from "@/hooks/useSafeReducedMotion";
+import { useLanguage } from "@/components/LanguageProvider";
 
 const SENTIMENT_STYLES: Record<string, string> = {
   Bullish: "bg-emerald-500/15 light:bg-emerald-50 text-emerald-400 light:text-emerald-700 border border-emerald-500/20 light:border-emerald-200",
@@ -85,6 +86,7 @@ const ITEMS_PER_TAB = 8;
 export default function NewsIntelligenceSection({ items, modelDisplayName, newsRefreshedAt, sourceCount }: Props) {
   const prefersReducedMotion = useSafeReducedMotion();
   const [activeTab, setActiveTab] = useState<TabId>("All");
+  const { t } = useLanguage();
 
   // Tabs with zero articles right now are hidden rather than shown empty —
   // which tabs are non-empty varies fetch to fetch with real news volume.
@@ -112,27 +114,26 @@ export default function NewsIntelligenceSection({ items, modelDisplayName, newsR
       >
         <div className="flex items-center gap-2">
           <h2 className="text-xl font-semibold text-white light:text-slate-900 sm:text-2xl">
-            News &amp; Intelligence
+            {t("news.title")}
           </h2>
           <span className="rounded-full border border-neon-blue/20 bg-neon-blue/10 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-widest text-neon-blue/70">
             {modelDisplayName}
           </span>
         </div>
         <p className="mt-2 max-w-2xl text-sm text-white/60 light:text-slate-500">
-          Latest headlines from Pakistan and global markets, enriched with AI
-          sentiment, risk, and economic impact analysis.
+          {t("news.description")}
         </p>
         <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1">
           <span className="text-[10px] text-white/25 light:text-slate-400">
-            <span className="text-white/35 light:text-slate-500">Refreshed</span>{" "}
+            <span className="text-white/35 light:text-slate-500">{t("news.refreshed")}</span>{" "}
             {newsRefreshedAt}
           </span>
           <span className="text-[10px] text-white/15 light:text-slate-300">·</span>
           <span className="text-[10px] text-white/25 light:text-slate-400">
-            {sourceCount} source{sourceCount !== 1 ? "s" : ""}
+            {sourceCount} {t("news.sources")}
           </span>
           <span className="text-[10px] text-white/15 light:text-slate-300">·</span>
-          <span className="text-[10px] text-white/25 light:text-slate-400">Breaking topics refresh every 10 min, general coverage every 25 min</span>
+          <span className="text-[10px] text-white/25 light:text-slate-400">{t("news.breakingRefresh")}</span>
         </div>
       </motion.div>
 
@@ -162,7 +163,7 @@ export default function NewsIntelligenceSection({ items, modelDisplayName, newsR
 
       {items.length === 0 && (
         <p className="mt-6 text-sm text-white/30 light:text-slate-400">
-          News feeds are temporarily unavailable. Check back shortly.
+          {t("news.unavailable")}
         </p>
       )}
 
@@ -216,7 +217,7 @@ export default function NewsIntelligenceSection({ items, modelDisplayName, newsR
 
                 <span className="inline-flex items-center gap-0.5">
                   <span className={`text-[10px] font-medium ${RISK_STYLES[riskLevel] ?? RISK_STYLES.Low}`}>
-                    {riskLevel} risk
+                    {riskLevel === "Low" ? t("news.riskLow") : riskLevel === "Moderate" ? t("news.riskMed") : t("news.riskHigh")}
                   </span>
                   <InfoTooltip termKey="Risk Level" size="xs" />
                 </span>
@@ -234,10 +235,10 @@ export default function NewsIntelligenceSection({ items, modelDisplayName, newsR
                   className={`rounded-md border px-1.5 py-0.5 text-[9px] font-semibold tabular-nums ${relevanceClass(item.relevanceScore)}`}
                   title="Pakistan relevance score (0-10)"
                 >
-                  Relevance {item.relevanceScore}
+                  {t("news.relevance")} {item.relevanceScore}
                 </span>
                 <span className="text-[9px] text-white/30 light:text-slate-400" title="Source reliability score (0-10)">
-                  Source {item.sourceReliability}/10
+                  {t("news.sourceRating")} {item.sourceReliability}/10
                 </span>
                 <span className={`text-[9px] font-medium ${FRESHNESS_STYLES[item.freshness]}`}>
                   {item.freshness}
@@ -257,7 +258,7 @@ export default function NewsIntelligenceSection({ items, modelDisplayName, newsR
                 // failure/fallback look identical to a card that simply had
                 // no deterministic market-impact rule. Now visibly flagged.
                 <p className="text-[10px] leading-relaxed text-white/25 light:text-slate-400 italic">
-                  AI analysis unavailable for this article.
+                  {t("news.aiUnavailable")}
                 </p>
               ) : (
                 reason && (

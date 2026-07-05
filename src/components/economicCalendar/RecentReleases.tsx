@@ -1,5 +1,8 @@
+"use client";
+
 import Link from "next/link";
 import type { EventRecord } from "@/lib/economicCalendar/economicEventsRepo";
+import { useLanguage } from "@/components/LanguageProvider";
 import { formatEventDate, formatEventTime } from "@/lib/economicCalendar/economicCalendarData";
 import { formatReleasedAgo, EVENT_RETENTION_DAYS } from "@/lib/economicCalendar/retentionConfig";
 import { calculateSurprise, SURPRISE_LABELS, SURPRISE_BADGE_CLASS } from "@/lib/economicCalendar/surpriseAnalysis";
@@ -17,15 +20,16 @@ import EventImportanceBadge from "./EventImportanceBadge";
  * thing an investor wants to see, ahead of anything upcoming.
  */
 export default function RecentReleases({ events }: { events: EventRecord[] }) {
+  const { t } = useLanguage();
   if (events.length === 0) return null;
   const today = new Date();
 
   return (
     <section className="glass-card flex flex-col gap-4 rounded-2xl p-6 sm:p-8">
       <div>
-        <h2 className="text-xl font-semibold text-white light:text-slate-900">Recent Releases</h2>
+        <h2 className="text-xl font-semibold text-white light:text-slate-900">{t("calendar.recentReleases")}</h2>
         <p className="mt-1 text-sm text-white/50 light:text-slate-500">
-          Released in the last {EVENT_RETENTION_DAYS} days — still here to review Actual vs Forecast before moving to the Archive.
+          {t("calendar.recentReleasesDesc")}
         </p>
       </div>
 
@@ -50,15 +54,15 @@ export default function RecentReleases({ events }: { events: EventRecord[] }) {
               </div>
               <div className="flex shrink-0 items-center gap-5 border-t border-white/5 light:border-slate-100 pt-3 sm:border-t-0 sm:pt-0">
                 <div className="flex flex-col gap-0.5">
-                  <span className="text-[10px] uppercase tracking-wide text-white/35 light:text-slate-400">Previous</span>
+                  <span className="text-[10px] uppercase tracking-wide text-white/35 light:text-slate-400">{t("calendar.previousCol")}</span>
                   <span className="text-sm font-medium text-white/70 light:text-slate-600">{event.previousValue ?? "—"}</span>
                 </div>
                 <div className="flex flex-col gap-0.5">
-                  <span className="text-[10px] uppercase tracking-wide text-white/35 light:text-slate-400">Forecast</span>
+                  <span className="text-[10px] uppercase tracking-wide text-white/35 light:text-slate-400">{t("calendar.forecastCol")}</span>
                   <span className="text-sm font-medium text-white/70 light:text-slate-600">{event.forecastValue ?? "—"}</span>
                 </div>
                 <div className="flex flex-col gap-0.5">
-                  <span className="text-[10px] uppercase tracking-wide text-white/35 light:text-slate-400">Actual</span>
+                  <span className="text-[10px] uppercase tracking-wide text-white/35 light:text-slate-400">{t("calendar.actualCol")}</span>
                   <span className="text-sm font-semibold text-neon-blue">{event.actualValue ?? "—"}</span>
                 </div>
                 {surprise.direction !== "unavailable" && (

@@ -2,6 +2,7 @@
 
 import { BUDGET_FIELD_META } from "@/lib/budget/budgetRegistry";
 import type { BudgetTrendField, TrendValueMode } from "@/lib/budget/budgetData";
+import { useLanguage } from "@/components/LanguageProvider";
 
 interface BudgetControlsProps {
   selectedFields: BudgetTrendField[];
@@ -22,6 +23,7 @@ export default function BudgetControls({
   mode,
   onModeChange,
 }: BudgetControlsProps) {
+  const { t } = useLanguage();
   function toggleField(field: BudgetTrendField) {
     if (selectedFields.includes(field)) {
       if (selectedFields.length === 1) return; // keep at least one selected
@@ -47,7 +49,7 @@ export default function BudgetControls({
                   : "text-[var(--text-muted)] hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]"
               }`}
             >
-              {m === "nominal" ? "Nominal Rs" : "% of GDP"}
+              {m === "nominal" ? t("budget.nominal") : t("budget.percentOfGdp")}
             </button>
           ))}
         </div>

@@ -28,19 +28,21 @@ import ProvincialDebtSection from "./ProvincialDebtSection";
 import ProvincialPerCitizenSection from "./ProvincialPerCitizenSection";
 import ProvincialHistoricalExplorer from "./ProvincialHistoricalExplorer";
 import InfoTooltip from "@/components/InfoTooltip";
+import { useLanguage } from "@/components/LanguageProvider";
 
 interface ProvincialWorkspaceProps {
   province: ProvinceId;
 }
 
 type AllocationView = "donut" | "treemap" | "table";
-const ALLOCATION_VIEWS: { id: AllocationView; label: string }[] = [
-  { id: "donut", label: "Donut" },
-  { id: "treemap", label: "Treemap" },
-  { id: "table", label: "Table" },
-];
 
 export default function ProvincialWorkspace({ province }: ProvincialWorkspaceProps) {
+  const { t } = useLanguage();
+  const ALLOCATION_VIEWS: { id: AllocationView; label: string }[] = [
+    { id: "donut", label: t("provincial.donut") },
+    { id: "treemap", label: t("provincial.treemap") },
+    { id: "table", label: t("provincial.table") },
+  ];
   const meta = getProvinceMeta(province);
   const years = getProvinceYears(province);
   const latestYear = getLatestProvinceYear(province).fiscalYear;
@@ -59,21 +61,21 @@ export default function ProvincialWorkspace({ province }: ProvincialWorkspacePro
   const relatedSeoPages = getSeoPagesForProvince(province);
 
   const kpis: { title: string; field: keyof typeof year; tooltipKey?: string }[] = [
-    { title: "Total Budget", field: "totalOutlay" },
-    { title: "Development Budget", field: "developmentBudget", tooltipKey: "development-budget" },
-    { title: "Education", field: "education" },
-    { title: "Health", field: "health" },
-    { title: "Agriculture", field: "agriculture" },
-    { title: "Debt Servicing", field: "debtServicing", tooltipKey: "provincial-debt-servicing" },
-    { title: "Federal Transfers", field: "federalTransfers", tooltipKey: "federal-transfers" },
-    { title: "Own Revenue", field: "ownRevenue", tooltipKey: "own-revenue" },
+    { title: t("provincial.totalBudget"), field: "totalOutlay" },
+    { title: t("provincial.development"), field: "developmentBudget", tooltipKey: "development-budget" },
+    { title: t("provincial.education"), field: "education" },
+    { title: t("provincial.health"), field: "health" },
+    { title: t("provincial.agriculture"), field: "agriculture" },
+    { title: t("provincial.debtServicing"), field: "debtServicing", tooltipKey: "provincial-debt-servicing" },
+    { title: t("provincial.federalTransfers"), field: "federalTransfers", tooltipKey: "federal-transfers" },
+    { title: t("provincial.ownRevenue"), field: "ownRevenue", tooltipKey: "own-revenue" },
   ];
 
   return (
     <div className="flex flex-col gap-10">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-[var(--text-primary)]">{meta.name} Budget Workshop</h1>
+          <h1 className="text-2xl font-semibold text-[var(--text-primary)]">{meta.name} {t("provincial.workshopTitle")}</h1>
           <p className="mt-1 max-w-2xl text-sm text-[var(--text-muted)]">
             {`${meta.name}'s provincial budget, sourced from the ${meta.name} Finance Department's own official documents — separate from, and not merged with, the `}
             <Link href="/budget" className="text-neon-blue hover:underline">
@@ -83,9 +85,9 @@ export default function ProvincialWorkspace({ province }: ProvincialWorkspacePro
           </p>
         </div>
         <div className="flex items-center gap-2 text-xs font-medium text-[var(--text-muted)]">
-          Fiscal Year
+          {t("provincial.fiscalYear")}
           <Dropdown
-            label="Fiscal Year"
+            label={t("provincial.fiscalYear")}
             value={selectedFy}
             onChange={setSelectedFy}
             options={years.map((y) => ({ value: y.fiscalYear, label: `FY${y.fiscalYear}` }))}
@@ -95,7 +97,7 @@ export default function ProvincialWorkspace({ province }: ProvincialWorkspacePro
 
       <nav aria-label="Provincial Budget navigation" className="flex flex-wrap items-center gap-2 text-xs">
         <Link href="/provincial-budget" className="rounded-full border border-white/10 light:border-slate-200 px-3 py-1.5 text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)]">
-          ← All Provinces
+          {t("provincial.allProvinces")}
         </Link>
         {PROVINCES.filter((p) => p.id !== province).map((p) => (
           <Link
@@ -107,13 +109,13 @@ export default function ProvincialWorkspace({ province }: ProvincialWorkspacePro
           </Link>
         ))}
         <Link href="/provincial-budget/rankings" className="rounded-full border border-white/10 light:border-slate-200 px-3 py-1.5 text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)]">
-          Province Rankings
+          {t("provincial.rankings")}
         </Link>
         <Link href="/provincial-budget/growth-explorer" className="rounded-full border border-white/10 light:border-slate-200 px-3 py-1.5 text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)]">
-          Growth Explorer
+          {t("provincial.growthExplorer")}
         </Link>
         <Link href="/provincial-budget/compare" className="rounded-full border border-neon-purple/30 bg-neon-purple/10 px-3 py-1.5 text-neon-purple transition-colors hover:bg-neon-purple/20">
-          Compare All Provinces
+          {t("provincial.compareAll")}
         </Link>
       </nav>
 
@@ -143,8 +145,8 @@ export default function ProvincialWorkspace({ province }: ProvincialWorkspacePro
       <section className="flex flex-col gap-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="text-lg font-semibold text-[var(--text-primary)]">Where Does {meta.name}&apos;s Budget Go?</h2>
-            <p className="text-sm text-[var(--text-muted)]">FY{year.fiscalYear} provincial budget allocation by major category.</p>
+            <h2 className="text-lg font-semibold text-[var(--text-primary)]">{t("provincial.whereDoesGo")}</h2>
+            <p className="text-sm text-[var(--text-muted)]">{t("provincial.whereDoesGoDesc")}</p>
           </div>
           <div className="flex gap-1 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-1">
             {ALLOCATION_VIEWS.map((v) => (
@@ -166,7 +168,7 @@ export default function ProvincialWorkspace({ province }: ProvincialWorkspacePro
           {allocationView === "donut" && <ProvincialAllocationChart data={allocation} />}
           {allocationView === "treemap" && <ProvincialTreemap data={allocation} />}
           {allocationView === "table" && <ProvincialAllocationTable data={allocation} />}
-          <p className="mt-2 text-[11px] text-[var(--text-muted)]">Source: {sourceLabel}, FY{year.fiscalYear} Budget Estimate.</p>
+          <p className="mt-2 text-[11px] text-[var(--text-muted)]">{t("budget.sourceNote")}</p>
           <OtherSpendingNote residualNote={year.otherResidualNote} />
         </div>
       </section>
@@ -184,14 +186,14 @@ export default function ProvincialWorkspace({ province }: ProvincialWorkspacePro
 
       {year.notes && (
         <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface)] p-4">
-          <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-[var(--text-muted)]">Data Notes</p>
+          <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-[var(--text-muted)]">{t("provincial.dataNotes")}</p>
           <p className="text-xs leading-relaxed text-[var(--text-secondary)]">{year.notes}</p>
         </div>
       )}
 
       {relatedSeoPages.length > 0 && (
         <div className="flex flex-wrap items-center gap-2 border-t border-white/5 light:border-slate-100 pt-6 text-xs">
-          <span className="text-[var(--text-muted)]">Related:</span>
+          <span className="text-[var(--text-muted)]">{t("provincial.related")}</span>
           {relatedSeoPages.map((p) => (
             <Link
               key={p.slug}

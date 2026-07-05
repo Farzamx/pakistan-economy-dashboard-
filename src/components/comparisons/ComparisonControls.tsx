@@ -1,6 +1,7 @@
 "use client";
 
 import type { ChartMode, TimeRange } from "@/lib/comparisons/comparisonData";
+import { useLanguage } from "@/components/LanguageProvider";
 
 interface ComparisonControlsProps {
   timeRange: TimeRange;
@@ -9,19 +10,6 @@ interface ComparisonControlsProps {
   onChartModeChange: (mode: ChartMode) => void;
 }
 
-const TIME_RANGES: { value: TimeRange; label: string }[] = [
-  { value: "1y", label: "1Y" },
-  { value: "3y", label: "3Y" },
-  { value: "5y", label: "5Y" },
-  { value: "10y", label: "10Y" },
-  { value: "max", label: "Max" },
-];
-
-const CHART_MODES: { value: ChartMode; label: string }[] = [
-  { value: "raw", label: "Raw Values" },
-  { value: "percentChange", label: "% Change" },
-  { value: "baseIndex", label: "Base 100 Index" },
-];
 
 function ToggleGroup<T extends string>({
   options,
@@ -62,6 +50,19 @@ export default function ComparisonControls({
   chartMode,
   onChartModeChange,
 }: ComparisonControlsProps) {
+  const { t } = useLanguage();
+  const TIME_RANGES: { value: TimeRange; label: string }[] = [
+    { value: "1y", label: t("comparisons.time1Y") },
+    { value: "3y", label: t("comparisons.time3Y") },
+    { value: "5y", label: t("comparisons.time5Y") },
+    { value: "10y", label: t("comparisons.time10Y") },
+    { value: "max", label: t("comparisons.timeMax") },
+  ];
+  const CHART_MODES: { value: ChartMode; label: string }[] = [
+    { value: "raw", label: t("comparisons.modeRaw") },
+    { value: "percentChange", label: t("comparisons.modePct") },
+    { value: "baseIndex", label: t("comparisons.modeIndex") },
+  ];
   return (
     <div className="flex flex-wrap items-center gap-3">
       <ToggleGroup options={TIME_RANGES} value={timeRange} onChange={onTimeRangeChange} />

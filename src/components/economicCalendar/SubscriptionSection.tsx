@@ -1,6 +1,9 @@
+"use client";
+
 import ViewportFadeIn from "@/components/ViewportFadeIn";
 import SubscriptionForm from "./SubscriptionForm";
 import LiveEmailPreview from "./LiveEmailPreview";
+import { useLanguage } from "@/components/LanguageProvider";
 
 // Premium subscription experience — deliberately "dark mode only" (fixed
 // colors, no light: variants) regardless of the dashboard's own theme
@@ -45,7 +48,7 @@ const OFFICIAL_SOURCE_BADGES = ["State Bank of Pakistan (SBP)", "Pakistan Bureau
 // it's a positive number, with zero other changes needed.
 const SUBSCRIBER_COUNT: number | null = null;
 
-function AudienceStatement({ count }: { count: number | null }) {
+function AudienceStatement({ count, text }: { count: number | null; text: string }) {
   if (count && count > 0) {
     return (
       <p className="text-xs leading-relaxed text-slate-500">
@@ -54,23 +57,34 @@ function AudienceStatement({ count }: { count: number | null }) {
     );
   }
   return (
-    <p className="text-xs leading-relaxed text-slate-500">Designed for investors, analysts, economists, businesses, researchers, and anyone who follows Pakistan&apos;s economy.</p>
+    <p className="text-xs leading-relaxed text-slate-500">{text}</p>
   );
 }
 
 export default function SubscriptionSection() {
+  const { t } = useLanguage();
+  const officialSources = [t("subscription.sbpSource"), t("subscription.pbsSource"), t("subscription.mofSource"), t("subscription.otherSource")];
+  const trustPoints = [t("subscription.trustOfficial"), t("subscription.trustVerified"), t("subscription.trustFast"), t("subscription.trustNoSpam"), t("subscription.trustUnsubscribe"), t("subscription.trustFree")];
+  const trackedEvents = [
+    t("subscription.consumerPrices"), "Core Inflation", t("subscription.spiData"),
+    t("subscription.monetaryDecisions"), "Monetary Policy Reports",
+    t("subscription.foreignReserves"), t("subscription.currentAccount"),
+    t("subscription.workerRemittances"), t("subscription.tradeBalance"),
+    "Treasury Bill Auctions", "Pakistan Investment Bond Auctions",
+    t("subscription.largeLSM"), t("subscription.gdpGrowthData"),
+  ];
   return (
     <section id="email-alerts" aria-labelledby="subscribe-heading" className="rounded-3xl border border-white/10 bg-[#05060f] p-6 sm:p-10">
       <ViewportFadeIn>
         <div className="mx-auto max-w-2xl text-center">
-          <p className="text-xs font-semibold uppercase tracking-[0.25em] text-sky-400">Economic Release Notifications</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.25em] text-sky-400">{t("subscription.notificationsTitle")}</p>
           <h2 id="subscribe-heading" className="mt-3 text-2xl font-bold tracking-tight text-white sm:text-[34px]">
-            Never Miss a Market-Moving Economic Release
+            {t("subscription.neverMiss")}
           </h2>
-          <p className="mt-4 text-base leading-relaxed text-slate-400">Receive official Pakistan economic releases in your inbox within minutes of publication.</p>
+          <p className="mt-4 text-base leading-relaxed text-slate-400">{t("subscription.officialDesc")}</p>
 
           <ul className="mt-5 flex flex-wrap items-center justify-center gap-2" aria-label="Official data sources">
-            {OFFICIAL_SOURCE_BADGES.map((source) => (
+            {officialSources.map((source) => (
               <li key={source} className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-xs text-slate-400">
                 <span className="text-emerald-400" aria-hidden="true">
                   &#10003;
@@ -86,7 +100,7 @@ export default function SubscriptionSection() {
         <ViewportFadeIn delay={0.05}>
           <div className="flex h-full flex-col gap-6 rounded-2xl border border-white/10 bg-[#0b0d18] p-6 sm:p-8" style={{ boxShadow: "0 0 32px rgba(56,189,248,0.08)" }}>
             <div>
-              <h3 className="text-lg font-semibold text-white">Subscribe</h3>
+              <h3 className="text-lg font-semibold text-white">{t("subscription.subscribe")}</h3>
               <p className="mt-1 text-sm text-slate-400">One email address. No account, no password, no preferences to configure.</p>
             </div>
 
@@ -94,12 +108,12 @@ export default function SubscriptionSection() {
 
             <div className="rounded-xl border border-white/5 bg-white/[0.02] px-4 py-3">
               <p className="text-xs leading-relaxed text-slate-400">
-                You&apos;ll receive alerts only when important official economic releases are published. No daily newsletters. No promotional emails. No spam.
+                {t("subscription.privacy")}
               </p>
             </div>
 
             <ul className="flex flex-col gap-2 border-t border-white/10 pt-5 sm:grid sm:grid-cols-2 sm:gap-x-4 sm:gap-y-2">
-              {TRUST_POINTS.map((point) => (
+              {trustPoints.map((point) => (
                 <li key={point} className="flex items-start gap-2 text-sm text-slate-400">
                   <span className="mt-0.5 text-emerald-400" aria-hidden="true">
                     &#10003;
@@ -109,16 +123,16 @@ export default function SubscriptionSection() {
               ))}
             </ul>
 
-            <AudienceStatement count={SUBSCRIBER_COUNT} />
+            <AudienceStatement count={SUBSCRIBER_COUNT} text={t("subscription.audienceText")} />
           </div>
         </ViewportFadeIn>
 
         <div className="flex flex-col gap-5">
           <ViewportFadeIn delay={0.1}>
             <div className="rounded-2xl border border-white/10 bg-[#0b0d18] p-6 sm:p-7">
-              <h3 className="text-base font-semibold text-white">You&apos;ll receive alerts for</h3>
+              <h3 className="text-base font-semibold text-white">{t("subscription.title")}</h3>
               <ul className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
-                {TRACKED_EVENTS.map((event) => (
+                {trackedEvents.map((event) => (
                   <li key={event} className="flex items-start gap-2 text-sm text-slate-300">
                     <span className="mt-0.5 text-sky-400" aria-hidden="true">
                       &#10003;

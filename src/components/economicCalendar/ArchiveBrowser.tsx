@@ -10,6 +10,7 @@ import { EVENT_CATEGORY_LIST } from "@/lib/economicCalendar/economicCalendarRegi
 import { formatEventDate } from "@/lib/economicCalendar/economicCalendarData";
 import { calculateSurprise, SURPRISE_LABELS, SURPRISE_BADGE_CLASS } from "@/lib/economicCalendar/surpriseAnalysis";
 import type { EventRecord } from "@/lib/economicCalendar/economicEventsRepo";
+import { useLanguage } from "@/components/LanguageProvider";
 
 interface Props {
   events: EventRecord[];
@@ -25,6 +26,7 @@ function StatTile({ label, value, accent }: { label: string; value: number; acce
 }
 
 export default function ArchiveBrowser({ events }: Props) {
+  const { t } = useLanguage();
   const years = useMemo(() => Array.from(new Set(events.map((e) => e.eventDate.slice(0, 4)))).sort((a, b) => b.localeCompare(a)), [events]);
   const [category, setCategory] = useState<string>("All");
   const [year, setYear] = useState<string>("All");
@@ -52,9 +54,9 @@ export default function ArchiveBrowser({ events }: Props) {
   return (
     <div className="flex flex-col gap-4">
       <div className="grid grid-cols-3 gap-3">
-        <StatTile label="Total Events" value={stats.total} accent="#38bdf8" />
-        <StatTile label="Released Events" value={stats.released} accent="#34d399" />
-        <StatTile label="High Impact Events" value={stats.highImpact} accent="#fb7185" />
+        <StatTile label={t("calendar.totalEvents")} value={stats.total} accent="#38bdf8" />
+        <StatTile label={t("calendar.releasedEvents")} value={stats.released} accent="#34d399" />
+        <StatTile label={t("calendar.highImpactEvents")} value={stats.highImpact} accent="#fb7185" />
       </div>
 
       <div className="glass-card flex flex-col gap-3 rounded-2xl p-4 sm:p-5">
@@ -67,13 +69,13 @@ export default function ArchiveBrowser({ events }: Props) {
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search released events or categories..."
+            placeholder={t("calendar.searchReleased")}
             className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] py-2 pl-8 pr-3 text-xs text-[var(--text-primary)] outline-none transition-colors placeholder:text-[var(--text-muted)] focus:border-neon-blue/40"
           />
         </div>
 
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="text-sm text-white/50 light:text-slate-500">{filtered.length} event{filtered.length === 1 ? "" : "s"}</p>
+          <p className="text-sm text-white/50 light:text-slate-500">{filtered.length} {t("calendar.eventCount")}</p>
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
@@ -83,21 +85,21 @@ export default function ArchiveBrowser({ events }: Props) {
                 releasedOnly ? "border-emerald-400/40 bg-emerald-400/15 text-emerald-400" : "border-[var(--border)] bg-[var(--surface)] text-[var(--text-secondary)] hover:bg-[var(--surface-hover)]"
               }`}
             >
-              Released Only
+              {t("calendar.releasedOnly")}
             </button>
             <Dropdown
-              label="Category"
+              label={t("common.category")}
               value={category}
               onChange={setCategory}
-              options={[{ value: "All", label: "All Categories" }, ...EVENT_CATEGORY_LIST.map((c) => ({ value: c, label: c }))]}
+              options={[{ value: "All", label: t("calendar.allCategories") }, ...EVENT_CATEGORY_LIST.map((c) => ({ value: c, label: c }))]}
             />
-            <Dropdown label="Year" value={year} onChange={setYear} options={[{ value: "All", label: "All Years" }, ...years.map((y) => ({ value: y, label: y }))]} />
+            <Dropdown label="Year" value={year} onChange={setYear} options={[{ value: "All", label: t("calendar.allYears") }, ...years.map((y) => ({ value: y, label: y }))]} />
           </div>
         </div>
       </div>
 
       {filtered.length === 0 ? (
-        <p className="glass-card rounded-2xl p-6 text-center text-sm text-white/50 light:text-slate-500">No events match these filters yet.</p>
+        <p className="glass-card rounded-2xl p-6 text-center text-sm text-white/50 light:text-slate-500">{t("calendar.noEventsMatch")}</p>
       ) : (
         <div className="flex flex-col gap-2.5">
           {filtered.map((event) => {
@@ -126,11 +128,11 @@ export default function ArchiveBrowser({ events }: Props) {
                 </div>
                 <div className="flex shrink-0 items-center gap-6 border-t border-white/5 light:border-slate-100 pt-3 sm:border-t-0 sm:pt-0">
                   <div className="flex flex-col gap-0.5">
-                    <span className="text-[10px] uppercase tracking-wide text-white/35 light:text-slate-400">Forecast</span>
+                    <span className="text-[10px] uppercase tracking-wide text-white/35 light:text-slate-400">{t("calendar.forecastCol")}</span>
                     <span className="text-sm font-medium text-white/70 light:text-slate-600">{event.forecastValue ?? "—"}</span>
                   </div>
                   <div className="flex flex-col gap-0.5">
-                    <span className="text-[10px] uppercase tracking-wide text-white/35 light:text-slate-400">Actual</span>
+                    <span className="text-[10px] uppercase tracking-wide text-white/35 light:text-slate-400">{t("calendar.actualCol")}</span>
                     <span className="text-sm font-semibold text-neon-blue">{event.actualValue ?? "—"}</span>
                   </div>
                 </div>

@@ -9,6 +9,7 @@ import DataQualityBadge from "@/components/DataQualityBadge";
 import { getActiveTier, SOURCE_CHAINS } from "@/lib/marketDataSources";
 import { KPI_SEO_SLUG } from "@/lib/seoConfig";
 import { useTheme } from "@/components/ThemeProvider";
+import { useLanguage } from "@/components/LanguageProvider";
 
 // Hand-rolled inline SVG rather than mounting recharts for an 18px-tall
 // decoration — only renders when a real historical slice was passed in
@@ -67,6 +68,7 @@ const lightHoverGlow = "0 4px 12px rgba(0,0,0,0.10), 0 2px 4px rgba(0,0,0,0.06)"
 
 export default function KpiCard({ title, value, unit, change, trend, glow, source, latestDate, frequency, marketType, expectedReleaseDate, releaseAlreadyReflected, sourceStatus, snapshotDate, sparkline }: Kpi) {
   const { theme } = useTheme();
+  const { t } = useLanguage();
   const isLight = theme === "light";
 
   const trendColor = trend === "up"
@@ -124,7 +126,7 @@ export default function KpiCard({ title, value, unit, change, trend, glow, sourc
           href={`/${seoSlug}`}
           className="mt-auto text-[11px] font-medium text-neon-blue/70 underline-offset-2 transition-colors hover:text-neon-blue hover:underline"
         >
-          Learn more →
+          {t("common.learnMore")} →
         </Link>
       )}
     </motion.div>

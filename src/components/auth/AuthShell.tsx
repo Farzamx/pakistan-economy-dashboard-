@@ -1,14 +1,18 @@
+"use client";
+
 import Link from "next/link";
+import { useLanguage } from "@/components/LanguageProvider";
 
 interface AuthShellProps {
-  title: string;
-  subtitle: string;
+  title: React.ReactNode;
+  subtitle: React.ReactNode;
   children: React.ReactNode;
   footer?: React.ReactNode;
 }
 
-/** Shared centered-card layout for /login, /signup, /forgot-password, /reset-password — the galaxy background and starfield are already rendered globally by layout.tsx, so this just needs the glass-card itself. */
+/** Shared centered-card layout for /login, /signup, /forgot-password, /reset-password */
 export default function AuthShell({ title, subtitle, children, footer }: AuthShellProps) {
+  const { t } = useLanguage();
   return (
     <main className="flex min-h-screen w-full items-center justify-center px-4 py-12 sm:px-6">
       <div className="w-full max-w-md">
@@ -17,8 +21,8 @@ export default function AuthShell({ title, subtitle, children, footer }: AuthShe
             P
           </div>
           <div className="text-left">
-            <p className="text-sm font-semibold text-white light:text-slate-900">Pakistan EIC</p>
-            <p className="text-xs text-white/40 light:text-slate-400">Economic Dashboard</p>
+            <p className="text-sm font-semibold text-white light:text-slate-900">{t("nav.logoName")}</p>
+            <p className="text-xs text-white/40 light:text-slate-400">{t("nav.logoSubtitle")}</p>
           </div>
         </Link>
 

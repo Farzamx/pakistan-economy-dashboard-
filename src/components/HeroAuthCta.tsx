@@ -9,11 +9,12 @@
 
 import Link from "next/link";
 import { useAuth } from "@/components/AuthProvider";
-
-const BENEFITS = ["Access Comparisons", "Access Budget Workshops", "Provincial Budget Intelligence", "Future Member Features"];
+import { useLanguage } from "@/components/LanguageProvider";
 
 export default function HeroAuthCta() {
   const { user, loading } = useAuth();
+  const { t } = useLanguage();
+  const benefits = [t("hero.benefitComparisons"), t("hero.benefitBudget"), t("hero.benefitProvincial"), t("hero.benefitPremium")];
 
   // Suppressed entirely while the initial session check is in flight —
   // same convention as Sidebar/MobileNav — to avoid a flash of the wrong
@@ -28,7 +29,7 @@ export default function HeroAuthCta() {
     // lightweight acknowledgment.
     return (
       <p className="mt-4 text-sm text-white/70 light:text-slate-600" data-cta-source="hero">
-        Welcome back, <span className="font-semibold text-white light:text-slate-900">{user.email}</span>
+        {t("hero.welcomeBack")} <span className="font-semibold text-white light:text-slate-900">{user.email}</span>
       </p>
     );
   }
@@ -42,7 +43,7 @@ export default function HeroAuthCta() {
           data-cta-source="hero"
           className="glow-blue rounded-xl bg-gradient-to-r from-neon-blue to-neon-purple px-5 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90"
         >
-          Create Free Account
+          {t("hero.createAccount")}
         </Link>
         <Link
           href="/login"
@@ -50,11 +51,11 @@ export default function HeroAuthCta() {
           data-cta-source="hero"
           className="rounded-xl border border-[var(--border)] bg-[var(--surface)] px-5 py-2.5 text-sm font-medium text-[var(--text-primary)] transition-colors hover:bg-[var(--surface-hover)]"
         >
-          Login
+          {t("hero.login")}
         </Link>
       </div>
       <ul className="flex flex-wrap gap-x-5 gap-y-1.5">
-        {BENEFITS.map((b) => (
+        {benefits.map((b) => (
           <li key={b} className="flex items-center gap-1.5 text-xs text-white/50 light:text-slate-500">
             <span className="text-emerald-400">✓</span>
             {b}

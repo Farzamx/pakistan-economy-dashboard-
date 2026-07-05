@@ -18,6 +18,7 @@
 import { useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import Link from "next/link";
+import { useLanguage } from "@/components/LanguageProvider";
 
 interface Props {
   open: boolean;
@@ -36,15 +37,15 @@ const PANEL = {
   visible: { opacity: 1, scale: 1, y: 0 },
 };
 
-const BENEFITS = [
-  "Access Budget Workshops",
-  "Compare Economic Indicators",
-  "Provincial Budget Intelligence",
-  "Save Preferences",
-  "Future Premium Features",
-];
-
 export default function GuestAccessModal({ open, onClose, destination }: Props) {
+  const { t } = useLanguage();
+  const benefits = [
+    t("auth.benefitBudget"),
+    t("auth.benefitCompare"),
+    t("auth.benefitProvincial"),
+    t("auth.benefitPreferences"),
+    t("auth.benefitPremium"),
+  ];
   useEffect(() => {
     if (!open) return;
     function onKey(e: KeyboardEvent) {
@@ -86,7 +87,7 @@ export default function GuestAccessModal({ open, onClose, destination }: Props) 
             <motion.div
               role="dialog"
               aria-modal="true"
-              aria-label="Create Free Account"
+              aria-label={t("auth.guestTitle")}
               className="glass-card pointer-events-auto w-full max-w-md rounded-2xl border-neon-blue/20 p-8 text-center shadow-[0_0_50px_rgba(56,189,248,0.18)]"
               variants={PANEL}
               initial="hidden"
@@ -115,11 +116,11 @@ export default function GuestAccessModal({ open, onClose, destination }: Props) 
                 </svg>
               </div>
 
-              <h2 className="mt-5 text-lg font-semibold text-[var(--text-primary)]">Create Free Account</h2>
-              <p className="mt-2 text-sm text-[var(--text-muted)]">Sign in or create a free account to continue.</p>
+              <h2 className="mt-5 text-lg font-semibold text-[var(--text-primary)]">{t("auth.guestTitle")}</h2>
+              <p className="mt-2 text-sm text-[var(--text-muted)]">{t("auth.guestDesc")}</p>
 
               <ul className="mx-auto mt-5 flex max-w-xs flex-col gap-2 text-left">
-                {BENEFITS.map((b) => (
+                {benefits.map((b) => (
                   <li key={b} className="flex items-center gap-2.5 text-sm text-[var(--text-secondary)]">
                     <span className="text-emerald-400">✓</span>
                     {b}
@@ -134,7 +135,7 @@ export default function GuestAccessModal({ open, onClose, destination }: Props) 
                   data-cta-source="modal"
                   className="flex-1 rounded-xl border border-[var(--border)] px-4 py-2.5 text-sm font-medium text-[var(--text-primary)] transition-colors hover:bg-[var(--surface-hover)]"
                 >
-                  Log In
+                  {t("common.login")}
                 </Link>
                 <Link
                   href={`/signup${redirectQuery}`}
@@ -142,7 +143,7 @@ export default function GuestAccessModal({ open, onClose, destination }: Props) 
                   data-cta-source="modal"
                   className="flex-1 rounded-xl bg-neon-blue px-4 py-2.5 text-sm font-semibold text-[#05060f] transition-opacity hover:opacity-90"
                 >
-                  Sign Up
+                  {t("common.signup")}
                 </Link>
               </div>
             </motion.div>

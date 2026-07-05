@@ -20,10 +20,12 @@ import { useAuth } from "@/components/AuthProvider";
 import { usePreferences } from "@/components/PreferencesProvider";
 import { isProtectedPath } from "@/lib/protectedSections";
 import GuestAccessModal from "@/components/GuestAccessModal";
+import { useLanguage } from "@/components/LanguageProvider";
 
 export default function ProvincialQuickAccess() {
   const { user, loading } = useAuth();
   const { preferences } = usePreferences();
+  const { t } = useLanguage();
   const [guestModalOpen, setGuestModalOpen] = useState(false);
   const [guestDestination, setGuestDestination] = useState("/provincial-budget");
 
@@ -39,14 +41,14 @@ export default function ProvincialQuickAccess() {
     <section className="mt-8" data-cta-source="provincial-quick-access">
       <div className="mb-3 flex items-center justify-between">
         <h2 className="text-sm font-semibold uppercase tracking-[0.12em] text-white/40 light:text-slate-500">
-          Provincial Budget Intelligence
+          {t("provincial.intelligenceTitle")}
         </h2>
         <Link
           href="/provincial-budget"
           onClick={(e) => handleClick(e, "/provincial-budget")}
           className="text-xs font-medium text-neon-blue/80 transition-colors hover:text-neon-blue"
         >
-          View all →
+          {t("common.viewAll")} →
         </Link>
       </div>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -68,7 +70,7 @@ export default function ProvincialQuickAccess() {
                   className="absolute right-2 top-2 rounded-full px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-white"
                   style={{ backgroundColor: p.color }}
                 >
-                  Default
+                  {t("common.default")}
                 </span>
               )}
               <span

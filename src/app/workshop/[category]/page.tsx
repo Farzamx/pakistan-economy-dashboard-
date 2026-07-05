@@ -5,6 +5,7 @@ import Sidebar from "@/components/Sidebar";
 import { CATEGORY_META, getLessonsByCategory } from "@/lib/workshop/registry";
 import type { WorkshopCategory } from "@/lib/workshop/types";
 import { SITE_URL, SITE_NAME } from "@/lib/seoConfig";
+import { T } from "@/components/T";
 
 interface Props {
   params: Promise<{ category: string }>;
@@ -50,9 +51,9 @@ export default async function CategoryPage({ params }: Props) {
         <div className="mx-auto max-w-3xl px-4 py-10 sm:px-8">
           {/* Breadcrumb */}
           <div className="mb-6 flex items-center gap-2 text-xs text-white/40 light:text-slate-400">
-            <Link href="/" className="hover:text-white light:hover:text-slate-700 transition-colors">Home</Link>
+            <Link href="/" className="hover:text-white light:hover:text-slate-700 transition-colors"><T tKey="workshop.home" /></Link>
             <span>/</span>
-            <Link href="/workshop" className="hover:text-white light:hover:text-slate-700 transition-colors">Workshop</Link>
+            <Link href="/workshop" className="hover:text-white light:hover:text-slate-700 transition-colors"><T tKey="workshop.title" /></Link>
             <span>/</span>
             <span>{cat.title.en}</span>
           </div>
@@ -69,7 +70,7 @@ export default async function CategoryPage({ params }: Props) {
           {/* Lessons list */}
           {lessons.length === 0 ? (
             <div className="rounded-2xl border border-white/5 light:border-slate-200 bg-white/[0.02] light:bg-slate-50 px-6 py-10 text-center">
-              <p className="text-white/40 light:text-slate-400 text-sm">Lessons coming soon.</p>
+              <p className="text-white/40 light:text-slate-400 text-sm"><T tKey="workshop.comingSoon" /></p>
             </div>
           ) : (
             <div className="flex flex-col gap-3">
@@ -86,11 +87,11 @@ export default async function CategoryPage({ params }: Props) {
                       </span>
                       {lesson.isPremium && (
                         <span className="inline-flex items-center rounded-full border border-amber-400/30 bg-amber-400/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-400">
-                          Premium
+                          <T tKey="workshop.premiumBadge" />
                         </span>
                       )}
                       <span className="text-xs text-white/30 light:text-slate-400">
-                        {lesson.readMinutes} min read
+                        {lesson.readMinutes} <T tKey="workshop.readMin" />
                       </span>
                     </div>
                     <h2 className="text-sm font-semibold text-white light:text-slate-900 group-hover:text-neon-blue transition-colors">
@@ -124,7 +125,7 @@ export default async function CategoryPage({ params }: Props) {
               <svg className="h-3.5 w-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M13 8H3M7 4L3 8l4 4" />
               </svg>
-              Back to Workshop
+              <T tKey="workshop.backToWorkshop" />
             </Link>
           </div>
         </div>
