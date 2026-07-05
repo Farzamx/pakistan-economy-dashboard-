@@ -1,6 +1,126 @@
 -- Migration 0022: Backfill verified missing historical calendar events
 -- Production Data Integrity Phase 1 — 2026-07-01
 --
+-- Worker Remittances (lagMonths=2)
+-- ═══════════════════════════════════════════════════════════════════════════
+-- SBP publishes monthly remittance inflows ~45-60 days after month-end.
+-- Source authority: State Bank of Pakistan (official press releases).
+-- The two-month calendar lag (lagMonths=2) is verified: March data published
+-- ~May 10, April data published ~June 10.
+
+-- Event: May 10, 2026 (release of March 2026 remittances, lagMonths=2)
+-- Observation period: March 2026 (obsDate 2026-03-31)
+-- Value: $3.8B — SBP official monthly remittances figure
+-- Source: Business Recorder — "Pakistan records $3.8bn in remittances for
+--   March 2026" (brecorder.com/news/40415417) citing SBP press release
+
+insert into public.economic_events (
+  series_id, slug, title, event_date, event_time,
+  previous_value, forecast_value,
+  status, importance, data_confidence, actual_value,
+  description
+)
+values (
+  (select id from public.economic_event_series where slug = 'worker-remittances'),
+  'remittances-2026-05-10',
+  'Worker Remittances — May 2026',
+  '2026-05-10',
+  '10:00',
+  null,
+  null,
+  'released',
+  'High',
+  'confirmed',
+  '$3.8B',   -- March 2026 — SBP official press release (verified 2026-07-01)
+  'Worker remittances inflows, monthly. '
+  'Source: State Bank of Pakistan official press release, March 2026 data (verified 2026-07-01). '
+  'Cross-confirmed: Business Recorder citing SBP. Observation period: March 2026 (obsDate 2026-03-31).'
+)
+on conflict (slug) do nothing;
+
+-- Event: June 10, 2026 (release of April 2026 remittances, lagMonths=2)
+-- Observation period: April 2026 (obsDate 2026-04-30)
+-- Value: $3.53B — SBP official monthly remittances figure
+-- Source: The News — "Pakistan receives $3.53bn remittances in April: SBP"
+--   (thenews.pk/story/1414945-pakistan-receives-353bn-remittances-in-april-sbp)
+-- Note: previous migration draft used $3.5B (rounded). Corrected to $3.53B
+--   to match the official SBP-reported figure exactly.
+
+insert into public.economic_events (
+  series_id, slug, title, event_date, event_time,
+  previous_value, forecast_value,
+  status, importance, data_confidence, actual_value,
+  description
+)
+values (
+  (select id from public.economic_event_series where slug = 'worker-remittances'),
+  'remittances-2026-06-10',
+  'Worker Remittances — June 2026',
+  '2026-06-10',
+  '10:00',
+  '$3.8B',   -- March 2026 actual (remittances-2026-05-10, inserted above)
+  null,
+  'released',
+  'High',
+  'confirmed',
+  '$3.53B',  -- April 2026 — SBP official press release (verified 2026-07-01)
+  'Worker remittances inflows, monthly. '
+  'Source: State Bank of Pakistan official press release, April 2026 data (verified 2026-07-01). '
+  'Cross-confirmed: The News citing SBP. Observation period: April 2026 (obsDate 2026-04-30).'
+)
+on conflict (slug) do nothing;
+
+-- ═══════════════════════════════════════════════════════════════════════════
+-- Current Account Balance (lagMonths=2)
+-- ═══════════════════════════════════════════════════════════════════════════
+-- SBP publishes BoP data (BPM6) ~45 days after month-end. April data → June 15.
+-- Source authority: State Bank of Pakistan BPM6 Summary BoP.
+
+-- Event: June 15, 2026 (release of April 2026 current account, lagMonths=2)
+-- Observation period: April 2026 (obsDate 2026-04-30)
+-- Value: $-0.28B (deficit of $276 million)
+-- Source: SBP Summary Balance of Payments as per BPM6 — April 2026
+--   (sbp.org.pk/ecodata/Balancepayment_BPM6.pdf)
+-- Cross-confirmed: Arab News PK — "Pakistan posts $459 million current account
+--   surplus as FY26 balance turns positive" (with April at -$276M in the table)
+-- Note: March 2026 current account was a surplus of $1.07B (confirmed). The
+--   existing seed event current-account-2026-05-15 (actual='-$0.5B') appears
+--   incorrect — it does not match either lagMonths=1 (April=-$0.28B) or
+--   lagMonths=2 (March=+$1.07B surplus). A separate correction migration is
+--   required. Previous_value here uses the seed event's actual value ('-$0.5B')
+--   to maintain internal DB chain consistency until that correction is made.
+
+insert into public.economic_events (
+  series_id, slug, title, event_date, event_time,
+  previous_value, forecast_value,
+  status, importance, data_confidence, actual_value,
+  description
+)
+values (
+  (select id from public.economic_event_series where slug = 'current-account-balance'),
+  'current-account-2026-06-15',
+  'Current Account Balance — June 2026',
+  '2026-06-15',
+  '10:00',
+  '-$0.5B',   -- May 15 event actual (existing seed current-account-2026-05-15)
+  null,
+  'released',
+  'High',
+  'confirmed',
+  '$-0.28B',  -- April 2026, -$276M — SBP BoP BPM6 (verified 2026-07-01)
+  'Current account balance, BPM6 methodology, monthly. '
+  'Source: State Bank of Pakistan BPM6 BoP, April 2026 data (verified 2026-07-01). '
+  'Observation period: April 2026 (obsDate 2026-04-30).'
+)
+on conflict (slug) do nothing;
+
+-- ═══════════════════════════════════════════════════════════════════════════
+-- Correct stale previous_value fields on scheduled future events
+-- ═══════════════════════════════════════════════════════════════════════════
+-- The seed (0003) was generated before these historical events existed, so
+-- future events' previous_value fields reference old estimated values.
+-- These UPDATEs align them with the now-confirmed actuals inserted above.
+-- Each UPDATE is a no-op if the slug does not exist (safe to re-run).
 -- SCOPE: Insert historical economic_events rows that are missing from the DB
 -- because the initial seed (0003) only seeded future events. All values here
 -- have been independently verified against official sources before insertion.
@@ -139,126 +259,6 @@ values (
 on conflict (slug) do nothing;
 
 -- ═══════════════════════════════════════════════════════════════════════════
--- Worker Remittances (lagMonths=2)
--- ═══════════════════════════════════════════════════════════════════════════
--- SBP publishes monthly remittance inflows ~45-60 days after month-end.
--- Source authority: State Bank of Pakistan (official press releases).
--- The two-month calendar lag (lagMonths=2) is verified: March data published
--- ~May 10, April data published ~June 10.
-
--- Event: May 10, 2026 (release of March 2026 remittances, lagMonths=2)
--- Observation period: March 2026 (obsDate 2026-03-31)
--- Value: $3.8B — SBP official monthly remittances figure
--- Source: Business Recorder — "Pakistan records $3.8bn in remittances for
---   March 2026" (brecorder.com/news/40415417) citing SBP press release
-
-insert into public.economic_events (
-  series_id, slug, title, event_date, event_time,
-  previous_value, forecast_value,
-  status, importance, data_confidence, actual_value,
-  description
-)
-values (
-  (select id from public.economic_event_series where slug = 'worker-remittances'),
-  'remittances-2026-05-10',
-  'Worker Remittances — May 2026',
-  '2026-05-10',
-  '10:00',
-  null,
-  null,
-  'released',
-  'High',
-  'confirmed',
-  '$3.8B',   -- March 2026 — SBP official press release (verified 2026-07-01)
-  'Worker remittances inflows, monthly. '
-  'Source: State Bank of Pakistan official press release, March 2026 data (verified 2026-07-01). '
-  'Cross-confirmed: Business Recorder citing SBP. Observation period: March 2026 (obsDate 2026-03-31).'
-)
-on conflict (slug) do nothing;
-
--- Event: June 10, 2026 (release of April 2026 remittances, lagMonths=2)
--- Observation period: April 2026 (obsDate 2026-04-30)
--- Value: $3.53B — SBP official monthly remittances figure
--- Source: The News — "Pakistan receives $3.53bn remittances in April: SBP"
---   (thenews.pk/story/1414945-pakistan-receives-353bn-remittances-in-april-sbp)
--- Note: previous migration draft used $3.5B (rounded). Corrected to $3.53B
---   to match the official SBP-reported figure exactly.
-
-insert into public.economic_events (
-  series_id, slug, title, event_date, event_time,
-  previous_value, forecast_value,
-  status, importance, data_confidence, actual_value,
-  description
-)
-values (
-  (select id from public.economic_event_series where slug = 'worker-remittances'),
-  'remittances-2026-06-10',
-  'Worker Remittances — June 2026',
-  '2026-06-10',
-  '10:00',
-  '$3.8B',   -- March 2026 actual (remittances-2026-05-10, inserted above)
-  null,
-  'released',
-  'High',
-  'confirmed',
-  '$3.53B',  -- April 2026 — SBP official press release (verified 2026-07-01)
-  'Worker remittances inflows, monthly. '
-  'Source: State Bank of Pakistan official press release, April 2026 data (verified 2026-07-01). '
-  'Cross-confirmed: The News citing SBP. Observation period: April 2026 (obsDate 2026-04-30).'
-)
-on conflict (slug) do nothing;
-
--- ═══════════════════════════════════════════════════════════════════════════
--- Current Account Balance (lagMonths=2)
--- ═══════════════════════════════════════════════════════════════════════════
--- SBP publishes BoP data (BPM6) ~45 days after month-end. April data → June 15.
--- Source authority: State Bank of Pakistan BPM6 Summary BoP.
-
--- Event: June 15, 2026 (release of April 2026 current account, lagMonths=2)
--- Observation period: April 2026 (obsDate 2026-04-30)
--- Value: $-0.28B (deficit of $276 million)
--- Source: SBP Summary Balance of Payments as per BPM6 — April 2026
---   (sbp.org.pk/ecodata/Balancepayment_BPM6.pdf)
--- Cross-confirmed: Arab News PK — "Pakistan posts $459 million current account
---   surplus as FY26 balance turns positive" (with April at -$276M in the table)
--- Note: March 2026 current account was a surplus of $1.07B (confirmed). The
---   existing seed event current-account-2026-05-15 (actual='-$0.5B') appears
---   incorrect — it does not match either lagMonths=1 (April=-$0.28B) or
---   lagMonths=2 (March=+$1.07B surplus). A separate correction migration is
---   required. Previous_value here uses the seed event's actual value ('-$0.5B')
---   to maintain internal DB chain consistency until that correction is made.
-
-insert into public.economic_events (
-  series_id, slug, title, event_date, event_time,
-  previous_value, forecast_value,
-  status, importance, data_confidence, actual_value,
-  description
-)
-values (
-  (select id from public.economic_event_series where slug = 'current-account-balance'),
-  'current-account-2026-06-15',
-  'Current Account Balance — June 2026',
-  '2026-06-15',
-  '10:00',
-  '-$0.5B',   -- May 15 event actual (existing seed current-account-2026-05-15)
-  null,
-  'released',
-  'High',
-  'confirmed',
-  '$-0.28B',  -- April 2026, -$276M — SBP BoP BPM6 (verified 2026-07-01)
-  'Current account balance, BPM6 methodology, monthly. '
-  'Source: State Bank of Pakistan BPM6 BoP, April 2026 data (verified 2026-07-01). '
-  'Observation period: April 2026 (obsDate 2026-04-30).'
-)
-on conflict (slug) do nothing;
-
--- ═══════════════════════════════════════════════════════════════════════════
--- Correct stale previous_value fields on scheduled future events
--- ═══════════════════════════════════════════════════════════════════════════
--- The seed (0003) was generated before these historical events existed, so
--- future events' previous_value fields reference old estimated values.
--- These UPDATEs align them with the now-confirmed actuals inserted above.
--- Each UPDATE is a no-op if the slug does not exist (safe to re-run).
 
 -- cpi-2026-07-10: previous was '6.8% YoY' (stale seed estimate).
 -- Correct value: '11.7% YoY' (from cpi-2026-06-10 inserted above).
