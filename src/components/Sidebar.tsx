@@ -376,10 +376,10 @@ export default function Sidebar() {
             className="mb-1"
           >
             <Link
-              href="/workshop"
-              aria-current={pathname?.startsWith("/workshop") ? "true" : undefined}
+              href="/academy"
+              aria-current={pathname?.startsWith("/academy") ? "true" : undefined}
               className={`group relative flex items-center gap-2.5 overflow-hidden rounded-lg border px-4 py-2.5 text-sm font-semibold transition-all duration-300 ${
-                pathname?.startsWith("/workshop")
+                pathname?.startsWith("/academy")
                   ? "border-amber-400/40 bg-amber-400/15 text-white shadow-[0_0_16px_rgba(251,191,36,0.35)] light:text-slate-900"
                   : "border-amber-400/20 bg-amber-400/5 text-white/85 hover:border-amber-400/35 hover:bg-amber-400/10 hover:text-white light:text-slate-700 light:hover:text-slate-900"
               }`}
@@ -397,7 +397,7 @@ export default function Sidebar() {
                 <path d="M2 17l10 5 10-5" />
                 <path d="M2 12l10 5 10-5" />
               </svg>
-              <span>{t("nav.workshop")}</span>
+              <span>{t("nav.academy")}</span>
             </Link>
           </motion.div>
 

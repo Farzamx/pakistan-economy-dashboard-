@@ -23,7 +23,7 @@ export interface Translations {
     monetaryPolicy: string; globalMarkets: string; realEconomy: string; reserves: string;
     liveFX: string; exchangeRate: string; remittances: string; externalSector: string; news: string;
     comparisons: string; budgetTracker: string; provincialBudget: string;
-    economicCalendar: string; workshop: string; freeSubscription: string;
+    economicCalendar: string; workshop: string; academy: string; freeSubscription: string;
     rankings: string; indicators: string; settings: string;
     logoName: string; logoSubtitle: string; liveData: string; psxLabel: string;
     memberBadge: string; memberSince: string; premiumAccess: string;
@@ -375,6 +375,34 @@ export interface Translations {
     premiumBadge: string; freeBadge: string; languageLabel: string;
     comingSoon: string; multilingual: string; switchLanguage: string;
     home: string;
+  };
+
+  academy: {
+    title: string; subtitle: string; description: string;
+    allCategories: string; lessons: string; readMin: string;
+    beginner: string; intermediate: string; advanced: string;
+    overview: string; whyItMatters: string; explanation: string;
+    misconceptions: string; pakistanExample: string; realWorld: string; summary: string;
+    relatedIndicators: string; relatedLessons: string;
+    faq: string; quiz: string; quizStart: string; quizNext: string; quizSubmit: string;
+    quizCorrect: string; quizIncorrect: string; quizScore: string;
+    startLesson: string; nextLesson: string; prevLesson: string;
+    backToCategory: string; backToAcademy: string;
+    premiumBadge: string; freeBadge: string;
+    premiumTitle: string; premiumDesc: string;
+    lockTitle: string; lockDesc: string; createFreeAccount: string; logIn: string;
+    glossaryTitle: string; glossarySubtitle: string; glossarySearch: string;
+    glossaryNoResults: string; glossaryBrowseAll: string;
+    termDefinition: string; termExplanation: string; termPakistanContext: string;
+    termExample: string; termRelated: string;
+    pathsTitle: string; pathsSubtitle: string; pathHours: string; pathLessons: string;
+    startPath: string; continuePath: string;
+    home: string; exploreAll: string; learnMore: string;
+    categoriesTitle: string; categoriesSubtitle: string;
+    heroEyebrow: string; heroTitle: string; heroSubtitle: string;
+    statLessons: string; statCategories: string; statTerms: string;
+    filterAll: string; filterFree: string; filterPremium: string;
+    sortByPopular: string; sortByNewest: string; sortByLevel: string;
   };
 
   errors: {
