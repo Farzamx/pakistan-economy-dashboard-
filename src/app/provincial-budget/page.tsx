@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
+import { T } from "@/components/T";
 import BudgetToolkit from "@/components/budget/BudgetToolkit";
 import { getProvincialBudgetToolkit } from "@/data/provincialBudgetEducation";
 import { PROVINCES } from "@/lib/provincial/provincialBudgetRegistry";
@@ -60,9 +61,9 @@ export default function ProvincialBudgetPage() {
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd).replace(/</g, "\\u003c") }} />
         <div className="flex flex-col gap-10">
           <div>
-            <h1 className="text-2xl font-semibold text-[var(--text-primary)]">Provincial Budget Intelligence</h1>
+            <h1 className="text-2xl font-semibold text-[var(--text-primary)]"><T tKey="provincial.intelligenceTitle" /></h1>
             <p className="mt-1 max-w-2xl text-sm text-[var(--text-muted)]">
-              Punjab, Sindh, Khyber Pakhtunkhwa, and Balochistan — four separate budgets, each sourced from that province&apos;s own official documents.
+              <T tKey="provincial.intelligencePageDesc" />
             </p>
           </div>
 
@@ -80,16 +81,16 @@ export default function ProvincialBudgetPage() {
                 >
                   <div className="flex items-center justify-between">
                     <h2 className="text-xl font-semibold text-white light:text-slate-900">{p.name}</h2>
-                    <span className="text-xs text-white/40 light:text-slate-400">Capital: {p.capital}</span>
+                    <span className="text-xs text-white/40 light:text-slate-400"><T tKey="provincial.capital" /> {p.capital}</span>
                   </div>
                   <div className="flex items-baseline gap-2">
                     <span className="text-3xl font-bold" style={{ color: p.color }}>
                       Rs {year.totalOutlay !== null ? year.totalOutlay.toFixed(0) : "—"}bn
                     </span>
-                    <span className="text-sm text-white/50 light:text-slate-500">FY{year.fiscalYear} Total Budget</span>
+                    <span className="text-sm text-white/50 light:text-slate-500">FY{year.fiscalYear} <T tKey="provincial.totalBudgetLabel" /></span>
                   </div>
                   <span className="text-sm text-neon-blue opacity-0 transition-opacity group-hover:opacity-100">
-                    View {p.name} Budget Workshop →
+                    <T tKey="provincial.viewWorkshop" />
                   </span>
                 </Link>
               );
@@ -101,23 +102,23 @@ export default function ProvincialBudgetPage() {
             className="glass-card flex items-center justify-between rounded-2xl border-neon-purple/30 p-6 transition-all hover:scale-[1.005]"
           >
             <div>
-              <h2 className="text-lg font-semibold text-white light:text-slate-900">Compare All Four Provinces</h2>
-              <p className="text-sm text-white/60 light:text-slate-500">Rank provinces on total budget, education, health, development, debt, and more.</p>
+              <h2 className="text-lg font-semibold text-white light:text-slate-900"><T tKey="provincial.compareAllFour" /></h2>
+              <p className="text-sm text-white/60 light:text-slate-500"><T tKey="provincial.compareAllFourDesc" /></p>
             </div>
             <span className="text-neon-purple">→</span>
           </Link>
 
-          <BudgetInsightsPanel insights={insights} title="Provincial Insights" />
+          <BudgetInsightsPanel insights={insights} title={<T tKey="provincial.provincialInsights" />} />
 
           <ProvincialHistoricalExplorer />
 
           <ProvincialRankingDashboard />
 
-          <BudgetInsightsPanel insights={historicalInsights} title="Historical Insights" />
+          <BudgetInsightsPanel insights={historicalInsights} title={<T tKey="provincial.historicalInsights" />} />
 
           <div className="flex flex-col gap-3">
             <div className="flex flex-wrap items-center gap-2 text-xs">
-              <span className="text-[var(--text-muted)]">Province deep dives:</span>
+              <span className="text-[var(--text-muted)]"><T tKey="provincial.deepDivesLabel" /></span>
               {DEEP_DIVE_PAGES.map((p) => (
                 <Link key={p.slug} href={`/provincial-budget/${p.slug}`} className="rounded-full border border-white/10 light:border-slate-200 px-3 py-1.5 text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)]">
                   {shortProvincialLabel(p)}
@@ -125,7 +126,7 @@ export default function ProvincialBudgetPage() {
               ))}
             </div>
             <div className="flex flex-wrap items-center gap-2 text-xs">
-              <span className="text-[var(--text-muted)]">Cross-province comparisons:</span>
+              <span className="text-[var(--text-muted)]"><T tKey="provincial.crossCompLabel" /></span>
               {CROSS_COMPARISON_PAGES.map((p) => (
                 <Link key={p.slug} href={`/provincial-budget/${p.slug}`} className="rounded-full border border-white/10 light:border-slate-200 px-3 py-1.5 text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)]">
                   {shortProvincialLabel(p)}
@@ -133,7 +134,7 @@ export default function ProvincialBudgetPage() {
               ))}
             </div>
             <div className="flex flex-wrap items-center gap-2 text-xs">
-              <span className="text-[var(--text-muted)]">Rankings &amp; tools:</span>
+              <span className="text-[var(--text-muted)]"><T tKey="provincial.rankingsToolsLabel" /></span>
               {RANKING_TOOL_PAGES.map((p) => (
                 <Link key={p.slug} href={`/provincial-budget/${p.slug}`} className="rounded-full border border-white/10 light:border-slate-200 px-3 py-1.5 text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)]">
                   {shortProvincialLabel(p)}
@@ -143,7 +144,7 @@ export default function ProvincialBudgetPage() {
           </div>
 
           <section className="glass-card flex flex-col gap-4 rounded-2xl p-6 sm:p-8">
-            <h2 className="text-xl font-semibold text-white light:text-slate-900">Frequently Asked Questions</h2>
+            <h2 className="text-xl font-semibold text-white light:text-slate-900"><T tKey="common.faq" /></h2>
             <div className="space-y-5">
               {FAQ.map((item, i) => (
                 <div key={i}>

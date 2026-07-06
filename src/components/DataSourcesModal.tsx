@@ -115,7 +115,7 @@ export default function DataSourcesModal({ kpis }: Props) {
                 <span className="text-[8px]">●</span> {t("modal.dsUnavailable")}
               </span>
               <span className="ml-auto text-[10px] text-white/25 light:text-slate-400">
-                Hover any Status cell for the exact reason · weekends/holidays never count as Delayed for market data
+                {t("modal.dsHoverNote")}
               </span>
             </div>
 
@@ -206,8 +206,8 @@ export default function DataSourcesModal({ kpis }: Props) {
                       <td className="px-4 py-3 text-white/40 light:text-slate-400">{getRetrievalMethod(entry.source)}</td>
                       <td className="px-4 py-3 font-mono text-white/35 light:text-slate-400">{entry.seriesId}</td>
                       <td className="px-4 py-3 text-white/25 light:text-slate-400">—</td>
-                      <td className="px-4 py-3 text-white/30 light:text-slate-400">live</td>
-                      <td className="px-4 py-3 text-white/30 light:text-slate-400">As Needed</td>
+                      <td className="px-4 py-3 text-white/30 light:text-slate-400">{t("modal.dsLive")}</td>
+                      <td className="px-4 py-3 text-white/30 light:text-slate-400">{t("modal.dsAsNeeded")}</td>
                       <td className="px-4 py-3 text-white/25 light:text-slate-400">—</td>
                     </tr>
                   ))}

@@ -1,4 +1,5 @@
 import ProtectedLink from "@/components/ProtectedLink";
+import { T } from "@/components/T";
 import type { ProvincialSeoPageDef } from "@/lib/provincial/provincialSeoPages";
 import { getLatestProvinceYear } from "@/lib/provincial/provincialBudgetData";
 import { rankProvincesByField } from "@/lib/provincial/provincialComparison";
@@ -50,7 +51,7 @@ export default function ProvincialSeoTemplate({ page }: ProvincialSeoTemplatePro
                 <tr key={r.label} className="border-b border-white/5 light:border-slate-100 last:border-0">
                   <td className="py-3 text-white/70 light:text-slate-600">{r.label}</td>
                   <td className="py-3 text-right font-semibold tabular-nums text-white light:text-slate-900">
-                    {r.value === null ? "Not available" : `Rs ${r.value.toFixed(1)}bn`}
+                    {r.value === null ? <T tKey="provincial.notAvailable" /> : `Rs ${r.value.toFixed(1)}bn`}
                   </td>
                 </tr>
               ))}
@@ -79,7 +80,7 @@ export default function ProvincialSeoTemplate({ page }: ProvincialSeoTemplatePro
         <div className="glass-card flex flex-col gap-2 rounded-2xl p-8">
           <span className="text-sm text-white/50 light:text-slate-500">{meta.name} — {page.fieldLabel}</span>
           <span className="text-4xl font-bold text-white light:text-slate-900">
-            {typeof value === "number" ? `Rs ${value.toFixed(1)}bn` : "Not available for this year"}
+            {typeof value === "number" ? `Rs ${value.toFixed(1)}bn` : <T tKey="provincial.notAvailableYear" />}
           </span>
           <span className="text-xs text-white/40 light:text-slate-400">
             FY{year.fiscalYear} Budget Estimate · {year.citations.summary.document}
@@ -111,13 +112,13 @@ export default function ProvincialSeoTemplate({ page }: ProvincialSeoTemplatePro
                 {entry.name}
               </span>
               <span className="font-semibold text-white light:text-slate-900">
-                {entry.value === null ? "Not available" : `Rs ${entry.value.toFixed(1)}bn`}
+                {entry.value === null ? <T tKey="provincial.notAvailable" /> : `Rs ${entry.value.toFixed(1)}bn`}
               </span>
             </ProtectedLink>
           ))}
         </div>
         <ProtectedLink href="/provincial-budget/compare" className="text-sm font-medium text-neon-blue hover:underline">
-          Compare on other metrics →
+          <T tKey="provincial.compareMetricsLink" />
         </ProtectedLink>
         <RelatedContent groups={getProvincialSeoPageRelatedContent(page)} />
       </div>
@@ -132,7 +133,7 @@ export default function ProvincialSeoTemplate({ page }: ProvincialSeoTemplatePro
         <ProvincialHistoricalExplorer />
         <div className="flex flex-wrap gap-2 text-xs">
           <ProtectedLink href="/provincial-budget/rankings" className="rounded-full border border-white/10 light:border-slate-200 px-3 py-1.5 text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)]">
-            Province Rankings →
+            <T tKey="provincial.rankingDashboard" /> →
           </ProtectedLink>
           <ProtectedLink href="/provincial-budget" className="rounded-full border border-white/10 light:border-slate-200 px-3 py-1.5 text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)]">
             All Provinces →

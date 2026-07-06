@@ -83,7 +83,7 @@ export default function KpiCard({ title, value, unit, change, trend, glow, sourc
   const chain = marketType ? SOURCE_CHAINS[title] : undefined;
   const activeTier = chain ? getActiveTier(title, source) : "unknown";
   const sourceChainNote = chain
-    ? `Sources — Primary: ${chain.primary}, Secondary: ${chain.secondary ?? "None"}, Fallback: ${chain.fallback}. Currently: ${activeTier}.`
+    ? `${t("kpi.sourcePrimary")} ${chain.primary}, ${t("kpi.sourceSecondary")} ${chain.secondary ?? t("kpi.sourceNone")}, ${t("kpi.sourceFallback")} ${chain.fallback}. ${t("kpi.sourceCurrently")} ${activeTier}.`
     : null;
 
   const cardShadow = isLight ? lightRestGlow : restGlow[glow];

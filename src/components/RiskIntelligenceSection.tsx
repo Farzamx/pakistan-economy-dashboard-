@@ -52,7 +52,7 @@ function ConfidencePanel({ confidence, modelScore }: ConfidencePanelProps) {
             {t("riskIntel.indicators")}
           </p>
           <p className="mt-1 text-[10px] leading-tight text-white/50 light:text-slate-500">
-            {confidence.currentCount}/{confidence.totalCount} Current
+            {confidence.currentCount}/{confidence.totalCount} {t("riskIntel.currentSuffix")}
           </p>
           <p className="text-[10px] leading-tight text-white/35 light:text-slate-400">
             {confidence.staleCount === 0 ? t("riskIntel.noneStale") : `${confidence.staleCount} ${t("riskIntel.stale")}`}
@@ -73,7 +73,7 @@ function ConfidencePanel({ confidence, modelScore }: ConfidencePanelProps) {
       </div>
 
       <p className="mt-2.5 text-[9px] text-white/20 light:text-slate-400">
-        {t("riskIntel.modelScore")} {modelScore}/100 · −5 pts per stale indicator · AI explanation via OpenRouter
+        {t("riskIntel.modelScore")} {modelScore}/100 {t("riskIntel.modelScoreNote")}
       </p>
     </div>
   );

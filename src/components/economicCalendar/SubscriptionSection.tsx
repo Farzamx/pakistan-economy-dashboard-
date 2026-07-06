@@ -66,11 +66,11 @@ export default function SubscriptionSection() {
   const officialSources = [t("subscription.sbpSource"), t("subscription.pbsSource"), t("subscription.mofSource"), t("subscription.otherSource")];
   const trustPoints = [t("subscription.trustOfficial"), t("subscription.trustVerified"), t("subscription.trustFast"), t("subscription.trustNoSpam"), t("subscription.trustUnsubscribe"), t("subscription.trustFree")];
   const trackedEvents = [
-    t("subscription.consumerPrices"), "Core Inflation", t("subscription.spiData"),
-    t("subscription.monetaryDecisions"), "Monetary Policy Reports",
+    t("subscription.consumerPrices"), t("subscription.coreInflation"), t("subscription.spiData"),
+    t("subscription.monetaryDecisions"), t("subscription.monetaryPolicyReports"),
     t("subscription.foreignReserves"), t("subscription.currentAccount"),
     t("subscription.workerRemittances"), t("subscription.tradeBalance"),
-    "Treasury Bill Auctions", "Pakistan Investment Bond Auctions",
+    t("subscription.tbillAuctions"), t("subscription.pibAuctions"),
     t("subscription.largeLSM"), t("subscription.gdpGrowthData"),
   ];
   return (
@@ -101,7 +101,7 @@ export default function SubscriptionSection() {
           <div className="flex h-full flex-col gap-6 rounded-2xl border border-white/10 bg-[#0b0d18] p-6 sm:p-8" style={{ boxShadow: "0 0 32px rgba(56,189,248,0.08)" }}>
             <div>
               <h3 className="text-lg font-semibold text-white">{t("subscription.subscribe")}</h3>
-              <p className="mt-1 text-sm text-slate-400">One email address. No account, no password, no preferences to configure.</p>
+              <p className="mt-1 text-sm text-slate-400">{t("subscription.oneEmailDesc")}</p>
             </div>
 
             <SubscriptionForm />

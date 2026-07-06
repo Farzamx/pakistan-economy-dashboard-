@@ -109,7 +109,7 @@ export default function PerformanceCalculator({ timeline }: PerformanceCalculato
       )}
 
       <p className="text-[11px] text-[var(--text-muted)]">
-        KSE-100 (Pakistan stock market) is not included — no historical KSE-100 data source is available to this dashboard, and a proxy return shouldn&apos;t be presented as the index itself.
+        {t("comparisons.perfKseNote")}
       </p>
     </div>
   );

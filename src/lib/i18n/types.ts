@@ -26,6 +26,7 @@ export interface Translations {
     economicCalendar: string; workshop: string; freeSubscription: string;
     rankings: string; indicators: string; settings: string;
     logoName: string; logoSubtitle: string; liveData: string; psxLabel: string;
+    memberBadge: string; memberSince: string; premiumAccess: string;
   };
 
   hero: {
@@ -90,6 +91,8 @@ export interface Translations {
     gold: string; silver: string; brentCrude: string; wtiCrude: string; naturalGas: string;
     externalDebt: string;
     learnMore: string; sourceNote: string;
+    sourcePrimary: string; sourceSecondary: string; sourceNone: string;
+    sourceFallback: string; sourceCurrently: string;
   };
 
   calendar: {
@@ -127,6 +130,20 @@ export interface Translations {
     archiveTitle: string; archiveDesc: string;
     heroMain: string; heroGradient: string;
     importance: string; dateRange: string;
+    weeklyOutlookTitle: string;
+    marketImpactTitle: string; marketImpactDesc: string; marketNotReleased: string;
+    whyMattersSubtitle: string;
+    topic1Title: string; topic1Body: string;
+    topic2Title: string; topic2Body: string;
+    topic3Title: string; topic3Body: string;
+    topic4Title: string; topic4Body: string;
+    topic5Title: string; topic5Body: string;
+    calFaq1Q: string; calFaq1A: string; calFaq2Q: string; calFaq2A: string;
+    calFaq3Q: string; calFaq3A: string; calFaq4Q: string; calFaq4A: string;
+    calFaq5Q: string; calFaq5A: string; calFaq6Q: string; calFaq6A: string;
+    archiveFaq1Q: string; archiveFaq1A: string; archiveFaq2Q: string; archiveFaq2A: string;
+    archiveFaq3Q: string; archiveFaq3A: string; archiveFaq4Q: string; archiveFaq4A: string;
+    exploreLink: string; archiveHeroDesc: string;
   };
 
   budget: {
@@ -147,6 +164,7 @@ export interface Translations {
     fyValue: string; shareOfTotal: string; shareOfGdp: string; trendTitle: string; note: string;
     romanUrdu: string; hideRomanUrdu: string;
     workshopDescription: string; workshopDesc: string;
+    budgetEstimateNote: string;
   };
 
   provincial: {
@@ -175,6 +193,13 @@ export interface Translations {
     growthExplorerTitle: string; growthExplorerDesc: string;
     growthSince: string; cagrFull: string; largestIncrease: string; largestDecline: string;
     noDecline: string; yoyChangeDesc: string; perCitizenTitle: string;
+    toLabel: string; gapYear: string; allFourProvinces: string;
+    perCapitaChartNote: string; sourceBudgetDocs: string; rankingNote: string;
+    rankingsSuffix: string; notAvailableYear: string; compareMetricsLink: string;
+    intelligencePageDesc: string; compareAllFour: string; compareAllFourDesc: string;
+    deepDivesLabel: string; crossCompLabel: string; rankingsToolsLabel: string;
+    compareTableTitle: string; compareTableDesc: string; budgetEstimate: string;
+    noVerifiedFigure: string; provincialInsights: string; historicalInsights: string;
   };
 
   comparisons: {
@@ -189,6 +214,9 @@ export interface Translations {
     dataUnavailable: string; dataUnavailableDesc: string; noOverlap: string;
     gdpUnavailable: string; worldBankSource: string;
     whyItMatters: string; faq: string; relatedComparisons: string; viewAll: string;
+    agriculture: string; industry: string; services: string;
+    sourcesLabel: string; noOverlapDetailed: string; unavailableError: string;
+    perfKseNote: string;
   };
 
   auth: {
@@ -234,6 +262,8 @@ export interface Translations {
     manageTitle: string; manageDesc: string; unsubscribeBtn: string;
     manageFooter: string; backToCalendar: string;
     oneEmail: string; oneEmailDesc: string; youllReceive: string; subscribing: string;
+    coreInflation: string; monetaryPolicyReports: string;
+    tbillAuctions: string; pibAuctions: string;
   };
 
   modal: {
@@ -244,6 +274,7 @@ export interface Translations {
     dsVerified: string; dsDelayed: string; dsCached: string; dsFallback: string; dsUnavailable: string;
     dsColIndicator: string; dsColSource: string; dsColMethod: string; dsColId: string;
     dsColPrimary: string; dsColUpdated: string; dsColFreq: string; dsColStatus: string;
+    dsHoverNote: string; dsLive: string; dsAsNeeded: string;
   };
 
   search: {
@@ -262,6 +293,7 @@ export interface Translations {
     searched: string; searchedNone: string; sources: string; footer: string;
     highConf: string; medConf: string; lowConf: string;
     error: string; askAnything: string;
+    suggestedQ1: string; suggestedQ2: string; suggestedQ3: string; suggestedQ4: string; suggestedQ5: string;
   };
 
   prefs: {
@@ -282,6 +314,7 @@ export interface Translations {
     keyRisks: string; strengths: string;
     lowRisk: string; elevatedRisk: string; highRisk: string; severeRisk: string;
     recession: string; default: string;
+    currentSuffix: string; modelScoreNote: string;
   };
 
   news: {
@@ -289,10 +322,18 @@ export interface Translations {
     refreshed: string; sources: string; breakingRefresh: string;
     unavailable: string; relevance: string; sourceRating: string; aiUnavailable: string;
     riskLow: string; riskMed: string; riskHigh: string;
+    catAll: string; catPakistanEconomy: string; catImfDebt: string;
+    catCentralBanks: string; catEnergy: string; catGeopolitics: string;
+    catGlobalMacro: string; catMarkets: string;
+    freshFresh: string; freshRecent: string; freshAging: string;
+    sentBullish: string; sentBearish: string; sentNeutral: string;
   };
 
   health: {
     title: string; risk: string;
+    statusStrong: string; statusModerate: string; statusWeak: string;
+    riskLow: string; riskModerate: string; riskHigh: string;
+    sentBullish: string; sentNeutral: string; sentBearish: string;
   };
 
   market: {
@@ -302,6 +343,10 @@ export interface Translations {
   popularInsights: {
     title: string; explore: string;
     comparison: string; budget: string; provincial: string;
+    insightPakVsIndia: string; insightTaxMoney: string; insightDefence: string;
+    insightEducation: string; insightHealth: string; insightPunjab: string;
+    insightSindh: string; insightDebtDefence: string; insightRankings: string;
+    insightExportsImports: string;
   };
 
   pinnedIndicators: {

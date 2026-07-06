@@ -120,7 +120,7 @@ export default function CustomComparisonBuilder() {
       )}
 
       {state.status === "error" && (
-        <p className="text-sm text-red-400">One or both indicators are unavailable right now — try again shortly.</p>
+        <p className="text-sm text-red-400">{t("comparisons.unavailableError")}</p>
       )}
 
       {state.status === "success" && windowed.length > 0 && (
@@ -143,13 +143,13 @@ export default function CustomComparisonBuilder() {
             </div>
           )}
           <p className="text-[11px] text-[var(--text-muted)]">
-            Sources: {state.sourceA}{state.sourceB !== state.sourceA ? ` & ${state.sourceB}` : ""}
+            {t("comparisons.sourcesLabel")}: {state.sourceA}{state.sourceB !== state.sourceA ? ` & ${state.sourceB}` : ""}
           </p>
         </>
       )}
 
       {state.status === "success" && windowed.length === 0 && (
-        <p className="text-sm text-[var(--text-muted)]">No overlapping data between these two indicators.</p>
+        <p className="text-sm text-[var(--text-muted)]">{t("comparisons.noOverlapDetailed")}</p>
       )}
     </div>
   );

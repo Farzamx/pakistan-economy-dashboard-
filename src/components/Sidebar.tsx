@@ -413,7 +413,7 @@ export default function Sidebar() {
               <path d="M3 17l5-5 4 4 6-7" />
               <path d="M14 9h5v5" />
             </svg>
-            PSX
+            {t("nav.psxLabel")}
           </motion.button>
 
           <SidebarSectionLabel>{t("nav.main")}</SidebarSectionLabel>
@@ -475,7 +475,7 @@ export default function Sidebar() {
 
         {/* Footer note */}
         <div className="mt-auto rounded-xl border border-white/5 light:border-slate-200 bg-white/[0.03] light:bg-slate-50 p-4 text-xs text-white/40 light:text-slate-400">
-          Live data from SBP EasyData &amp; World Bank.
+          {t("nav.liveData")}
         </div>
       </aside>
 

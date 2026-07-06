@@ -13,6 +13,7 @@ export const en: Translations = {
     rankings: "Rankings", indicators: "Indicators", settings: "Settings",
     logoName: "Pakistan EIC", logoSubtitle: "Economic Dashboard",
     liveData: "Live data from SBP EasyData & World Bank.", psxLabel: "PSX",
+    memberBadge: "Member", memberSince: "Member since", premiumAccess: "Premium Access",
   },
 
   hero: {
@@ -103,6 +104,8 @@ export const en: Translations = {
     gold: "Gold", silver: "Silver", brentCrude: "Brent Crude",
     wtiCrude: "WTI Crude", naturalGas: "Natural Gas", externalDebt: "External Debt",
     learnMore: "Learn more →", sourceNote: "Source",
+    sourcePrimary: "Sources — Primary:", sourceSecondary: "Secondary:",
+    sourceNone: "None", sourceFallback: "Fallback:", sourceCurrently: "Currently:",
   },
 
   calendar: {
@@ -162,6 +165,43 @@ export const en: Translations = {
     archiveDesc: "Complete record of every official Pakistan economic data release — with actual values, forecasts, and market context.",
     heroMain: "Pakistan Economic", heroGradient: "Calendar",
     importance: "Importance", dateRange: "Date Range",
+    weeklyOutlookTitle: "This Week's Economic Outlook",
+    marketImpactTitle: "Top Market-Moving Events in Pakistan",
+    marketImpactDesc: "Ranked by Market Impact Score (1–10) — how much each recurring release typically moves PSX, bond yields, and the Rupee.",
+    marketNotReleased: "Not yet released — here's how each possible outcome is typically interpreted.",
+    whyMattersSubtitle: "A plain-English guide to the releases that move Pakistan's markets and policy decisions.",
+    topic1Title: "Why inflation matters",
+    topic1Body: "Inflation erodes how far a household's income stretches and is the single number SBP weighs most heavily when setting interest rates. Rising inflation typically precedes a tighter policy rate; falling inflation opens room for cuts.",
+    topic2Title: "Why policy rates matter",
+    topic2Body: "The SBP policy rate sets the benchmark cost of borrowing across the entire economy — mortgages, business loans, and government debt all reprice off it. A rate decision can move markets within minutes of being announced.",
+    topic3Title: "Why reserves matter",
+    topic3Body: "Foreign exchange reserves are the buffer that lets SBP defend the Rupee and meet external debt obligations. Falling reserves signal mounting pressure; rising reserves give the currency more room to stabilize.",
+    topic4Title: "Why trade balance matters",
+    topic4Body: "The gap between exports and imports determines how much foreign currency the economy generates versus consumes. A widening trade deficit increases demand for Dollars and pressures both reserves and the exchange rate.",
+    topic5Title: "Why current account matters",
+    topic5Body: "The current account is the broadest measure of money flowing in and out of Pakistan internationally — trade, remittances, and investment income combined. A persistent deficit must be financed by borrowing or reserve drawdowns, making it one of the most closely watched signals of external vulnerability.",
+    calFaq1Q: "What is the Pakistan Economic Calendar?",
+    calFaq1A: "A Pakistan-only calendar of economic events that materially move PSX, the Rupee, and Pakistani bond yields — SBP monetary policy meetings and reports, CPI/core/SPI inflation, FX reserves, trade balance, current account, remittances, GDP, LSM, and T-Bill/PIB auctions. Only events with a direct, material effect on Pakistani markets are listed.",
+    calFaq2Q: "When is the next SBP meeting date?",
+    calFaq2A: "The next SBP Monetary Policy Committee meeting date is shown in the Next Major Market-Moving Events section above, along with the previous policy rate and the market's forecast. SBP's MPC typically meets roughly every six to eight weeks, per SBP's own published advance calendar.",
+    calFaq3Q: "What are Pakistan's inflation release dates?",
+    calFaq3A: "Pakistan's headline CPI inflation rate is released monthly by the Pakistan Bureau of Statistics, alongside core inflation the same day, with a faster-moving weekly SPI release in between. All three are listed on this calendar as they come up.",
+    calFaq4Q: "What does Market Impact mean on this calendar?",
+    calFaq4A: "Market Impact estimates the potential effect of a release on PSX, investor sentiment, bond yields, and the Pakistani Rupee — High: SBP MPC decisions, CPI, and GDP; Medium: trade balance, current account, remittances, FX reserves, and T-Bill/PIB auctions; Low: SPI.",
+    calFaq5Q: "Does this calendar update itself automatically?",
+    calFaq5A: "Yes. SBP's Monetary Policy Committee calendar and Treasury Bill/PIB auction calendars are fetched and parsed directly from SBP's own published sources daily. Series with no official advance calendar use a verified recurrence pattern, clearly marked as Estimated rather than Confirmed in each event's Data Quality section.",
+    calFaq6Q: "How often is this Pakistan economic data calendar updated?",
+    calFaq6A: "Foreign exchange reserves, current account, trade balance, remittances, CPI, core inflation, SPI, LSM, and the 3-month T-Bill yield sync their Actual values automatically once a release is due. SBP MPC, Treasury Bill, and PIB dates are synchronized daily directly from SBP's own published calendars.",
+    archiveFaq1Q: "What is this archive?",
+    archiveFaq1A: "A complete record of every official Pakistan economic data release — with the previous reading, market forecast, and actual figure, sourced directly from SBP, PBS, and the Ministry of Finance.",
+    archiveFaq2Q: "What is a surprise?",
+    archiveFaq2A: "A surprise is the difference between the actual release and the market's prior forecast. A positive surprise can boost markets; a negative surprise can create selling pressure.",
+    archiveFaq3Q: "How reliable is this data?",
+    archiveFaq3A: "Every value is sourced from its official government publication — SBP EasyData, PBS, or the Ministry of Finance. Each event's Data Quality section details the source and confidence level.",
+    archiveFaq4Q: "How far back does the archive go?",
+    archiveFaq4A: "The archive covers all events recorded in the database. New releases are added automatically as they occur.",
+    exploreLink: "Explore further:",
+    archiveHeroDesc: "Past Pakistan economic data releases, each with its previous, forecast, and final actual figure.",
   },
 
   budget: {
@@ -196,6 +236,7 @@ export const en: Translations = {
     romanUrdu: "Roman Urdu", hideRomanUrdu: "Hide Roman Urdu",
     workshopDescription: "Pakistan's federal government spending breakdown — explore allocations, trends, and what each category means for the economy.",
     workshopDesc: "Pakistan's federal budget, FY2010-11 through FY2026-27 — every figure traced back to that year's own official Budget in Brief, Budget Estimate only. No revised or actual figures are mixed in.",
+    budgetEstimateNote: "Every figure on this page is the Budget Estimate (BE) for that fiscal year, transcribed from that year’s own official Budget in Brief (Finance Division, Government of Pakistan). Most recent year:",
   },
 
   provincial: {
@@ -246,6 +287,24 @@ export const en: Translations = {
     noDecline: "No decline in range",
     yoyChangeDesc: "Year-over-year change",
     perCitizenTitle: "Per Citizen Spending",
+    toLabel: "to", gapYear: "gap year", allFourProvinces: "all 4 provinces",
+    perCapitaChartNote: "per citizen (population estimated from 2023 census)",
+    sourceBudgetDocs: "Source: each province's own official budget documents — see the Budget Workshop for full per-year citations. Years without a verified figure are never estimated or interpolated.",
+    rankingNote: "Rankings update automatically when the year or metric changes. A province with no verified figure for the selected year is listed as not available rather than ranked at zero.",
+    rankingsSuffix: "Rankings", notAvailableYear: "Not available for this year",
+    compareMetricsLink: "Compare on other metrics →",
+    intelligencePageDesc: "Punjab, Sindh, Khyber Pakhtunkhwa, and Balochistan — four separate budgets, each sourced from that province's own official documents.",
+    compareAllFour: "Compare All Four Provinces",
+    compareAllFourDesc: "Rank provinces on total budget, education, health, development, debt, and more.",
+    deepDivesLabel: "Province deep dives:",
+    crossCompLabel: "Cross-province comparisons:",
+    rankingsToolsLabel: "Rankings & tools:",
+    compareTableTitle: "Province Comparison",
+    compareTableDesc: "Ranking Punjab, Sindh, Khyber Pakhtunkhwa, and Balochistan — each on its own latest verified budget year.",
+    budgetEstimate: "Budget Estimate",
+    noVerifiedFigure: "no verified figure for this metric/year in the source documents.",
+    provincialInsights: "Provincial Insights",
+    historicalInsights: "Historical Insights",
   },
 
   comparisons: {
@@ -268,6 +327,10 @@ export const en: Translations = {
     worldBankSource: "Source: World Bank",
     whyItMatters: "Why It Matters", faq: "Frequently Asked Questions",
     relatedComparisons: "Related Comparisons", viewAll: "View all comparisons →",
+    agriculture: "Agriculture", industry: "Industry", services: "Services",
+    sourcesLabel: "Sources:", noOverlapDetailed: "No overlapping data between these two indicators.",
+    unavailableError: "One or both indicators are unavailable right now — try again shortly.",
+    perfKseNote: "KSE-100 (Pakistan stock market) is not included — no historical KSE-100 data source is available to this dashboard, and a proxy return shouldn't be presented as the index itself.",
   },
 
   auth: {
@@ -342,6 +405,10 @@ export const en: Translations = {
     oneEmailDesc: "One email address. No account, no password, no preferences to configure.",
     youllReceive: "You'll receive alerts for",
     subscribing: "Subscribing…",
+    coreInflation: "Core Inflation",
+    monetaryPolicyReports: "Monetary Policy Reports",
+    tbillAuctions: "Treasury Bill Auctions",
+    pibAuctions: "Pakistan Investment Bond Auctions",
   },
 
   modal: {
@@ -358,6 +425,8 @@ export const en: Translations = {
     dsColIndicator: "Indicator", dsColSource: "Source", dsColMethod: "Retrieval Method",
     dsColId: "Series ID", dsColPrimary: "Primary / Secondary / Fallback",
     dsColUpdated: "Last Updated", dsColFreq: "Frequency", dsColStatus: "Status",
+    dsHoverNote: "Hover any Status cell for the exact reason · weekends/holidays never count as Delayed for market data",
+    dsLive: "live", dsAsNeeded: "As Needed",
   },
 
   search: {
@@ -378,6 +447,11 @@ export const en: Translations = {
     sources: "source(s)", footer: "dashboard + web research",
     highConf: "High", medConf: "Medium", lowConf: "Low",
     error: "Something went wrong. Please try again.", askAnything: "Ask me anything",
+    suggestedQ1: "What's the KSE-100 doing today?",
+    suggestedQ2: "What's driving the Economic Health Score?",
+    suggestedQ3: "What did the SBP announce recently?",
+    suggestedQ4: "Compare our recession risk with IMF forecasts",
+    suggestedQ5: "What is a current account deficit?",
   },
 
   prefs: {
@@ -403,6 +477,8 @@ export const en: Translations = {
     keyRisks: "Key Risks", strengths: "Strengths",
     lowRisk: "Low Risk", elevatedRisk: "Elevated Risk", highRisk: "High Risk", severeRisk: "Severe Risk",
     recession: "Recession Probability", default: "Sovereign Default Probability",
+    currentSuffix: "Current",
+    modelScoreNote: "· −5 pts per stale indicator · AI explanation via OpenRouter",
   },
 
   news: {
@@ -413,10 +489,18 @@ export const en: Translations = {
     relevance: "Relevance", sourceRating: "Source",
     aiUnavailable: "AI analysis unavailable for this article.",
     riskLow: "low risk", riskMed: "medium risk", riskHigh: "high risk",
+    catAll: "All", catPakistanEconomy: "Pakistan Economy", catImfDebt: "IMF & Debt",
+    catCentralBanks: "Central Banks", catEnergy: "Energy", catGeopolitics: "Geopolitics",
+    catGlobalMacro: "Global Macro", catMarkets: "Markets",
+    freshFresh: "Fresh", freshRecent: "Recent", freshAging: "Aging",
+    sentBullish: "Bullish", sentBearish: "Bearish", sentNeutral: "Neutral",
   },
 
   health: {
     title: "Economic Health Score", risk: "Risk",
+    statusStrong: "Strong", statusModerate: "Moderate", statusWeak: "Weak",
+    riskLow: "Low", riskModerate: "Moderate", riskHigh: "High",
+    sentBullish: "Bullish", sentNeutral: "Neutral", sentBearish: "Bearish",
   },
 
   market: {
@@ -426,6 +510,16 @@ export const en: Translations = {
   popularInsights: {
     title: "Popular Insights", explore: "Explore →",
     comparison: "Comparison", budget: "Budget", provincial: "Provincial",
+    insightPakVsIndia: "Pakistan vs India GDP Growth",
+    insightTaxMoney: "Where Does Pakistan's Tax Money Go?",
+    insightDefence: "Defence Spending",
+    insightEducation: "Education Budget",
+    insightHealth: "Health Budget",
+    insightPunjab: "Punjab Budget",
+    insightSindh: "Sindh Budget",
+    insightDebtDefence: "Debt Servicing vs Defence",
+    insightRankings: "Provincial Budget Rankings",
+    insightExportsImports: "Exports vs Imports",
   },
 
   pinnedIndicators: {

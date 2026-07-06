@@ -70,7 +70,7 @@ export default function ProvincialRankingDashboard({ lockedMetric, title }: Prov
       <ProvincialRankingBarChart entries={entries} />
 
       <p className="text-[11px] text-[var(--text-muted)]">
-        Rankings update automatically when the year or metric changes. A province with no verified figure for the selected year is listed as not available rather than ranked at zero.
+        {t("provincial.rankingNote")}
       </p>
     </section>
   );

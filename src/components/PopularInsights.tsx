@@ -18,19 +18,6 @@ interface InsightLink {
   category: "Comparison" | "Budget" | "Provincial";
 }
 
-const INSIGHTS: InsightLink[] = [
-  { label: "Pakistan vs India GDP Growth", href: "/comparisons/pakistan-vs-india-gdp-growth", category: "Comparison" },
-  { label: "Where Does Pakistan's Tax Money Go?", href: "/budget/where-does-tax-money-go", category: "Budget" },
-  { label: "Defence Spending", href: "/budget/defence-spending", category: "Budget" },
-  { label: "Education Budget", href: "/budget/education-budget", category: "Budget" },
-  { label: "Health Budget", href: "/budget/health-budget", category: "Budget" },
-  { label: "Punjab Budget", href: "/provincial-budget/punjab", category: "Provincial" },
-  { label: "Sindh Budget", href: "/provincial-budget/sindh", category: "Provincial" },
-  { label: "Debt Servicing vs Defence", href: "/budget/debt-servicing-vs-defence", category: "Budget" },
-  { label: "Provincial Budget Rankings", href: "/provincial-budget/rankings", category: "Provincial" },
-  { label: "Exports vs Imports", href: "/comparisons/exports-vs-imports", category: "Comparison" },
-];
-
 const CATEGORY_COLOR: Record<InsightLink["category"], string> = {
   Comparison: "#38bdf8",
   Budget: "#34d399",
@@ -39,6 +26,20 @@ const CATEGORY_COLOR: Record<InsightLink["category"], string> = {
 
 export default function PopularInsights() {
   const { t } = useLanguage();
+
+  const INSIGHTS: InsightLink[] = [
+    { label: t("popularInsights.insightPakVsIndia"), href: "/comparisons/pakistan-vs-india-gdp-growth", category: "Comparison" },
+    { label: t("popularInsights.insightTaxMoney"), href: "/budget/where-does-tax-money-go", category: "Budget" },
+    { label: t("popularInsights.insightDefence"), href: "/budget/defence-spending", category: "Budget" },
+    { label: t("popularInsights.insightEducation"), href: "/budget/education-budget", category: "Budget" },
+    { label: t("popularInsights.insightHealth"), href: "/budget/health-budget", category: "Budget" },
+    { label: t("popularInsights.insightPunjab"), href: "/provincial-budget/punjab", category: "Provincial" },
+    { label: t("popularInsights.insightSindh"), href: "/provincial-budget/sindh", category: "Provincial" },
+    { label: t("popularInsights.insightDebtDefence"), href: "/budget/debt-servicing-vs-defence", category: "Budget" },
+    { label: t("popularInsights.insightRankings"), href: "/provincial-budget/rankings", category: "Provincial" },
+    { label: t("popularInsights.insightExportsImports"), href: "/comparisons/exports-vs-imports", category: "Comparison" },
+  ];
+
   const categoryLabel: Record<InsightLink["category"], string> = {
     Comparison: t("popularInsights.comparison"),
     Budget: t("popularInsights.budget"),

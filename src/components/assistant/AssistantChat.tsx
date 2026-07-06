@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { DashboardSnapshot } from "@/lib/assistantContext";
 import type { CitationItem, ConfidenceLevel, SourceType } from "@/app/api/assistant/route";
+import { useLanguage } from "@/components/LanguageProvider";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -30,14 +31,6 @@ interface Props {
 }
 
 // ── Constants ─────────────────────────────────────────────────────────────────
-
-const SUGGESTED_QUESTIONS = [
-  "What's the KSE-100 doing today?",
-  "What's driving the Economic Health Score?",
-  "What did the SBP announce recently?",
-  "Compare our recession risk with IMF forecasts",
-  "What is a current account deficit?",
-];
 
 const SOURCE_COLORS: Record<string, string> = {
   "Dashboard Data":  "text-[#38bdf8]",
@@ -184,14 +177,15 @@ function TranslationSection({
   msgIndex: number;
   onTranslate: (index: number, text: string) => void;
 }) {
+  const { t } = useLanguage();
   const hasTranslation = Boolean(msg.translation);
   const buttonLabel = msg.translating
     ? null
     : hasTranslation
       ? msg.translationVisible
-        ? "Hide Roman Urdu"
-        : "Show Roman Urdu"
-      : "Translate to Roman Urdu";
+        ? t("assistant.hide")
+        : t("assistant.show")
+      : t("assistant.show");
 
   return (
     <div className="mt-2">
@@ -207,7 +201,7 @@ function TranslationSection({
               className="w-1.5 h-1.5 rounded-full bg-[#38bdf8]/40 flex-shrink-0"
               style={{ animation: "assistant-dot-pulse 1.4s ease-in-out infinite" }}
             />
-            <span className="text-white/25 light:text-slate-400">Translating…</span>
+            <span className="text-white/25 light:text-slate-400">{t("assistant.translating")}</span>
           </>
         ) : (
           <>
@@ -308,6 +302,15 @@ export default function AssistantChat({ context, onClose }: Props) {
   const [isLoading, setIsLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const { t } = useLanguage();
+
+  const SUGGESTED_QUESTIONS = [
+    t("assistant.suggestedQ1"),
+    t("assistant.suggestedQ2"),
+    t("assistant.suggestedQ3"),
+    t("assistant.suggestedQ4"),
+    t("assistant.suggestedQ5"),
+  ];
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -375,7 +378,7 @@ export default function AssistantChat({ context, onClose }: Props) {
         ...nextMessages,
         {
           role: "assistant",
-          content: "Something went wrong. Please try again.",
+          content: t("assistant.error"),
           source: "AI Knowledge",
           confidence: "Low",
           confidenceReason: "Request failed",
@@ -456,12 +459,12 @@ export default function AssistantChat({ context, onClose }: Props) {
         <div className="flex items-center gap-2.5">
           <span className="w-2 h-2 rounded-full bg-[#38bdf8] animate-pulse" />
           <span className="text-sm font-semibold text-white/90 light:text-slate-900 tracking-tight">
-            Economic Intelligence
+            {t("assistant.title")}
           </span>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-[10px] text-[#38bdf8]/60 font-medium uppercase tracking-wider">
-            Hybrid Research
+            {t("assistant.badge")}
           </span>
           <button
             onClick={onClose}
@@ -480,7 +483,7 @@ export default function AssistantChat({ context, onClose }: Props) {
         {isEmpty && (
           <div className="space-y-2 pt-1">
             <p className="text-[11px] text-white/35 light:text-slate-500 font-medium uppercase tracking-wider px-0.5">
-              Ask me anything
+              {t("assistant.askAnything")}
             </p>
             {SUGGESTED_QUESTIONS.map((q) => (
               <button
@@ -556,7 +559,7 @@ export default function AssistantChat({ context, onClose }: Props) {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Ask about Pakistan's economy…"
+            placeholder={t("assistant.placeholder")}
             disabled={isLoading}
             className="flex-1 bg-transparent text-[13px] text-white/85 light:text-slate-800 placeholder-white/25 light:placeholder-slate-400 outline-none disabled:opacity-50"
           />
@@ -582,7 +585,7 @@ export default function AssistantChat({ context, onClose }: Props) {
           </button>
         </div>
         <p className="text-[10px] text-white/18 light:text-slate-400 text-center mt-1.5">
-          as of {context.asOf} · dashboard + web research
+          as of {context.asOf} · {t("assistant.footer")}
         </p>
       </div>
     </div>

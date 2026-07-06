@@ -5,6 +5,7 @@ import EconomicCalendarWorkspace from "@/components/economicCalendar/EconomicCal
 import SubscriptionSection from "@/components/economicCalendar/SubscriptionSection";
 import { getAllScheduledEvents, getNextMajorEvents, getRecentReleases, toEconomicEvent } from "@/lib/economicCalendar/economicEventsRepo";
 import { SITE_URL, SITE_NAME } from "@/lib/seoConfig";
+import { T } from "@/components/T";
 
 const PAGE_URL = `${SITE_URL}/economic-calendar`;
 const TITLE = "Pakistan Economic Calendar — SBP Meetings, CPI & Key Release Dates";
@@ -83,24 +84,24 @@ export default async function EconomicCalendarPage() {
         <EconomicCalendarWorkspace events={events} recentReleases={recentReleases} nextMajorEvents={nextMajorEvents} subscriptionSection={<SubscriptionSection />} />
 
         <section className="glass-card mt-6 flex flex-col gap-4 rounded-2xl p-6 sm:p-8">
-          <h2 className="text-xl font-semibold text-white light:text-slate-900">Frequently Asked Questions</h2>
+          <h2 className="text-xl font-semibold text-white light:text-slate-900"><T tKey="common.faq" /></h2>
           <div className="space-y-5">
-            {FAQ.map((item, i) => (
-              <div key={i}>
-                <p className="text-sm font-semibold text-white/85 light:text-slate-800">{item.question}</p>
-                <p className="mt-1.5 text-sm leading-relaxed text-white/60 light:text-slate-600">{item.answer}</p>
+            {([1,2,3,4,5,6] as const).map((n) => (
+              <div key={n}>
+                <p className="text-sm font-semibold text-white/85 light:text-slate-800"><T tKey={`calendar.calFaq${n}Q`} /></p>
+                <p className="mt-1.5 text-sm leading-relaxed text-white/60 light:text-slate-600"><T tKey={`calendar.calFaq${n}A`} /></p>
               </div>
             ))}
           </div>
         </section>
 
         <div className="mt-6 flex flex-wrap items-center gap-2 text-xs">
-          <span className="text-[var(--text-muted)]">Explore further:</span>
+          <span className="text-[var(--text-muted)]"><T tKey="calendar.exploreLink" /></span>
           <Link href="/economic-calendar/archive" className="rounded-full border border-white/10 light:border-slate-200 px-3 py-1.5 text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)]">
-            Historical Release Archive
+            <T tKey="calendar.historicalArchive" />
           </Link>
           <a href="/economic-calendar/feed.ics" className="rounded-full border border-neon-blue/20 bg-neon-blue/5 px-3 py-1.5 text-neon-blue transition-colors hover:bg-neon-blue/10">
-            Subscribe to Calendar Feed (.ics)
+            <T tKey="calendar.subscribeToFeed" />
           </a>
         </div>
       </main>

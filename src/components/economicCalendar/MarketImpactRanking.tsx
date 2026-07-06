@@ -1,3 +1,6 @@
+"use client";
+
+import { useLanguage } from "@/components/LanguageProvider";
 import { MARKET_IMPACT_RANKING } from "@/lib/economicCalendar/marketImpactScore";
 
 const BAR_COLOR_BY_SCORE = (score: number) => {
@@ -6,22 +9,16 @@ const BAR_COLOR_BY_SCORE = (score: number) => {
   return "bg-emerald-400";
 };
 
-/**
- * "Top Market-Moving Events in Pakistan" — a reusable, static ranking of
- * recurring release TYPES by Market Impact Score (not specific dated
- * events; see NextMajorEvents for that). Educational reference table,
- * used on the Economic Calendar hub and reusable anywhere else a quick
- * "what matters most" reference is useful.
- */
 export default function MarketImpactRanking({ limit }: { limit?: number }) {
+  const { t } = useLanguage();
   const entries = limit ? MARKET_IMPACT_RANKING.slice(0, limit) : MARKET_IMPACT_RANKING;
   const maxScore = MARKET_IMPACT_RANKING[0]?.score ?? 10;
 
   return (
     <section className="glass-card flex flex-col gap-4 rounded-2xl p-6 sm:p-8">
       <div>
-        <h2 className="text-xl font-semibold text-white light:text-slate-900">Top Market-Moving Events in Pakistan</h2>
-        <p className="mt-1 text-sm text-white/50 light:text-slate-500">Ranked by Market Impact Score (1–10) — how much each recurring release typically moves PSX, bond yields, and the Rupee.</p>
+        <h2 className="text-xl font-semibold text-white light:text-slate-900">{t("calendar.marketImpactTitle")}</h2>
+        <p className="mt-1 text-sm text-white/50 light:text-slate-500">{t("calendar.marketImpactDesc")}</p>
       </div>
 
       <ol className="flex flex-col gap-2">

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
+import { T } from "@/components/T";
 import ProvincialWorkspace from "@/components/provincial/ProvincialWorkspace";
 import ProvincialSeoTemplate from "@/components/provincial/ProvincialSeoTemplate";
 import { getProvinceBySlug, PROVINCES } from "@/lib/provincial/provincialBudgetRegistry";
@@ -85,7 +86,7 @@ export default async function ProvincialBudgetSlugPage({ params }: PageProps) {
 
         {faq.length > 0 && (
           <section className="glass-card mt-10 flex flex-col gap-4 rounded-2xl p-6 sm:p-8">
-            <h2 className="text-xl font-semibold text-white light:text-slate-900">Frequently Asked Questions</h2>
+            <h2 className="text-xl font-semibold text-white light:text-slate-900"><T tKey="common.faq" /></h2>
             <div className="space-y-5">
               {faq.map((item, i) => (
                 <div key={i}>

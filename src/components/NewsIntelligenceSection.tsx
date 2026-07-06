@@ -88,6 +88,27 @@ export default function NewsIntelligenceSection({ items, modelDisplayName, newsR
   const [activeTab, setActiveTab] = useState<TabId>("All");
   const { t } = useLanguage();
 
+  const catMap: Record<string, string> = {
+    "All": t("news.catAll"),
+    "Pakistan Economy": t("news.catPakistanEconomy"),
+    "IMF & Debt": t("news.catImfDebt"),
+    "Central Banks": t("news.catCentralBanks"),
+    "Energy": t("news.catEnergy"),
+    "Geopolitics": t("news.catGeopolitics"),
+    "Global Macro": t("news.catGlobalMacro"),
+    "Markets": t("news.catMarkets"),
+  };
+  const freshnessMap: Record<string, string> = {
+    Fresh: t("news.freshFresh"),
+    Recent: t("news.freshRecent"),
+    Aging: t("news.freshAging"),
+  };
+  const sentimentMap: Record<string, string> = {
+    Bullish: t("news.sentBullish"),
+    Bearish: t("news.sentBearish"),
+    Neutral: t("news.sentNeutral"),
+  };
+
   // Tabs with zero articles right now are hidden rather than shown empty —
   // which tabs are non-empty varies fetch to fetch with real news volume.
   const countByTab = useMemo(() => {
@@ -154,7 +175,7 @@ export default function NewsIntelligenceSection({ items, modelDisplayName, newsR
                     : "border-white/10 light:border-slate-200 text-white/50 light:text-slate-500 hover:text-white light:hover:text-slate-900"
                 }`}
               >
-                {tab} <span className="opacity-60">({countByTab[tab]})</span>
+                {catMap[tab] ?? tab} <span className="opacity-60">({countByTab[tab]})</span>
               </button>
             );
           })}
@@ -190,7 +211,7 @@ export default function NewsIntelligenceSection({ items, modelDisplayName, newsR
               {/* Row 1: category tag + timestamp */}
               <div className="flex items-center justify-between gap-2">
                 <span className="rounded-md bg-white/5 light:bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-white/40 light:text-slate-500">
-                  {item.category}
+                  {catMap[item.category] ?? item.category}
                 </span>
                 <span className="text-[10px] text-white/30 light:text-slate-400" suppressHydrationWarning>
                   {formatAge(item.publishedAt)}
@@ -210,7 +231,7 @@ export default function NewsIntelligenceSection({ items, modelDisplayName, newsR
                       SENTIMENT_STYLES[sentiment] ?? SENTIMENT_STYLES.Neutral
                     }`}
                   >
-                    {sentiment}
+                    {sentimentMap[sentiment] ?? sentiment}
                   </span>
                   <InfoTooltip termKey={sentiment} size="xs" />
                 </span>
@@ -241,7 +262,7 @@ export default function NewsIntelligenceSection({ items, modelDisplayName, newsR
                   {t("news.sourceRating")} {item.sourceReliability}/10
                 </span>
                 <span className={`text-[9px] font-medium ${FRESHNESS_STYLES[item.freshness]}`}>
-                  {item.freshness}
+                  {freshnessMap[item.freshness] ?? item.freshness}
                 </span>
               </div>
 

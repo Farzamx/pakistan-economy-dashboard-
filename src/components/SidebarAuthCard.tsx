@@ -70,16 +70,16 @@ export default function SidebarAuthCard() {
         <div className="flex items-center justify-between gap-2">
           <p className="min-w-0 truncate text-xs text-[var(--text-secondary)]">{user.email}</p>
           <span className="shrink-0 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-400">
-            Member
+            {t("nav.memberBadge")}
           </span>
         </div>
         <div className="flex flex-col gap-1 text-[11px] text-[var(--text-muted)]">
-          <span>Member since {memberSince}</span>
+          <span>{t("nav.memberSince")} {memberSince}</span>
           <span className="flex items-center gap-1 font-medium text-neon-blue">
             <svg className="h-3 w-3 shrink-0" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
               <path d="M8 1.5l1.9 3.85 4.25.62-3.07 3 .72 4.23L8 11.2l-3.8 2 .72-4.23-3.07-3 4.25-.62z" />
             </svg>
-            Premium Access
+            {t("nav.premiumAccess")}
           </span>
         </div>
         <button

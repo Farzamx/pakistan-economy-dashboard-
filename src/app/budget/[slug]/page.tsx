@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { T } from "@/components/T";
 import BudgetDetailView from "@/components/budget/BudgetDetailView";
 import BudgetToolkit from "@/components/budget/BudgetToolkit";
 import RelatedContent from "@/components/RelatedContent";
@@ -109,12 +110,12 @@ export default async function BudgetCategoryPage({ params }: PageProps) {
         )}
 
         <section className="glass-card mt-6 p-6 sm:p-8">
-          <h2 className="text-xl font-semibold text-white light:text-slate-900">Why It Matters</h2>
+          <h2 className="text-xl font-semibold text-white light:text-slate-900"><T tKey="budget.whyItMatters" /></h2>
           <p className="mt-3 text-sm leading-relaxed text-white/65 light:text-slate-600">{category.whyItMatters}</p>
         </section>
 
         <section className="glass-card mt-6 p-6 sm:p-8">
-          <h2 className="text-xl font-semibold text-white light:text-slate-900">Frequently Asked Questions</h2>
+          <h2 className="text-xl font-semibold text-white light:text-slate-900"><T tKey="common.faq" /></h2>
           <div className="mt-4 space-y-5">
             {category.faq.map((item, i) => (
               <div key={i}>
@@ -126,9 +127,9 @@ export default async function BudgetCategoryPage({ params }: PageProps) {
         </section>
 
         <section className="glass-card mt-6 p-6 sm:p-8">
-          <h2 className="text-xl font-semibold text-white light:text-slate-900">Source Citations</h2>
+          <h2 className="text-xl font-semibold text-white light:text-slate-900"><T tKey="budget.sourceCitations" /></h2>
           <p className="mt-3 text-sm leading-relaxed text-white/60 light:text-slate-600">
-            Every figure on this page is the Budget Estimate (BE) for that fiscal year, transcribed from that year&apos;s own official Budget in Brief (Finance Division, Government of Pakistan). Most recent year:
+            <T tKey="budget.budgetEstimateNote" />
           </p>
           <a
             href={latest.citations.budgetInBrief.url}
@@ -143,7 +144,7 @@ export default async function BudgetCategoryPage({ params }: PageProps) {
         {related.length > 0 && (
           <section className="mt-6">
             <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-white/35 light:text-slate-500">
-              Related Budget Categories
+              <T tKey="budget.relatedCategories" />
             </p>
             <div className="flex flex-wrap gap-2">
               {related.map((c) => (
@@ -166,7 +167,7 @@ export default async function BudgetCategoryPage({ params }: PageProps) {
             href="/budget"
             className="inline-flex items-center gap-2 rounded-lg bg-neon-blue/10 border border-neon-blue/20 px-5 py-2.5 text-sm font-medium text-neon-blue transition-colors hover:bg-neon-blue/20"
           >
-            View the full Budget Workshop →
+            <T tKey="budget.viewFullWorkshop" />
           </ProtectedLink>
         </div>
       </div>

@@ -29,6 +29,22 @@ export default function HealthScoreCard({ health, ai }: Props) {
   const riskLevel = healthLabelToRiskLevel(status.label);
   const { t } = useLanguage();
 
+  const statusMap: Record<string, string> = {
+    Strong: t("health.statusStrong"),
+    Moderate: t("health.statusModerate"),
+    Weak: t("health.statusWeak"),
+  };
+  const sentimentMap: Record<string, string> = {
+    Bullish: t("health.sentBullish"),
+    Neutral: t("health.sentNeutral"),
+    Bearish: t("health.sentBearish"),
+  };
+  const riskMap: Record<string, string> = {
+    Low: t("health.riskLow"),
+    Moderate: t("health.riskModerate"),
+    High: t("health.riskHigh"),
+  };
+
   return (
     <motion.section
       className="glass-card mt-8 flex flex-col items-center gap-6 p-6 text-center sm:flex-row sm:p-8 sm:text-left"
@@ -53,17 +69,17 @@ export default function HealthScoreCard({ health, ai }: Props) {
           <span
             className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium ${status.badgeClass}`}
           >
-            {status.label}
+            {statusMap[status.label] ?? status.label}
           </span>
           <span
             className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium ${SENTIMENT_CLASS[sentiment]}`}
           >
-            {sentiment}
+            {sentimentMap[sentiment] ?? sentiment}
           </span>
           <span
             className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium ${RISK_CLASS[riskLevel]}`}
           >
-            {riskLevel} {t("health.risk")}
+            {riskMap[riskLevel] ?? riskLevel} {t("health.risk")}
           </span>
         </div>
 

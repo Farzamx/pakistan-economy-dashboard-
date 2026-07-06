@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Sidebar from "@/components/Sidebar";
 import ArchiveBrowser from "@/components/economicCalendar/ArchiveBrowser";
+import { T } from "@/components/T";
 import { getHistoricalEvents } from "@/lib/economicCalendar/economicEventsRepo";
 import { isWithinRetention, EVENT_RETENTION_DAYS } from "@/lib/economicCalendar/retentionConfig";
 import { SITE_URL, SITE_NAME } from "@/lib/seoConfig";
@@ -87,21 +88,21 @@ export default async function EconomicCalendarArchivePage() {
 
         <div className="flex flex-col gap-6">
           <div>
-            <h1 className="text-2xl font-semibold text-[var(--text-primary)]">Historical Release Archive</h1>
+            <h1 className="text-2xl font-semibold text-[var(--text-primary)]"><T tKey="calendar.archiveTitle" /></h1>
             <p className="mt-1 max-w-2xl text-sm text-[var(--text-muted)]">
-              Past Pakistan economic data releases, each with its previous, forecast, and final actual figure.
+              <T tKey="calendar.archiveHeroDesc" />
             </p>
           </div>
 
           <ArchiveBrowser events={events} />
 
           <section className="glass-card flex flex-col gap-4 rounded-2xl p-6 sm:p-8">
-            <h2 className="text-xl font-semibold text-white light:text-slate-900">Frequently Asked Questions</h2>
+            <h2 className="text-xl font-semibold text-white light:text-slate-900"><T tKey="common.faq" /></h2>
             <div className="space-y-5">
-              {FAQ.map((item, i) => (
-                <div key={i}>
-                  <p className="text-sm font-semibold text-white/85 light:text-slate-800">{item.question}</p>
-                  <p className="mt-1.5 text-sm leading-relaxed text-white/60 light:text-slate-600">{item.answer}</p>
+              {([1,2,3,4] as const).map((n) => (
+                <div key={n}>
+                  <p className="text-sm font-semibold text-white/85 light:text-slate-800"><T tKey={`calendar.archiveFaq${n}Q`} /></p>
+                  <p className="mt-1.5 text-sm leading-relaxed text-white/60 light:text-slate-600"><T tKey={`calendar.archiveFaq${n}A`} /></p>
                 </div>
               ))}
             </div>

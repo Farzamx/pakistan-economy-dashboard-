@@ -157,7 +157,7 @@ export default function ProvincialHistoricalExplorer({ lockedProvince }: Provinc
       {viewMode === "trend" && (
         <div>
           <p className="mb-2 text-sm text-[var(--text-muted)]">
-            {provinceMeta.name} — {metricMeta.label} ({visibleYears[0]?.fiscalYear ?? "—"} to {visibleYears[visibleYears.length - 1]?.fiscalYear ?? "—"})
+            {provinceMeta.name} — {metricMeta.label} ({visibleYears[0]?.fiscalYear ?? "—"} {t("provincial.toLabel")} {visibleYears[visibleYears.length - 1]?.fiscalYear ?? "—"})
           </p>
           <ProvincialTrendChart points={trendPoints} field={metric} label={metricMeta.label} color={provinceMeta.color} />
         </div>
@@ -191,7 +191,7 @@ export default function ProvincialHistoricalExplorer({ lockedProvince }: Provinc
                     <span className="text-[var(--text-secondary)]">FY{p.fiscalYear}</span>
                     <span className="tabular-nums text-[var(--text-primary)]">Rs {p.value.toFixed(1)}bn</span>
                     <span className={`tabular-nums text-xs ${p.pctChange === null ? "text-[var(--text-muted)]" : p.pctChange >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
-                      {p.pctChange === null ? "— (gap year)" : `${p.pctChange >= 0 ? "+" : ""}${p.pctChange.toFixed(1)}%`}
+                      {p.pctChange === null ? `— (${t("provincial.gapYear")})` : `${p.pctChange >= 0 ? "+" : ""}${p.pctChange.toFixed(1)}%`}
                     </span>
                   </div>
                 ))}
@@ -226,7 +226,7 @@ export default function ProvincialHistoricalExplorer({ lockedProvince }: Provinc
       )}
 
       <p className="text-[11px] text-[var(--text-muted)]">
-        Source: each province&apos;s own official budget documents — see the {provinceMeta.name} Budget Workshop for full per-year citations. Years without a verified figure are never estimated or interpolated.
+        {t("provincial.sourceBudgetDocs")}
       </p>
     </div>
   );

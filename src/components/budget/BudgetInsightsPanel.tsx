@@ -1,8 +1,9 @@
+import type { ReactNode } from "react";
 import type { BudgetInsight } from "@/lib/budget/budgetData";
 
 interface BudgetInsightsPanelProps {
   insights: BudgetInsight[];
-  title?: string;
+  title?: ReactNode;
 }
 
 export default function BudgetInsightsPanel({ insights, title = "Budget Insights" }: BudgetInsightsPanelProps) {

@@ -1,3 +1,6 @@
+"use client";
+
+import { useLanguage } from "@/components/LanguageProvider";
 import type { MarketReaction, MarketReactionScenario } from "@/lib/economicCalendar/marketReactionEngine";
 
 interface ReactionCardProps {
@@ -29,13 +32,13 @@ function ReactionCard({ label, reaction, accent }: ReactionCardProps) {
   );
 }
 
-/** Pre-release: shows every possible scenario (above/below/in-line forecast, or cut/hold/hike for MPC) since there's no actual value yet. */
 export function MarketReactionPreview({ scenarios }: { scenarios: MarketReactionScenario[] }) {
+  const { t } = useLanguage();
   if (scenarios.length === 0) return null;
   return (
     <section className="glass-card mt-6 p-6 sm:p-8">
-      <h2 className="text-xl font-semibold text-white light:text-slate-900">Potential Market Reaction</h2>
-      <p className="mt-1 text-xs text-white/40 light:text-slate-500">Not yet released — here&apos;s how each possible outcome is typically interpreted.</p>
+      <h2 className="text-xl font-semibold text-white light:text-slate-900">{t("calendar.marketReaction")}</h2>
+      <p className="mt-1 text-xs text-white/40 light:text-slate-500">{t("calendar.marketNotReleased")}</p>
       <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
         {scenarios.map((s) => (
           <ReactionCard key={s.scenarioLabel} label={s.scenarioLabel} reaction={s.reaction} accent="neutral" />
@@ -45,14 +48,14 @@ export function MarketReactionPreview({ scenarios }: { scenarios: MarketReaction
   );
 }
 
-/** Post-release: shows the one reaction that actually applies, based on the computed surprise (or rate-change direction for MPC). */
 export function MarketReactionActual({ reaction, accent }: { reaction: MarketReaction | null; accent: "neutral" | "positive" | "negative" }) {
+  const { t } = useLanguage();
   if (!reaction) return null;
   return (
     <section className="glass-card mt-6 p-6 sm:p-8">
-      <h2 className="text-xl font-semibold text-white light:text-slate-900">Potential Market Reaction</h2>
+      <h2 className="text-xl font-semibold text-white light:text-slate-900">{t("calendar.marketReaction")}</h2>
       <div className="mt-4">
-        <ReactionCard label="Based on this release" reaction={reaction} accent={accent} />
+        <ReactionCard label={t("calendar.basedOnRelease")} reaction={reaction} accent={accent} />
       </div>
     </section>
   );

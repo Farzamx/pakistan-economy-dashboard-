@@ -14,6 +14,7 @@ import {
   YAxis,
 } from "recharts";
 import { useTheme } from "@/components/ThemeProvider";
+import { useLanguage } from "@/components/LanguageProvider";
 
 export interface SectorCompositionPoint {
   year: string;
@@ -37,6 +38,7 @@ export default function SectorCompositionChart({ data }: SectorCompositionChartP
   const isInView = useInView(containerRef, { once: true });
   const prefersReducedMotion = useSafeReducedMotion();
   const { theme } = useTheme();
+  const { t } = useLanguage();
   const shouldRender = isInView || !!prefersReducedMotion;
   const isLight = theme === "light";
 
@@ -77,9 +79,9 @@ export default function SectorCompositionChart({ data }: SectorCompositionChartP
               formatter={(value) => `${typeof value === "number" ? value.toFixed(1) : value}%`}
             />
             <Legend wrapperStyle={{ fontSize: 12, color: legendColor }} iconType="line" />
-            <Line type="monotone" dataKey="agriculture" name="Agriculture" stroke={COLORS.agriculture} strokeWidth={2} dot={false} connectNulls={false} isAnimationActive={!prefersReducedMotion} animationDuration={1400} />
-            <Line type="monotone" dataKey="industry" name="Industry" stroke={COLORS.industry} strokeWidth={2} dot={false} connectNulls={false} isAnimationActive={!prefersReducedMotion} animationDuration={1400} animationBegin={120} />
-            <Line type="monotone" dataKey="services" name="Services" stroke={COLORS.services} strokeWidth={2} dot={false} connectNulls={false} isAnimationActive={!prefersReducedMotion} animationDuration={1400} animationBegin={240} />
+            <Line type="monotone" dataKey="agriculture" name={t("comparisons.agriculture")} stroke={COLORS.agriculture} strokeWidth={2} dot={false} connectNulls={false} isAnimationActive={!prefersReducedMotion} animationDuration={1400} />
+            <Line type="monotone" dataKey="industry" name={t("comparisons.industry")} stroke={COLORS.industry} strokeWidth={2} dot={false} connectNulls={false} isAnimationActive={!prefersReducedMotion} animationDuration={1400} animationBegin={120} />
+            <Line type="monotone" dataKey="services" name={t("comparisons.services")} stroke={COLORS.services} strokeWidth={2} dot={false} connectNulls={false} isAnimationActive={!prefersReducedMotion} animationDuration={1400} animationBegin={240} />
           </LineChart>
         </ResponsiveContainer>
       )}

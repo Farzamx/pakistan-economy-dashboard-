@@ -5,6 +5,7 @@ import { useInView } from "framer-motion";
 import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { useSafeReducedMotion } from "@/hooks/useSafeReducedMotion";
 import { useTheme } from "@/components/ThemeProvider";
+import { useLanguage } from "@/components/LanguageProvider";
 import type { ProvinceRankEntry } from "@/lib/provincial/provincialComparison";
 
 interface ProvincialRankingBarChartProps {
@@ -17,6 +18,7 @@ export default function ProvincialRankingBarChart({ entries, unitLabel = "Rs bn"
   const containerRef = useRef<HTMLDivElement>(null);
   const isInView = useInView(containerRef, { once: true });
   const prefersReducedMotion = useSafeReducedMotion();
+  const { t } = useLanguage();
   const { theme } = useTheme();
   const isLight = theme === "light";
   const shouldRender = isInView || !!prefersReducedMotion;
@@ -33,7 +35,7 @@ export default function ProvincialRankingBarChart({ entries, unitLabel = "Rs bn"
   return (
     <div ref={containerRef} style={{ minHeight: 260 }}>
       {chartable.length === 0 ? (
-        <div className="flex h-[260px] items-center justify-center text-sm text-[var(--text-muted)]">No verified data available for any province on this metric/year.</div>
+        <div className="flex h-[260px] items-center justify-center text-sm text-[var(--text-muted)]">{t("provincial.noData")}</div>
       ) : (
         shouldRender && (
           <ResponsiveContainer width="100%" height={Math.max(180, chartable.length * 56)}>
@@ -56,7 +58,7 @@ export default function ProvincialRankingBarChart({ entries, unitLabel = "Rs bn"
       )}
       {unavailable.length > 0 && (
         <p className="mt-2 text-[11px] text-[var(--text-muted)]">
-          Not available: {unavailable.map((e) => e.name).join(", ")} — no verified figure for this metric/year in the source documents.
+          {t("provincial.notAvailable")}: {unavailable.map((e) => e.name).join(", ")} — {t("provincial.noVerifiedFigure")}
         </p>
       )}
     </div>

@@ -102,7 +102,7 @@ export default function ComparisonCard({
           )}
 
           <p className="text-[11px] text-[var(--text-muted)]">
-            Sources: {sourceA}
+            {t("comparisons.sourcesLabel")}: {sourceA}
             {sourceB !== sourceA ? ` & ${sourceB}` : ""}
           </p>
         </>

@@ -4,8 +4,10 @@ import { useState } from "react";
 import Link from "next/link";
 import { COMPARISON_METRICS, rankProvincesByField, type ProvincialComparisonMetric } from "@/lib/provincial/provincialComparison";
 import { getProvinceBySlug } from "@/lib/provincial/provincialBudgetRegistry";
+import { useLanguage } from "@/components/LanguageProvider";
 
 export default function ProvinceCompareTable() {
+  const { t } = useLanguage();
   const [activeMetric, setActiveMetric] = useState<ProvincialComparisonMetric>(COMPARISON_METRICS[0]);
   const ranked = rankProvincesByField(activeMetric.field);
   const maxValue = Math.max(...ranked.map((r) => r.value ?? 0), 1);
@@ -13,9 +15,9 @@ export default function ProvinceCompareTable() {
   return (
     <section className="glass-card flex flex-col gap-5 rounded-2xl p-6 sm:p-8">
       <div>
-        <h2 className="text-xl font-semibold text-white light:text-slate-900">Province Comparison</h2>
+        <h2 className="text-xl font-semibold text-white light:text-slate-900">{t("provincial.compareTableTitle")}</h2>
         <p className="mt-1 text-sm text-white/60 light:text-slate-500">
-          Ranking Punjab, Sindh, Khyber Pakhtunkhwa, and Balochistan — each on its own latest verified budget year.
+          {t("provincial.compareTableDesc")}
         </p>
       </div>
 
@@ -53,13 +55,13 @@ export default function ProvinceCompareTable() {
                   {entry.name}
                 </span>
                 <span className="font-semibold text-white light:text-slate-900">
-                  {entry.value === null ? "Not available" : `Rs ${entry.value.toFixed(1)}bn`}
+                  {entry.value === null ? t("provincial.notAvailable") : `Rs ${entry.value.toFixed(1)}bn`}
                 </span>
               </div>
               <div className="h-2 w-full overflow-hidden rounded-full bg-white/5 light:bg-slate-100">
                 <div className="h-full rounded-full transition-all" style={{ width: `${widthPct}%`, backgroundColor: entry.color }} />
               </div>
-              <span className="text-[10px] text-white/30 light:text-slate-400">FY{entry.fiscalYear} Budget Estimate</span>
+              <span className="text-[10px] text-white/30 light:text-slate-400">FY{entry.fiscalYear} {t("provincial.budgetEstimate")}</span>
             </Link>
           );
         })}
