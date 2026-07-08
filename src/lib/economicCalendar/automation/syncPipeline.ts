@@ -29,6 +29,7 @@ import { processNotificationJobs, type JobProcessingSummary } from "@/lib/notifi
 import { logCronRun } from "@/lib/cronLogging";
 import { formatPipelineSummary, formatDetailBlocks } from "@/lib/economicCalendar/automation/pipelineLogger";
 import type { TriggerMeta } from "@/lib/economicCalendar/automation/schedulerMeta";
+import { auditSbpFreshness, type FreshnessAuditEntry } from "@/lib/data/sbpFreshnessAudit";
 
 export interface JobSummaryEntry {
   jobName: string;
@@ -53,6 +54,8 @@ export interface PipelineResult {
   /** LSM result — PBS primary used when available, EasyData fallback otherwise (Step 7). */
   lsmResult: SyncResult | null;
   notifications: JobProcessingSummary[];
+  /** Freshness audit across all 20 SBP EasyData indicators against SBP's own /meta "Available Upto" (Step 9). */
+  freshnessAudit: FreshnessAuditEntry[];
   /** Count of SyncResult entries with status="synced" across all sync steps. */
   totalSynced: number;
   /** Count of SyncResult entries with status="error" across all sync steps. */
@@ -83,6 +86,7 @@ export async function runSyncPipeline(meta: TriggerMeta): Promise<PipelineResult
   let syncResults: SyncResult[] = [];
   let lsmResult: SyncResult | null = null;
   let notifications: JobProcessingSummary[] = [];
+  let freshnessAudit: FreshnessAuditEntry[] = [];
 
   // ── Step 1: Official calendar sync ──────────────────────────────────────────
   {
@@ -237,6 +241,32 @@ export async function runSyncPipeline(meta: TriggerMeta): Promise<PipelineResult
     }
   }
 
+  // ── Step 9: SBP EasyData freshness audit (all 20 indicators) ───────────────
+  // Independent of steps 1-8: catches drift for every SBP-backed indicator,
+  // including ones with no calendar event at all (e.g. moneySupplyM2 — the
+  // series that motivated this step; see sbpFreshnessAudit.ts header).
+  // Self-heals cache-timing drift; flags genuine "wrong series" drift for
+  // manual review rather than guessing at a fix.
+  {
+    const stepStart = new Date();
+    try {
+      freshnessAudit = await auditSbpFreshness();
+      const needsReview = freshnessAudit.filter((e) => e.status === "stale-needs-review");
+      const selfHealed = freshnessAudit.filter((e) => e.status === "stale-self-healed");
+      const detail =
+        `${freshnessAudit.length} checked, ${selfHealed.length} self-healed, ` +
+        `${needsReview.length} needing review` +
+        (needsReview.length > 0 ? `: ${needsReview.map((e) => e.indicator).join(", ")}` : "");
+      const status = needsReview.length > 0 ? "failure" : "success";
+      await logCronRun("sbp-freshness-audit", stepStart, status, detail);
+      jobsSummary.push({ jobName: "sbp-freshness-audit", status, durationMs: Date.now() - stepStart.getTime(), detail });
+    } catch (err) {
+      const detail = err instanceof Error ? err.message : String(err);
+      await logCronRun("sbp-freshness-audit", stepStart, "failure", detail);
+      jobsSummary.push({ jobName: "sbp-freshness-audit", status: "failure", durationMs: Date.now() - stepStart.getTime(), detail });
+    }
+  }
+
   const allSyncResults: SyncResult[] = [
     ...cpiPbsResults,
     ...tradeBalanceResults,
@@ -262,6 +292,7 @@ export async function runSyncPipeline(meta: TriggerMeta): Promise<PipelineResult
     notifications,
     totalSynced,
     totalFailed,
+    freshnessAudit,
   };
 
   const summary = formatPipelineSummary(logInput);
@@ -280,6 +311,7 @@ export async function runSyncPipeline(meta: TriggerMeta): Promise<PipelineResult
     syncResults,
     lsmResult,
     notifications,
+    freshnessAudit,
     totalSynced,
     totalFailed,
     totalDurationMs,

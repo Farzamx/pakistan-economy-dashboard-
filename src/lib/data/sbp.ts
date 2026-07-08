@@ -133,7 +133,15 @@ const SERIES_KEYS = {
   remittances: "TS_GP_BOP_WR_M.WR0010", // Workers' remittances inflow
   currentAccount: "TS_GP_BOP_BPM6SUM_M.P00010", // BPM6 current account balance
   tradeBalance: "TS_GP_BOP_BPM6SUM_M.P00050", // BPM6 balance on trade in goods
-  moneySupplyM2: "TS_GP_BAM_M3_M.MA3001700", // M2
+  // Broad Money (M2), weekly "liability side" stock level. Migrated 2026-07
+  // from the monthly M3_M.MA3001700 series, whose "Available Upto" trails
+  // ~5 weeks behind (verified against SBP EasyData's own /meta endpoint:
+  // monthly M2 caps at month M while this weekly series — same PKR-million
+  // stock measure, same "Weekly Broad Money M2" SBP dataset — is available
+  // through the most recent Friday, refreshed within days). This was the
+  // root cause of the Money Supply KPI showing a stale (prior-month) value
+  // while SBP had already published newer data via this faster series.
+  moneySupplyM2: "TS_GP_BAM_M2_W.M000070", // Broad Money (M2), weekly (liability side)
   exports: "TS_GP_BOP_BPM6SUM_M.P00030", // BPM6 exports of goods FOB
   imports: "TS_GP_BOP_BPM6SUM_M.P00040", // BPM6 imports of goods FOB
   fdiInflows: "TS_GP_FI_SUMFIPK_M.FI00030", // Net FDI in Pakistan
@@ -474,7 +482,9 @@ function buildMoneySupplyM2Kpi(series: SbpSeries): Kpi {
     series.previousValue && series.previousValue !== 0
       ? ((series.latestValue - series.previousValue) / series.previousValue) * 100
       : 0;
-  const prevLabel = series.previousDate ? formatMonthLabel(series.previousDate) : null;
+  // Weekly series (see SERIES_KEYS.moneySupplyM2 comment) — day-month label
+  // matches the other Weekly/As-Needed KPI builders (e.g. buildPrivateCreditGrowthKpi).
+  const prevLabel = series.previousDate ? formatDayMonthLabel(series.previousDate) : null;
   return {
     title: "Money Supply (M2)",
     value: latestT.toFixed(2),
@@ -727,8 +737,11 @@ const CONFIGS: Record<SbpIndicatorKey, IndicatorConfig> = {
   },
   moneySupplyM2: {
     seriesKey: SERIES_KEYS.moneySupplyM2,
-    revalidate: REVALIDATE_MONTHLY,
-    frequency: "Monthly",
+    // Weekly series (see SERIES_KEYS.moneySupplyM2 comment) — 6h revalidate
+    // matches the other Weekly/As-Needed series so a new Friday observation
+    // is picked up same-day rather than waiting the monthly 24h window.
+    revalidate: REVALIDATE_AS_NEEDED,
+    frequency: "Weekly",
     toTrendValue: (v) => v / 1e6,
     buildKpi: buildMoneySupplyM2Kpi,
     fallback: fallbackMoneySupplyM2,
@@ -1171,6 +1184,54 @@ export async function getFoodInflationUrbanHistory(): Promise<FoodInflationUrban
   } catch (err) {
     console.error(
       `[SBP] Urban Food Inflation fetch failed\nReason: ${err instanceof Error ? err.message : String(err)}\nServing: none (no fallback snapshot exists for this series)\nTimestamp: ${new Date().toISOString()}`,
+    );
+    return null;
+  }
+}
+
+// --- Money Supply M2 YoY growth (weeklyIntelligenceCompute.ts only) --------
+//
+// Standalone, not part of CONFIGS/getAllSbpIndicators() for the same reason
+// as FOOD_INFLATION_URBAN_SERIES_KEY above: it's a single extra consumer
+// (the Health Score model's m2GrowthPct input), not a homepage KPI card.
+//
+// This is SBP's own official precomputed weekly M2 YoY growth series — the
+// sibling "Memorandum" series to M000070 (the level series moneySupplyM2
+// now uses) in the same "Weekly Broad Money M2" dataset. Using it directly
+// avoids deriving YoY growth from a trend array via a fixed index offset
+// (fragile: correct only as long as the array happens to hold exactly one
+// point per period going back a year — true for the old monthly series'
+// 24-point cap, but not for a weekly series, where 24 points is under 6
+// months). weeklyIntelligenceCompute.ts falls back to its prior trend-index
+// estimate if this fetch fails, so a transient SBP outage degrades rather
+// than breaks the Health Score computation.
+const M2_YOY_GROWTH_SERIES_KEY = "TS_GP_BAM_M2_W.M000500"; // Memorandum: Broad Money (M2) - YoY growth
+
+export interface MoneySupplyM2YoyResult {
+  value: number;
+  date: string;
+  source: "SBP EasyData";
+}
+
+export async function getMoneySupplyM2YoyGrowth(): Promise<MoneySupplyM2YoyResult | null> {
+  const cacheKey = "sbp-m2-yoy-growth";
+  const cached = getFresh<MoneySupplyM2YoyResult>(cacheKey, REVALIDATE_AS_NEEDED * 1000);
+  if (cached) return cached.data;
+
+  try {
+    return await dedupeInFlight(cacheKey, async () => {
+      const series = await fetchSbpSeries(M2_YOY_GROWTH_SERIES_KEY, REVALIDATE_AS_NEEDED, "sbp-m2-yoy-growth");
+      const result: MoneySupplyM2YoyResult = {
+        value: series.latestValue,
+        date: series.latestDate,
+        source: "SBP EasyData",
+      };
+      setCache(cacheKey, result);
+      return result;
+    });
+  } catch (err) {
+    console.error(
+      `[SBP] M2 YoY Growth fetch failed\nReason: ${err instanceof Error ? err.message : String(err)}\nServing: none (caller falls back to trend-derived estimate)\nTimestamp: ${new Date().toISOString()}`,
     );
     return null;
   }

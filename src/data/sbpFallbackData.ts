@@ -753,11 +753,16 @@ export const fallbackMoneySupplyM2: SbpIndicatorResult = {
   },
   trend: moneySupplyM2Trend,
   meta: {
+    // Series migrated 2026-07 from the monthly M3_M.MA3001700 to the
+    // weekly M2_W.M000070 (see SERIES_KEYS.moneySupplyM2 in sbp.ts) — this
+    // fallback snapshot's own value/trend/date are unchanged (last-resort
+    // static data, not live), only the metadata label is corrected so it
+    // never misreports which live series it stands in for.
     source: "SBP EasyData (fallback)",
-    seriesKey: "TS_GP_BAM_M3_M.MA3001700",
-    seriesName: "M2",
+    seriesKey: "TS_GP_BAM_M2_W.M000070",
+    seriesName: "Broad Money (M2)",
     unit: "Million PKR",
-    frequency: "Monthly",
+    frequency: "Weekly",
     observationDate: "2026-04-30",
     lastUpdated: FALLBACK_LAST_UPDATED,
   },

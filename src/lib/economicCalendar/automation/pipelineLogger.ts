@@ -15,6 +15,7 @@ import type { SyncResult, SyncProvenance } from "./syncFromSbpEasyData";
 import type { ReconcileSummary } from "./syncOfficialCalendars";
 import type { GapDetectionResult } from "./detectCalendarGaps";
 import type { JobProcessingSummary } from "@/lib/notifications/notificationJobWorker";
+import type { FreshnessAuditEntry } from "@/lib/data/sbpFreshnessAudit";
 
 const LINE = "═".repeat(50);
 const THIN = "─".repeat(50);
@@ -121,6 +122,7 @@ export interface PipelineSummaryInput {
   notifications: JobProcessingSummary[];
   totalSynced: number;
   totalFailed: number;
+  freshnessAudit: FreshnessAuditEntry[];
 }
 
 /**
@@ -133,6 +135,7 @@ export function formatPipelineSummary(input: PipelineSummaryInput): string {
     triggeredAt, schedulerName, totalDurationMs,
     cpiPbsResults, tradeBalanceResults, fxReservesResult, syncResults, lsmResult,
     officialCalendars, gapDetection, notifications, totalSynced, totalFailed,
+    freshnessAudit,
   } = input;
 
   const allResults: SyncResult[] = [
@@ -220,6 +223,25 @@ export function formatPipelineSummary(input: PipelineSummaryInput): string {
   lines.push(`Gap Detection:      ${gapFilled.length > 0 ? `${gapFilled.length} event(s) created: ${gapFilled.join(", ")}` : "no gaps detected"}`);
   lines.push(`Notifications:      ${notifications.length} job(s) processed | ${totalEmails} sent | ${totalEmailFails} failed`);
   lines.push(`Totals:             ${totalSynced} synced, ${totalFailed} error(s), ${allResults.length} checked`);
+  lines.push("");
+
+  // ── SBP EasyData Freshness Audit (all 20 indicators, Step 9) ──
+  const freshCount        = freshnessAudit.filter((e) => e.status === "fresh").length;
+  const selfHealed        = freshnessAudit.filter((e) => e.status === "stale-self-healed");
+  const needsReview       = freshnessAudit.filter((e) => e.status === "stale-needs-review");
+  const metaUnavailable   = freshnessAudit.filter((e) => e.status === "meta-unavailable").length;
+  const serveErrors       = freshnessAudit.filter((e) => e.status === "serve-error").length;
+  lines.push(
+    `SBP Freshness Audit: ${freshnessAudit.length} checked | ${freshCount} fresh | ` +
+    `${selfHealed.length} self-healed | ${needsReview.length} needs review | ` +
+    `${metaUnavailable} meta-unavailable | ${serveErrors} serve-error`,
+  );
+  if (selfHealed.length > 0) {
+    for (const e of selfHealed) lines.push(`  ↻ ${e.indicator}: ${e.detail}`);
+  }
+  if (needsReview.length > 0) {
+    for (const e of needsReview) lines.push(`  ⚠ ${e.indicator}: ${e.detail}`);
+  }
   lines.push(LINE);
 
   return lines.join("\n");

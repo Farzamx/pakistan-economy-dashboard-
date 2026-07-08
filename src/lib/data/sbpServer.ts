@@ -31,6 +31,7 @@ export {
   getSbpIndicatorFresh,
   getSbpIndicatorHistory,
   getFoodInflationUrbanHistory,
+  getMoneySupplyM2YoyGrowth,
   sbpCacheTag,
   type SbpIndicatorKey,
   type SbpIndicatorResult,
@@ -40,6 +41,7 @@ export {
   type SbpHistoryPoint,
   type SbpIndicatorHistory,
   type FoodInflationUrbanResult,
+  type MoneySupplyM2YoyResult,
 } from "@/lib/data/sbp";
 
 import {

@@ -5,7 +5,7 @@
 // then asks AI to narrate them — identical functions to before, just
 // called from one weekly job instead of every render.
 
-import { getAllSbpIndicators } from "@/lib/data/sbpServer";
+import { getAllSbpIndicators, getMoneySupplyM2YoyGrowth } from "@/lib/data/sbpServer";
 import { getGdpKpi } from "@/lib/data/worldBank";
 import { getQuarterlyGdpKpi } from "@/lib/data/quarterlyGdp";
 import { getNews } from "@/lib/data/news";
@@ -16,11 +16,12 @@ import { getAiRiskIntelligence } from "@/lib/data/aiRiskIntelligence";
 import type { StoreWeeklyIntelligencePayload } from "@/lib/data/weeklyIntelligence";
 
 export async function computeWeeklyIntelligence(): Promise<StoreWeeklyIntelligencePayload> {
-  const [gdpKpi, sbp, quarterlyGdp, newsItems] = await Promise.all([
+  const [gdpKpi, sbp, quarterlyGdp, newsItems, m2YoyOfficial] = await Promise.all([
     getGdpKpi(),
     getAllSbpIndicators(),
     getQuarterlyGdpKpi(),
     getNews(),
+    getMoneySupplyM2YoyGrowth(),
   ]);
 
   // Same derived-input logic page.tsx used to run inline — see that file's
@@ -40,10 +41,22 @@ export async function computeWeeklyIntelligence(): Promise<StoreWeeklyIntelligen
   const lsmMatch = sbp.lsm.kpi.change.match(/^([+-]?\d+\.?\d*)/);
   const lsmMomPoints = lsmMatch ? parseFloat(lsmMatch[1]) : 0;
 
-  const m2Trend = sbp.moneySupplyM2.trend;
-  const currentM2 = parseFloat(sbp.moneySupplyM2.kpi.value);
-  const yearAgoM2 = m2Trend[Math.max(0, m2Trend.length - 13)]?.value ?? currentM2;
-  const m2YoyPct = yearAgoM2 > 0 ? ((currentM2 - yearAgoM2) / yearAgoM2) * 100 : 0;
+  // Prefer SBP's own precomputed weekly M2 YoY growth series (M000500) —
+  // moneySupplyM2 migrated to a weekly source (see sbp.ts SERIES_KEYS
+  // comment), so its capped 24-point .trend array no longer spans a full
+  // year and can't reliably supply a "same point last year" lookback by
+  // fixed array index. Fall back to the old trend-index estimate only if
+  // the dedicated YoY series fetch fails, so a transient SBP outage
+  // degrades this one input rather than breaking the Health Score model.
+  let m2YoyPct: number;
+  if (m2YoyOfficial) {
+    m2YoyPct = m2YoyOfficial.value;
+  } else {
+    const m2Trend = sbp.moneySupplyM2.trend;
+    const currentM2 = parseFloat(sbp.moneySupplyM2.kpi.value);
+    const yearAgoM2 = m2Trend[Math.max(0, m2Trend.length - 13)]?.value ?? currentM2;
+    m2YoyPct = yearAgoM2 > 0 ? ((currentM2 - yearAgoM2) / yearAgoM2) * 100 : 0;
+  }
 
   const healthResult = calculateEconomicHealth({
     quarterlyGdpGrowthPct: parseFloat(quarterlyGdp.kpi.value),
