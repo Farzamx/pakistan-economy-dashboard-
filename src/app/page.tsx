@@ -765,7 +765,27 @@ export default async function Home() {
         </HideableSection>
 
         <HideableSection id="external-sector">
-        <DashboardSection {...getSection("external-sector")}>
+        <DashboardSection
+          {...getSection("external-sector")}
+          stats={(() => {
+            // Was static "Phase 1.5" mock data (frozen at the old monthly M2
+            // series' snapshot, e.g. "Rs 44.04T") that visibly contradicted
+            // the live KPI cards for these same four metrics shown earlier
+            // on this same page — a Phase 19 production-audit finding.
+            // Live-wired here the same way "reserves" and "exchange-rate"
+            // already override their placeholder stats above.
+            const formatSignedB = (value: string) => {
+              const n = parseFloat(value);
+              return n < 0 ? `-$${Math.abs(n).toFixed(2)}B` : `$${n.toFixed(2)}B`;
+            };
+            return [
+              { label: "Current Account", value: formatSignedB(sbp.currentAccount.kpi.value) },
+              { label: "Trade Balance (Goods)", value: formatSignedB(sbp.tradeBalance.kpi.value) },
+              { label: "Foreign Reserves (SBP)", value: `$${sbp.foreignReserves.kpi.value}B` },
+              { label: "Money Supply (M2)", value: `Rs ${sbp.moneySupplyM2.kpi.value}T` },
+            ];
+          })()}
+        >
           <div className="mt-6 rounded-xl border border-white/5 light:border-slate-200 bg-white/[0.02] light:bg-white p-4">
             <p className="mb-2 text-xs font-medium text-white/40 light:text-slate-500">
               24-Month Trend <span className="text-white/25 light:text-slate-400">· SBP EasyData, monthly</span>
