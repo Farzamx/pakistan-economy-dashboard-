@@ -1,13 +1,62 @@
 import type { CategoryMeta, Lesson, AcademyCategory } from "@/lib/academy/types";
 import { inflationLesson } from "@/lib/academy/lessons/beginner/inflation";
 import { gdpLesson } from "@/lib/academy/lessons/beginner/gdp";
+import { supplyAndDemandLesson } from "@/lib/academy/lessons/beginner/supplyAndDemand";
+import { opportunityCostLesson } from "@/lib/academy/lessons/beginner/opportunityCost";
+import { moneyAndCurrencyLesson } from "@/lib/academy/lessons/beginner/moneyAndCurrency";
+import { interestRatesBasicsLesson } from "@/lib/academy/lessons/beginner/interestRatesBasics";
+import { economicCyclesLesson } from "@/lib/academy/lessons/beginner/economicCycles";
+import { unemploymentBasicsLesson } from "@/lib/academy/lessons/beginner/unemploymentBasics";
+import { exchangeRatesBasicsLesson } from "@/lib/academy/lessons/beginner/exchangeRatesBasics";
+import { tradeBasicsLesson } from "@/lib/academy/lessons/beginner/tradeBasics";
+import { taxesIntroLesson } from "@/lib/academy/lessons/beginner/taxesIntro";
+import { economicGrowthBasicsLesson } from "@/lib/academy/lessons/beginner/economicGrowthBasics";
+import { savingsVsInvestmentLesson } from "@/lib/academy/lessons/beginner/savingsVsInvestment";
+import { governmentSpendingBasicsLesson } from "@/lib/academy/lessons/beginner/governmentSpendingBasics";
+import { comparativeAdvantageLesson } from "@/lib/academy/lessons/beginner/comparativeAdvantage";
+import { fiscalVsMonetaryLesson } from "@/lib/academy/lessons/beginner/fiscalVsMonetary";
+import { povertyAndInequalityLesson } from "@/lib/academy/lessons/beginner/povertyAndInequality";
+import { marketTypesLesson } from "@/lib/academy/lessons/beginner/marketTypes";
+import { globalisationBasicsLesson } from "@/lib/academy/lessons/beginner/globalisationBasics";
+import { banksAndCreditBasicsLesson } from "@/lib/academy/lessons/beginner/banksAndCreditBasics";
+import { priceSignalsLesson } from "@/lib/academy/lessons/beginner/priceSignals";
+import { economicDevelopmentLesson } from "@/lib/academy/lessons/beginner/economicDevelopment";
+import { compoundInterestLesson } from "@/lib/academy/lessons/beginner/compoundInterest";
+import { budgetBasicsLesson } from "@/lib/academy/lessons/beginner/budgetBasics";
+import { marketFailureLesson } from "@/lib/academy/lessons/beginner/marketFailure";
 import { policyRateLesson } from "@/lib/academy/lessons/banking/policyRate";
 import { cpiPakistanLesson } from "@/lib/academy/lessons/pakistan-economy/cpi";
 
 export const ALL_LESSONS: Lesson[] = [
+  // Beginner Economics (25 lessons)
   inflationLesson,
   gdpLesson,
+  supplyAndDemandLesson,
+  opportunityCostLesson,
+  moneyAndCurrencyLesson,
+  interestRatesBasicsLesson,
+  economicCyclesLesson,
+  unemploymentBasicsLesson,
+  exchangeRatesBasicsLesson,
+  tradeBasicsLesson,
+  taxesIntroLesson,
+  economicGrowthBasicsLesson,
+  savingsVsInvestmentLesson,
+  governmentSpendingBasicsLesson,
+  comparativeAdvantageLesson,
+  fiscalVsMonetaryLesson,
+  povertyAndInequalityLesson,
+  marketTypesLesson,
+  globalisationBasicsLesson,
+  banksAndCreditBasicsLesson,
+  priceSignalsLesson,
+  economicDevelopmentLesson,
+  compoundInterestLesson,
+  budgetBasicsLesson,
+  marketFailureLesson,
+  // Banking & Monetary Policy
   policyRateLesson,
+  // Pakistan Economy
   cpiPakistanLesson,
 ];
 
