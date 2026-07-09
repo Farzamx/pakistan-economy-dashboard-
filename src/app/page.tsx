@@ -551,7 +551,7 @@ export default async function Home() {
     <div className="flex min-h-screen w-full">
       <HashScrollRestore />
       <Sidebar />
-      <main id="overview" className="flex-1 scroll-mt-8 px-6 py-8 sm:px-10 lg:px-16">
+      <main id="overview" className="min-w-0 flex-1 scroll-mt-8 px-6 py-8 sm:px-10 lg:px-16">
         <Hero
           rightSlot={<DataSourcesModal kpis={allKpis} />}
           health={health}
@@ -620,7 +620,6 @@ export default async function Home() {
               color="#38bdf8"
               unit="%"
               gradientId="quarterlyGdpGradient"
-              xAxisInterval={3}
             />
           </div>
         </DashboardSection>

@@ -80,13 +80,15 @@ function Row({ kpi, index }: { kpi: Kpi; index: number }) {
         <InfoTooltip termKey={kpi.title} size="xs" />
       </div>
       {kpi.sparkline && kpi.sparkline.length >= 2 && (
-        <Sparkline data={kpi.sparkline} trend={kpi.trend} />
+        <div className="hidden sm:block">
+          <Sparkline data={kpi.sparkline} trend={kpi.trend} />
+        </div>
       )}
-      <div className={`flex w-24 shrink-0 items-center justify-end gap-1 text-xs font-medium ${trendColor}`}>
+      <div className={`flex w-16 shrink-0 items-center justify-end gap-1 text-xs font-medium sm:w-24 ${trendColor}`}>
         <TrendGlyph trend={kpi.trend} />
         <span className="truncate">{kpi.change}</span>
       </div>
-      <div className="flex w-28 shrink-0 items-baseline justify-end gap-1 font-mono text-sm tabular-nums text-white light:text-slate-900">
+      <div className="flex w-20 shrink-0 items-baseline justify-end gap-1 font-mono text-sm tabular-nums text-white sm:w-28 light:text-slate-900">
         <span className="font-semibold">{kpi.value}</span>
         <span className="text-[11px] text-white/40 light:text-slate-400">{kpi.unit}</span>
       </div>
