@@ -370,6 +370,15 @@ export default async function Home() {
   // against sbp.tbillYield3m specifically. Now matches "(3M)" exactly.
   const todayForCalendar = new Date();
   const allCalendarEvents = [...scheduledCalendarEvents, ...historicalCalendarEvents].map(toEconomicEvent);
+
+  // Hero briefing's "Latest Release" tile — the single most recently
+  // released event across every series, derived from the same
+  // historicalCalendarEvents this page already fetches for the calendar
+  // sections below (no new query).
+  const latestRelease = [...historicalCalendarEvents]
+    .map(toEconomicEvent)
+    .filter((e) => e.status === "released")
+    .sort((a, b) => b.date.localeCompare(a.date))[0] ?? null;
   const policyRateEvent = getMostRecentEvent(allCalendarEvents, "SBP Monetary Policy Committee Meeting", todayForCalendar);
   const tbillEvent = getMostRecentEvent(allCalendarEvents, "Treasury Bill Auction (3M)", todayForCalendar);
   const pibEvent = getMostRecentEvent(allCalendarEvents, "PIB Auction", todayForCalendar);
@@ -509,7 +518,21 @@ export default async function Home() {
       <HashScrollRestore />
       <Sidebar />
       <main id="overview" className="flex-1 scroll-mt-8 px-6 py-8 sm:px-10 lg:px-16">
-        <Hero rightSlot={<DataSourcesModal kpis={allKpis} />} />
+        <Hero
+          rightSlot={<DataSourcesModal kpis={allKpis} />}
+          health={health}
+          aiAnalysis={aiAnalysis}
+          recessionResult={recessionResult}
+          defaultResult={defaultResult}
+          latestRelease={latestRelease ? { title: latestRelease.title, date: latestRelease.date, actual: latestRelease.actual ?? null } : null}
+          quickStats={[
+            { label: "CPI", value: sbp.cpiInflation.kpi.value, unit: sbp.cpiInflation.kpi.unit },
+            { label: "Policy Rate", value: sbp.policyRate.kpi.value, unit: sbp.policyRate.kpi.unit },
+            { label: "Reserves", value: sbp.foreignReserves.kpi.value, unit: sbp.foreignReserves.kpi.unit },
+            { label: "USD/PKR", value: sbp.usdPkr.kpi.value, unit: "" },
+          ]}
+          pktTimestamp={pktTimestamp}
+        />
 
         <ProvincialQuickAccess />
 
