@@ -5,6 +5,7 @@ import FloatingAssistant from "@/components/assistant/FloatingAssistant";
 import type { DashboardSnapshot } from "@/lib/assistantContext";
 import HealthScoreCard from "@/components/HealthScoreCard";
 import Hero from "@/components/Hero";
+import IntelligenceFeed, { type IntelligenceFeedItem } from "@/components/IntelligenceFeed";
 import InfoTooltip from "@/components/InfoTooltip";
 import KpiGrid from "@/components/KpiGrid";
 import MarketTicker, { type TickerItem } from "@/components/MarketTicker";
@@ -375,10 +376,42 @@ export default async function Home() {
   // released event across every series, derived from the same
   // historicalCalendarEvents this page already fetches for the calendar
   // sections below (no new query).
-  const latestRelease = [...historicalCalendarEvents]
+  const recentReleasedEvents = [...historicalCalendarEvents]
     .map(toEconomicEvent)
     .filter((e) => e.status === "released")
-    .sort((a, b) => b.date.localeCompare(a.date))[0] ?? null;
+    .sort((a, b) => b.date.localeCompare(a.date));
+  const latestRelease = recentReleasedEvents[0] ?? null;
+
+  // Intelligence Feed — a "what changed" line per recent release (real
+  // calendar facts) plus a few KPI trend blurbs built only from each
+  // indicator's own already-computed trend/change string, never a new
+  // characterization invented here.
+  // "increased"/"decreased" comes from the *change* string's own sign, not
+  // kpi.trend — trend means "level is positive/negative" for growth-rate
+  // indicators like LSM (e.g. trend="up" while change="-5.1 pp vs last
+  // month", a deceleration that's still a positive growth level). change
+  // is always a delta vs. the previous period (sbp.ts's changeLabel()),
+  // so its leading sign is the reliable signal for "moved up or down."
+  function deltaDirection(change: string): "increased" | "decreased" {
+    return change.trim().startsWith("-") ? "decreased" : "increased";
+  }
+
+  const intelligenceFeedItems: IntelligenceFeedItem[] = [
+    ...recentReleasedEvents.slice(0, 5).map((e): IntelligenceFeedItem => ({
+      kind: "release",
+      date: e.date,
+      text: e.actual ? `${e.title} released — ${e.actual}` : `${e.title} released`,
+    })),
+    ...[
+      sbp.foreignReserves.kpi,
+      sbp.tradeBalance.kpi,
+      sbp.moneySupplyM2.kpi,
+      sbp.lsm.kpi,
+    ].map((kpi): IntelligenceFeedItem => ({
+      kind: "signal",
+      text: `${kpi.title} ${deltaDirection(kpi.change)} — ${kpi.change}`,
+    })),
+  ];
   const policyRateEvent = getMostRecentEvent(allCalendarEvents, "SBP Monetary Policy Committee Meeting", todayForCalendar);
   const tbillEvent = getMostRecentEvent(allCalendarEvents, "Treasury Bill Auction (3M)", todayForCalendar);
   const pibEvent = getMostRecentEvent(allCalendarEvents, "PIB Auction", todayForCalendar);
@@ -533,6 +566,10 @@ export default async function Home() {
           ]}
           pktTimestamp={pktTimestamp}
         />
+
+        <div className="mt-4">
+          <IntelligenceFeed items={intelligenceFeedItems} />
+        </div>
 
         <ProvincialQuickAccess />
 
