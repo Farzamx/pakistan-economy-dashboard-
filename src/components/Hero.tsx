@@ -102,7 +102,7 @@ export default function Hero({
               &middot; {pktTimestamp}
             </span>
           </div>
-          <h1 className="mt-2 text-xl font-bold tracking-tight text-white light:text-slate-900 sm:text-2xl">
+          <h1 className="text-headline mt-2 text-white light:text-slate-900">
             {t("hero.title1")}{" "}
             <span className="bg-gradient-to-r from-neon-blue to-neon-purple bg-clip-text text-transparent">
               {t("hero.title2")}

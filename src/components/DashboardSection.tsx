@@ -29,7 +29,7 @@ export default function DashboardSection({
       viewport={{ once: true, amount: 0.3 }}
       transition={{ duration: 0.4, ease: "easeOut" }}
     >
-      <h2 className="text-lg font-semibold text-white light:text-slate-900 sm:text-xl">{title}</h2>
+      <h2 className="text-headline text-white light:text-slate-900">{title}</h2>
       <p className="mt-1.5 max-w-2xl text-sm text-white/60 light:text-slate-500">{description}</p>
 
       {statsCaption && <div className="mt-3">{statsCaption}</div>}

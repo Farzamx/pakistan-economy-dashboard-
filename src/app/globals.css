@@ -88,6 +88,7 @@
   --color-space-700: var(--space-700);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-serif: var(--font-source-serif);
 }
 
 /* ── light: variant — mirrors data-theme="light" ─────────────────────────── */
@@ -155,6 +156,36 @@ body {
   border-top: 1px solid var(--border-subtle);
 }
 
+/* ── Flat reference panel — PEIC v2.1's second surface register, deliberately
+   NOT glassmorphism. The briefing zone (Hero, Health Score, Risk, Key
+   Indicators) stays glass/glow — that's the premium, "look here first"
+   register. Dense reference data (watchlists, indicator tables) gets this
+   instead: a hairline border, a flat near-opaque fill, no blur, minimal
+   radius — closer to a Bloomberg/terminal panel than a UI card. Two
+   registers in the same product read as deliberate hierarchy; one register
+   used for literally everything is what makes a page feel like a template. */
+.panel-flat {
+  background: rgba(8, 10, 22, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.03) inset;
+}
+
+[data-theme="light"] .panel-flat {
+  background: #FFFFFF;
+  border: 1px solid #E2E6EF;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+/* Row inside a .panel-flat table/list — hairline divider between rows
+   instead of each row being its own bordered card. */
+.panel-row {
+  border-top: 1px solid var(--border-subtle);
+}
+.panel-row:first-child {
+  border-top: none;
+}
+
 /* ── Soft neon glow accents ──────────────────────────────────────────────── */
 .glow-blue {
   box-shadow: 0 0 24px rgba(56, 189, 248, 0.25);
@@ -220,33 +251,48 @@ body {
   background-size: 24px 24px;
 }
 
-/* ── PEIC v2 type scale ────────────────────────────────────────────────────
-   Institutional hierarchy: numbers dominate, labels recede. Every class
-   here sets ONLY size/weight/spacing/numeric-variant — never color — so
-   callers keep controlling color via existing text-primary/secondary
-   Tailwind utilities or component-specific state (positive/negative). This
-   replaces ad hoc per-component text-xl/text-2xl choices with one shared,
-   documented scale.
-   ── display   KPI hero values, Health Score number — the largest, most
-                confident figure on a given card. Tabular so digits don't
-                shift width as values change.
-   ── title     Section/card headings.
-   ── subtitle  Card sub-headings, secondary emphasis below a title.
-   ── label     Uppercase micro-labels (e.g. "SOURCE", "3M T-BILL") —
-                small and tracked wide, meant to recede next to a value.
-   ── caption   Metadata rows: source name, frequency, last-updated time.
-   ── mono-num  Tabular figures inside dense tables/columns (calendar
-                event values, comparison tables) — pairs with Geist Mono
-                for perfect column alignment. */
+/* ── PEIC v2.1 type scale ──────────────────────────────────────────────────
+   v2 gave every dashboard the same one grotesk for everything — the exact
+   thing that makes it read as a SaaS admin template rather than a research
+   product. An editorial serif (Source Serif 4, --font-serif) now carries
+   headline numbers and section titles; Geist Sans stays for body/labels/UI
+   chrome, Geist Mono for dense tabular columns. Every class here sets only
+   size/weight/spacing/family/numeric-variant — never color.
+   ── display    KPI hero values, Health Score number — serif, the largest,
+                 most confident figure on a given card. Tabular so digits
+                 don't shift width as values change.
+   ── headline   Section-level titles (DashboardSection h2, Hero h1) —
+                 serif, editorial weight. Distinct from .text-title below.
+   ── title      Card-level headings (smaller than headline) — stays sans,
+                 UI chrome rather than editorial voice.
+   ── subtitle   Card sub-headings, secondary emphasis below a title.
+   ── label      Uppercase micro-labels (e.g. "SOURCE", "3M T-BILL") —
+                 small and tracked wide, meant to recede next to a value.
+   ── caption    Metadata rows: source name, frequency, last-updated time.
+   ── mono-num   Tabular figures inside dense tables/columns (calendar
+                 event values, comparison tables) — pairs with Geist Mono
+                 for perfect column alignment. */
 .text-display {
-  font-size: 1.75rem;
+  font-family: var(--font-serif);
+  font-size: 1.875rem;
   line-height: 1.05;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.01em;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
 @media (min-width: 640px) {
-  .text-display { font-size: 2rem; }
+  .text-display { font-size: 2.25rem; }
+}
+
+.text-headline {
+  font-family: var(--font-serif);
+  font-size: 1.375rem;
+  line-height: 1.2;
+  letter-spacing: -0.005em;
+  font-weight: 600;
+}
+@media (min-width: 640px) {
+  .text-headline { font-size: 1.625rem; }
 }
 
 .text-title {

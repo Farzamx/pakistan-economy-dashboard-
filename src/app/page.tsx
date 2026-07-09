@@ -6,6 +6,7 @@ import type { DashboardSnapshot } from "@/lib/assistantContext";
 import HealthScoreCard from "@/components/HealthScoreCard";
 import Hero from "@/components/Hero";
 import IntelligenceFeed, { type IntelligenceFeedItem } from "@/components/IntelligenceFeed";
+import IndicatorTable from "@/components/IndicatorTable";
 import InfoTooltip from "@/components/InfoTooltip";
 import KpiGrid from "@/components/KpiGrid";
 import MarketTicker, { type TickerItem } from "@/components/MarketTicker";
@@ -657,20 +658,12 @@ export default async function Home() {
         </DashboardSection>
         </HideableSection>
 
-        <HideableSection id="live-fx">
-        <div id="live-fx" className="scroll-mt-8">
-          <ViewportFadeIn>
-            <h2 className="mt-12 text-xl font-semibold text-white light:text-slate-900 sm:text-2xl">
-              <T tKey="dashboard.liveExchangeRates" />
-            </h2>
-            <p className="mt-2 max-w-2xl text-sm text-white/60 light:text-slate-500">
-              <T tKey="dashboard.liveExchangeRatesDesc" />
-            </p>
-          </ViewportFadeIn>
-          <KpiGrid items={liveFxKpis} />
-        </div>
-        </HideableSection>
-
+        {/* Live FX merged into Exchange Rate (v2.1) — these were two
+            adjacent sections about the same subject (PKR exchange rates),
+            split only because one was SBP's monthly average and the other
+            live intraday spot quotes. One panel, two registers: the chart
+            for the official monthly series, a watchlist row for the live
+            spot rates, both about literally the same question. */}
         <HideableSection id="exchange-rate">
         <DashboardSection
           {...getSection("exchange-rate")}
@@ -696,6 +689,12 @@ export default async function Home() {
               unit=""
               gradientId="usdPkrGradient"
             />
+          </div>
+          <div id="live-fx" className="mt-4 scroll-mt-8">
+            <p className="mb-2 text-xs font-medium text-white/40 light:text-slate-500">
+              <T tKey="dashboard.liveExchangeRates" /> <span className="text-white/25 light:text-slate-400">· <T tKey="dashboard.liveExchangeRatesDesc" /></span>
+            </p>
+            <IndicatorTable items={liveFxKpis} />
           </div>
         </DashboardSection>
         </HideableSection>
@@ -818,41 +817,47 @@ export default async function Home() {
         </DashboardSection>
 
         <ViewportFadeIn>
-          <h2 className="mt-12 text-xl font-semibold text-white light:text-slate-900 sm:text-2xl">
+          <h2 className="text-headline mt-10 text-white light:text-slate-900">
             <T tKey="dashboard.monetaryExternal" />
           </h2>
           <p className="mt-2 max-w-2xl text-sm text-white/60 light:text-slate-500">
             <T tKey="dashboard.monetaryExternalDesc" />
           </p>
         </ViewportFadeIn>
-        <KpiGrid items={secondaryKpis} />
+        <div className="mt-5">
+          <IndicatorTable items={secondaryKpis} />
+        </div>
         </HideableSection>
 
         <HideableSection id="global-markets">
         <div id="global-markets" className="scroll-mt-8">
           <ViewportFadeIn>
-            <h2 className="mt-12 text-xl font-semibold text-white light:text-slate-900 sm:text-2xl">
+            <h2 className="text-headline mt-10 text-white light:text-slate-900">
               <T tKey="dashboard.globalMarkets" />
             </h2>
             <p className="mt-2 max-w-2xl text-sm text-white/60 light:text-slate-500">
               <T tKey="dashboard.globalMarketsDesc" />
             </p>
           </ViewportFadeIn>
-          <KpiGrid items={globalMarketsKpis} />
+          <div className="mt-5">
+            <IndicatorTable items={globalMarketsKpis} />
+          </div>
         </div>
         </HideableSection>
 
         <HideableSection id="real-economy">
         <div id="real-economy" className="scroll-mt-8">
           <ViewportFadeIn>
-            <h2 className="mt-12 text-xl font-semibold text-white light:text-slate-900 sm:text-2xl">
+            <h2 className="text-headline mt-10 text-white light:text-slate-900">
               <T tKey="dashboard.realEconomyFiscal" />
             </h2>
             <p className="mt-2 max-w-2xl text-sm text-white/60 light:text-slate-500">
               <T tKey="dashboard.realEconomyFiscalDesc" />
             </p>
           </ViewportFadeIn>
-          <KpiGrid items={realEconomyKpis} />
+          <div className="mt-5">
+            <IndicatorTable items={realEconomyKpis} />
+          </div>
         </div>
         </HideableSection>
 

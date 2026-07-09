@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Noto_Nastaliq_Urdu } from "next/font/google";
+import { Geist, Geist_Mono, Noto_Nastaliq_Urdu, Source_Serif_4 } from "next/font/google";
 import Script from "next/script";
 import { GoogleAnalytics } from "@next/third-parties/google";
 import "./globals.css";
@@ -31,6 +31,18 @@ const notoNastaliqUrdu = Noto_Nastaliq_Urdu({
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+});
+
+// PEIC v2.1: an editorial serif, paired with Geist Sans, is what actually
+// separates "institutional research product" from "SaaS admin dashboard" —
+// every generic dashboard template ships one grotesk for everything. Used
+// sparingly: headline numbers and section titles only (see globals.css's
+// .text-display/.text-headline), never body copy or dense data.
+const sourceSerif = Source_Serif_4({
+  variable: "--font-source-serif",
+  subsets: ["latin"],
+  weight: ["500", "600", "700"],
+  display: "swap",
 });
 
 const SITE_URL = "https://www.pakeconintel.com";
@@ -115,7 +127,7 @@ export default function RootLayout({
       data-theme="dark"
       data-scroll-behavior="smooth"
       suppressHydrationWarning
-      className={`${geistSans.variable} ${geistMono.variable} ${notoNastaliqUrdu.variable} h-full scroll-smooth antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${notoNastaliqUrdu.variable} ${sourceSerif.variable} h-full scroll-smooth antialiased`}
     >
       <head>
         {/* Runs before hydration — reads localStorage and sets data-theme on
