@@ -50,9 +50,54 @@ const ANALYTICS_NAV_ITEMS = NAV_ITEMS.slice(2);
 
 function SidebarSectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <p className="mt-4 mb-1.5 px-4 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/30 light:text-slate-400 first:mt-0">
+    <p className="mt-4 mb-1.5 px-4 text-label text-white/30 light:text-slate-400 first:mt-0">
       {children}
     </p>
+  );
+}
+
+// PEIC v2: every "Premium Tools" row used to get its own hardcoded accent
+// color (purple/blue/emerald/cyan/rose/amber) purely for visual variety —
+// exactly the "cards compete for attention" pattern the v2 redesign exists
+// to remove. One shared row style now, for every nav item alike: neutral
+// at rest, a single blue accent when active. Color means "this is where
+// you are," not "this row's turn in the rainbow."
+function SidebarNavLink({
+  href,
+  icon,
+  label,
+  isActive,
+  onClick,
+  ariaLabel,
+}: {
+  href: string;
+  icon?: React.ReactNode;
+  label: string;
+  isActive: boolean;
+  onClick?: (e: React.MouseEvent<HTMLAnchorElement>) => void;
+  ariaLabel?: string;
+}) {
+  return (
+    <motion.div whileHover={{ x: 3 }} transition={{ type: "spring", stiffness: 400, damping: 25 }} className="mb-0.5">
+      <Link
+        href={href}
+        onClick={onClick}
+        aria-label={ariaLabel}
+        aria-current={isActive ? "true" : undefined}
+        className={`group flex items-center gap-2.5 rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors duration-200 ${
+          isActive
+            ? "border-neon-blue/25 bg-neon-blue/10 text-white light:text-slate-900"
+            : "border-transparent text-white/60 light:text-slate-600 hover:border-white/[0.06] hover:bg-white/5 light:hover:bg-slate-100 hover:text-white light:hover:text-slate-900"
+        }`}
+      >
+        {icon && (
+          <span className={isActive ? "text-neon-blue" : "text-white/40 light:text-slate-400 group-hover:text-white/70 light:group-hover:text-slate-600"}>
+            {icon}
+          </span>
+        )}
+        <span>{label}</span>
+      </Link>
+    </motion.div>
   );
 }
 
@@ -191,215 +236,92 @@ export default function Sidebar() {
         <nav className="flex flex-col gap-1">
           <SidebarSectionLabel>{t("nav.premiumTools")}</SidebarSectionLabel>
 
-          {/* Comparisons — purple, same Link + usePathname pattern as the
-              other premium routes (real routes, not same-page anchors, so
-              they need active-state from the pathname rather than the
-              scroll-spy). */}
-          <motion.div
-            whileHover={{ x: 4, scale: 1.015 }}
-            transition={{ type: "spring", stiffness: 400, damping: 25 }}
-            className="mb-1"
-          >
-            <Link
-              href="/comparisons"
-              onClick={(e) => handleProtectedNav(e, "/comparisons")}
-              aria-current={pathname?.startsWith("/comparisons") ? "true" : undefined}
-              className={`group relative flex items-center gap-2.5 overflow-hidden rounded-lg border px-4 py-2.5 text-sm font-semibold transition-all duration-300 ${
-                pathname?.startsWith("/comparisons")
-                  ? "border-neon-purple/50 bg-gradient-to-r from-neon-blue/25 to-neon-purple/25 text-white shadow-[0_0_22px_rgba(168,85,247,0.45)] light:text-slate-900"
-                  : "border-neon-purple/25 bg-gradient-to-r from-neon-blue/10 to-neon-purple/10 text-white/90 shadow-[0_0_14px_rgba(168,85,247,0.2)] hover:border-neon-purple/45 hover:shadow-[0_0_22px_rgba(168,85,247,0.4)] hover:text-white light:text-slate-700 light:hover:text-slate-900"
-              }`}
-            >
-              <svg
-                className="h-4 w-4 shrink-0 text-neon-purple drop-shadow-[0_0_6px_rgba(168,85,247,0.6)] transition-transform duration-300 group-hover:scale-110"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.75"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
+          <SidebarNavLink
+            href="/comparisons"
+            onClick={(e) => handleProtectedNav(e, "/comparisons")}
+            isActive={!!pathname?.startsWith("/comparisons")}
+            label={t("nav.comparisons")}
+            icon={
+              <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M3 16l4.5-7L12 13l4-6L21 8" />
                 <path d="M19 4l2 2-2 2M5 16l-2 2 2 2" />
               </svg>
-              <span>{t("nav.comparisons")}</span>
-              <span
-                aria-hidden="true"
-                className="ml-auto text-xs text-neon-blue opacity-80 transition-opacity group-hover:opacity-100"
-              >
-                ✦
-              </span>
-            </Link>
-          </motion.div>
+            }
+          />
 
-          {/* Budget Tracker — blue, second premium placement. */}
-          <motion.div
-            whileHover={{ x: 4, scale: 1.015 }}
-            transition={{ type: "spring", stiffness: 400, damping: 25 }}
-            className="mb-1"
-          >
-            <Link
-              href="/budget"
-              onClick={(e) => handleProtectedNav(e, "/budget")}
-              aria-current={pathname?.startsWith("/budget") ? "true" : undefined}
-              className={`group relative flex items-center gap-2.5 overflow-hidden rounded-lg border px-4 py-2.5 text-sm font-semibold transition-all duration-300 ${
-                pathname?.startsWith("/budget")
-                  ? "border-neon-blue/40 bg-neon-blue/15 text-white shadow-[0_0_16px_rgba(56,189,248,0.35)] light:text-slate-900"
-                  : "border-neon-blue/20 bg-neon-blue/5 text-white/85 hover:border-neon-blue/35 hover:bg-neon-blue/10 hover:text-white light:text-slate-700 light:hover:text-slate-900"
-              }`}
-            >
-              <svg
-                className="h-4 w-4 shrink-0 text-neon-blue transition-transform duration-300 group-hover:scale-110"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.75"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
+          <SidebarNavLink
+            href="/budget"
+            onClick={(e) => handleProtectedNav(e, "/budget")}
+            isActive={!!pathname?.startsWith("/budget")}
+            label={t("nav.budgetTracker")}
+            icon={
+              <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
                 <rect x="3" y="10" width="4" height="10" />
                 <rect x="10" y="6" width="4" height="14" />
                 <rect x="17" y="13" width="4" height="7" />
               </svg>
-              <span>{t("nav.budgetTracker")}</span>
-            </Link>
-          </motion.div>
+            }
+          />
 
-          {/* Provincial Budget — emerald, third premium placement. */}
-          <motion.div
-            whileHover={{ x: 4, scale: 1.015 }}
-            transition={{ type: "spring", stiffness: 400, damping: 25 }}
-            className="mb-1"
-          >
-            <Link
-              href="/provincial-budget"
-              onClick={(e) => handleProtectedNav(e, "/provincial-budget")}
-              aria-current={pathname?.startsWith("/provincial-budget") ? "true" : undefined}
-              className={`group relative flex items-center gap-2.5 overflow-hidden rounded-lg border px-4 py-2.5 text-sm font-semibold transition-all duration-300 ${
-                pathname?.startsWith("/provincial-budget")
-                  ? "border-emerald-400/40 bg-emerald-400/15 text-white shadow-[0_0_16px_rgba(52,211,153,0.35)] light:text-slate-900"
-                  : "border-emerald-400/20 bg-emerald-400/5 text-white/85 hover:border-emerald-400/35 hover:bg-emerald-400/10 hover:text-white light:text-slate-700 light:hover:text-slate-900"
-              }`}
-            >
-              <svg
-                className="h-4 w-4 shrink-0 text-emerald-400 transition-transform duration-300 group-hover:scale-110"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.75"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
+          <SidebarNavLink
+            href="/provincial-budget"
+            onClick={(e) => handleProtectedNav(e, "/provincial-budget")}
+            isActive={!!pathname?.startsWith("/provincial-budget")}
+            label={t("nav.provincialBudget")}
+            icon={
+              <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M3 3v18h18" />
                 <path d="M7 14l3-3 3 2 4-5" />
               </svg>
-              <span>{t("nav.provincialBudget")}</span>
-            </Link>
-          </motion.div>
+            }
+          />
 
-          {/* Economic Calendar — cyan, fourth premium placement.
-              Active only when on the calendar page but NOT viewing the
+          {/* Active only when on the calendar page but NOT viewing the
               subscription section — when the user clicks "Free Subscription"
               the calendar item yields and the subscription item lights up. */}
-          <motion.div
-            whileHover={{ x: 4, scale: 1.015 }}
-            transition={{ type: "spring", stiffness: 400, damping: 25 }}
-            className="mb-1"
-          >
-            <Link
-              href="/economic-calendar"
-              onClick={(e) => handleProtectedNav(e, "/economic-calendar")}
-              aria-current={pathname?.startsWith("/economic-calendar") && hash !== "#email-alerts" ? "true" : undefined}
-              className={`group relative flex items-center gap-2.5 overflow-hidden rounded-lg border px-4 py-2.5 text-sm font-semibold transition-all duration-300 ${
-                pathname?.startsWith("/economic-calendar") && hash !== "#email-alerts"
-                  ? "border-cyan-400/40 bg-cyan-400/15 text-white shadow-[0_0_16px_rgba(34,211,238,0.35)] light:text-slate-900"
-                  : "border-cyan-400/20 bg-cyan-400/5 text-white/85 hover:border-cyan-400/35 hover:bg-cyan-400/10 hover:text-white light:text-slate-700 light:hover:text-slate-900"
-              }`}
-            >
-              <svg
-                className="h-4 w-4 shrink-0 text-cyan-400 transition-transform duration-300 group-hover:scale-110"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.75"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
+          <SidebarNavLink
+            href="/economic-calendar"
+            onClick={(e) => handleProtectedNav(e, "/economic-calendar")}
+            isActive={!!pathname?.startsWith("/economic-calendar") && hash !== "#email-alerts"}
+            label={t("nav.economicCalendar")}
+            icon={
+              <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
                 <rect x="3" y="5" width="18" height="16" rx="2" />
                 <path d="M3 10h18M8 3v4M16 3v4" />
               </svg>
-              <span>{t("nav.economicCalendar")}</span>
-            </Link>
-          </motion.div>
+            }
+          />
 
-          {/* Free Subscription — rose, fifth premium placement.
-              Links to the email alert sign-up section on the Economic Calendar
-              page. Smooth-scrolls when the user is already on that page;
+          {/* Links to the email alert sign-up section on the Economic
+              Calendar page. Smooth-scrolls when already on that page;
               navigates normally otherwise. Active only when hash is
               #email-alerts so it never conflicts with the Calendar item. */}
-          <motion.div
-            whileHover={{ x: 4, scale: 1.015 }}
-            transition={{ type: "spring", stiffness: 400, damping: 25 }}
-            className="mb-1"
-          >
-            <Link
-              href="/economic-calendar#email-alerts"
-              onClick={handleSubscriptionClick}
-              aria-label="Free email subscription — get alerts for Pakistan economic releases"
-              aria-current={pathname === "/economic-calendar" && hash === "#email-alerts" ? "true" : undefined}
-              className={`group relative flex items-center gap-2.5 overflow-hidden rounded-lg border px-4 py-2.5 text-sm font-semibold transition-all duration-300 ${
-                pathname === "/economic-calendar" && hash === "#email-alerts"
-                  ? "border-rose-400/40 bg-rose-400/15 text-white shadow-[0_0_16px_rgba(251,113,133,0.35)] light:text-slate-900"
-                  : "border-rose-400/20 bg-rose-400/5 text-white/85 hover:border-rose-400/35 hover:bg-rose-400/10 hover:text-white light:text-slate-700 light:hover:text-slate-900"
-              }`}
-            >
-              <svg
-                className="h-4 w-4 shrink-0 text-rose-400 transition-transform duration-300 group-hover:scale-110"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.75"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
+          <SidebarNavLink
+            href="/economic-calendar#email-alerts"
+            onClick={handleSubscriptionClick}
+            ariaLabel="Free email subscription — get alerts for Pakistan economic releases"
+            isActive={pathname === "/economic-calendar" && hash === "#email-alerts"}
+            label={t("nav.freeSubscription")}
+            icon={
+              <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
                 <rect x="2" y="5" width="20" height="14" rx="2" />
                 <path d="M2 8l10 6 10-6" />
               </svg>
-              <span>{t("nav.freeSubscription")}</span>
-            </Link>
-          </motion.div>
+            }
+          />
 
-          {/* Economic Workshop — amber/gold, educational premium section */}
-          <motion.div
-            whileHover={{ x: 4, scale: 1.015 }}
-            transition={{ type: "spring", stiffness: 400, damping: 25 }}
-            className="mb-1"
-          >
-            <Link
-              href="/academy"
-              aria-current={pathname?.startsWith("/academy") ? "true" : undefined}
-              className={`group relative flex items-center gap-2.5 overflow-hidden rounded-lg border px-4 py-2.5 text-sm font-semibold transition-all duration-300 ${
-                pathname?.startsWith("/academy")
-                  ? "border-amber-400/40 bg-amber-400/15 text-white shadow-[0_0_16px_rgba(251,191,36,0.35)] light:text-slate-900"
-                  : "border-amber-400/20 bg-amber-400/5 text-white/85 hover:border-amber-400/35 hover:bg-amber-400/10 hover:text-white light:text-slate-700 light:hover:text-slate-900"
-              }`}
-            >
-              <svg
-                className="h-4 w-4 shrink-0 text-amber-400 transition-transform duration-300 group-hover:scale-110"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.75"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
+          <SidebarNavLink
+            href="/academy"
+            isActive={!!pathname?.startsWith("/academy")}
+            label={t("nav.academy")}
+            icon={
+              <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M12 2L2 7l10 5 10-5-10-5z" />
                 <path d="M2 17l10 5 10-5" />
                 <path d="M2 12l10 5 10-5" />
               </svg>
-              <span>{t("nav.academy")}</span>
-            </Link>
-          </motion.div>
+            }
+          />
 
           {/* PSX — opens "Coming Soon" modal, not a nav link */}
           <motion.button
@@ -417,45 +339,25 @@ export default function Sidebar() {
           </motion.button>
 
           <SidebarSectionLabel>{t("nav.main")}</SidebarSectionLabel>
-          {MAIN_NAV_ITEMS.map((item) => {
-            const isActive = isHomepage && activeId === item.id;
-            return (
-              <motion.div key={item.key} whileHover={{ x: 4 }} transition={{ type: "spring", stiffness: 400, damping: 25 }}>
-                <Link
-                  href={`/#${item.id}`}
-                  aria-current={isActive ? "true" : undefined}
-                  className={`block rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors ${
-                    isActive
-                      ? "border-neon-blue/25 bg-neon-blue/10 text-white light:text-slate-900"
-                      : "border-transparent text-white/50 light:text-slate-500 hover:bg-white/5 light:hover:bg-slate-100 hover:text-white light:hover:text-slate-900"
-                  }`}
-                >
-                  {t(`nav.${item.key}`)}
-                </Link>
-              </motion.div>
-            );
-          })}
+          {MAIN_NAV_ITEMS.map((item) => (
+            <SidebarNavLink
+              key={item.key}
+              href={`/#${item.id}`}
+              isActive={isHomepage && activeId === item.id}
+              label={t(`nav.${item.key}`)}
+            />
+          ))}
 
           <SidebarSectionLabel>{t("nav.analytics")}</SidebarSectionLabel>
 
-          {ANALYTICS_NAV_ITEMS.map((item) => {
-            const isActive = isHomepage && activeId === item.id;
-            return (
-              <motion.div key={item.key} whileHover={{ x: 4 }} transition={{ type: "spring", stiffness: 400, damping: 25 }}>
-                <Link
-                  href={`/#${item.id}`}
-                  aria-current={isActive ? "true" : undefined}
-                  className={`block rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors ${
-                    isActive
-                      ? "border-neon-blue/25 bg-neon-blue/10 text-white light:text-slate-900"
-                      : "border-transparent text-white/50 light:text-slate-500 hover:bg-white/5 light:hover:bg-slate-100 hover:text-white light:hover:text-slate-900"
-                  }`}
-                >
-                  {t(`nav.${item.key}`)}
-                </Link>
-              </motion.div>
-            );
-          })}
+          {ANALYTICS_NAV_ITEMS.map((item) => (
+            <SidebarNavLink
+              key={item.key}
+              href={`/#${item.id}`}
+              isActive={isHomepage && activeId === item.id}
+              label={t(`nav.${item.key}`)}
+            />
+          ))}
 
           {/* Settings — opens modal, not a nav link */}
           <motion.button
