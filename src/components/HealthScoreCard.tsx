@@ -24,7 +24,7 @@ interface Props {
 }
 
 export default function HealthScoreCard({ health, ai }: Props) {
-  const { score, status } = health;
+  const { score, status, topStrengthFactors, topWeaknessFactors } = health;
   const { sentiment, summary, topDrivers, modelDisplayName } = ai;
   const riskLevel = healthLabelToRiskLevel(status.label);
   const { t } = useLanguage();
@@ -95,6 +95,38 @@ export default function HealthScoreCard({ health, ai }: Props) {
             ))}
           </ul>
         )}
+      </div>
+
+      {/* Factor breakdown — fills the wide card's remaining width with the
+          same quantitative-model figures already computed for the score,
+          instead of leaving it empty next to the gauge + narrative column. */}
+      <div className="grid w-full grid-cols-2 gap-4 border-t border-white/5 pt-5 text-left sm:ml-auto sm:w-auto sm:min-w-[200px] sm:shrink-0 sm:border-t-0 sm:border-l sm:border-white/5 sm:pt-0 sm:pl-6 light:border-slate-200">
+        <div>
+          <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-emerald-400/60 light:text-emerald-700">
+            {t("health.topStrengths")}
+          </p>
+          <div className="space-y-1.5">
+            {topStrengthFactors.map((f, i) => (
+              <div key={i} className="flex items-center justify-between gap-3">
+                <span className="text-[10px] text-white/40 light:text-slate-500">{f.label}</span>
+                <span className="font-mono text-[10px] text-emerald-400/70 light:text-emerald-700">{f.formattedValue}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div>
+          <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-rose-400/60 light:text-rose-600">
+            {t("health.topWeaknesses")}
+          </p>
+          <div className="space-y-1.5">
+            {topWeaknessFactors.map((f, i) => (
+              <div key={i} className="flex items-center justify-between gap-3">
+                <span className="text-[10px] text-white/40 light:text-slate-500">{f.label}</span>
+                <span className="font-mono text-[10px] text-rose-400/70 light:text-rose-600">{f.formattedValue}</span>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </motion.section>
   );

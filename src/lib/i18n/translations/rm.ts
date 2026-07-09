@@ -505,6 +505,7 @@ export const rm: Translations = {
     statusStrong: "Mazboot", statusModerate: "Ausat", statusWeak: "Kamzor",
     riskLow: "Kam", riskModerate: "Darmiyaana", riskHigh: "Zyaada",
     sentBullish: "Taezi", sentNeutral: "Ghair-Jaanibdaar", sentBearish: "Mandi",
+    topStrengths: "Sar-e-Fehrist Taqatain", topWeaknesses: "Sar-e-Fehrist Kamzoriyan",
   },
 
   market: {

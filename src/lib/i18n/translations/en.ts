@@ -501,6 +501,7 @@ export const en: Translations = {
     statusStrong: "Strong", statusModerate: "Moderate", statusWeak: "Weak",
     riskLow: "Low", riskModerate: "Moderate", riskHigh: "High",
     sentBullish: "Bullish", sentNeutral: "Neutral", sentBearish: "Bearish",
+    topStrengths: "Top Strengths", topWeaknesses: "Top Weaknesses",
   },
 
   market: {

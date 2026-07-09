@@ -109,7 +109,7 @@ export default function SeoPageLayout({
           </span>
         </div>
 
-        <h1 className="mt-8 text-3xl font-bold tracking-tight text-white light:text-slate-900 sm:text-4xl">
+        <h1 className="text-headline mt-8 text-white light:text-slate-900">
           {title}
         </h1>
         <p className="mt-3 max-w-2xl text-sm text-white/60 light:text-slate-500 sm:text-base">
@@ -121,7 +121,7 @@ export default function SeoPageLayout({
           <span className="text-xs font-semibold uppercase tracking-[0.3em] text-white/40 light:text-slate-500">
             {kpiLabel}
           </span>
-          <span className="text-4xl font-bold text-white light:text-slate-900 sm:text-5xl">
+          <span className="text-display text-white light:text-slate-900">
             {kpiValue}
           </span>
           {kpiQuality ? (
@@ -162,7 +162,7 @@ export default function SeoPageLayout({
 
         {/* Explanation */}
         <section className="glass-card mt-6 p-6 sm:p-8">
-          <h2 className="text-xl font-semibold text-white light:text-slate-900">What This Means</h2>
+          <h2 className="text-headline text-white light:text-slate-900">What This Means</h2>
           <div className="mt-3 space-y-3">
             {explanation.map((p, i) => (
               <p key={i} className="text-sm leading-relaxed text-white/65 light:text-slate-600">
@@ -174,7 +174,7 @@ export default function SeoPageLayout({
 
         {/* Why it matters */}
         <section className="glass-card mt-6 p-6 sm:p-8">
-          <h2 className="text-xl font-semibold text-white light:text-slate-900">Why It Matters</h2>
+          <h2 className="text-headline text-white light:text-slate-900">Why It Matters</h2>
           <div className="mt-3 space-y-3">
             {whyItMatters.map((p, i) => (
               <p key={i} className="text-sm leading-relaxed text-white/65 light:text-slate-600">
@@ -186,7 +186,7 @@ export default function SeoPageLayout({
 
         {/* FAQ */}
         <section className="glass-card mt-6 p-6 sm:p-8">
-          <h2 className="text-xl font-semibold text-white light:text-slate-900">Frequently Asked Questions</h2>
+          <h2 className="text-headline text-white light:text-slate-900">Frequently Asked Questions</h2>
           <div className="mt-4 space-y-5">
             {faq.map((item, i) => (
               <div key={i}>

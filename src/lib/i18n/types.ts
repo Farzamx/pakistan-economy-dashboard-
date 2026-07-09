@@ -334,6 +334,7 @@ export interface Translations {
     statusStrong: string; statusModerate: string; statusWeak: string;
     riskLow: string; riskModerate: string; riskHigh: string;
     sentBullish: string; sentNeutral: string; sentBearish: string;
+    topStrengths: string; topWeaknesses: string;
   };
 
   market: {

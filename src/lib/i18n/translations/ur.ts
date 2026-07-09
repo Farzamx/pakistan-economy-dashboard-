@@ -501,6 +501,7 @@ export const ur: Translations = {
     statusStrong: "مضبوط", statusModerate: "اوسط", statusWeak: "کمزور",
     riskLow: "کم", riskModerate: "درمیانہ", riskHigh: "زیادہ",
     sentBullish: "تیزی", sentNeutral: "غیر جانبدار", sentBearish: "مندی",
+    topStrengths: "اہم طاقتیں", topWeaknesses: "اہم کمزوریاں",
   },
 
   market: {
