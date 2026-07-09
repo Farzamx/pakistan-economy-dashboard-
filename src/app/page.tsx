@@ -571,10 +571,6 @@ export default async function Home() {
           <IntelligenceFeed items={intelligenceFeedItems} />
         </div>
 
-        <ProvincialQuickAccess />
-
-        <PopularInsights />
-
         <PinnedIndicatorsRow />
 
         <p className="mt-6 text-xs text-white/35 light:text-slate-400" suppressHydrationWarning>
@@ -627,110 +623,6 @@ export default async function Home() {
             />
           </div>
         </DashboardSection>
-        </HideableSection>
-
-        <HideableSection id="inflation">
-        <DashboardSection {...getSection("inflation")}>
-          <div className="mt-6 glass-card-raised p-4">
-            <p className="mb-2 text-xs font-medium text-white/40 light:text-slate-500">
-              24-Month Trend <span className="text-white/25 light:text-slate-400">· SBP EasyData, monthly</span>
-            </p>
-            <TrendLineChart
-              data={sbp.cpiInflation.trend}
-              color="#a855f7"
-              unit="%"
-              gradientId="cpiInflationGradient"
-            />
-          </div>
-
-          {spiYoyTrend.length > 0 && (
-            <div className="mt-6 glass-card-raised p-4">
-              <div className="mb-2 flex items-center gap-1.5">
-                <p className="text-xs font-medium text-white/40 light:text-slate-500">
-                  Weekly Inflation (SPI) — YoY %
-                  <span className="text-white/25 light:text-slate-400"> &middot; Pakistan Bureau of Statistics, weekly</span>
-                </p>
-                <InfoTooltip termKey="Weekly Inflation (SPI)" size="xs" />
-              </div>
-              <TrendLineChart
-                data={spiYoyTrend}
-                color="#c084fc"
-                unit="%"
-                gradientId="spiYoyGradient"
-              />
-            </div>
-          )}
-        </DashboardSection>
-        </HideableSection>
-
-        <HideableSection id="price-indices">
-        <DashboardSection {...getSection("price-indices")}>
-          <div className="mt-6 glass-card-raised p-4">
-            <p className="mb-2 text-xs font-medium text-white/40 light:text-slate-500">
-              24-Month Trend <span className="text-white/25 light:text-slate-400">· SBP EasyData, monthly</span>
-            </p>
-            <TrendLineChart
-              data={sbp.coreInflation.trend}
-              color="#2dd4bf"
-              unit="%"
-              gradientId="coreInflationGradient"
-            />
-          </div>
-        </DashboardSection>
-        </HideableSection>
-
-        <HideableSection id="monetary-policy">
-        <DashboardSection {...getSection("monetary-policy")}>
-          <div className="mt-6 glass-card-raised p-4">
-            <p className="mb-2 text-xs font-medium text-white/40 light:text-slate-500">
-              Recent Trend <span className="text-white/25 light:text-slate-400">· SBP EasyData, as-needed</span>
-            </p>
-            <TrendLineChart
-              data={sbp.policyRate.trend}
-              color="#fbbf24"
-              unit="%"
-              gradientId="policyRateGradient"
-            />
-          </div>
-        </DashboardSection>
-
-        <ViewportFadeIn>
-          <h2 className="mt-12 text-xl font-semibold text-white light:text-slate-900 sm:text-2xl">
-            <T tKey="dashboard.monetaryExternal" />
-          </h2>
-          <p className="mt-2 max-w-2xl text-sm text-white/60 light:text-slate-500">
-            <T tKey="dashboard.monetaryExternalDesc" />
-          </p>
-        </ViewportFadeIn>
-        <KpiGrid items={secondaryKpis} />
-        </HideableSection>
-
-        <HideableSection id="global-markets">
-        <div id="global-markets" className="scroll-mt-8">
-          <ViewportFadeIn>
-            <h2 className="mt-12 text-xl font-semibold text-white light:text-slate-900 sm:text-2xl">
-              <T tKey="dashboard.globalMarkets" />
-            </h2>
-            <p className="mt-2 max-w-2xl text-sm text-white/60 light:text-slate-500">
-              <T tKey="dashboard.globalMarketsDesc" />
-            </p>
-          </ViewportFadeIn>
-          <KpiGrid items={globalMarketsKpis} />
-        </div>
-        </HideableSection>
-
-        <HideableSection id="real-economy">
-        <div id="real-economy" className="scroll-mt-8">
-          <ViewportFadeIn>
-            <h2 className="mt-12 text-xl font-semibold text-white light:text-slate-900 sm:text-2xl">
-              <T tKey="dashboard.realEconomyFiscal" />
-            </h2>
-            <p className="mt-2 max-w-2xl text-sm text-white/60 light:text-slate-500">
-              <T tKey="dashboard.realEconomyFiscalDesc" />
-            </p>
-          </ViewportFadeIn>
-          <KpiGrid items={realEconomyKpis} />
-        </div>
         </HideableSection>
 
         <HideableSection id="reserves">
@@ -860,6 +752,110 @@ export default async function Home() {
         </DashboardSection>
         </HideableSection>
 
+        <HideableSection id="inflation">
+        <DashboardSection {...getSection("inflation")}>
+          <div className="mt-6 glass-card-raised p-4">
+            <p className="mb-2 text-xs font-medium text-white/40 light:text-slate-500">
+              24-Month Trend <span className="text-white/25 light:text-slate-400">· SBP EasyData, monthly</span>
+            </p>
+            <TrendLineChart
+              data={sbp.cpiInflation.trend}
+              color="#a855f7"
+              unit="%"
+              gradientId="cpiInflationGradient"
+            />
+          </div>
+
+          {spiYoyTrend.length > 0 && (
+            <div className="mt-6 glass-card-raised p-4">
+              <div className="mb-2 flex items-center gap-1.5">
+                <p className="text-xs font-medium text-white/40 light:text-slate-500">
+                  Weekly Inflation (SPI) — YoY %
+                  <span className="text-white/25 light:text-slate-400"> &middot; Pakistan Bureau of Statistics, weekly</span>
+                </p>
+                <InfoTooltip termKey="Weekly Inflation (SPI)" size="xs" />
+              </div>
+              <TrendLineChart
+                data={spiYoyTrend}
+                color="#c084fc"
+                unit="%"
+                gradientId="spiYoyGradient"
+              />
+            </div>
+          )}
+        </DashboardSection>
+        </HideableSection>
+
+        <HideableSection id="price-indices">
+        <DashboardSection {...getSection("price-indices")}>
+          <div className="mt-6 glass-card-raised p-4">
+            <p className="mb-2 text-xs font-medium text-white/40 light:text-slate-500">
+              24-Month Trend <span className="text-white/25 light:text-slate-400">· SBP EasyData, monthly</span>
+            </p>
+            <TrendLineChart
+              data={sbp.coreInflation.trend}
+              color="#2dd4bf"
+              unit="%"
+              gradientId="coreInflationGradient"
+            />
+          </div>
+        </DashboardSection>
+        </HideableSection>
+
+        <HideableSection id="monetary-policy">
+        <DashboardSection {...getSection("monetary-policy")}>
+          <div className="mt-6 glass-card-raised p-4">
+            <p className="mb-2 text-xs font-medium text-white/40 light:text-slate-500">
+              Recent Trend <span className="text-white/25 light:text-slate-400">· SBP EasyData, as-needed</span>
+            </p>
+            <TrendLineChart
+              data={sbp.policyRate.trend}
+              color="#fbbf24"
+              unit="%"
+              gradientId="policyRateGradient"
+            />
+          </div>
+        </DashboardSection>
+
+        <ViewportFadeIn>
+          <h2 className="mt-12 text-xl font-semibold text-white light:text-slate-900 sm:text-2xl">
+            <T tKey="dashboard.monetaryExternal" />
+          </h2>
+          <p className="mt-2 max-w-2xl text-sm text-white/60 light:text-slate-500">
+            <T tKey="dashboard.monetaryExternalDesc" />
+          </p>
+        </ViewportFadeIn>
+        <KpiGrid items={secondaryKpis} />
+        </HideableSection>
+
+        <HideableSection id="global-markets">
+        <div id="global-markets" className="scroll-mt-8">
+          <ViewportFadeIn>
+            <h2 className="mt-12 text-xl font-semibold text-white light:text-slate-900 sm:text-2xl">
+              <T tKey="dashboard.globalMarkets" />
+            </h2>
+            <p className="mt-2 max-w-2xl text-sm text-white/60 light:text-slate-500">
+              <T tKey="dashboard.globalMarketsDesc" />
+            </p>
+          </ViewportFadeIn>
+          <KpiGrid items={globalMarketsKpis} />
+        </div>
+        </HideableSection>
+
+        <HideableSection id="real-economy">
+        <div id="real-economy" className="scroll-mt-8">
+          <ViewportFadeIn>
+            <h2 className="mt-12 text-xl font-semibold text-white light:text-slate-900 sm:text-2xl">
+              <T tKey="dashboard.realEconomyFiscal" />
+            </h2>
+            <p className="mt-2 max-w-2xl text-sm text-white/60 light:text-slate-500">
+              <T tKey="dashboard.realEconomyFiscalDesc" />
+            </p>
+          </ViewportFadeIn>
+          <KpiGrid items={realEconomyKpis} />
+        </div>
+        </HideableSection>
+
         <HideableSection id="news-intelligence">
         <NewsIntelligenceSection
           items={taggedNewsResult.items.slice(0, NEWS_DISPLAY_LIMIT)}
@@ -868,6 +864,10 @@ export default async function Home() {
           sourceCount={newsSourceCount}
         />
         </HideableSection>
+
+        <ProvincialQuickAccess />
+
+        <PopularInsights />
       </main>
       <FloatingAssistant context={dashboardSnapshot} />
     </div>
