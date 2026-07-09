@@ -134,7 +134,7 @@ export default function NewsIntelligenceSection({ items, modelDisplayName, newsR
         transition={{ duration: 0.6, ease: "easeOut" }}
       >
         <div className="flex items-center gap-2">
-          <h2 className="text-xl font-semibold text-white light:text-slate-900 sm:text-2xl">
+          <h2 className="text-headline text-white light:text-slate-900">
             {t("news.title")}
           </h2>
           <span className="rounded-full border border-neon-blue/20 bg-neon-blue/10 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-widest text-neon-blue/70">

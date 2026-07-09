@@ -225,7 +225,7 @@ export default function RiskIntelligenceSection({
   return (
     <div id="risk-intelligence" className="scroll-mt-8">
       <ViewportFadeIn>
-        <h2 className="mt-12 text-xl font-semibold text-white light:text-slate-900 sm:text-2xl">
+        <h2 className="text-headline mt-10 text-white light:text-slate-900">
           {t("riskIntel.title")}
         </h2>
         <p className="mt-2 max-w-2xl text-sm text-white/60 light:text-slate-500">
