@@ -6,6 +6,7 @@ import type { Kpi } from "@/data/kpiData";
 import AnimatedValue from "@/components/AnimatedValue";
 import InfoTooltip from "@/components/InfoTooltip";
 import DataQualityBadge from "@/components/DataQualityBadge";
+import { getDataQuality, DATA_QUALITY_DOT } from "@/lib/dataQuality";
 import { getActiveTier, SOURCE_CHAINS } from "@/lib/marketDataSources";
 import { KPI_SEO_SLUG } from "@/lib/seoConfig";
 import { useTheme } from "@/components/ThemeProvider";
@@ -16,8 +17,8 @@ import { useLanguage } from "@/components/LanguageProvider";
 // (see Kpi.sparkline); cards without one fall back to the trend arrow
 // alone instead of a fabricated chart.
 function Sparkline({ data, trend }: { data: number[]; trend: Kpi["trend"] }) {
-  const width = 56;
-  const height = 18;
+  const width = 48;
+  const height = 16;
   const pad = 2;
   const min = Math.min(...data);
   const max = Math.max(...data);
@@ -52,19 +53,25 @@ function TrendArrow({ trend }: { trend: Kpi["trend"] }) {
   );
 }
 
-const restGlow: Record<Kpi["glow"], string> = {
-  blue:   "0 0 24px rgba(56, 189, 248, 0.25)",
-  purple: "0 0 24px rgba(168, 85, 247, 0.25)",
+// PEIC v2: a single restrained hover treatment for every card, regardless
+// of `glow`. The old design gave each card its own 24px→44px neon glow
+// purely for visual variety — exactly the "cards compete for attention"
+// problem the v2 redesign exists to fix. `glow` is still respected (kept
+// for data-layer compatibility — no Kpi type change), just as a much
+// quieter tint so it reads as "this card is focused" rather than a light
+// show. Light mode keeps its existing flat elevation shadow.
+const restShadow: Record<Kpi["glow"], string> = {
+  blue:   "0 0 0 rgba(56, 189, 248, 0)",
+  purple: "0 0 0 rgba(168, 85, 247, 0)",
 };
 
-const hoverGlow: Record<Kpi["glow"], string> = {
-  blue:   "0 0 44px rgba(56, 189, 248, 0.5)",
-  purple: "0 0 44px rgba(168, 85, 247, 0.5)",
+const hoverShadow: Record<Kpi["glow"], string> = {
+  blue:   "0 0 20px rgba(56, 189, 248, 0.12)",
+  purple: "0 0 20px rgba(168, 85, 247, 0.12)",
 };
 
-// In light mode we suppress neon glow entirely — cards use box-shadow from .glass-card
-const lightRestGlow  = "0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)";
-const lightHoverGlow = "0 4px 12px rgba(0,0,0,0.10), 0 2px 4px rgba(0,0,0,0.06)";
+const lightRestShadow  = "0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)";
+const lightHoverShadow = "0 2px 8px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.05)";
 
 export default function KpiCard({ title, value, unit, change, trend, glow, source, latestDate, frequency, marketType, expectedReleaseDate, releaseAlreadyReflected, sourceStatus, snapshotDate, sparkline }: Kpi) {
   const { theme } = useTheme();
@@ -86,45 +93,71 @@ export default function KpiCard({ title, value, unit, change, trend, glow, sourc
     ? `${t("kpi.sourcePrimary")} ${chain.primary}, ${t("kpi.sourceSecondary")} ${chain.secondary ?? t("kpi.sourceNone")}, ${t("kpi.sourceFallback")} ${chain.fallback}. ${t("kpi.sourceCurrently")} ${activeTier}.`
     : null;
 
-  const cardShadow = isLight ? lightRestGlow : restGlow[glow];
-  const cardHoverShadow = isLight ? lightHoverGlow : hoverGlow[glow];
+  const cardShadow = isLight ? lightRestShadow : restShadow[glow];
+  const cardHoverShadow = isLight ? lightHoverShadow : hoverShadow[glow];
   const seoSlug = KPI_SEO_SLUG[title];
+
+  // Header status dot — the same Verified/Delayed/Cached/Fallback/
+  // Unavailable classification DataQualityBadge already computes, surfaced
+  // a second time (cheap, synchronous, no fetch) right next to the title
+  // so freshness reads at a glance instead of only in the small footer text.
+  const quality = latestDate
+    ? getDataQuality({ sourceStatus: sourceStatus ?? "live", latestDate, frequency, marketType, expectedReleaseDate, releaseAlreadyReflected, snapshotDate })
+    : null;
 
   return (
     <motion.div
-      style={{ boxShadow: cardShadow }}
-      whileHover={{ scale: 1.03, boxShadow: cardHoverShadow }}
-      transition={{ type: "spring", stiffness: 300, damping: 22 }}
-      className="glass-card flex flex-col gap-3 p-6 h-full group"
+      style={{ boxShadow: cardShadow, borderColor: "var(--border)" }}
+      whileHover={{ y: -2, boxShadow: cardHoverShadow, borderColor: "var(--border-emphasis)" }}
+      transition={{ type: "spring", stiffness: 320, damping: 28 }}
+      className="glass-card group flex h-full flex-col gap-2.5 p-4"
     >
-      <div className="flex items-center gap-1.5">
-        <span className="text-sm font-medium text-white/60 light:text-slate-500">{title}</span>
-        <InfoTooltip termKey={title} />
+      {/* Row 1 — label + freshness status dot */}
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex min-w-0 items-center gap-1.5">
+          <span className="text-label truncate text-white/50 light:text-slate-500">{title}</span>
+          <InfoTooltip termKey={title} />
+        </div>
+        {quality && (
+          <span className={`shrink-0 text-[8px] ${DATA_QUALITY_DOT[quality.state]}`} title={quality.state} aria-hidden="true">
+            &#9679;
+          </span>
+        )}
       </div>
-      <div className="flex items-baseline gap-2">
-        <span className="text-3xl font-semibold text-white light:text-slate-900">
+
+      {/* Row 2 — the number, dominant */}
+      <div className="flex items-baseline gap-1.5">
+        <span className="text-display text-white light:text-slate-900">
           <AnimatedValue value={value} />
         </span>
-        <span className="text-sm text-white/50 light:text-slate-400">{unit}</span>
+        <span className="text-caption text-white/45 light:text-slate-400">{unit}</span>
       </div>
+
+      {/* Row 3 — trend + compact sparkline */}
       <div className="flex items-center justify-between gap-2">
-        <div className={`flex items-center gap-1.5 text-xs font-medium ${trendColor}`}>
+        <div className={`flex items-center gap-1 text-[11px] font-medium ${trendColor}`}>
           <TrendArrow trend={trend} />
-          <span>{change}</span>
+          <span className="truncate">{change}</span>
         </div>
         {sparkline && sparkline.length >= 2 && <Sparkline data={sparkline} trend={trend} />}
       </div>
+
+      {/* Row 4 — source/frequency/updated footer, always visible (the
+          data-provenance floor every card guarantees) */}
       {latestDate && (
         <DataQualityBadge
           kpi={{ source, latestDate, frequency, marketType, expectedReleaseDate, releaseAlreadyReflected, sourceStatus, snapshotDate }}
           extraTooltip={sourceChainNote ?? undefined}
-          className="border-t border-white/5 light:border-slate-100 pt-2 mt-0.5"
+          className="section-divider pt-2"
         />
       )}
+
+      {/* Hover-revealed action — was always-visible pale text before;
+          now a genuine "hover action" per the v2 KPI spec, not permanent chrome. */}
       {seoSlug && (
         <Link
           href={`/${seoSlug}`}
-          className="mt-auto text-[11px] font-medium text-neon-blue/70 underline-offset-2 transition-colors hover:text-neon-blue hover:underline"
+          className="mt-auto text-[11px] font-medium text-neon-blue underline-offset-2 opacity-0 transition-opacity duration-150 hover:underline group-hover:opacity-100 group-focus-within:opacity-100"
         >
           {t("common.learnMore")} →
         </Link>
