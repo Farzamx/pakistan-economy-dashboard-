@@ -550,7 +550,7 @@ export default async function Home() {
 
         <HideableSection id="gdp">
         <DashboardSection {...getSection("gdp")}>
-          <div className="mt-6 rounded-xl border border-white/5 light:border-slate-200 bg-white/[0.02] light:bg-white p-4">
+          <div className="mt-6 glass-card-raised p-4">
             <div className="mb-2 flex items-center gap-1.5">
               <p className="text-xs font-medium text-white/40 light:text-slate-500">
                 Quarterly GDP Growth &mdash; Real GVA
@@ -571,7 +571,7 @@ export default async function Home() {
 
         <HideableSection id="inflation">
         <DashboardSection {...getSection("inflation")}>
-          <div className="mt-6 rounded-xl border border-white/5 light:border-slate-200 bg-white/[0.02] light:bg-white p-4">
+          <div className="mt-6 glass-card-raised p-4">
             <p className="mb-2 text-xs font-medium text-white/40 light:text-slate-500">
               24-Month Trend <span className="text-white/25 light:text-slate-400">· SBP EasyData, monthly</span>
             </p>
@@ -584,7 +584,7 @@ export default async function Home() {
           </div>
 
           {spiYoyTrend.length > 0 && (
-            <div className="mt-6 rounded-xl border border-white/5 light:border-slate-200 bg-white/[0.02] light:bg-white p-4">
+            <div className="mt-6 glass-card-raised p-4">
               <div className="mb-2 flex items-center gap-1.5">
                 <p className="text-xs font-medium text-white/40 light:text-slate-500">
                   Weekly Inflation (SPI) — YoY %
@@ -605,7 +605,7 @@ export default async function Home() {
 
         <HideableSection id="price-indices">
         <DashboardSection {...getSection("price-indices")}>
-          <div className="mt-6 rounded-xl border border-white/5 light:border-slate-200 bg-white/[0.02] light:bg-white p-4">
+          <div className="mt-6 glass-card-raised p-4">
             <p className="mb-2 text-xs font-medium text-white/40 light:text-slate-500">
               24-Month Trend <span className="text-white/25 light:text-slate-400">· SBP EasyData, monthly</span>
             </p>
@@ -621,7 +621,7 @@ export default async function Home() {
 
         <HideableSection id="monetary-policy">
         <DashboardSection {...getSection("monetary-policy")}>
-          <div className="mt-6 rounded-xl border border-white/5 light:border-slate-200 bg-white/[0.02] light:bg-white p-4">
+          <div className="mt-6 glass-card-raised p-4">
             <p className="mb-2 text-xs font-medium text-white/40 light:text-slate-500">
               Recent Trend <span className="text-white/25 light:text-slate-400">· SBP EasyData, as-needed</span>
             </p>
@@ -691,7 +691,7 @@ export default async function Home() {
             ];
           })()}
         >
-          <div className="mt-6 rounded-xl border border-white/5 light:border-slate-200 bg-white/[0.02] light:bg-white p-4">
+          <div className="mt-6 glass-card-raised p-4">
             <p className="mb-2 text-xs font-medium text-white/40 light:text-slate-500">
               24-Month Trend <span className="text-white/25 light:text-slate-400">· SBP EasyData, monthly</span>
             </p>
@@ -734,7 +734,7 @@ export default async function Home() {
             </div>
           }
         >
-          <div className="mt-6 rounded-xl border border-white/5 light:border-slate-200 bg-white/[0.02] light:bg-white p-4">
+          <div className="mt-6 glass-card-raised p-4">
             <p className="mb-2 text-xs font-medium text-white/40 light:text-slate-500">
               24-Month Trend <span className="text-white/25 light:text-slate-400">· SBP EasyData — Monthly Average Interbank Rate</span>
             </p>
@@ -750,7 +750,7 @@ export default async function Home() {
 
         <HideableSection id="remittances">
         <DashboardSection {...getSection("remittances")}>
-          <div className="mt-6 rounded-xl border border-white/5 light:border-slate-200 bg-white/[0.02] light:bg-white p-4">
+          <div className="mt-6 glass-card-raised p-4">
             <p className="mb-2 text-xs font-medium text-white/40 light:text-slate-500">
               24-Month Trend <span className="text-white/25 light:text-slate-400">· SBP EasyData, monthly</span>
             </p>
@@ -786,7 +786,7 @@ export default async function Home() {
             ];
           })()}
         >
-          <div className="mt-6 rounded-xl border border-white/5 light:border-slate-200 bg-white/[0.02] light:bg-white p-4">
+          <div className="mt-6 glass-card-raised p-4">
             <p className="mb-2 text-xs font-medium text-white/40 light:text-slate-500">
               24-Month Trend <span className="text-white/25 light:text-slate-400">· SBP EasyData, monthly</span>
             </p>
