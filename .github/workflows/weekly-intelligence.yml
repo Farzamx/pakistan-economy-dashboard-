@@ -1,0 +1,100 @@
+# Weekly Intelligence Safety Net — PEIC v2.3 (AI Health Score & Probability
+# Freshness Audit).
+#
+# Root-cause context: /api/cron/weekly-intelligence (Economic Health Score +
+# Recession/Default probabilities) was, until this workflow, the only one of
+# this project's 4 scheduled jobs triggered exclusively by Vercel cron with
+# no GitHub Actions counterpart — unlike sync-economic-calendar.yml and
+# global-markets-freshness.yml, both of which pair a GitHub Actions trigger
+# with Vercel cron specifically because a silent Vercel cron failure would
+# otherwise have no fallback trigger and no alerting. The audit found the
+# Vercel-only cron had in fact run correctly both weeks since it was
+# introduced, but this single-point-of-failure gap is closed here rather
+# than left to be discovered the first time Vercel's scheduler misses a run.
+#
+# Vercel cron ("0 6 * * 1" in vercel.json) remains the primary trigger. This
+# workflow fires 6 hours later, same day, as a same-week safety net — not a
+# duplicate compute: /api/cron/weekly-intelligence is idempotent (a DB
+# unique constraint on week_start rejects a second insert for the same ISO
+# week and the route returns skipped:true), so calling it twice in the same
+# week is always safe, whether or not the primary already ran.
+#
+# Required GitHub repository configuration (already set for
+# sync-economic-calendar.yml / global-markets-freshness.yml, reused here):
+#   secrets.CRON_SECRET  — must match CRON_SECRET set on Vercel
+#   vars.APP_URL         — deployed base URL, e.g. https://your-app.vercel.app
+
+name: Weekly Intelligence Safety Net
+
+on:
+  schedule:
+    - cron: '0 12 * * 1' # every Monday, 12:00 UTC — 6h after Vercel's primary 06:00 UTC run
+
+  workflow_dispatch:
+    # Manual trigger — available from the Actions tab in GitHub UI, useful
+    # for on-demand verification right after a config change.
+
+jobs:
+  trigger:
+    name: Trigger weekly intelligence recompute
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+
+    steps:
+      - name: Call weekly intelligence cron endpoint
+        env:
+          APP_URL: ${{ vars.APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          echo "=== Weekly Intelligence safety-net trigger ==="
+          echo "run=${{ github.run_id }} event=${{ github.event_name }} time=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+          if [ -z "${APP_URL}" ]; then
+            echo "FATAL: APP_URL is empty or not configured."
+            echo "Set it in GitHub -> Settings -> Secrets and variables -> Variables -> APP_URL"
+            exit 1
+          fi
+
+          ENDPOINT="${APP_URL}/api/cron/weekly-intelligence"
+          echo "endpoint: ${ENDPOINT}"
+
+          set +e
+          response=$(curl -sS \
+            --max-time 55 \
+            -w '\n===curl-metrics===\nhttp_code=%{http_code}\ntime_total=%{time_total}s\n' \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            "${ENDPOINT}" 2>&1)
+          curl_exit=$?
+          set -e
+
+          if [ "${curl_exit}" -ne 0 ]; then
+            echo "curl failed before receiving a response (exit ${curl_exit})."
+            echo "${response}" | head -c 4000
+            exit "${curl_exit}"
+          fi
+
+          http_code=$(echo "${response}" | sed -n '/^===curl-metrics===/,$p' | grep '^http_code=' | cut -d= -f2)
+          body=$(echo "${response}" | sed '/^===curl-metrics===/,$d')
+
+          echo ""
+          echo "=== HTTP ${http_code} ==="
+          echo "${body}" | head -c 4000
+
+          if [ "${http_code}" != "200" ]; then
+            echo "FAIL: weekly intelligence endpoint returned HTTP ${http_code} (expected 200)"
+            exit 1
+          fi
+
+          success=$(echo "${body}" | jq -r '.success // false' 2>/dev/null || echo false)
+          skipped=$(echo "${body}" | jq -r '.skipped // false' 2>/dev/null || echo false)
+          if [ "${success}" != "true" ]; then
+            echo "FAIL: response reported success=false"
+            exit 1
+          fi
+
+          echo ""
+          if [ "${skipped}" = "true" ]; then
+            echo "OK: already computed this ISO week (primary Vercel cron run succeeded) — no action needed."
+          else
+            echo "OK: weekly intelligence recomputed by this safety-net trigger (primary run was missed or failed)."
+          fi

@@ -584,7 +584,12 @@ export default async function Home() {
 
         {health && aiAnalysis && recessionResult && defaultResult && aiRisk && intelligenceComputedAt && intelligenceNextUpdateAt ? (
           <>
-            <HealthScoreCard health={health} ai={aiAnalysis} />
+            <HealthScoreCard
+              health={health}
+              ai={aiAnalysis}
+              computedAt={intelligenceComputedAt}
+              nextUpdateAt={intelligenceNextUpdateAt}
+            />
 
             <HideableSection id="risk-intelligence">
               <RiskIntelligenceSection

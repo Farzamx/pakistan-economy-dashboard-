@@ -21,9 +21,13 @@ const RISK_CLASS: Record<"Low" | "Moderate" | "High", string> = {
 interface Props {
   health: HealthModelResult;
   ai: AiEconomicAnalysis;
+  /** When the Weekly Intelligence Engine last computed this score (PKT) — see weeklyIntelligenceCompute.ts. */
+  computedAt?: string;
+  /** Estimated next weekly run (PKT) — computedAt + 7 days. */
+  nextUpdateAt?: string;
 }
 
-export default function HealthScoreCard({ health, ai }: Props) {
+export default function HealthScoreCard({ health, ai, computedAt, nextUpdateAt }: Props) {
   const { score, status, topStrengthFactors, topWeaknessFactors } = health;
   const { sentiment, summary, topDrivers, modelDisplayName } = ai;
   const riskLevel = healthLabelToRiskLevel(status.label);
@@ -84,6 +88,18 @@ export default function HealthScoreCard({ health, ai }: Props) {
         </div>
 
         <p className="mt-3 max-w-md text-sm text-white/60 light:text-slate-500">{summary}</p>
+
+        {computedAt && nextUpdateAt && (
+          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+            <span className="text-[10px] text-white/25 light:text-slate-400">
+              <span className="text-white/35 light:text-slate-500">{t("riskIntel.lastComputed")}</span> {computedAt}
+            </span>
+            <span className="text-[10px] text-white/15 light:text-slate-300">·</span>
+            <span className="text-[10px] text-white/25 light:text-slate-400">
+              <span className="text-white/35 light:text-slate-500">{t("riskIntel.nextUpdate")}</span> {nextUpdateAt}
+            </span>
+          </div>
+        )}
 
         {topDrivers.length > 0 && (
           <ul className="mt-3 space-y-1">
