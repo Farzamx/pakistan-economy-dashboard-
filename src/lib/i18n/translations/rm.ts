@@ -21,6 +21,8 @@ export const rm: Translations = {
     rankings: "Rankings", indicators: "Indicators", settings: "Tartibaat",
     logoName: "Pakistan EIC", logoSubtitle: "Maashi Dashboard",
     liveData: "SBP EasyData aur World Bank se live data.", psxLabel: "PSX",
+    executiveSummary: "Executive Khulasa", macroeconomy: "Macroeconomy", tools: "Tools",
+    bonds: "Bonds", yieldCurve: "Yield Curve", commodities: "Ashiya (Commodities)", researchLibrary: "Research Library",
     memberBadge: "Rakam", memberSince: "Rakam bane", premiumAccess: "Premium Rasaai",
   },
 

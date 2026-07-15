@@ -21,6 +21,8 @@ export const en: Translations = {
     rankings: "Rankings", indicators: "Indicators", settings: "Settings",
     logoName: "Pakistan EIC", logoSubtitle: "Economic Dashboard",
     liveData: "Live data from SBP EasyData & World Bank.", psxLabel: "PSX",
+    executiveSummary: "Executive Summary", macroeconomy: "Macroeconomy", tools: "Tools",
+    bonds: "Bonds", yieldCurve: "Yield Curve", commodities: "Commodities", researchLibrary: "Research Library",
     memberBadge: "Member", memberSince: "Member since", premiumAccess: "Premium Access",
   },
 

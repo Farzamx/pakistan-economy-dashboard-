@@ -33,6 +33,8 @@ export interface Translations {
     rankings: string; indicators: string; settings: string;
     logoName: string; logoSubtitle: string; liveData: string; psxLabel: string;
     memberBadge: string; memberSince: string; premiumAccess: string;
+    executiveSummary: string; macroeconomy: string; tools: string;
+    bonds: string; yieldCurve: string; commodities: string; researchLibrary: string;
   };
 
   hero: {

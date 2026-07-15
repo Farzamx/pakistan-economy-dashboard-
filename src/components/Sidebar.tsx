@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { motion } from "framer-motion";
 import SettingsModal from "@/components/SettingsModal";
 import PsxComingSoonModal from "@/components/PsxComingSoonModal";
 import GuestAccessModal from "@/components/GuestAccessModal";
@@ -13,57 +12,72 @@ import { useAuth } from "@/components/AuthProvider";
 import { isProtectedPath } from "@/lib/protectedSections";
 import { useLanguage } from "@/components/LanguageProvider";
 import { useSidebar } from "@/components/SidebarProvider";
+import { SIDEBAR_NAV_GROUPS, SIDEBAR_ANCHOR_ORDER, type SidebarNavTarget } from "@/lib/sidebarNav";
 
-function SidebarSectionLabel({ children }: { children: React.ReactNode }) {
+function targetHref(target: SidebarNavTarget): string {
+  return target.kind === "anchor" ? `/#${target.id}` : target.href;
+}
+
+function GroupChevron({ expanded }: { expanded: boolean }) {
   return (
-    <p className="mt-4 mb-1.5 px-4 text-label text-white/30 light:text-slate-400 first:mt-0">
-      {children}
-    </p>
+    <svg
+      className={`h-3 w-3 shrink-0 text-white/30 light:text-slate-400 transition-transform ${expanded ? "" : "-rotate-90"}`}
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M4 6l4 4 4-4" />
+    </svg>
   );
 }
 
-// PEIC v2: every "Premium Tools" row used to get its own hardcoded accent
-// color (purple/blue/emerald/cyan/rose/amber) purely for visual variety —
-// exactly the "cards compete for attention" pattern the v2 redesign exists
-// to remove. One shared row style now, for every nav item alike: neutral
-// at rest, a single blue accent when active. Color means "this is where
-// you are," not "this row's turn in the rainbow."
-function SidebarNavLink({
+// Plain bulleted row — the entire content-navigation tree (PEIC v3 nav
+// restructure) uses this one uniform style rather than a per-item icon set,
+// matching a Bloomberg-terminal-style text menu instead of a SaaS sidebar.
+function SidebarTreeRow({
   href,
-  icon,
   label,
   isActive,
   onClick,
   ariaLabel,
 }: {
   href: string;
-  icon?: React.ReactNode;
   label: string;
   isActive: boolean;
   onClick?: (e: React.MouseEvent<HTMLAnchorElement>) => void;
   ariaLabel?: string;
 }) {
   return (
-    <motion.div whileHover={{ x: 3 }} transition={{ type: "spring", stiffness: 400, damping: 25 }} className="mb-0.5">
-      <Link
-        href={href}
-        onClick={onClick}
-        aria-label={ariaLabel}
-        aria-current={isActive ? "true" : undefined}
-        className={`group flex items-center gap-2.5 rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors duration-200 ${
-          isActive
-            ? "border-neon-blue/25 bg-neon-blue/10 text-white light:text-slate-900"
-            : "border-transparent text-white/60 light:text-slate-600 hover:border-white/[0.06] hover:bg-white/5 light:hover:bg-slate-100 hover:text-white light:hover:text-slate-900"
-        }`}
-      >
-        {icon && (
-          <span className={isActive ? "text-neon-blue" : "text-white/40 light:text-slate-400 group-hover:text-white/70 light:group-hover:text-slate-600"}>
-            {icon}
-          </span>
-        )}
-        <span>{label}</span>
-      </Link>
-    </motion.div>
+    <Link
+      href={href}
+      onClick={onClick}
+      aria-label={ariaLabel}
+      aria-current={isActive ? "true" : undefined}
+      className={`flex items-center gap-2 rounded-md px-4 py-1.5 text-[13px] transition-colors ${
+        isActive
+          ? "text-neon-blue"
+          : "text-white/55 light:text-slate-500 hover:text-white light:hover:text-slate-900"
+      }`}
+    >
+      <span className={`h-1 w-1 shrink-0 rounded-full ${isActive ? "bg-neon-blue" : "bg-white/20 light:bg-slate-300"}`} />
+      {label}
+    </Link>
+  );
+}
+
+function SidebarTreeButton({ label, onClick }: { label: string; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex w-full items-center gap-2 rounded-md px-4 py-1.5 text-left text-[13px] text-white/55 light:text-slate-500 transition-colors hover:text-white light:hover:text-slate-900"
+    >
+      <span className="h-1 w-1 shrink-0 rounded-full bg-white/20 light:bg-slate-300" />
+      {label}
+    </button>
   );
 }
 
@@ -77,6 +91,8 @@ export default function Sidebar() {
   const [guestModalOpen, setGuestModalOpen] = useState(false);
   const [guestDestination, setGuestDestination] = useState("/");
   const [hash, setHash] = useState("");
+  const [activeAnchorId, setActiveAnchorId] = useState("");
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
 
   // Tracks the URL hash so the Free Subscription item can show as active
   // when the user navigates to /economic-calendar#email-alerts, and return
@@ -89,17 +105,52 @@ export default function Sidebar() {
     return () => window.removeEventListener("hashchange", onHashChange);
   }, []);
 
-  // Intercepts a click on a protected section's Link while signed out:
-  // prevents the navigation and opens the GuestAccessModal instead, so a
-  // guest never sees a flash of the page before proxy.ts would otherwise
-  // redirect them. Signed-in users (and while the initial session check is
-  // still loading) navigate normally — showing the modal during `loading`
-  // would misfire for users who are actually signed in but whose session
-  // hasn't resolved on this render yet.
-  // When the user clicks "Free Subscription" while already on the calendar
-  // page, smooth-scroll to the section instead of doing a hard navigation
-  // (which would jump instantly). On any other page, let the Link navigate
-  // normally — the browser will anchor-scroll on arrival.
+  // Content-navigation scroll-spy (PEIC v3 nav restructure) — replaces the
+  // old horizontal SectionNav ribbon's IntersectionObserver, now driving the
+  // sidebar's tree instead. Only meaningful on the homepage, where every one
+  // of these anchor ids actually exists in the DOM.
+  useEffect(() => {
+    if (pathname !== "/") return;
+    const sections = SIDEBAR_ANCHOR_ORDER
+      .map((id) => document.getElementById(id))
+      .filter((el): el is HTMLElement => el !== null);
+    if (sections.length === 0) return;
+
+    const visible = new Set<string>();
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) visible.add(entry.target.id);
+          else visible.delete(entry.target.id);
+        }
+        for (let i = SIDEBAR_ANCHOR_ORDER.length - 1; i >= 0; i--) {
+          if (visible.has(SIDEBAR_ANCHOR_ORDER[i])) {
+            setActiveAnchorId(SIDEBAR_ANCHOR_ORDER[i]);
+            break;
+          }
+        }
+      },
+      { rootMargin: "-15% 0px -75% 0px", threshold: 0 },
+    );
+    sections.forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
+  }, [pathname]);
+
+  // Clicking a homepage-anchor item while already on "/" smooth-scrolls
+  // instead of doing a full navigation; from any other page, the Link below
+  // navigates normally to "/#id" and the browser anchor-scrolls on arrival
+  // (same convention already used for Free Subscription's
+  // /economic-calendar#email-alerts link).
+  function handleAnchorClick(e: React.MouseEvent<HTMLAnchorElement>, id: string) {
+    if (pathname !== "/") return;
+    const el = document.getElementById(id);
+    if (!el) return;
+    e.preventDefault();
+    el.scrollIntoView({ behavior: "smooth" });
+    window.history.replaceState(null, "", `/#${id}`);
+    setActiveAnchorId(id);
+  }
+
   function handleSubscriptionClick(e: React.MouseEvent<HTMLAnchorElement>) {
     if (pathname !== "/economic-calendar") return;
     e.preventDefault();
@@ -119,6 +170,15 @@ export default function Sidebar() {
     setGuestModalOpen(true);
   }
 
+  function toggleGroup(key: string) {
+    setCollapsedGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }
+
   return (
     <>
       {/* Outer wrapper carries the sticky/viewport-height positioning (not
@@ -130,7 +190,7 @@ export default function Sidebar() {
       <div className="sticky top-16 hidden h-[calc(100vh-4rem)] shrink-0 sm:block">
         <aside
           className={`relative flex h-full flex-col overflow-y-auto overflow-x-hidden border-r border-white/5 light:border-slate-200 bg-white/[0.02] light:bg-white backdrop-blur-xl light:backdrop-blur-none hide-scrollbar light:shadow-[1px_0_0_0_#E2E6EF] transition-[width] duration-200 ease-out ${
-            collapsed ? "w-0 gap-0 p-0 opacity-0 pointer-events-none" : "w-64 gap-6 p-5 opacity-100"
+            collapsed ? "w-0 gap-0 p-0 opacity-0 pointer-events-none" : "w-64 gap-5 p-5 opacity-100"
           }`}
           aria-hidden={collapsed}
         >
@@ -142,131 +202,77 @@ export default function Sidebar() {
 
         <GlobalSearch onLinkClick={handleProtectedNav} placeholder={t("search.placeholder")} />
 
-        {/* Secondary/tool navigation only (PEIC v3 nav restructure) — the
-            primary site-level nav (Overview, Markets, Calendar, Research,
-            Academy, Risk Intel) now lives in TopNav.tsx as a horizontal bar.
-            This sidebar keeps Premium Tools + Settings, matching an
-            institutional research site's "tools" rail rather than a full
-            page-section index. */}
-        <nav className="flex flex-col gap-1">
-          <SidebarSectionLabel>{t("nav.premiumTools")}</SidebarSectionLabel>
+        {/* Content-navigation tree (PEIC v3 nav-hierarchy restructure) — the
+            full page/section index that used to live in the horizontal
+            SectionNav ribbon beneath the Market Ribbon. TopNav.tsx keeps
+            only global site-level destinations; every homepage section and
+            every standalone indicator page is grouped here instead. */}
+        <nav className="flex flex-col gap-1" aria-label="Content navigation">
+          {SIDEBAR_NAV_GROUPS.map((group) => {
+            const expanded = !collapsedGroups.has(group.key);
+            return (
+              <div key={group.key}>
+                <button
+                  type="button"
+                  onClick={() => toggleGroup(group.key)}
+                  aria-expanded={expanded}
+                  className="mt-3 mb-1 flex w-full items-center justify-between px-4 py-1 text-label text-white/30 light:text-slate-400 first:mt-0"
+                >
+                  <span>{t(group.labelKey)}</span>
+                  <GroupChevron expanded={expanded} />
+                </button>
 
-          <SidebarNavLink
-            href="/comparisons"
-            onClick={(e) => handleProtectedNav(e, "/comparisons")}
-            isActive={!!pathname?.startsWith("/comparisons")}
-            label={t("nav.comparisons")}
-            icon={
-              <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M3 16l4.5-7L12 13l4-6L21 8" />
-                <path d="M19 4l2 2-2 2M5 16l-2 2 2 2" />
-              </svg>
-            }
-          />
+                {expanded && (
+                  <div className="flex flex-col gap-0.5 pb-1">
+                    {group.items.map((item) => {
+                      const target = item.target;
+                      const isDataSources = item.labelKey === "modal.dsTitle";
+                      const label = item.labelKey === "__kse100Proxy" ? "KSE-100 Proxy" : t(item.labelKey);
+                      const href = targetHref(target);
+                      const isActive =
+                        !isDataSources && target.kind === "anchor"
+                          ? pathname === "/" && activeAnchorId === target.id
+                          : target.kind === "route"
+                            ? !!pathname?.startsWith(target.href)
+                            : false;
+                      return (
+                        <SidebarTreeRow
+                          key={group.key + label}
+                          href={href}
+                          label={label}
+                          isActive={isActive}
+                          onClick={
+                            target.kind === "anchor"
+                              ? (e) => handleAnchorClick(e, target.id)
+                              : (e) => handleProtectedNav(e, href)
+                          }
+                        />
+                      );
+                    })}
 
-          <SidebarNavLink
-            href="/budget"
-            onClick={(e) => handleProtectedNav(e, "/budget")}
-            isActive={!!pathname?.startsWith("/budget")}
-            label={t("nav.budgetTracker")}
-            icon={
-              <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="3" y="10" width="4" height="10" />
-                <rect x="10" y="6" width="4" height="14" />
-                <rect x="17" y="13" width="4" height="7" />
-              </svg>
-            }
-          />
-
-          <SidebarNavLink
-            href="/provincial-budget"
-            onClick={(e) => handleProtectedNav(e, "/provincial-budget")}
-            isActive={!!pathname?.startsWith("/provincial-budget")}
-            label={t("nav.provincialBudget")}
-            icon={
-              <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M3 3v18h18" />
-                <path d="M7 14l3-3 3 2 4-5" />
-              </svg>
-            }
-          />
-
-          {/* Active only when on the calendar page but NOT viewing the
-              subscription section — when the user clicks "Free Subscription"
-              the calendar item yields and the subscription item lights up. */}
-          <SidebarNavLink
-            href="/economic-calendar"
-            onClick={(e) => handleProtectedNav(e, "/economic-calendar")}
-            isActive={!!pathname?.startsWith("/economic-calendar") && hash !== "#email-alerts"}
-            label={t("nav.economicCalendar")}
-            icon={
-              <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="3" y="5" width="18" height="16" rx="2" />
-                <path d="M3 10h18M8 3v4M16 3v4" />
-              </svg>
-            }
-          />
-
-          {/* Links to the email alert sign-up section on the Economic
-              Calendar page. Smooth-scrolls when already on that page;
-              navigates normally otherwise. Active only when hash is
-              #email-alerts so it never conflicts with the Calendar item. */}
-          <SidebarNavLink
-            href="/economic-calendar#email-alerts"
-            onClick={handleSubscriptionClick}
-            ariaLabel="Free email subscription — get alerts for Pakistan economic releases"
-            isActive={pathname === "/economic-calendar" && hash === "#email-alerts"}
-            label={t("nav.freeSubscription")}
-            icon={
-              <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="2" y="5" width="20" height="14" rx="2" />
-                <path d="M2 8l10 6 10-6" />
-              </svg>
-            }
-          />
-
-          <SidebarNavLink
-            href="/academy"
-            isActive={!!pathname?.startsWith("/academy")}
-            label={t("nav.academy")}
-            icon={
-              <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 2L2 7l10 5 10-5-10-5z" />
-                <path d="M2 17l10 5 10-5" />
-                <path d="M2 12l10 5 10-5" />
-              </svg>
-            }
-          />
-
-          {/* PSX — opens "Coming Soon" modal, not a nav link */}
-          <motion.button
-            type="button"
-            onClick={() => setPsxOpen(true)}
-            whileHover={{ x: 4 }}
-            transition={{ type: "spring", stiffness: 400, damping: 25 }}
-            className="flex w-full items-center gap-2 rounded-lg border border-transparent px-4 py-2.5 text-sm font-medium text-white/50 light:text-slate-500 transition-colors hover:bg-white/5 light:hover:bg-slate-100 hover:text-white light:hover:text-slate-900"
-          >
-            <svg className="h-3.5 w-3.5 opacity-60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M3 17l5-5 4 4 6-7" />
-              <path d="M14 9h5v5" />
-            </svg>
-            {t("nav.psxLabel")}
-          </motion.button>
-
-          {/* Settings — opens modal, not a nav link */}
-          <motion.button
-            type="button"
-            onClick={() => setSettingsOpen(true)}
-            whileHover={{ x: 4 }}
-            transition={{ type: "spring", stiffness: 400, damping: 25 }}
-            className="flex w-full items-center gap-2 rounded-lg border border-transparent px-4 py-2.5 text-sm font-medium text-white/50 light:text-slate-500 transition-colors hover:bg-white/5 light:hover:bg-slate-100 hover:text-white light:hover:text-slate-900"
-          >
-            <svg className="h-3.5 w-3.5 opacity-60" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
-              <circle cx="8" cy="8" r="2.5" />
-              <path d="M8 1v1.5M8 13.5V15M1 8h1.5M13.5 8H15M3.05 3.05l1.06 1.06M11.89 11.89l1.06 1.06M3.05 12.95l1.06-1.06M11.89 4.11l1.06-1.06" strokeLinecap="round" />
-            </svg>
-            {t("nav.settings")}
-          </motion.button>
+                    {/* Free Subscription / Settings / PSX — kept as the
+                        TOOLS group's remaining existing functionality,
+                        special-cased rather than data-driven since their
+                        active-state and click behavior (hash tracking, modal
+                        triggers) don't fit the plain anchor/route shape above. */}
+                    {group.key === "tools" && (
+                      <>
+                        <SidebarTreeRow
+                          href="/economic-calendar#email-alerts"
+                          onClick={handleSubscriptionClick}
+                          ariaLabel="Free email subscription — get alerts for Pakistan economic releases"
+                          isActive={pathname === "/economic-calendar" && hash === "#email-alerts"}
+                          label={t("nav.freeSubscription")}
+                        />
+                        <SidebarTreeButton label={t("nav.psxLabel")} onClick={() => setPsxOpen(true)} />
+                        <SidebarTreeButton label={t("nav.settings")} onClick={() => setSettingsOpen(true)} />
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </nav>
 
         {/* Footer note */}

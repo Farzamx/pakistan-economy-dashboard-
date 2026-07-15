@@ -203,11 +203,25 @@ export const getEventBySlug = unstable_cache(
   { revalidate: REVALIDATE_SECONDS },
 );
 
-/** All upcoming (still-scheduled) events, soonest first — powers feed.ics, "Related Events", and the Next Major Events panel. */
+/**
+ * All upcoming (still-scheduled) events, soonest first — powers feed.ics,
+ * "Related Events", and the Next Major Events panel.
+ *
+ * Excludes the `_verify_test_sync` fixture series (migration 0027) — its two
+ * permanent test events sit on 1970-01-01/02 so verification scripts never
+ * collide with real calendar dates, but that also makes them the
+ * chronologically-earliest "scheduled" rows, so an unfiltered ascending sort
+ * surfaced "[TEST ONLY] Sync Verification Event A" as the next release.
+ */
 export const getAllScheduledEvents = unstable_cache(
   async (): Promise<EventRecord[]> => {
     const supabase = createPublicDataClient();
-    const { data, error } = await supabase.from("economic_events").select(EVENT_SELECT).eq("status", "scheduled").order("event_date", { ascending: true });
+    const { data, error } = await supabase
+      .from("economic_events")
+      .select(EVENT_SELECT_INNER_SERIES)
+      .eq("status", "scheduled")
+      .neq("economic_event_series.slug", "_verify_test_sync")
+      .order("event_date", { ascending: true });
     if (error || !data) return [];
     return (data as unknown as EventRow[]).map(mapEvent).filter((e): e is EventRecord => e !== null);
   },

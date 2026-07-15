@@ -12,7 +12,6 @@ import IndicatorTable from "@/components/IndicatorTable";
 import InfoTooltip from "@/components/InfoTooltip";
 import MacroSnapshot from "@/components/MacroSnapshot";
 import MarketTicker, { type TickerItem } from "@/components/MarketTicker";
-import SectionNav, { type SectionNavItem } from "@/components/SectionNav";
 import NewsIntelligenceSection from "@/components/NewsIntelligenceSection";
 import ProvincialQuickAccess from "@/components/ProvincialQuickAccess";
 import PopularInsights from "@/components/PopularInsights";
@@ -50,36 +49,12 @@ import { getPakEtfKpi } from "@/lib/data/yfinance";
 import { getSpiHistory } from "@/lib/data/spi";
 import {
   computeDataConfidence,
+  type DataConfidence,
   type IndicatorStatus,
   type RiskModelResult,
 } from "@/lib/riskModels";
 import { getHealthStatus, healthLabelToRiskLevel, type HealthModelResult } from "@/lib/economicHealth";
 import type { Kpi } from "@/data/kpiData";
-
-// Homepage in-page section nav (PEIC v3 navigation pass) — every id here is
-// a real anchor already rendered on this page; order matches document
-// order so scroll-spy's "last in view wins" tie-break reads naturally.
-const HOMEPAGE_SECTIONS: SectionNavItem[] = [
-  { key: "overview", id: "overview" },
-  { key: "healthScore", id: "health-score" },
-  { key: "macroSnapshot", id: "macro-snapshot" },
-  { key: "riskIntel", id: "risk-intelligence" },
-  { key: "intelligenceFeed", id: "intelligence-feed" },
-  { key: "calendar", id: "upcoming-calendar" },
-  { key: "research", id: "research" },
-  { key: "gdp", id: "gdp" },
-  { key: "inflation", id: "inflation" },
-  { key: "prices", id: "price-indices" },
-  { key: "monetaryPolicy", id: "monetary-policy" },
-  { key: "globalMarkets", id: "global-markets" },
-  { key: "realEconomy", id: "real-economy" },
-  { key: "reserves", id: "reserves" },
-  { key: "liveFX", id: "live-fx" },
-  { key: "exchangeRate", id: "exchange-rate" },
-  { key: "remittances", id: "remittances" },
-  { key: "externalSector", id: "external-sector" },
-  { key: "news", id: "news-intelligence" },
-];
 
 function makeTickerItem(
   kpi: Kpi,
@@ -235,6 +210,12 @@ export default async function Home() {
 
   const recessionConfidence = computeDataConfidence(recessionIndicators, pktTimestamp);
   const defaultConfidence   = computeDataConfidence(defaultIndicators,   pktTimestamp);
+  // Hero briefing's single "Confidence Level" tile — the worse (lower-score)
+  // of the two existing confidence readings above, same worst-case-surfacing
+  // convention Hero.tsx already applies to combine recession/default into one
+  // "Risk Status" line. Not a new calculation, just a selection between two
+  // already-computed values.
+  const heroDataConfidence: DataConfidence = recessionConfidence.score <= defaultConfidence.score ? recessionConfidence : defaultConfidence;
   // ─────────────────────────────────────────────────────────────────────────
 
   const tickerItems: TickerItem[] = [
@@ -434,6 +415,31 @@ export default async function Home() {
     return change.trim().startsWith("-") ? "decreased" : "increased";
   }
 
+  // Hero briefing's "Key Risk Signals" — same deltaDirection sign already
+  // used above, just paired with a plain-language label per indicator
+  // instead of the raw KPI title (a rising fiscal balance means the deficit
+  // is narrowing, a rising current account means the external position is
+  // improving, etc.) — no new figures, only real signs already computed.
+  const heroRiskSignals: string[] = [
+    { kpi: sbp.cpiInflation.kpi,   rising: "Inflation accelerating",              falling: "Inflation easing" },
+    { kpi: sbp.fiscalBalance.kpi,  rising: "Fiscal deficit narrowing",            falling: "Fiscal deficit widening" },
+    { kpi: sbp.currentAccount.kpi, rising: "External account improving",          falling: "External account weakening" },
+    { kpi: sbp.foreignReserves.kpi,rising: "FX reserves increasing",              falling: "FX reserves declining" },
+    { kpi: sbp.lsm.kpi,            rising: "Manufacturing output expanding",      falling: "Manufacturing output weakening" },
+  ].map((s) => (deltaDirection(s.kpi.change) === "increased" ? s.rising : s.falling));
+
+  // Hero briefing's "Data Status" — one representative live indicator per
+  // upstream provider actually used on this page (SBP EasyData, PBS, World
+  // Bank), reusing the same isFallback()/isStale() signals already computed
+  // above rather than a new freshness calculation. SPI has no fallback by
+  // design (see spi.ts) — a null result means the live fetch failed, not
+  // that a snapshot was substituted.
+  const heroDataStatus: { name: string; label: string; live: boolean }[] = [
+    { name: "SBP EasyData", live: !isFallback(sbp.foreignReserves.meta), label: !isFallback(sbp.foreignReserves.meta) ? "Live" : "Fallback" },
+    { name: "PBS",          live: spi !== null,                          label: spi !== null ? "Latest Release" : "Unavailable" },
+    { name: "World Bank",   live: gdpKpi.sourceStatus !== "fallback",    label: gdpKpi.sourceStatus !== "fallback" ? "Verified" : "Fallback" },
+  ];
+
   const intelligenceFeedItems: IntelligenceFeedItem[] = [
     ...recentReleasedEvents.slice(0, 5).map((e): IntelligenceFeedItem => ({
       kind: "release",
@@ -602,7 +608,7 @@ export default async function Home() {
     <div className="flex min-h-screen w-full">
       <HashScrollRestore />
       <Sidebar />
-      <main id="overview" className="min-w-0 flex-1 scroll-mt-[100px] sm:scroll-mt-[160px]">
+      <main id="overview" className="min-w-0 flex-1 scroll-mt-[60px] sm:scroll-mt-[120px]">
         {/* Sticky market ribbon — pinned directly below TopNav (top-16),
             visible throughout the scroll rather than living inside the
             scrolling panel below. Same tickerItems used by every other
@@ -610,8 +616,6 @@ export default async function Home() {
         <div className="sticky top-0 z-20 border-b border-[var(--border-subtle)] bg-[var(--background)]/95 backdrop-blur-xl sm:top-16">
           <MarketTicker items={tickerItems} bare />
         </div>
-
-        <SectionNav items={HOMEPAGE_SECTIONS} />
 
         <div className="px-6 py-8 sm:px-10 lg:px-16">
         {/* Research Briefing panel — one continuous institutional panel
@@ -626,23 +630,27 @@ export default async function Home() {
             aiAnalysis={aiAnalysis}
             recessionResult={recessionResult}
             defaultResult={defaultResult}
+            aiRisk={aiRisk}
+            dataConfidence={heroDataConfidence}
+            riskSignals={heroRiskSignals}
+            dataStatus={heroDataStatus}
             latestRelease={latestRelease ? { title: latestRelease.title, date: latestRelease.date, actual: latestRelease.actual ?? null } : null}
             upcomingEvents={heroUpcomingEvents}
             pktTimestamp={pktTimestamp}
           />
 
-          <div id="macro-snapshot" className="section-divider scroll-mt-[100px] px-5 py-6 sm:scroll-mt-[160px] sm:px-8 sm:py-8">
+          <div id="macro-snapshot" className="section-divider scroll-mt-[60px] px-5 py-6 sm:scroll-mt-[120px] sm:px-8 sm:py-8">
             <MacroSnapshot updatedAt={pktTimestamp} tier1={macroTier1} tier2={macroTier2} />
           </div>
 
-          <div id="intelligence-feed" className="section-divider grid scroll-mt-[100px] grid-cols-1 gap-8 px-5 py-6 sm:scroll-mt-[160px] sm:px-8 sm:py-8 lg:grid-cols-[1.4fr_1fr]">
+          <div id="intelligence-feed" className="section-divider grid scroll-mt-[60px] grid-cols-1 gap-8 px-5 py-6 sm:scroll-mt-[120px] sm:px-8 sm:py-8 lg:grid-cols-[1.4fr_1fr]">
             <IntelligenceFeed items={intelligenceFeedItems} />
-            <div id="upcoming-calendar" className="scroll-mt-[100px] sm:scroll-mt-[160px]">
+            <div id="upcoming-calendar" className="scroll-mt-[60px] sm:scroll-mt-[120px]">
               <WeekCalendarPanel events={heroUpcomingEvents} />
             </div>
           </div>
 
-          <div id="research" className="section-divider scroll-mt-[100px] px-5 py-6 sm:scroll-mt-[160px] sm:px-8 sm:py-8">
+          <div id="research" className="section-divider scroll-mt-[60px] px-5 py-6 sm:scroll-mt-[120px] sm:px-8 sm:py-8">
             <ResearchTeaser />
           </div>
         </div>
@@ -651,7 +659,7 @@ export default async function Home() {
 
         {health && aiAnalysis && recessionResult && defaultResult && aiRisk && intelligenceComputedAt && intelligenceNextUpdateAt ? (
           <>
-            <div id="health-score" className="scroll-mt-[100px] sm:scroll-mt-[160px]">
+            <div id="health-score" className="scroll-mt-[60px] sm:scroll-mt-[120px]">
             <HealthScoreCard
               health={health}
               ai={aiAnalysis}
@@ -764,7 +772,7 @@ export default async function Home() {
               gradientId="usdPkrGradient"
             />
           </div>
-          <div id="live-fx" className="mt-4 scroll-mt-[100px] sm:scroll-mt-[160px]">
+          <div id="live-fx" className="mt-4 scroll-mt-[60px] sm:scroll-mt-[120px]">
             <p className="mb-2 text-xs font-medium text-white/40 light:text-slate-500">
               <T tKey="dashboard.liveExchangeRates" /> <span className="text-white/25 light:text-slate-400">· <T tKey="dashboard.liveExchangeRatesDesc" /></span>
             </p>
@@ -904,7 +912,7 @@ export default async function Home() {
         </HideableSection>
 
         <HideableSection id="global-markets">
-        <div id="global-markets" className="scroll-mt-[100px] sm:scroll-mt-[160px]">
+        <div id="global-markets" className="scroll-mt-[60px] sm:scroll-mt-[120px]">
           <ViewportFadeIn>
             <h2 className="text-headline mt-10 text-white light:text-slate-900">
               <T tKey="dashboard.globalMarkets" />
@@ -920,7 +928,7 @@ export default async function Home() {
         </HideableSection>
 
         <HideableSection id="real-economy">
-        <div id="real-economy" className="scroll-mt-[100px] sm:scroll-mt-[160px]">
+        <div id="real-economy" className="scroll-mt-[60px] sm:scroll-mt-[120px]">
           <ViewportFadeIn>
             <h2 className="text-headline mt-10 text-white light:text-slate-900">
               <T tKey="dashboard.realEconomyFiscal" />

@@ -6,7 +6,8 @@ import HorizontalIndexBar from "@/components/HorizontalIndexBar";
 import { useLanguage } from "@/components/LanguageProvider";
 import type { HealthModelResult } from "@/lib/economicHealth";
 import type { AiEconomicAnalysis } from "@/lib/data/aiEconomicAnalysis";
-import type { RiskModelResult } from "@/lib/riskModels";
+import type { AiRiskIntelligence } from "@/lib/data/aiRiskIntelligence";
+import type { DataConfidence, RiskModelResult } from "@/lib/riskModels";
 
 export interface HeroLatestRelease {
   title: string;
@@ -20,23 +21,67 @@ export interface HeroUpcomingEvent {
   importance: "High" | "Medium" | "Low";
 }
 
+export interface HeroDataStatusRow {
+  name: string;
+  label: string;
+  live: boolean;
+}
+
 interface Props {
   rightSlot?: React.ReactNode;
   health: HealthModelResult | null;
   aiAnalysis: AiEconomicAnalysis | null;
   recessionResult: RiskModelResult | null;
   defaultResult: RiskModelResult | null;
+  aiRisk: AiRiskIntelligence | null;
+  dataConfidence: DataConfidence;
+  riskSignals: string[];
+  dataStatus: HeroDataStatusRow[];
   latestRelease: HeroLatestRelease | null;
   upcomingEvents: HeroUpcomingEvent[];
   pktTimestamp: string;
 }
 
-const RISK_TONE: Record<RiskModelResult["riskCategory"], { dot: string; text: string }> = {
-  Low:      { dot: "bg-emerald-400", text: "text-emerald-400 light:text-emerald-700" },
-  Elevated: { dot: "bg-amber-400",   text: "text-amber-400 light:text-amber-700" },
-  High:     { dot: "bg-rose-400",    text: "text-rose-400 light:text-rose-700" },
-  Severe:   { dot: "bg-rose-500",    text: "text-rose-400 light:text-rose-700" },
+const RISK_TONE: Record<RiskModelResult["riskCategory"], { dot: string; text: string; bar: string }> = {
+  Low:      { dot: "bg-emerald-400", text: "text-emerald-400 light:text-emerald-700", bar: "from-emerald-500/70 to-emerald-400" },
+  Elevated: { dot: "bg-amber-400",   text: "text-amber-400 light:text-amber-700",   bar: "from-amber-500/70 to-amber-400" },
+  High:     { dot: "bg-rose-400",    text: "text-rose-400 light:text-rose-700",     bar: "from-rose-500/70 to-rose-400" },
+  Severe:   { dot: "bg-rose-500",    text: "text-rose-400 light:text-rose-700",     bar: "from-rose-600/70 to-rose-500" },
 };
+
+/** First sentence only — same "punchy one-liner from a longer real narrative" pattern as splitHeadline() below. */
+function firstSentence(text: string): string {
+  const match = text.match(/^([\s\S]+?[.!?])(\s|$)/);
+  return match ? match[1] : text;
+}
+
+interface RiskProbabilityRowProps {
+  label: string;
+  result: RiskModelResult;
+  explanation: string;
+}
+
+/** One row of the Institutional Risk Summary — thin Bloomberg-style bar, no radial/donut chart. */
+function RiskProbabilityRow({ label, result, explanation }: RiskProbabilityRowProps) {
+  const tone = RISK_TONE[result.riskCategory];
+  return (
+    <div>
+      <p className="text-label text-white/40 light:text-slate-400">{label}</p>
+      <span className="text-display text-white light:text-slate-900">{result.probability}%</span>
+      <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-white/10 light:bg-slate-200">
+        <div
+          className={`h-full rounded-full bg-gradient-to-r ${tone.bar}`}
+          style={{ width: `${Math.min(100, Math.max(0, result.probability))}%` }}
+        />
+      </div>
+      <div className="mt-2 flex items-center gap-1.5">
+        <span className={`h-1.5 w-1.5 rounded-full ${tone.dot}`} />
+        <span className={`text-subtitle font-semibold ${tone.text}`}>{result.riskCategory} Risk</span>
+      </div>
+      <p className="text-caption mt-1 text-white/45 light:text-slate-500">{explanation}</p>
+    </div>
+  );
+}
 
 /** "2026-06-30" -> "30 Jun". Calendar dates only, never a full re-format of arbitrary strings. */
 function formatShortDate(dateStr: string): string {
@@ -65,6 +110,10 @@ export default function Hero({
   aiAnalysis,
   recessionResult,
   defaultResult,
+  aiRisk,
+  dataConfidence,
+  riskSignals,
+  dataStatus,
   latestRelease,
   upcomingEvents,
   pktTimestamp,
@@ -90,7 +139,6 @@ export default function Hero({
   // tile into the single Risk Status panel the reference design uses,
   // rather than adding a widget the reference doesn't have.
   const nearTermHighImportance = upcomingEvents.find((e) => e.importance === "High") ?? null;
-  const nextEvent = upcomingEvents[0] ?? null;
 
   const { headline, body } = aiAnalysis ? splitHeadline(aiAnalysis.summary) : { headline: "", body: "" };
 
@@ -123,7 +171,15 @@ export default function Hero({
             {headline}
           </h1>
 
-          <div className="mt-6 grid grid-cols-1 gap-8 lg:grid-cols-[1.3fr_1fr]">
+          {/* 12-column editorial grid (PEIC v3 fold-density pass): left ~8/12
+              carries the executive narrative + 2x2 status grid, right ~4/12
+              stays a compact decision-support column. lg:items-start (not
+              the grid default of stretch) so each column sizes to its own
+              content — the right column naturally runs longer than the
+              left, and stretch was forcing the left column's box to match
+              it, leaving a bare, contentless gap above where Macro Snapshot
+              begins. */}
+          <div className="mt-6 grid grid-cols-1 gap-8 lg:grid-cols-[2fr_1fr] lg:items-start">
             {/* Left column — briefing body + Health Index / Risk Status pair */}
             <div>
               {body && (
@@ -132,23 +188,27 @@ export default function Hero({
                 </p>
               )}
 
-              <div className="section-divider mt-5 flex flex-col gap-5 pt-5 sm:flex-row sm:gap-0">
+              {/* Compact 2x2 metrics grid — replaces the old single-row
+                  Health/Risk pair. Adding Confidence Level and Last Updated
+                  turns the leftover space below it into a fourth and fifth
+                  real data point instead of blank margin (PEIC v3 density pass). */}
+              <div className="section-divider mt-3 grid grid-cols-1 gap-3 pt-3 sm:grid-cols-2 sm:gap-x-6 sm:gap-y-3">
                 {/* Economic Health Index — horizontal index, not a gauge, matching the reference's editorial register */}
-                <div className="flex-1 sm:border-r sm:border-[var(--border-subtle)] sm:pr-6">
+                <div className="sm:border-r sm:border-[var(--border-subtle)] sm:pr-6">
                   <p className="text-label text-white/40 light:text-slate-400">{t("health.title")}</p>
-                  <div className="mt-2 flex items-baseline gap-2">
+                  <div className="mt-1.5 flex items-baseline gap-2">
                     <span className="text-display text-white light:text-slate-900">{health!.score}</span>
                     <span className="text-caption text-white/45 light:text-slate-500">/ 100 &middot; {health!.status.label}</span>
                   </div>
-                  <HorizontalIndexBar score={health!.score} color={health!.status.ringColor} size="compact" className="mt-2 max-w-[220px]" />
+                  <HorizontalIndexBar score={health!.score} color={health!.status.ringColor} size="compact" className="mt-1.5 max-w-[180px]" />
                 </div>
 
                 {/* Risk Status */}
-                <div className="flex-1 sm:pl-6">
+                <div className="sm:pl-6">
                   <p className="text-label text-white/40 light:text-slate-400">{t("hero.riskStatus")}</p>
                   {worstRisk ? (
                     <>
-                      <div className="mt-2 flex items-center gap-1.5">
+                      <div className="mt-1.5 flex items-center gap-1.5">
                         <span className={`h-1.5 w-1.5 rounded-full ${RISK_TONE[worstRisk.riskCategory].dot}`} />
                         <span className={`text-subtitle font-semibold ${RISK_TONE[worstRisk.riskCategory].text}`}>
                           {worstRisk.riskCategory === "Low" ? t("hero.noCriticalAlerts") : `${worstRiskLabel} risk ${worstRisk.riskCategory.toLowerCase()}`}
@@ -161,41 +221,125 @@ export default function Hero({
                       </p>
                     </>
                   ) : (
-                    <p className="text-caption mt-2 text-white/40 light:text-slate-400">Not yet available</p>
+                    <p className="text-caption mt-1.5 text-white/40 light:text-slate-400">Not yet available</p>
                   )}
                 </div>
+
+                {/* Confidence Level — worse of the two existing recession/default confidence readings */}
+                <div className="border-t border-[var(--border-subtle)] pt-3 sm:border-r sm:pr-6">
+                  <p className="text-label text-white/40 light:text-slate-400">Confidence Level</p>
+                  <div className="mt-1.5 flex items-baseline gap-2">
+                    <span className="text-display text-white light:text-slate-900">{dataConfidence.score}%</span>
+                    <span className="text-caption text-white/45 light:text-slate-500">{dataConfidence.level}</span>
+                  </div>
+                </div>
+
+                {/* Last Updated */}
+                <div className="border-t border-[var(--border-subtle)] pt-3 sm:pl-6">
+                  <p className="text-label text-white/40 light:text-slate-400">Last Updated</p>
+                  <p className="text-title mt-1.5 text-white light:text-slate-900" suppressHydrationWarning>{pktTimestamp}</p>
+                </div>
+              </div>
+
+              {/* Health Score Drivers — same topStrengthFactors/topWeaknessFactors
+                  HealthScoreCard shows in full further down the page; this is
+                  the same teaser-then-detail pattern already used for the
+                  Health Score number itself, condensed to the top 2 of each. */}
+              <div className="border-t border-[var(--border-subtle)] pt-3">
+                <p className="text-label text-white/40 light:text-slate-400">Health Score Drivers</p>
+                <ul className="mt-2 flex flex-col gap-1.5">
+                  {health!.topStrengthFactors.slice(0, 2).map((f) => (
+                    <li key={f.label} className="flex items-center gap-2 text-caption text-white/70 light:text-slate-600">
+                      <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-400" />
+                      {f.label}
+                    </li>
+                  ))}
+                  {health!.topWeaknessFactors.slice(0, 2).map((f) => (
+                    <li key={f.label} className="flex items-center gap-2 text-caption text-white/70 light:text-slate-600">
+                      <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-rose-400" />
+                      {f.label}
+                    </li>
+                  ))}
+                </ul>
               </div>
 
               <HeroAuthCta />
             </div>
 
-            {/* Right column — Latest Release / Next Scheduled Release, border-left on desktop */}
-            <div className="flex flex-col gap-5 lg:border-l lg:border-[var(--border-subtle)] lg:pl-8">
+            {/* Right column — compact decision-support panel: Latest Release
+                (small, editorial) followed by the Institutional Risk Summary
+                (thin horizontal probability bars, no radial gauges — this is
+                the signature "risk terminal" element referenced in the PEIC
+                v3 Institutional Risk Summary pass). Border-left on desktop. */}
+            <div className="flex flex-col gap-3 lg:border-l lg:border-[var(--border-subtle)] lg:pl-8">
               <div>
                 <p className="text-label text-white/40 light:text-slate-400">{t("hero.latestRelease")}</p>
                 {latestRelease ? (
                   <>
-                    <p className="text-headline mt-2 text-white light:text-slate-900">{latestRelease.title}</p>
-                    <p className="text-caption mt-1 text-white/45 light:text-slate-500">
+                    <p className="mt-1.5 font-serif text-[1.0625rem] font-semibold leading-snug text-white light:text-slate-900">
+                      {latestRelease.title}
+                    </p>
+                    <p className="text-caption mt-0.5 text-white/45 light:text-slate-500">
                       {formatShortDate(latestRelease.date)}{latestRelease.actual ? ` · ${latestRelease.actual}` : ""}
                     </p>
                   </>
                 ) : (
-                  <p className="text-caption mt-2 text-white/40 light:text-slate-400">No recent release on record</p>
+                  <p className="text-caption mt-1.5 text-white/40 light:text-slate-400">No recent release on record</p>
                 )}
               </div>
 
-              <div>
-                <p className="text-label text-white/40 light:text-slate-400">{t("hero.nextRelease")}</p>
-                {nextEvent ? (
-                  <>
-                    <p className="text-headline mt-2 text-white light:text-slate-900">{nextEvent.title}</p>
-                    <p className="text-caption mt-1 text-white/45 light:text-slate-500">{formatShortDate(nextEvent.date)}</p>
-                  </>
-                ) : (
-                  <p className="text-caption mt-2 text-white/40 light:text-slate-400">No releases scheduled</p>
-                )}
-              </div>
+              {recessionResult && defaultResult && aiRisk ? (
+                // No flex `gap` here, deliberately — every child below already
+                // carries its own `border-t pt-3` as its section divider, so a
+                // shared flex gap on top of that would double the space
+                // between every pair of sections (gap + padding stacking)
+                // instead of a single clean hairline-divided gap.
+                <div className="section-divider pt-3">
+                  <RiskProbabilityRow
+                    label="Recession Probability"
+                    result={recessionResult}
+                    explanation={firstSentence(aiRisk.recession.explanation)}
+                  />
+                  <div className="border-t border-[var(--border-subtle)] pt-3">
+                    <RiskProbabilityRow
+                      label="Sovereign Default Probability"
+                      result={defaultResult}
+                      explanation={firstSentence(aiRisk.default.explanation)}
+                    />
+                  </div>
+
+                  {/* Key Risk Signals — plain-language direction per already-computed indicator, no new figures */}
+                  <div className="border-t border-[var(--border-subtle)] pt-3">
+                    <p className="text-label text-white/40 light:text-slate-400">Key Risk Signals</p>
+                    <ul className="mt-2 flex flex-col gap-1.5">
+                      {riskSignals.map((signal) => (
+                        <li key={signal} className="flex items-start gap-2 text-caption text-white/70 light:text-slate-600">
+                          <span className="mt-[5px] h-1 w-1 shrink-0 rounded-full bg-white/30 light:bg-slate-400" />
+                          {signal}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  {/* Data Status — one representative live indicator per upstream provider */}
+                  <div className="border-t border-[var(--border-subtle)] pt-3">
+                    <p className="text-label text-white/40 light:text-slate-400">Data Status</p>
+                    <div className="mt-2 flex flex-col gap-1.5">
+                      {dataStatus.map((row) => (
+                        <div key={row.name} className="flex items-center justify-between gap-2 text-caption">
+                          <span className="text-white/70 light:text-slate-600">{row.name}</span>
+                          <span className={`font-medium ${row.live ? "text-emerald-400 light:text-emerald-700" : "text-amber-400 light:text-amber-700"}`}>
+                            {row.live ? "✓" : "⚠"} {row.label}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="text-caption mt-2 text-white/45 light:text-slate-500" suppressHydrationWarning>
+                      Last update &middot; {pktTimestamp}
+                    </p>
+                  </div>
+                </div>
+              ) : null}
             </div>
           </div>
         </>

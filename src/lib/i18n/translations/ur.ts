@@ -21,6 +21,8 @@ export const ur: Translations = {
     rankings: "درجہ بندی", indicators: "معاشی اشارے", settings: "ترتیبات",
     logoName: "پاکستان ای آئی سی", logoSubtitle: "معاشی ڈیش بورڈ",
     liveData: "SBP EasyData اور ورلڈ بینک سے لائیو ڈیٹا۔", psxLabel: "PSX",
+    executiveSummary: "ایگزیکٹو خلاصہ", macroeconomy: "معاشیات", tools: "ٹولز",
+    bonds: "بانڈز", yieldCurve: "ییلڈ کرو", commodities: "اجناس", researchLibrary: "ریسرچ لائبریری",
     memberBadge: "رکن", memberSince: "رکن بنے", premiumAccess: "پریمیم رسائی",
   },
 

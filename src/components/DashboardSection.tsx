@@ -25,7 +25,7 @@ export default function DashboardSection({
   return (
     <motion.section
       id={id}
-      className="glass-card mt-8 scroll-mt-[100px] p-6 sm:scroll-mt-[160px] sm:p-8"
+      className="glass-card mt-8 scroll-mt-[60px] p-6 sm:scroll-mt-[120px] sm:p-8"
       initial={{ opacity: 0, y: 16 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, amount: 0.3 }}

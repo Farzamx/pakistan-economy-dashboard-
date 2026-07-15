@@ -230,7 +230,7 @@ export default function RiskIntelligenceSection({
 }: RiskIntelligenceSectionProps) {
   const { t } = useLanguage();
   return (
-    <div id="risk-intelligence" className="scroll-mt-[100px] sm:scroll-mt-[160px]">
+    <div id="risk-intelligence" className="scroll-mt-[60px] sm:scroll-mt-[120px]">
       <ViewportFadeIn>
         <h2 className="text-headline mt-10 text-white light:text-slate-900">
           {t("riskIntel.title")}
