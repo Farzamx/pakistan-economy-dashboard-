@@ -1,7 +1,8 @@
 import Link from "next/link";
 import TrendLineChart, { type TrendPoint } from "@/components/charts/TrendLineChart";
 import DataQualityBadge from "@/components/DataQualityBadge";
-import type { Kpi } from "@/data/kpiData";
+import { TrendArrowIcon, TREND_TEXT_COLOR } from "@/components/TrendIndicator";
+import type { Kpi, Trend } from "@/data/kpiData";
 import { SITE_NAME, SITE_URL } from "@/lib/seoConfig";
 
 export interface FaqItem {
@@ -21,6 +22,16 @@ export interface SeoPageLayoutProps {
   subtitle: string;
   kpiLabel: string;
   kpiValue: string;
+  /**
+   * Change vs. the previous observation and its direction — e.g. "+0.2 pp
+   * vs May 2026" / "up". Optional (older pages that haven't been backfilled
+   * yet simply omit it) but every new page should pass it: the live value
+   * alone doesn't tell a reader whether it moved, which "Previous value" /
+   * "Trend" in the indicator-page checklist are specifically there to show.
+   * Uses the same colored-arrow convention as KpiCard/IndicatorTable.
+   */
+  kpiChange?: string;
+  kpiTrend?: Trend;
   /**
    * Legacy plain-text source line — kept for pages not yet migrated.
    * Superseded by kpiQuality where provided (Production Audit Part 3:
@@ -51,6 +62,8 @@ export default function SeoPageLayout({
   subtitle,
   kpiLabel,
   kpiValue,
+  kpiChange,
+  kpiTrend,
   kpiSourceNote,
   kpiQuality,
   chartTitle,
@@ -121,9 +134,17 @@ export default function SeoPageLayout({
           <span className="text-xs font-semibold uppercase tracking-[0.3em] text-white/40 light:text-slate-500">
             {kpiLabel}
           </span>
-          <span className="text-display text-white light:text-slate-900">
-            {kpiValue}
-          </span>
+          <div className="flex flex-wrap items-baseline gap-3">
+            <span className="text-display text-white light:text-slate-900">
+              {kpiValue}
+            </span>
+            {kpiChange && kpiTrend && (
+              <span className={`inline-flex items-center gap-1 text-sm font-medium ${TREND_TEXT_COLOR[kpiTrend]}`}>
+                <TrendArrowIcon trend={kpiTrend} className="h-3.5 w-3.5" />
+                {kpiChange}
+              </span>
+            )}
+          </div>
           {kpiQuality ? (
             <DataQualityBadge kpi={kpiQuality} className="mt-1" />
           ) : (

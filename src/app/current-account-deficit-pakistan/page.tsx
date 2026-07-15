@@ -28,6 +28,8 @@ export default async function CurrentAccountPage() {
       subtitle="The gap between all money flowing into and out of Pakistan internationally — exports, imports, remittances, and transfers."
       kpiLabel={`Current Account (Monthly) — ${isDeficit ? "Deficit" : "Surplus"}`}
       kpiValue={`${currentAccount.kpi.value} ${currentAccount.kpi.unit}`}
+      kpiChange={currentAccount.kpi.change}
+      kpiTrend={currentAccount.kpi.trend}
       kpiSourceNote={`Source: ${currentAccount.kpi.source ?? "State Bank of Pakistan"}${currentAccount.kpi.latestDate ? ` · ${currentAccount.kpi.latestDate}` : ""}`}
       kpiQuality={currentAccount.kpi}
       chartTitle="Current Account — 24-Month Trend"

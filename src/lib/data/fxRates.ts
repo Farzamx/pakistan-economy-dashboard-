@@ -2,6 +2,7 @@ import { unstable_cache } from "next/cache";
 import { fetchYfQuote } from "@/lib/data/yfinance";
 import { dedupeInFlight, getFresh, getStale, setCache } from "@/lib/memoryCache";
 import { savePersistedSnapshot, getPersistedSnapshot } from "@/lib/marketFallbackSnapshot";
+import { getTrendDirection } from "@/lib/trendDirection";
 import type { Kpi } from "@/data/kpiData";
 import type { SourceStatus } from "@/lib/dataQuality";
 
@@ -93,7 +94,7 @@ const FALLBACK_RATES: FxRateKpis = {
     value: "277.93",
     unit: "PKR",
     change: "fallback snapshot — live rate unavailable",
-    trend: "up",
+    trend: "neutral",
     glow: "blue",
     source: "Yahoo Finance (fallback)",
     latestDate: "2026-06-22",
@@ -105,7 +106,7 @@ const FALLBACK_RATES: FxRateKpis = {
     value: "317.79",
     unit: "PKR",
     change: "fallback snapshot — live rate unavailable",
-    trend: "up",
+    trend: "neutral",
     glow: "blue",
     source: "Yahoo Finance (fallback)",
     latestDate: "2026-06-22",
@@ -117,7 +118,7 @@ const FALLBACK_RATES: FxRateKpis = {
     value: "368.22",
     unit: "PKR",
     change: "fallback snapshot — live rate unavailable",
-    trend: "up",
+    trend: "neutral",
     glow: "purple",
     source: "Yahoo Finance (fallback)",
     latestDate: "2026-06-22",
@@ -129,7 +130,7 @@ const FALLBACK_RATES: FxRateKpis = {
     value: "74.03",
     unit: "PKR",
     change: "fallback snapshot — live rate unavailable",
-    trend: "up",
+    trend: "neutral",
     glow: "purple",
     source: "Yahoo Finance (fallback)",
     latestDate: "2026-06-22",
@@ -141,17 +142,29 @@ const FALLBACK_RATES: FxRateKpis = {
 function makeKpi(
   title: string,
   amountPkr: number,
+  prevClose: number | null,
   updatedAtUnix: number,
   glow: Kpi["glow"],
 ): Kpi {
   const d = new Date(updatedAtUnix * 1000);
   const dateLabel = `${MONTH_NAMES[d.getUTCMonth()]} ${d.getUTCDate()}, ${d.getUTCFullYear()}`;
+  // PEIC v2.2 fix: this previously hardcoded trend: "up" unconditionally
+  // (change was just an "interbank · date" label with no delta at all), so
+  // every FX pair showed a permanent green up-arrow regardless of whether
+  // the rate had actually risen or fallen. prevClose was already available
+  // from fetchYfQuote() but discarded — now used for a real diff, matching
+  // the same "vs prev close" convention buildYfKpi() uses for commodities.
+  const diff = prevClose !== null ? amountPkr - prevClose : null;
+  const sign = diff !== null && diff >= 0 ? "+" : "";
+  const change = diff !== null
+    ? `${sign}${diff.toFixed(2)} vs prev close · interbank ${dateLabel}`
+    : `interbank · ${dateLabel}`;
   return {
     title,
     value: amountPkr.toFixed(2),
     unit: "PKR",
-    change: `interbank · ${dateLabel}`,
-    trend: "up",
+    change,
+    trend: getTrendDirection(diff),
     glow,
     source: "Yahoo Finance",
     latestDate: d.toISOString().slice(0, 10),
@@ -170,10 +183,10 @@ async function fetchFromUpstream(): Promise<FxRateKpis> {
   ]);
 
   return {
-    usdPkr: makeKpi("USD / PKR", usd.price, usd.updatedAt, "blue"),
-    eurPkr: makeKpi("EUR / PKR", eur.price, eur.updatedAt, "blue"),
-    gbpPkr: makeKpi("GBP / PKR", gbp.price, gbp.updatedAt, "purple"),
-    sarPkr: makeKpi("SAR / PKR", sar.price, sar.updatedAt, "purple"),
+    usdPkr: makeKpi("USD / PKR", usd.price, usd.prevClose, usd.updatedAt, "blue"),
+    eurPkr: makeKpi("EUR / PKR", eur.price, eur.prevClose, eur.updatedAt, "blue"),
+    gbpPkr: makeKpi("GBP / PKR", gbp.price, gbp.prevClose, gbp.updatedAt, "purple"),
+    sarPkr: makeKpi("SAR / PKR", sar.price, sar.prevClose, sar.updatedAt, "purple"),
   };
 }
 

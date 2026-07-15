@@ -1,6 +1,7 @@
 import type { TrendPoint } from "@/components/charts/TrendLineChart";
 import { fallbackGdpKpi, type Kpi } from "@/data/kpiData";
 import { dedupeInFlight, getFresh, setCache } from "@/lib/memoryCache";
+import { getTrendDirection } from "@/lib/trendDirection";
 
 // All indicators are read from the free, keyless World Bank API:
 // https://api.worldbank.org/v2/country/{ISO3}/indicator/{code}?format=json&mrv=10
@@ -87,8 +88,8 @@ async function fetchIndicator(
   };
 }
 
-function changeLabel(diff: number, previousYear: string | null, format: (value: number) => string): string {
-  if (previousYear === null) {
+function changeLabel(diff: number | null, previousYear: string | null, format: (value: number) => string): string {
+  if (previousYear === null || diff === null) {
     return "no prior-year data";
   }
   const sign = diff >= 0 ? "+" : "";
@@ -96,13 +97,13 @@ function changeLabel(diff: number, previousYear: string | null, format: (value: 
 }
 
 function buildGdpKpi(series: IndicatorSeries): Kpi {
-  const diff = series.previousValue !== null ? series.latestValue - series.previousValue : 0;
+  const diff = series.previousValue !== null ? series.latestValue - series.previousValue : null;
   return {
     title: "GDP Growth",
     value: series.latestValue.toFixed(1),
     unit: "%",
     change: changeLabel(diff, series.previousYear, (d) => `${d.toFixed(1)} pp`),
-    trend: diff >= 0 ? "up" : "down",
+    trend: getTrendDirection(diff),
     glow: "blue",
     source: "World Bank",
     seriesId: "NY.GDP.MKTP.KD.ZG",

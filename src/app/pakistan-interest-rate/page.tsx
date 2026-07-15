@@ -27,6 +27,8 @@ export default async function InterestRatePage() {
       subtitle="The State Bank of Pakistan's (SBP) policy interest rate — the benchmark that all bank lending and deposit rates in Pakistan follow."
       kpiLabel="SBP Policy Rate"
       kpiValue={`${policyRate.kpi.value}%`}
+      kpiChange={policyRate.kpi.change}
+      kpiTrend={policyRate.kpi.trend}
       kpiSourceNote={`Source: ${policyRate.kpi.source ?? "State Bank of Pakistan"}${policyRate.kpi.latestDate ? ` · ${policyRate.kpi.latestDate}` : ""}`}
       kpiQuality={policyRate.kpi}
       chartTitle="SBP Policy Rate — Recent Trend"

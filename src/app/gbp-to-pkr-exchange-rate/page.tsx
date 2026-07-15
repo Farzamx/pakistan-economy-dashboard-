@@ -27,6 +27,8 @@ export default async function GbpPkrPage() {
       subtitle="How many Pakistani Rupees it takes to buy one British Pound — relevant for one of Pakistan's largest overseas diaspora communities."
       kpiLabel="GBP / PKR (Intraday)"
       kpiValue={fxRates.gbpPkr.value}
+      kpiChange={fxRates.gbpPkr.change}
+      kpiTrend={fxRates.gbpPkr.trend}
       kpiSourceNote={`Source: ${fxRates.gbpPkr.source ?? "Yahoo Finance"} — interbank market rate, refreshed intraday`}
       kpiQuality={fxRates.gbpPkr}
       chartTitle="GBP / PKR — Historical Trend"

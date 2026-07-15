@@ -52,6 +52,8 @@ import {
 } from "@/lib/data/sbp";
 
 import { getLatestCanonicalObservation } from "@/lib/data/canonicalObservation";
+import { getTrendDirection } from "@/lib/trendDirection";
+import type { Trend } from "@/data/kpiData";
 
 // --- Canonical override helpers --------------------------------------------
 
@@ -117,18 +119,22 @@ async function applyCanonicalOverride(
     const sbpLatestValue = parseFloat(sbpResult.kpi.value);
 
     let change: string;
-    let trend: "up" | "down";
+    let trend: Trend;
 
     if (key === "tradeBalance" || key === "exports" || key === "imports") {
-      // PBS customs-basis vs SBP BPM6 are different methodologies.
-      // A cross-method diff would mislead; explain the status instead.
+      // PBS customs-basis vs SBP BPM6 are different methodologies, so a
+      // cross-method diff would mislead — there is no valid like-for-like
+      // comparison here, which per PEIC v2.2's trend-semantics fix means
+      // "neutral", not the current level's own sign (that read as a
+      // misleading up/down arrow with no actual period-over-period claim
+      // behind it).
       change = "PBS advance release — SBP BPM6 confirmation pending";
-      trend  = canonical.value >= 0 ? "up" : "down";
+      trend  = "neutral";
     } else {
       // CPI, Core, LSM are all % YoY — pp diff vs SBP's last period is valid.
       const diff = canonical.value - sbpLatestValue;
       change = changeLabel(diff, prevLabel, (d) => `${d.toFixed(1)} pp`);
-      trend  = diff >= 0 ? "up" : "down";
+      trend  = getTrendDirection(diff);
     }
 
     console.log(

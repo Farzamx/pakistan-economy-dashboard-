@@ -18,6 +18,7 @@ import { useId, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useLanguage } from "@/components/LanguageProvider";
+import { SEO_PAGES } from "@/lib/seoConfig";
 
 export interface SearchEntry {
   label: string;
@@ -48,6 +49,11 @@ export const SEARCH_INDEX: SearchEntry[] = [
   { label: "Sindh Budget", href: "/provincial-budget/sindh", keywords: ["Provincial Budget"] },
   { label: "Khyber Pakhtunkhwa Budget", href: "/provincial-budget/kp", keywords: ["KPK", "KP", "Provincial Budget"] },
   { label: "Balochistan Budget", href: "/provincial-budget/balochistan", keywords: ["Provincial Budget"] },
+  // Every individual indicator detail page (SeoPageLayout-driven) — derived
+  // from the single SEO_PAGES registry so a new page added there is
+  // automatically searchable with zero changes needed here. Previously
+  // none of these 37 pages were reachable from search at all.
+  ...SEO_PAGES.map((p) => ({ label: p.label, href: `/${p.slug}` })),
 ];
 
 function matches(entry: SearchEntry, query: string): boolean {

@@ -31,6 +31,8 @@ export default async function PakistanEconomicDashboardPage() {
       subtitle={`${SITE_NAME} is a free, real-time dashboard tracking Pakistan's economy — GDP, inflation, exchange rates, reserves, remittances, financial markets, and monetary policy, all in one place.`}
       kpiLabel="CPI Inflation (YoY) — Live Preview"
       kpiValue={`${cpiInflation.kpi.value}%`}
+      kpiChange={cpiInflation.kpi.change}
+      kpiTrend={cpiInflation.kpi.trend}
       kpiSourceNote="One of 50+ indicators tracked live on the full dashboard."
       kpiQuality={cpiInflation.kpi}
       chartTitle="CPI Inflation — 24-Month Trend (Preview)"

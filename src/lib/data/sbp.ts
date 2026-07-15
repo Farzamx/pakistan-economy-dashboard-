@@ -2,6 +2,7 @@ import type { TrendPoint } from "@/components/charts/TrendLineChart";
 import type { Kpi } from "@/data/kpiData";
 import type { DataFrequency } from "@/lib/dataFreshness";
 import type { SourceStatus } from "@/lib/dataQuality";
+import { getTrendDirection } from "@/lib/trendDirection";
 import { dedupeInFlight, getFresh, getStale, setCache } from "@/lib/memoryCache";
 import {
   fallbackCoreInflation,
@@ -224,8 +225,8 @@ function formatDayMonthLabel(dateStr: string, style: "long" | "short" = "long"):
   return `${Number(day)} ${MONTH_NAMES[Number(month) - 1]} ${yearLabel}`;
 }
 
-function changeLabel(diff: number, previousLabel: string | null, format: (value: number) => string): string {
-  if (previousLabel === null) {
+function changeLabel(diff: number | null, previousLabel: string | null, format: (value: number) => string): string {
+  if (previousLabel === null || diff === null) {
     return "no prior data";
   }
   const sign = diff >= 0 ? "+" : "";
@@ -314,119 +315,119 @@ async function fetchSbpSeries(seriesKey: string, revalidateSeconds: number, cach
 
 function buildForeignReservesKpi(series: SbpSeries): Kpi {
   const latestB = series.latestValue / 1000;
-  const diffB = series.previousValue !== null ? (series.latestValue - series.previousValue) / 1000 : 0;
+  const diffB = series.previousValue !== null ? (series.latestValue - series.previousValue) / 1000 : null;
   const prevLabel = series.previousDate ? formatMonthLabel(series.previousDate) : null;
   return {
     title: "Foreign Reserves",
     value: latestB.toFixed(1),
     unit: "B USD",
     change: changeLabel(diffB, prevLabel, (d) => `${d.toFixed(1)}B`),
-    trend: diffB >= 0 ? "up" : "down",
+    trend: getTrendDirection(diffB),
     glow: "blue",
   };
 }
 
 function buildNetBankReservesKpi(series: SbpSeries): Kpi {
   const latestB = series.latestValue / 1000;
-  const diffB = series.previousValue !== null ? (series.latestValue - series.previousValue) / 1000 : 0;
+  const diffB = series.previousValue !== null ? (series.latestValue - series.previousValue) / 1000 : null;
   const prevLabel = series.previousDate ? formatMonthLabel(series.previousDate) : null;
   return {
     title: "Bank Reserves",
     value: latestB.toFixed(2),
     unit: "B USD",
     change: changeLabel(diffB, prevLabel, (d) => `${d.toFixed(2)}B`),
-    trend: diffB >= 0 ? "up" : "down",
+    trend: getTrendDirection(diffB),
     glow: "purple",
   };
 }
 
 function buildUsdPkrKpi(series: SbpSeries): Kpi {
-  const diff = series.previousValue !== null ? series.latestValue - series.previousValue : 0;
+  const diff = series.previousValue !== null ? series.latestValue - series.previousValue : null;
   const prevLabel = series.previousDate ? formatMonthLabel(series.previousDate) : null;
   return {
     title: "USD / PKR",
     value: series.latestValue.toFixed(2),
     unit: "PKR",
     change: changeLabel(diff, prevLabel, (d) => d.toFixed(2)),
-    trend: diff >= 0 ? "up" : "down",
+    trend: getTrendDirection(diff),
     glow: "purple",
   };
 }
 
 function buildPolicyRateKpi(series: SbpSeries): Kpi {
-  const diff = series.previousValue !== null ? series.latestValue - series.previousValue : 0;
+  const diff = series.previousValue !== null ? series.latestValue - series.previousValue : null;
   const prevLabel = series.previousDate ? formatDayMonthLabel(series.previousDate) : null;
   return {
     title: "Policy Rate",
     value: series.latestValue.toFixed(2),
     unit: "%",
     change: changeLabel(diff, prevLabel, (d) => `${d.toFixed(2)} pp`),
-    trend: diff >= 0 ? "up" : "down",
+    trend: getTrendDirection(diff),
     glow: "blue",
   };
 }
 
 function buildCpiInflationKpi(series: SbpSeries): Kpi {
-  const diff = series.previousValue !== null ? series.latestValue - series.previousValue : 0;
+  const diff = series.previousValue !== null ? series.latestValue - series.previousValue : null;
   const prevLabel = series.previousDate ? formatMonthLabel(series.previousDate) : null;
   return {
     title: "CPI Inflation",
     value: series.latestValue.toFixed(1),
     unit: "%",
     change: changeLabel(diff, prevLabel, (d) => `${d.toFixed(1)} pp`),
-    trend: diff >= 0 ? "up" : "down",
+    trend: getTrendDirection(diff),
     glow: "purple",
   };
 }
 
 function buildCoreInflationKpi(series: SbpSeries): Kpi {
-  const diff = series.previousValue !== null ? series.latestValue - series.previousValue : 0;
+  const diff = series.previousValue !== null ? series.latestValue - series.previousValue : null;
   const prevLabel = series.previousDate ? formatMonthLabel(series.previousDate) : null;
   return {
     title: "Core Inflation",
     value: series.latestValue.toFixed(1),
     unit: "%",
     change: changeLabel(diff, prevLabel, (d) => `${d.toFixed(1)} pp`),
-    trend: diff >= 0 ? "up" : "down",
+    trend: getTrendDirection(diff),
     glow: "blue",
   };
 }
 
 function buildWpiInflationKpi(series: SbpSeries): Kpi {
-  const diff = series.previousValue !== null ? series.latestValue - series.previousValue : 0;
+  const diff = series.previousValue !== null ? series.latestValue - series.previousValue : null;
   const prevLabel = series.previousDate ? formatMonthLabel(series.previousDate) : null;
   return {
     title: "WPI Inflation",
     value: series.latestValue.toFixed(1),
     unit: "%",
     change: changeLabel(diff, prevLabel, (d) => `${d.toFixed(1)} pp`),
-    trend: diff >= 0 ? "up" : "down",
+    trend: getTrendDirection(diff),
     glow: "purple",
   };
 }
 
 function buildTbillYield3mKpi(series: SbpSeries): Kpi {
-  const diff = series.previousValue !== null ? series.latestValue - series.previousValue : 0;
+  const diff = series.previousValue !== null ? series.latestValue - series.previousValue : null;
   const prevLabel = series.previousDate ? formatDayMonthLabel(series.previousDate) : null;
   return {
     title: "3M T-Bill Yield",
     value: series.latestValue.toFixed(2),
     unit: "%",
     change: changeLabel(diff, prevLabel, (d) => `${d.toFixed(2)} pp`),
-    trend: diff >= 0 ? "up" : "down",
+    trend: getTrendDirection(diff),
     glow: "blue",
   };
 }
 
 function buildPibYield3yKpi(series: SbpSeries): Kpi {
-  const diff = series.previousValue !== null ? series.latestValue - series.previousValue : 0;
+  const diff = series.previousValue !== null ? series.latestValue - series.previousValue : null;
   const prevLabel = series.previousDate ? formatDayMonthLabel(series.previousDate) : null;
   return {
     title: "3Y PIB Yield",
     value: series.latestValue.toFixed(2),
     unit: "%",
     change: changeLabel(diff, prevLabel, (d) => `${d.toFixed(2)} pp`),
-    trend: diff >= 0 ? "up" : "down",
+    trend: getTrendDirection(diff),
     glow: "purple",
   };
 }
@@ -436,42 +437,42 @@ function buildRemittancesKpi(series: SbpSeries): Kpi {
   const pctDiff =
     series.previousValue && series.previousValue !== 0
       ? ((series.latestValue - series.previousValue) / series.previousValue) * 100
-      : 0;
+      : null;
   const prevLabel = series.previousDate ? formatMonthLabel(series.previousDate) : null;
   return {
     title: "Remittances",
     value: latestB.toFixed(1),
     unit: "B USD",
     change: changeLabel(pctDiff, prevLabel, (d) => `${d.toFixed(1)}%`),
-    trend: pctDiff >= 0 ? "up" : "down",
+    trend: getTrendDirection(pctDiff),
     glow: "blue",
   };
 }
 
 function buildCurrentAccountKpi(series: SbpSeries): Kpi {
   const latestB = series.latestValue / 1000;
-  const diffB = series.previousValue !== null ? (series.latestValue - series.previousValue) / 1000 : 0;
+  const diffB = series.previousValue !== null ? (series.latestValue - series.previousValue) / 1000 : null;
   const prevLabel = series.previousDate ? formatMonthLabel(series.previousDate) : null;
   return {
     title: "Current Account",
     value: latestB.toFixed(2),
     unit: "B USD",
     change: changeLabel(diffB, prevLabel, (d) => `${d.toFixed(2)}B`),
-    trend: diffB >= 0 ? "up" : "down",
+    trend: getTrendDirection(diffB),
     glow: "purple",
   };
 }
 
 function buildTradeBalanceKpi(series: SbpSeries): Kpi {
   const latestB = series.latestValue / 1000;
-  const diffB = series.previousValue !== null ? (series.latestValue - series.previousValue) / 1000 : 0;
+  const diffB = series.previousValue !== null ? (series.latestValue - series.previousValue) / 1000 : null;
   const prevLabel = series.previousDate ? formatMonthLabel(series.previousDate) : null;
   return {
     title: "Trade Balance",
     value: latestB.toFixed(2),
     unit: "B USD",
     change: changeLabel(diffB, prevLabel, (d) => `${d.toFixed(2)}B`),
-    trend: diffB >= 0 ? "up" : "down",
+    trend: getTrendDirection(diffB),
     glow: "blue",
   };
 }
@@ -481,7 +482,7 @@ function buildMoneySupplyM2Kpi(series: SbpSeries): Kpi {
   const pctDiff =
     series.previousValue && series.previousValue !== 0
       ? ((series.latestValue - series.previousValue) / series.previousValue) * 100
-      : 0;
+      : null;
   // Weekly series (see SERIES_KEYS.moneySupplyM2 comment) — day-month label
   // matches the other Weekly/As-Needed KPI builders (e.g. buildPrivateCreditGrowthKpi).
   const prevLabel = series.previousDate ? formatDayMonthLabel(series.previousDate) : null;
@@ -490,61 +491,61 @@ function buildMoneySupplyM2Kpi(series: SbpSeries): Kpi {
     value: latestT.toFixed(2),
     unit: "T PKR",
     change: changeLabel(pctDiff, prevLabel, (d) => `${d.toFixed(1)}%`),
-    trend: pctDiff >= 0 ? "up" : "down",
+    trend: getTrendDirection(pctDiff),
     glow: "purple",
   };
 }
 
 function buildExportsKpi(series: SbpSeries): Kpi {
   const latestB = series.latestValue / 1000;
-  const diffB = series.previousValue !== null ? (series.latestValue - series.previousValue) / 1000 : 0;
+  const diffB = series.previousValue !== null ? (series.latestValue - series.previousValue) / 1000 : null;
   const prevLabel = series.previousDate ? formatMonthLabel(series.previousDate) : null;
   return {
     title: "Exports",
     value: latestB.toFixed(2),
     unit: "B USD",
     change: changeLabel(diffB, prevLabel, (d) => `${d.toFixed(2)}B`),
-    trend: diffB >= 0 ? "up" : "down",
+    trend: getTrendDirection(diffB),
     glow: "blue",
   };
 }
 
 function buildImportsKpi(series: SbpSeries): Kpi {
   const latestB = series.latestValue / 1000;
-  const diffB = series.previousValue !== null ? (series.latestValue - series.previousValue) / 1000 : 0;
+  const diffB = series.previousValue !== null ? (series.latestValue - series.previousValue) / 1000 : null;
   const prevLabel = series.previousDate ? formatMonthLabel(series.previousDate) : null;
   return {
     title: "Imports",
     value: latestB.toFixed(2),
     unit: "B USD",
     change: changeLabel(diffB, prevLabel, (d) => `${d.toFixed(2)}B`),
-    trend: diffB >= 0 ? "up" : "down",
+    trend: getTrendDirection(diffB),
     glow: "purple",
   };
 }
 
 function buildFdiInflowsKpi(series: SbpSeries): Kpi {
-  const diff = series.previousValue !== null ? series.latestValue - series.previousValue : 0;
+  const diff = series.previousValue !== null ? series.latestValue - series.previousValue : null;
   const prevLabel = series.previousDate ? formatMonthLabel(series.previousDate) : null;
   return {
     title: "FDI Inflows",
     value: series.latestValue.toFixed(1),
     unit: "M USD",
     change: changeLabel(diff, prevLabel, (d) => `${d.toFixed(1)}M`),
-    trend: diff >= 0 ? "up" : "down",
+    trend: getTrendDirection(diff),
     glow: "blue",
   };
 }
 
 function buildReerKpi(series: SbpSeries): Kpi {
-  const diff = series.previousValue !== null ? series.latestValue - series.previousValue : 0;
+  const diff = series.previousValue !== null ? series.latestValue - series.previousValue : null;
   const prevLabel = series.previousDate ? formatMonthLabel(series.previousDate) : null;
   return {
     title: "REER",
     value: series.latestValue.toFixed(1),
     unit: "Index",
     change: changeLabel(diff, prevLabel, (d) => d.toFixed(1)),
-    trend: diff >= 0 ? "up" : "down",
+    trend: getTrendDirection(diff),
     glow: "purple",
   };
 }
@@ -561,22 +562,27 @@ function buildLsmKpi(series: SbpSeries): Kpi {
 
   if (!priorYrPoint || priorYrPoint.value === 0) {
     // No prior-year observation available — show raw quantum index with honest label.
-    const rawDiff  = series.previousValue !== null ? series.latestValue - series.previousValue : 0;
+    const rawDiff  = series.previousValue !== null ? series.latestValue - series.previousValue : null;
     const prevLabel = series.previousDate ? formatMonthLabel(series.previousDate) : null;
     return {
       title: "LSM Growth",
       value: series.latestValue.toFixed(1),
       unit:  "Index (base FY16)",
       change: changeLabel(rawDiff, prevLabel, (d) => d.toFixed(1)),
-      trend: rawDiff >= 0 ? "up" : "down",
+      trend: getTrendDirection(rawDiff),
       glow: "blue",
     };
   }
 
   const yoyPct = ((series.latestValue / priorYrPoint.value) - 1) * 100;
 
-  // Change label = this month's YoY − previous month's YoY (pp difference).
+  // Change label AND trend direction are both this month's YoY − previous
+  // month's YoY (pp difference) — the two must agree (PEIC v2.2 fix: trend
+  // previously used yoyPct's own sign, i.e. "is the level positive", which
+  // silently disagreed with the change text whenever growth was still
+  // positive but slowing, or still negative but improving).
   let change = "no prior data";
+  let yoyDiff: number | null = null;
   if (series.previousDate && series.previousValue !== null) {
     const prevYear    = parseInt(series.previousDate.slice(0, 4), 10);
     const prevMonth   = series.previousDate.slice(5, 7);
@@ -584,8 +590,8 @@ function buildLsmKpi(series: SbpSeries): Kpi {
     const prevPriorPt  = series.history.find((p) => p.date.startsWith(prevPriorPfx));
     if (prevPriorPt && prevPriorPt.value !== 0) {
       const prevYoY = ((series.previousValue / prevPriorPt.value) - 1) * 100;
-      const diff    = yoyPct - prevYoY;
-      change        = changeLabel(diff, formatMonthLabel(series.previousDate), (d) => `${d.toFixed(1)} pp`);
+      yoyDiff       = yoyPct - prevYoY;
+      change        = changeLabel(yoyDiff, formatMonthLabel(series.previousDate), (d) => `${d.toFixed(1)} pp`);
     }
   }
 
@@ -594,34 +600,34 @@ function buildLsmKpi(series: SbpSeries): Kpi {
     value: yoyPct.toFixed(1),
     unit:  "% YoY",
     change,
-    trend: yoyPct >= 0 ? "up" : "down",
+    trend: getTrendDirection(yoyDiff),
     glow: "blue",
   };
 }
 
 function buildPrivateCreditGrowthKpi(series: SbpSeries): Kpi {
-  const diff = series.previousValue !== null ? series.latestValue - series.previousValue : 0;
+  const diff = series.previousValue !== null ? series.latestValue - series.previousValue : null;
   const prevLabel = series.previousDate ? formatDayMonthLabel(series.previousDate) : null;
   return {
     title: "Private Credit Growth",
     value: series.latestValue.toFixed(1),
     unit: "% YoY",
     change: changeLabel(diff, prevLabel, (d) => `${d.toFixed(1)} pp`),
-    trend: diff >= 0 ? "up" : "down",
+    trend: getTrendDirection(diff),
     glow: "purple",
   };
 }
 
 function buildFiscalBalanceKpi(series: SbpSeries): Kpi {
   const latestT = series.latestValue / 1e6;
-  const diffT = series.previousValue !== null ? (series.latestValue - series.previousValue) / 1e6 : 0;
+  const diffT = series.previousValue !== null ? (series.latestValue - series.previousValue) / 1e6 : null;
   const prevLabel = series.previousDate ? formatMonthLabel(series.previousDate) : null;
   return {
     title: "Fiscal Balance",
     value: latestT.toFixed(2),
     unit: "T PKR",
     change: changeLabel(diffT, prevLabel, (d) => `${d.toFixed(2)}T`),
-    trend: diffT >= 0 ? "up" : "down",
+    trend: getTrendDirection(diffT),
     glow: "blue",
   };
 }

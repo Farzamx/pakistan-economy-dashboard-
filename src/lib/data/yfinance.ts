@@ -12,6 +12,7 @@ import { dedupeInFlight, getFresh, setCache } from "@/lib/memoryCache";
 import { resolveWithPersistedFallback } from "@/lib/marketFallbackSnapshot";
 import { fallbackPakEtfKpi } from "@/data/globalMarketsFallbackData";
 import { globalMarketCacheTag } from "@/lib/data/globalMarketsCacheTags";
+import { getTrendDirection } from "@/lib/trendDirection";
 
 const YF_BASE = "https://query1.finance.yahoo.com/v8/finance/chart";
 const REVALIDATE = 60 * 60; // 1h
@@ -99,10 +100,10 @@ export function buildYfKpi(
   seriesId: string,
   marketType: MarketType = "global-market",
 ): Kpi {
-  const diff = prevClose !== null ? price - prevClose : 0;
-  const sign = diff >= 0 ? "+" : "";
+  const diff = prevClose !== null ? price - prevClose : null;
+  const sign = diff !== null && diff >= 0 ? "+" : "";
   const changeStr =
-    prevClose !== null
+    diff !== null
       ? `${sign}${diff.toFixed(decimals)} vs prev close · ${formatUnixDate(updatedAt)}`
       : `as of ${formatUnixDate(updatedAt)}`;
   return {
@@ -113,7 +114,7 @@ export function buildYfKpi(
     }),
     unit,
     change: changeStr,
-    trend: diff >= 0 ? "up" : "down",
+    trend: getTrendDirection(diff),
     glow,
     source: "Yahoo Finance",
     seriesId,
@@ -248,25 +249,39 @@ export async function fetchYfHistory(
   return points;
 }
 
-/** Gold futures (GC=F) monthly closes, up to 10 years of history. */
 /**
- * Memoized (memoryCache.ts, TTL = REVALIDATE, same window the underlying
- * fetch() already uses) — gold-vs-usd-pkr, gold-vs-treasury-bills, and the
- * performance calculator all reference this same series independently
- * within one render of /comparisons.
+ * Factory for a memoized 10-year monthly-close history getter for a single
+ * Yahoo Finance symbol. Memoized (memoryCache.ts, TTL = REVALIDATE, same
+ * window the underlying fetch() already uses) — comparisons and SEO detail
+ * pages that reference the same series independently within one render
+ * share the single upstream call instead of each re-fetching it.
  */
-export async function getGoldHistory(): Promise<YfHistoryPoint[] | null> {
-  const cacheKey = "yfinance-gold-history";
-  const cached = getFresh<YfHistoryPoint[]>(cacheKey, REVALIDATE * 1000);
-  if (cached) return cached.data;
+function makeHistoryGetter(cacheKey: string, symbol: string): () => Promise<YfHistoryPoint[] | null> {
+  return async function getHistory(): Promise<YfHistoryPoint[] | null> {
+    const cached = getFresh<YfHistoryPoint[]>(cacheKey, REVALIDATE * 1000);
+    if (cached) return cached.data;
 
-  try {
-    return await dedupeInFlight(cacheKey, async () => {
-      const result = await fetchYfHistory(YF_SYMBOLS.gold, "10y", "1mo");
-      setCache(cacheKey, result);
-      return result;
-    });
-  } catch {
-    return null;
-  }
+    try {
+      return await dedupeInFlight(cacheKey, async () => {
+        const result = await fetchYfHistory(symbol, "10y", "1mo");
+        setCache(cacheKey, result);
+        return result;
+      });
+    } catch {
+      return null;
+    }
+  };
 }
+
+/** Gold futures (GC=F) monthly closes, up to 10 years of history. */
+export const getGoldHistory = makeHistoryGetter("yfinance-gold-history", YF_SYMBOLS.gold);
+/** Silver futures (SI=F) monthly closes, up to 10 years of history. */
+export const getSilverHistory = makeHistoryGetter("yfinance-silver-history", YF_SYMBOLS.silver);
+/** WTI crude futures (CL=F) monthly closes, up to 10 years of history. */
+export const getWtiHistory = makeHistoryGetter("yfinance-wti-history", YF_SYMBOLS.wti);
+/** Brent crude futures (BZ=F) monthly closes, up to 10 years of history. */
+export const getBrentHistory = makeHistoryGetter("yfinance-brent-history", YF_SYMBOLS.brent);
+/** Henry Hub natural gas futures (NG=F) monthly closes, up to 10 years of history. */
+export const getNaturalGasHistory = makeHistoryGetter("yfinance-naturalgas-history", YF_SYMBOLS.naturalGas);
+/** US Dollar Index (DX-Y.NYB) monthly closes, up to 10 years of history. */
+export const getDxyHistory = makeHistoryGetter("yfinance-dxy-history", YF_SYMBOLS.dxy);

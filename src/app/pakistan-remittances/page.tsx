@@ -27,6 +27,8 @@ export default async function RemittancesPage() {
       subtitle="Money sent home by overseas Pakistani workers — one of the largest, steadiest sources of foreign currency for the economy."
       kpiLabel="Workers' Remittances (Monthly)"
       kpiValue={`$${remittances.kpi.value}B`}
+      kpiChange={remittances.kpi.change}
+      kpiTrend={remittances.kpi.trend}
       kpiSourceNote={`Source: ${remittances.kpi.source ?? "State Bank of Pakistan"}${remittances.kpi.latestDate ? ` · ${remittances.kpi.latestDate}` : ""}`}
       kpiQuality={remittances.kpi}
       chartTitle="Remittances — 24-Month Trend"

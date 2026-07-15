@@ -32,6 +32,8 @@ export default async function TradeDeficitPage() {
       subtitle="The gap between what Pakistan sells to and buys from the rest of the world in goods — exports minus imports."
       kpiLabel={`Trade Balance (Monthly) — ${isDeficit ? "Deficit" : "Surplus"}`}
       kpiValue={`${tradeBalance.kpi.value} ${tradeBalance.kpi.unit}`}
+      kpiChange={tradeBalance.kpi.change}
+      kpiTrend={tradeBalance.kpi.trend}
       kpiSourceNote={`Source: ${tradeBalance.kpi.source ?? "State Bank of Pakistan"}${tradeBalance.kpi.latestDate ? ` · ${tradeBalance.kpi.latestDate}` : ""}`}
       kpiQuality={tradeBalance.kpi}
       chartTitle="Trade Balance — 24-Month Trend"

@@ -28,6 +28,8 @@ export default async function FiscalDeficitPage() {
       subtitle="The gap between what the government spends and what it collects in revenue, for the full fiscal year."
       kpiLabel={`Consolidated Fiscal Balance (Annual) — ${isDeficit ? "Deficit" : "Surplus"}`}
       kpiValue={`${fiscalBalance.kpi.value} ${fiscalBalance.kpi.unit}`}
+      kpiChange={fiscalBalance.kpi.change}
+      kpiTrend={fiscalBalance.kpi.trend}
       kpiSourceNote={`Source: ${fiscalBalance.kpi.source ?? "State Bank of Pakistan"}${fiscalBalance.kpi.latestDate ? ` · FY ${fiscalBalance.kpi.latestDate}` : ""}`}
       kpiQuality={fiscalBalance.kpi}
       chartTitle="Consolidated Fiscal Balance — Annual Trend"

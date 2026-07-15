@@ -11,6 +11,7 @@ import {
   getYfSilverKpi,
 } from "./yfinance";
 import { globalMarketCacheTag } from "@/lib/data/globalMarketsCacheTags";
+import { getTrendDirection } from "@/lib/trendDirection";
 
 // Gold, Silver and the US Dollar Index are read from Twelve Data's time
 // series endpoint: https://api.twelvedata.com/time_series?symbol=...&apikey=...
@@ -76,8 +77,8 @@ function formatDateLabel(dateStr: string): string {
   return `${MONTH_NAMES[Number(month) - 1]} ${Number(day)}`;
 }
 
-function changeLabel(diff: number, previousDate: string | null, format: (value: number) => string): string {
-  if (previousDate === null) {
+function changeLabel(diff: number | null, previousDate: string | null, format: (value: number) => string): string {
+  if (previousDate === null || diff === null) {
     return "no prior data";
   }
   const sign = diff >= 0 ? "+" : "";
@@ -143,13 +144,13 @@ async function fetchTwelveDataSeries(symbol: string, options?: { cacheTag?: stri
 }
 
 function buildKpi(series: MetalSeries, title: string, unit: string, glow: Kpi["glow"], symbol: string): Kpi {
-  const diff = series.previousValue !== null ? series.latestValue - series.previousValue : 0;
+  const diff = series.previousValue !== null ? series.latestValue - series.previousValue : null;
   return {
     title,
     value: series.latestValue.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
     unit,
     change: changeLabel(diff, series.previousDate, (d) => d.toFixed(2)),
-    trend: diff >= 0 ? "up" : "down",
+    trend: getTrendDirection(diff),
     glow,
     source: "Twelve Data",
     seriesId: symbol,

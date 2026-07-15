@@ -3,6 +3,7 @@ import { getSpiHistory } from "@/lib/data/spi";
 import SeoPageLayout from "@/components/seo/SeoPageLayout";
 import type { TrendPoint } from "@/components/charts/TrendLineChart";
 import { SITE_URL, SITE_NAME, getRelatedLinks } from "@/lib/seoConfig";
+import { getTrendDirection } from "@/lib/trendDirection";
 
 const SLUG = "spi-index-pakistan";
 const PAGE_URL = `${SITE_URL}/${SLUG}`;
@@ -46,6 +47,8 @@ export default async function SpiIndexPage() {
       subtitle="The raw level of PBS's weekly Sensitive Price Indicator — base 2015-16=100 — the underlying index that the SPI inflation rate is calculated from."
       kpiLabel="SPI Index — Combined Group (Base 2015-16=100)"
       kpiValue={latest ? latest.value.toFixed(2) : "Unavailable"}
+      kpiChange={indexDiff !== null ? `${indexDiff >= 0 ? "+" : ""}${indexDiff.toFixed(2)} vs previous week` : undefined}
+      kpiTrend={latest ? getTrendDirection(indexDiff) : undefined}
       kpiSourceNote={
         latest
           ? `Source: Pakistan Bureau of Statistics — published weekly, every Friday — week ended ${formatDateLabel(latest.date)}${indexDiff !== null ? ` (${indexDiff >= 0 ? "+" : ""}${indexDiff.toFixed(2)} vs previous week)` : ""}`

@@ -28,6 +28,8 @@ export default async function EconomicIndicatorsPage() {
       subtitle="A live, at-a-glance snapshot of the indicators that matter most for understanding Pakistan's economy right now."
       kpiLabel="CPI Inflation (YoY)"
       kpiValue={`${sbp.cpiInflation.kpi.value}%`}
+      kpiChange={sbp.cpiInflation.kpi.change}
+      kpiTrend={sbp.cpiInflation.kpi.trend}
       kpiSourceNote="Headline indicator shown here — see the full live dashboard for all 50+ tracked indicators."
       kpiQuality={sbp.cpiInflation.kpi}
       chartTitle="CPI Inflation — 24-Month Trend"

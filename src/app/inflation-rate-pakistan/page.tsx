@@ -27,6 +27,8 @@ export default async function InflationRatePage() {
       subtitle="The year-over-year change in consumer prices (CPI) for everyday items — food, rent, transport, and medicine."
       kpiLabel="CPI Inflation (YoY)"
       kpiValue={`${cpiInflation.kpi.value}%`}
+      kpiChange={cpiInflation.kpi.change}
+      kpiTrend={cpiInflation.kpi.trend}
       kpiSourceNote={`Source: ${cpiInflation.kpi.source ?? "Pakistan Bureau of Statistics"}${cpiInflation.kpi.latestDate ? ` · ${cpiInflation.kpi.latestDate}` : ""}`}
       kpiQuality={cpiInflation.kpi}
       chartTitle="CPI Inflation — 24-Month Trend"

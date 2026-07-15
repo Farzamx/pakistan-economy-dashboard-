@@ -51,6 +51,8 @@ export default async function GoldPricePage() {
       subtitle="The international gold price, converted to Pakistani Rupees at the live USD/PKR rate — a common hedge against inflation and Rupee depreciation."
       kpiLabel="Gold (Live, International Spot Price)"
       kpiValue={`$${goldKpi.value}/oz`}
+      kpiChange={goldKpi.change}
+      kpiTrend={goldKpi.trend}
       kpiSourceNote={`Source: ${goldKpi.source ?? "Twelve Data / Yahoo Finance"}${goldKpi.latestDate ? ` · ${goldKpi.latestDate}` : ""} — global spot price, not a local Sarafa Bazaar quote`}
       kpiQuality={goldKpi}
       chartTitle="Gold (USD/oz) — 10-Year Historical Trend"

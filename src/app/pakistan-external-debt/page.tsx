@@ -4,6 +4,7 @@ import { getSbpIndicator } from "@/lib/data/sbpServer";
 import SeoPageLayout from "@/components/seo/SeoPageLayout";
 import type { TrendPoint } from "@/components/charts/TrendLineChart";
 import { SITE_URL, SITE_NAME, getRelatedLinks } from "@/lib/seoConfig";
+import { getTrendDirection } from "@/lib/trendDirection";
 
 const SLUG = "pakistan-external-debt";
 const PAGE_URL = `${SITE_URL}/${SLUG}`;
@@ -50,6 +51,8 @@ export default async function ExternalDebtPage() {
       subtitle="Total outstanding external debt and liabilities owed by Pakistan's public and private sectors to foreign creditors."
       kpiLabel="Total External Debt & Liabilities (Quarterly)"
       kpiValue={latest ? `$${latest.value.toFixed(1)}B` : "Unavailable"}
+      kpiChange={diff !== null ? `${diff >= 0 ? "+" : ""}$${diff.toFixed(1)}B vs previous quarter` : undefined}
+      kpiTrend={latest ? getTrendDirection(diff) : undefined}
       kpiSourceNote={
         latest
           ? `Source: SBP — quarterly, as of ${formatMonthLabel(latest.date)}${diff !== null ? ` (${diff >= 0 ? "+" : ""}$${diff.toFixed(1)}B vs previous quarter)` : ""}`

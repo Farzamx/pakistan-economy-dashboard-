@@ -27,6 +27,8 @@ export default async function SarPkrPage() {
       subtitle="How many Pakistani Rupees it takes to buy one Saudi Riyal — a closely watched rate for Pakistan's large Saudi-based expatriate community."
       kpiLabel="SAR / PKR (Intraday)"
       kpiValue={fxRates.sarPkr.value}
+      kpiChange={fxRates.sarPkr.change}
+      kpiTrend={fxRates.sarPkr.trend}
       kpiSourceNote={`Source: ${fxRates.sarPkr.source ?? "Yahoo Finance"} — interbank market rate, refreshed intraday`}
       kpiQuality={fxRates.sarPkr}
       chartTitle="SAR / PKR — Historical Trend"

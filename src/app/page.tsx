@@ -23,6 +23,7 @@ import TrendLineChart from "@/components/charts/TrendLineChart";
 import { sectionData } from "@/data/sectionData";
 import { getFreshnessStatus } from "@/lib/dataFreshness";
 import { getDataQuality } from "@/lib/dataQuality";
+import { getTrendDirection } from "@/lib/trendDirection";
 import { getMostRecentEvent, valueMatchesEventOutcome } from "@/lib/economicCalendar/economicCalendarData";
 import { getAllScheduledEvents, getHistoricalEvents, toEconomicEvent } from "@/lib/economicCalendar/economicEventsRepo";
 import type { AiEconomicAnalysis } from "@/lib/data/aiEconomicAnalysis";
@@ -136,7 +137,7 @@ export default async function Home() {
           spiYoyPpChange !== null
             ? `${spiYoyPpChange >= 0 ? "+" : ""}${spiYoyPpChange.toFixed(2)} pp vs last week`
             : "YoY change",
-        trend: (spiYoyPpChange ?? spiLatest.yoyPct) >= 0 ? "up" : "down",
+        trend: getTrendDirection(spiYoyPpChange),
         glow: "purple",
         source: "PBS",
         seriesId: "SPI Combined, YoY Inflation",
@@ -636,8 +637,8 @@ export default async function Home() {
             const importCoverMonths = monthlyImportsB > 0 ? totalB / monthlyImportsB : 0;
             const obsDate = sbp.foreignReserves.meta.observationDate.slice(0, 7);
             return [
-              { label: "SBP Reserves", value: `$${sbpB.toFixed(1)}B` },
-              { label: "Commercial Banks", value: `$${bankB.toFixed(1)}B` },
+              { label: "SBP Reserves", value: `$${sbpB.toFixed(1)}B`, kpiTitle: "Foreign Reserves" },
+              { label: "Commercial Banks", value: `$${bankB.toFixed(1)}B`, kpiTitle: "Bank Reserves" },
               { label: "Total Reserves", value: `$${totalB.toFixed(1)}B` },
               { label: "Import Cover", value: `${importCoverMonths.toFixed(1)} months · ${obsDate}` }, // stat labels are translated by KpiCard via InfoTooltip termKey lookup
             ];
@@ -730,8 +731,8 @@ export default async function Home() {
             };
             return [
               { label: "Current Account", value: formatSignedB(sbp.currentAccount.kpi.value) },
-              { label: "Trade Balance (Goods)", value: formatSignedB(sbp.tradeBalance.kpi.value) },
-              { label: "Foreign Reserves (SBP)", value: `$${sbp.foreignReserves.kpi.value}B` },
+              { label: "Trade Balance (Goods)", value: formatSignedB(sbp.tradeBalance.kpi.value), kpiTitle: "Trade Balance" },
+              { label: "Foreign Reserves (SBP)", value: `$${sbp.foreignReserves.kpi.value}B`, kpiTitle: "Foreign Reserves" },
               { label: "Money Supply (M2)", value: `Rs ${sbp.moneySupplyM2.kpi.value}T` },
             ];
           })()}

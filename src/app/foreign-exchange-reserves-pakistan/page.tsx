@@ -34,6 +34,8 @@ export default async function ForeignReservesPage() {
       subtitle="The hard currency (mainly US Dollars) held by the State Bank of Pakistan and commercial banks to pay for imports and foreign debt."
       kpiLabel="SBP Foreign Reserves"
       kpiValue={`$${sbpB.toFixed(1)}B`}
+      kpiChange={sbpReserves.kpi.change}
+      kpiTrend={sbpReserves.kpi.trend}
       kpiSourceNote={`Source: ${sbpReserves.kpi.source ?? "State Bank of Pakistan"}${sbpReserves.kpi.latestDate ? ` · ${sbpReserves.kpi.latestDate}` : ""}`}
       kpiQuality={sbpReserves.kpi}
       chartTitle="SBP Foreign Reserves — 24-Month Trend"

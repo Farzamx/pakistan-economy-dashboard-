@@ -3,6 +3,7 @@ import { getFoodInflationUrbanHistory, getSbpIndicator } from "@/lib/data/sbpSer
 import SeoPageLayout from "@/components/seo/SeoPageLayout";
 import type { TrendPoint } from "@/components/charts/TrendLineChart";
 import { SITE_URL, SITE_NAME, getRelatedLinks } from "@/lib/seoConfig";
+import { getTrendDirection } from "@/lib/trendDirection";
 
 const SLUG = "pakistan-food-inflation";
 const PAGE_URL = `${SITE_URL}/${SLUG}`;
@@ -46,6 +47,8 @@ export default async function FoodInflationPage() {
       subtitle="How fast urban food prices are rising year-over-year — the component of inflation that hits household budgets most directly."
       kpiLabel="Urban Food CPI Inflation (YoY)"
       kpiValue={latest ? `${latest.value.toFixed(1)}%` : "Unavailable"}
+      kpiChange={diff !== null ? `${diff >= 0 ? "+" : ""}${diff.toFixed(1)} pp vs previous month` : undefined}
+      kpiTrend={latest ? getTrendDirection(diff) : undefined}
       kpiSourceNote={
         latest
           ? `Source: SBP EasyData — monthly, as of ${formatMonthLabel(latest.date)}${diff !== null ? ` (${diff >= 0 ? "+" : ""}${diff.toFixed(1)} pp vs previous month)` : ""}`

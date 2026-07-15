@@ -31,6 +31,8 @@ export default async function BondYieldsPage() {
       subtitle="The interest rates the Pakistani government pays to borrow money via Treasury Bills (short-term) and Pakistan Investment Bonds (long-term)."
       kpiLabel="3-Month T-Bill Yield"
       kpiValue={`${tbill.kpi.value}%`}
+      kpiChange={tbill.kpi.change}
+      kpiTrend={tbill.kpi.trend}
       kpiSourceNote={`Source: ${tbill.kpi.source ?? "State Bank of Pakistan"}${tbill.kpi.latestDate ? ` · ${tbill.kpi.latestDate}` : ""}`}
       kpiQuality={tbill.kpi}
       chartTitle="3-Month T-Bill Yield — 24-Month Trend"

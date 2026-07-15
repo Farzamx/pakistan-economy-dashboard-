@@ -27,6 +27,8 @@ export default async function FdiPage() {
       subtitle="Net foreign direct investment flowing into Pakistan — money invested by foreign companies in local businesses, factories, and infrastructure."
       kpiLabel="Net FDI Inflows (Monthly)"
       kpiValue={`$${fdi.kpi.value}M`}
+      kpiChange={fdi.kpi.change}
+      kpiTrend={fdi.kpi.trend}
       kpiSourceNote={`Source: ${fdi.kpi.source ?? "State Bank of Pakistan"}${fdi.kpi.latestDate ? ` · ${fdi.kpi.latestDate}` : ""}`}
       kpiQuality={fdi.kpi}
       chartTitle="Net FDI Inflows — 24-Month Trend"

@@ -2,7 +2,7 @@ import type { DataFrequency } from "@/lib/dataFreshness";
 import type { MarketType } from "@/lib/marketCalendar";
 import type { SourceStatus } from "@/lib/dataQuality";
 
-export type Trend = "up" | "down";
+export type Trend = "up" | "down" | "neutral";
 
 export interface Kpi {
   title: string;

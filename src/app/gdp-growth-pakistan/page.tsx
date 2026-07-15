@@ -38,6 +38,8 @@ export default async function GdpGrowthPage() {
       subtitle="The annual and quarterly growth rate of Pakistan's total economic output — agriculture, industry, and services combined."
       kpiLabel="Annual GDP Growth (Latest)"
       kpiValue={`${gdpKpi.value}%`}
+      kpiChange={gdpKpi.change}
+      kpiTrend={gdpKpi.trend}
       kpiSourceNote={`Source: ${gdpKpi.source ?? "World Bank"}${gdpKpi.latestDate ? ` · ${gdpKpi.latestDate}` : ""}`}
       kpiQuality={gdpKpi}
       chartTitle="Quarterly GDP Growth (YoY)"

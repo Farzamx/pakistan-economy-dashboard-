@@ -27,6 +27,8 @@ export default async function EurPkrPage() {
       subtitle="How many Pakistani Rupees it takes to buy one Euro — relevant for trade with the EU, Pakistan's largest export destination bloc, and the European Pakistani diaspora."
       kpiLabel="EUR / PKR (Intraday)"
       kpiValue={fxRates.eurPkr.value}
+      kpiChange={fxRates.eurPkr.change}
+      kpiTrend={fxRates.eurPkr.trend}
       kpiSourceNote={`Source: ${fxRates.eurPkr.source ?? "Yahoo Finance"} — interbank market rate, refreshed intraday`}
       kpiQuality={fxRates.eurPkr}
       chartTitle="EUR / PKR — Historical Trend"

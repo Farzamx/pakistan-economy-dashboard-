@@ -6,6 +6,7 @@ import type { Kpi } from "@/data/kpiData";
 import InfoTooltip from "@/components/InfoTooltip";
 import { getDataQuality, DATA_QUALITY_DOT } from "@/lib/dataQuality";
 import { KPI_SEO_SLUG } from "@/lib/seoConfig";
+import { TrendArrowIcon, TREND_TEXT_COLOR, TREND_STROKE_COLOR } from "@/components/TrendIndicator";
 
 // PEIC v2.1 — the dense "watchlist" presentation for reference-tier
 // indicators (global markets, real economy, secondary monetary/external
@@ -29,7 +30,7 @@ function Sparkline({ data, trend }: { data: number[]; trend: Kpi["trend"] }) {
       return `${x.toFixed(1)},${y.toFixed(1)}`;
     })
     .join(" ");
-  const stroke = trend === "up" ? "#34d399" : "#fb7185";
+  const stroke = TREND_STROKE_COLOR[trend];
   return (
     <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} className="shrink-0" aria-hidden="true">
       <polyline points={points} fill="none" stroke={stroke} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
@@ -37,24 +38,8 @@ function Sparkline({ data, trend }: { data: number[]; trend: Kpi["trend"] }) {
   );
 }
 
-function TrendGlyph({ trend }: { trend: Kpi["trend"] }) {
-  const isUp = trend === "up";
-  return (
-    <svg
-      className={`h-2.5 w-2.5 ${isUp ? "text-emerald-400 light:text-emerald-600" : "text-rose-400 light:text-rose-600"}`}
-      viewBox="0 0 12 12"
-      fill="currentColor"
-      aria-hidden="true"
-    >
-      {isUp ? <path d="M6 2 L10 8 L2 8 Z" /> : <path d="M6 10 L2 4 L10 4 Z" />}
-    </svg>
-  );
-}
-
 function Row({ kpi, index }: { kpi: Kpi; index: number }) {
-  const trendColor = kpi.trend === "up"
-    ? "text-emerald-400 light:text-emerald-700"
-    : "text-rose-400 light:text-rose-700";
+  const trendColor = TREND_TEXT_COLOR[kpi.trend];
   const quality = kpi.latestDate
     ? getDataQuality({
         sourceStatus: kpi.sourceStatus ?? "live",
@@ -85,7 +70,7 @@ function Row({ kpi, index }: { kpi: Kpi; index: number }) {
         </div>
       )}
       <div className={`flex w-16 shrink-0 items-center justify-end gap-1 text-xs font-medium sm:w-24 ${trendColor}`}>
-        <TrendGlyph trend={kpi.trend} />
+        <TrendArrowIcon trend={kpi.trend} className="h-2.5 w-2.5" />
         <span className="truncate">{kpi.change}</span>
       </div>
       <div className="flex w-20 shrink-0 items-baseline justify-end gap-1 font-mono text-sm tabular-nums text-white sm:w-28 light:text-slate-900">

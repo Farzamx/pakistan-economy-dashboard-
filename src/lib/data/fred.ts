@@ -16,6 +16,7 @@ import {
 import { dedupeInFlight, getFresh, setCache } from "@/lib/memoryCache";
 import { resolveWithPersistedFallback } from "@/lib/marketFallbackSnapshot";
 import { globalMarketCacheTag } from "@/lib/data/globalMarketsCacheTags";
+import { getTrendDirection } from "@/lib/trendDirection";
 
 // All series are read from the St. Louis Fed's FRED API:
 // https://api.stlouisfed.org/fred/series/observations?series_id=...&api_key=...
@@ -67,8 +68,8 @@ function formatDateLabel(dateStr: string): string {
   return `${MONTH_NAMES[Number(month) - 1]} ${Number(day)}`;
 }
 
-function changeLabel(diff: number, previousDate: string | null, format: (value: number) => string): string {
-  if (previousDate === null) {
+function changeLabel(diff: number | null, previousDate: string | null, format: (value: number) => string): string {
+  if (previousDate === null || diff === null) {
     return "no prior data";
   }
   const sign = diff >= 0 ? "+" : "";
@@ -142,13 +143,13 @@ function buildKpi(
   seriesId: string,
   marketType: MarketType = "global-market",
 ): Kpi {
-  const diff = series.previousValue !== null ? series.latestValue - series.previousValue : 0;
+  const diff = series.previousValue !== null ? series.latestValue - series.previousValue : null;
   return {
     title,
     value: series.latestValue.toFixed(decimals),
     unit,
     change: changeLabel(diff, series.previousDate, (d) => d.toFixed(decimals)),
-    trend: diff >= 0 ? "up" : "down",
+    trend: getTrendDirection(diff),
     glow,
     source: "FRED",
     seriesId,

@@ -27,6 +27,8 @@ export default async function PakistanStockMarketPage() {
       subtitle="PSX (Pakistan Stock Exchange) is Pakistan's sole stock exchange, home to the benchmark KSE-100 index and the Shariah-compliant KMI-30."
       kpiLabel={pakEtf ? "Pakistan ETF Proxy (NYSE: PAK)" : "KSE-100 Index"}
       kpiValue={pakEtf ? `$${pakEtf.value}` : "Data Unavailable"}
+      kpiChange={pakEtf?.change}
+      kpiTrend={pakEtf?.trend}
       kpiSourceNote={
         pakEtf
           ? `Source: Yahoo Finance — a US-listed proxy correlated with Pakistani equity performance, not the KSE-100 itself.`

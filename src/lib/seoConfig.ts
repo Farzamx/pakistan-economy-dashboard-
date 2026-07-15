@@ -36,17 +36,44 @@ export const SEO_PAGES: SeoPageMeta[] = [
   { slug: "gbp-to-pkr-exchange-rate", label: "GBP to PKR Exchange Rate" },
   { slug: "weekly-inflation-pakistan", label: "Pakistan Weekly Inflation (SPI)" },
   { slug: "spi-index-pakistan", label: "Pakistan SPI Index" },
+  // Complete Indicator Coverage & SEO Expansion — every KPI shown anywhere
+  // in PEIC that previously had no detail page (see KPI_SEO_SLUG's comment).
+  { slug: "pakistan-core-inflation", label: "Pakistan Core Inflation (NFNE)" },
+  { slug: "pakistan-wholesale-inflation", label: "Pakistan Wholesale Inflation (WPI)" },
+  { slug: "pakistan-bank-reserves", label: "Pakistan Bank Reserves" },
+  { slug: "pakistan-money-supply", label: "Pakistan Money Supply (M2)" },
+  { slug: "pakistan-exports", label: "Pakistan Exports" },
+  { slug: "pakistan-imports", label: "Pakistan Imports" },
+  { slug: "pakistan-real-effective-exchange-rate", label: "Pakistan Real Effective Exchange Rate (REER)" },
+  { slug: "pakistan-lsm-growth", label: "Pakistan LSM Growth" },
+  { slug: "pakistan-private-credit-growth", label: "Pakistan Private Credit Growth" },
+  { slug: "silver-price-pakistan", label: "Silver Price in Pakistan" },
+  { slug: "us-dollar-index", label: "US Dollar Index (DXY)" },
+  { slug: "wti-crude-oil-price", label: "WTI Crude Oil Price" },
+  { slug: "brent-crude-oil-price", label: "Brent Crude Oil Price" },
+  { slug: "natural-gas-price", label: "Natural Gas Price" },
+  { slug: "us-10-year-treasury-yield", label: "US 10-Year Treasury Yield" },
+  { slug: "fed-funds-rate", label: "US Fed Funds Rate" },
 ];
 
 // Maps a homepage Kpi's exact `title` string to the SEO page slug that
-// covers it in depth — powers the "Learn More" link on KpiCard. Cards
-// whose title has no entry here (e.g. Natural Gas, REER, Silver) simply
-// render without the link rather than pointing at an unrelated page.
+// covers it in depth — powers the "Learn More" link on KpiCard and
+// IndicatorTable. Complete Indicator Coverage & SEO Expansion closed the
+// last remaining gaps (Core/WPI Inflation, Bank Reserves, Money Supply,
+// Exports, Imports, REER, LSM, Private Credit, Silver, DXY, WTI, Brent,
+// Natural Gas, US10Y, Fed Funds) — every Kpi.title used anywhere in PEIC
+// now has an entry here. Any future new indicator that's added without a
+// corresponding entry will simply render without a "Learn more" link
+// rather than 404ing, so this map staying complete is a discipline, not a
+// hard requirement — but the goal is zero gaps going forward too.
 export const KPI_SEO_SLUG: Record<string, string> = {
   "GDP Growth": "gdp-growth-pakistan",
   "Quarterly GDP Growth (YoY)": "gdp-growth-pakistan",
   "CPI Inflation": "inflation-rate-pakistan",
+  "Core Inflation": "pakistan-core-inflation",
+  "WPI Inflation": "pakistan-wholesale-inflation",
   "Foreign Reserves": "foreign-exchange-reserves-pakistan",
+  "Bank Reserves": "pakistan-bank-reserves",
   "USD / PKR": "usd-pkr-exchange-rate",
   "Policy Rate": "pakistan-interest-rate",
   "Current Account": "current-account-deficit-pakistan",
@@ -55,6 +82,7 @@ export const KPI_SEO_SLUG: Record<string, string> = {
   "Pakistan ETF (NYSE: PAK)": "pakistan-stock-market",
   "Remittances": "pakistan-remittances",
   "Gold": "gold-price-pakistan",
+  "Silver": "silver-price-pakistan",
   "Trade Balance": "pakistan-trade-deficit",
   "SAR / PKR": "sar-to-pkr-exchange-rate",
   "Fiscal Balance": "pakistan-fiscal-deficit",
@@ -62,6 +90,18 @@ export const KPI_SEO_SLUG: Record<string, string> = {
   "EUR / PKR": "eur-to-pkr-exchange-rate",
   "GBP / PKR": "gbp-to-pkr-exchange-rate",
   "Weekly Inflation (SPI)": "weekly-inflation-pakistan",
+  "Money Supply (M2)": "pakistan-money-supply",
+  "Exports": "pakistan-exports",
+  "Imports": "pakistan-imports",
+  "REER": "pakistan-real-effective-exchange-rate",
+  "LSM Growth": "pakistan-lsm-growth",
+  "Private Credit Growth": "pakistan-private-credit-growth",
+  "US Dollar Index": "us-dollar-index",
+  "WTI Crude": "wti-crude-oil-price",
+  "Brent Crude": "brent-crude-oil-price",
+  "Natural Gas": "natural-gas-price",
+  "US 10Y Treasury": "us-10-year-treasury-yield",
+  "Fed Funds Rate": "fed-funds-rate",
 };
 
 export function relatedSeoLinks(excludeSlug: string, slugs: string[]): { href: string; label: string }[] {
@@ -89,6 +129,7 @@ export const RELATED_INDICATORS: Record<string, string[]> = {
     "pakistan-trade-deficit",
     "pakistan-stock-market",
     "fdi-in-pakistan",
+    "pakistan-lsm-growth",
     "pakistan-economic-indicators",
     "pakistan-economic-dashboard",
   ],
@@ -96,6 +137,8 @@ export const RELATED_INDICATORS: Record<string, string[]> = {
     "pakistan-interest-rate",
     "weekly-inflation-pakistan",
     "pakistan-food-inflation",
+    "pakistan-core-inflation",
+    "pakistan-wholesale-inflation",
     "spi-index-pakistan",
     "usd-pkr-exchange-rate",
     "gdp-growth-pakistan",
@@ -108,6 +151,8 @@ export const RELATED_INDICATORS: Record<string, string[]> = {
     "current-account-deficit-pakistan",
     "pakistan-fiscal-deficit",
     "gold-price-pakistan",
+    "pakistan-money-supply",
+    "pakistan-private-credit-growth",
     "pakistan-economic-indicators",
   ],
   "usd-pkr-exchange-rate": [
@@ -118,6 +163,7 @@ export const RELATED_INDICATORS: Record<string, string[]> = {
     "eur-to-pkr-exchange-rate",
     "gbp-to-pkr-exchange-rate",
     "sar-to-pkr-exchange-rate",
+    "pakistan-real-effective-exchange-rate",
     "pakistan-economic-indicators",
   ],
   "foreign-exchange-reserves-pakistan": [
@@ -126,6 +172,7 @@ export const RELATED_INDICATORS: Record<string, string[]> = {
     "pakistan-external-debt",
     "pakistan-remittances",
     "pakistan-trade-deficit",
+    "pakistan-bank-reserves",
     "pakistan-economic-indicators",
   ],
   "current-account-deficit-pakistan": [
@@ -135,6 +182,7 @@ export const RELATED_INDICATORS: Record<string, string[]> = {
     "usd-pkr-exchange-rate",
     "fdi-in-pakistan",
     "pakistan-external-debt",
+    "pakistan-real-effective-exchange-rate",
     "pakistan-economic-indicators",
   ],
   "pakistan-bond-yields": [
@@ -143,6 +191,8 @@ export const RELATED_INDICATORS: Record<string, string[]> = {
     "pakistan-stock-market",
     "gold-price-pakistan",
     "usd-pkr-exchange-rate",
+    "us-10-year-treasury-yield",
+    "fed-funds-rate",
     "pakistan-economic-indicators",
   ],
   "pakistan-stock-market": [
@@ -186,6 +236,8 @@ export const RELATED_INDICATORS: Record<string, string[]> = {
     "pakistan-interest-rate",
     "inflation-rate-pakistan",
     "pakistan-bond-yields",
+    "silver-price-pakistan",
+    "us-dollar-index",
     "pakistan-economic-indicators",
   ],
   "pakistan-external-debt": [
@@ -202,6 +254,8 @@ export const RELATED_INDICATORS: Record<string, string[]> = {
     "gdp-growth-pakistan",
     "fdi-in-pakistan",
     "foreign-exchange-reserves-pakistan",
+    "pakistan-exports",
+    "pakistan-imports",
     "pakistan-economic-indicators",
   ],
   "sar-to-pkr-exchange-rate": [
@@ -218,6 +272,7 @@ export const RELATED_INDICATORS: Record<string, string[]> = {
     "pakistan-external-debt",
     "gdp-growth-pakistan",
     "pakistan-interest-rate",
+    "pakistan-private-credit-growth",
     "pakistan-economic-indicators",
   ],
   "pakistan-food-inflation": [
@@ -225,6 +280,7 @@ export const RELATED_INDICATORS: Record<string, string[]> = {
     "weekly-inflation-pakistan",
     "spi-index-pakistan",
     "pakistan-interest-rate",
+    "pakistan-core-inflation",
     "pakistan-economic-indicators",
   ],
   "fdi-in-pakistan": [
@@ -262,6 +318,117 @@ export const RELATED_INDICATORS: Record<string, string[]> = {
     "weekly-inflation-pakistan",
     "inflation-rate-pakistan",
     "pakistan-food-inflation",
+    "pakistan-interest-rate",
+    "pakistan-economic-indicators",
+  ],
+  // Complete Indicator Coverage & SEO Expansion — the 16 pages added to
+  // close every remaining gap in KPI_SEO_SLUG.
+  "pakistan-core-inflation": [
+    "inflation-rate-pakistan",
+    "pakistan-wholesale-inflation",
+    "pakistan-interest-rate",
+    "weekly-inflation-pakistan",
+    "pakistan-food-inflation",
+    "pakistan-economic-indicators",
+  ],
+  "pakistan-wholesale-inflation": [
+    "inflation-rate-pakistan",
+    "pakistan-core-inflation",
+    "pakistan-food-inflation",
+    "usd-pkr-exchange-rate",
+    "pakistan-economic-indicators",
+  ],
+  "pakistan-bank-reserves": [
+    "foreign-exchange-reserves-pakistan",
+    "usd-pkr-exchange-rate",
+    "current-account-deficit-pakistan",
+    "pakistan-economic-indicators",
+  ],
+  "pakistan-money-supply": [
+    "inflation-rate-pakistan",
+    "pakistan-private-credit-growth",
+    "pakistan-interest-rate",
+    "pakistan-economic-indicators",
+  ],
+  "pakistan-exports": [
+    "pakistan-imports",
+    "pakistan-trade-deficit",
+    "current-account-deficit-pakistan",
+    "gdp-growth-pakistan",
+    "pakistan-economic-indicators",
+  ],
+  "pakistan-imports": [
+    "pakistan-exports",
+    "pakistan-trade-deficit",
+    "usd-pkr-exchange-rate",
+    "wti-crude-oil-price",
+    "pakistan-economic-indicators",
+  ],
+  "pakistan-real-effective-exchange-rate": [
+    "usd-pkr-exchange-rate",
+    "current-account-deficit-pakistan",
+    "pakistan-trade-deficit",
+    "foreign-exchange-reserves-pakistan",
+    "pakistan-economic-indicators",
+  ],
+  "pakistan-lsm-growth": [
+    "gdp-growth-pakistan",
+    "pakistan-private-credit-growth",
+    "pakistan-interest-rate",
+    "pakistan-economic-indicators",
+  ],
+  "pakistan-private-credit-growth": [
+    "pakistan-interest-rate",
+    "pakistan-money-supply",
+    "gdp-growth-pakistan",
+    "pakistan-fiscal-deficit",
+    "pakistan-economic-indicators",
+  ],
+  "silver-price-pakistan": [
+    "gold-price-pakistan",
+    "usd-pkr-exchange-rate",
+    "pakistan-interest-rate",
+    "pakistan-economic-indicators",
+  ],
+  "us-dollar-index": [
+    "usd-pkr-exchange-rate",
+    "gold-price-pakistan",
+    "us-10-year-treasury-yield",
+    "fed-funds-rate",
+    "pakistan-economic-indicators",
+  ],
+  "wti-crude-oil-price": [
+    "brent-crude-oil-price",
+    "natural-gas-price",
+    "pakistan-imports",
+    "pakistan-trade-deficit",
+    "inflation-rate-pakistan",
+    "pakistan-economic-indicators",
+  ],
+  "brent-crude-oil-price": [
+    "wti-crude-oil-price",
+    "natural-gas-price",
+    "pakistan-imports",
+    "pakistan-trade-deficit",
+    "inflation-rate-pakistan",
+    "pakistan-economic-indicators",
+  ],
+  "natural-gas-price": [
+    "wti-crude-oil-price",
+    "brent-crude-oil-price",
+    "pakistan-imports",
+    "pakistan-trade-deficit",
+    "pakistan-economic-indicators",
+  ],
+  "us-10-year-treasury-yield": [
+    "fed-funds-rate",
+    "us-dollar-index",
+    "pakistan-bond-yields",
+    "pakistan-economic-indicators",
+  ],
+  "fed-funds-rate": [
+    "us-10-year-treasury-yield",
+    "us-dollar-index",
     "pakistan-interest-rate",
     "pakistan-economic-indicators",
   ],

@@ -4,6 +4,7 @@ import { getSbpIndicator } from "@/lib/data/sbpServer";
 import SeoPageLayout from "@/components/seo/SeoPageLayout";
 import type { TrendPoint } from "@/components/charts/TrendLineChart";
 import { SITE_URL, SITE_NAME, getRelatedLinks } from "@/lib/seoConfig";
+import { getTrendDirection } from "@/lib/trendDirection";
 
 const SLUG = "weekly-inflation-pakistan";
 const PAGE_URL = `${SITE_URL}/${SLUG}`;
@@ -33,6 +34,8 @@ export default async function WeeklyInflationPage() {
 
   const points = spi?.points ?? [];
   const latest = points[points.length - 1] ?? null;
+  const previous = points[points.length - 2] ?? null;
+  const yoyPpChange = latest && previous ? latest.yoyPct - previous.yoyPct : null;
 
   // Primary chart is the YoY inflation RATE over time, not the raw index
   // level — the index itself has its own dedicated page (see relatedLinks).
@@ -47,6 +50,8 @@ export default async function WeeklyInflationPage() {
       subtitle="The year-over-year inflation rate from PBS's Sensitive Price Indicator — the fastest-updating inflation signal published in Pakistan, well ahead of monthly CPI."
       kpiLabel="SPI Inflation — Combined Group, YoY"
       kpiValue={latest ? `${latest.yoyPct >= 0 ? "+" : ""}${latest.yoyPct.toFixed(2)}%` : "Unavailable"}
+      kpiChange={yoyPpChange !== null ? `${yoyPpChange >= 0 ? "+" : ""}${yoyPpChange.toFixed(2)} pp vs last week` : undefined}
+      kpiTrend={latest ? getTrendDirection(yoyPpChange) : undefined}
       kpiSourceNote={
         latest
           ? `Source: Pakistan Bureau of Statistics — published weekly, every Friday — week ended ${formatDateLabel(latest.date)}`

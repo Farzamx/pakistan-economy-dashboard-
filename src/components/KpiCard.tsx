@@ -9,6 +9,7 @@ import DataQualityBadge from "@/components/DataQualityBadge";
 import { getDataQuality, DATA_QUALITY_DOT } from "@/lib/dataQuality";
 import { getActiveTier, SOURCE_CHAINS } from "@/lib/marketDataSources";
 import { KPI_SEO_SLUG } from "@/lib/seoConfig";
+import { TrendArrowIcon, TREND_TEXT_COLOR, TREND_STROKE_COLOR } from "@/components/TrendIndicator";
 import { useTheme } from "@/components/ThemeProvider";
 import { useLanguage } from "@/components/LanguageProvider";
 
@@ -30,25 +31,11 @@ function Sparkline({ data, trend }: { data: number[]; trend: Kpi["trend"] }) {
       return `${x.toFixed(1)},${y.toFixed(1)}`;
     })
     .join(" ");
-  const stroke = trend === "up" ? "#34d399" : "#fb7185";
+  const stroke = TREND_STROKE_COLOR[trend];
 
   return (
     <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} className="shrink-0" aria-hidden="true">
       <polyline points={points} fill="none" stroke={stroke} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-function TrendArrow({ trend }: { trend: Kpi["trend"] }) {
-  const isUp = trend === "up";
-  return (
-    <svg
-      className={`h-3 w-3 ${isUp ? "text-emerald-400 light:text-emerald-600" : "text-rose-400 light:text-rose-600"}`}
-      viewBox="0 0 12 12"
-      fill="currentColor"
-      aria-hidden="true"
-    >
-      {isUp ? <path d="M6 2 L10 8 L2 8 Z" /> : <path d="M6 10 L2 4 L10 4 Z" />}
     </svg>
   );
 }
@@ -78,9 +65,7 @@ export default function KpiCard({ title, value, unit, change, trend, glow, sourc
   const { t } = useLanguage();
   const isLight = theme === "light";
 
-  const trendColor = trend === "up"
-    ? "text-emerald-400 light:text-emerald-700"
-    : "text-rose-400 light:text-rose-700";
+  const trendColor = TREND_TEXT_COLOR[trend];
 
   // Source transparency — gated on `marketType` (not just title) because a
   // few SBP EasyData indicators happen to share a display title with a
@@ -136,7 +121,7 @@ export default function KpiCard({ title, value, unit, change, trend, glow, sourc
       {/* Row 3 — trend + compact sparkline */}
       <div className="flex items-center justify-between gap-2">
         <div className={`flex items-center gap-1 text-[11px] font-medium ${trendColor}`}>
-          <TrendArrow trend={trend} />
+          <TrendArrowIcon trend={trend} className="h-3 w-3" />
           <span className="truncate">{change}</span>
         </div>
         {sparkline && sparkline.length >= 2 && <Sparkline data={sparkline} trend={trend} />}

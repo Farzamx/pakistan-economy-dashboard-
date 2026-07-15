@@ -28,6 +28,8 @@ export default async function UsdPkrPage() {
       subtitle="How many Pakistani Rupees it takes to buy one US Dollar — the most-watched financial indicator in Pakistan."
       kpiLabel="USD / PKR (Intraday)"
       kpiValue={fxRates.usdPkr.value}
+      kpiChange={fxRates.usdPkr.change}
+      kpiTrend={fxRates.usdPkr.trend}
       kpiSourceNote={`Source: ${fxRates.usdPkr.source ?? "Yahoo Finance"} — interbank market rate, refreshed intraday`}
       kpiQuality={fxRates.usdPkr}
       chartTitle="USD / PKR — 24-Month Historical Trend"

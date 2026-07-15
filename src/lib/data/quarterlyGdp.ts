@@ -2,6 +2,7 @@ import 'server-only';
 import * as XLSX from 'xlsx';
 import type { TrendPoint } from '@/components/charts/TrendLineChart';
 import { fallbackQuarterlyGdpKpi, type Kpi } from '@/data/kpiData';
+import { getTrendDirection } from '@/lib/trendDirection';
 
 // SBP migrated their economic data files from /ecodata/ to /assets/document/
 // during their website redesign (2025-26). The old /ecodata/QGDP.xlsx URL now
@@ -134,17 +135,17 @@ function parseWorkbook(buf: ArrayBuffer): QuarterlyGdpResult {
 
   const latest   = trend[trend.length - 1];
   const previous = trend.length > 1 ? trend[trend.length - 2] : null;
-  const diff     = previous ? latest.value - previous.value : 0;
-  const sign     = diff >= 0 ? '+' : '';
+  const diff     = previous ? latest.value - previous.value : null;
+  const sign     = diff !== null && diff >= 0 ? '+' : '';
 
   const kpi: Kpi = {
     title:      'Quarterly GDP Growth (YoY)',
     value:      latest.value.toFixed(2),
     unit:       '%',
-    change:     previous
+    change:     previous && diff !== null
                   ? `${sign}${diff.toFixed(2)} pp vs ${previous.month}`
                   : 'no prior data',
-    trend:      diff >= 0 ? 'up' : 'down',
+    trend:      getTrendDirection(diff),
     glow:       'blue',
     source:     'SBP / PBS',
     seriesId:   'QGDP.xlsx / Growth_Q / row D.',

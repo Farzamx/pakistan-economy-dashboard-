@@ -1,6 +1,17 @@
 export interface SectionStat {
   label: string;
   value: string;
+  /**
+   * The canonical Kpi.title this stat tile represents, when its display
+   * `label` differs from that title (e.g. label "Commercial Banks" for the
+   * "Bank Reserves" indicator) — looked up in KPI_SEO_SLUG so the tile can
+   * link to its detail page. Omit when there's no corresponding standalone
+   * indicator page (e.g. a computed ratio like "Import Cover", or a
+   * sub-sector breakdown like "Agriculture") — DashboardSection falls back
+   * to `label` itself when this is unset, which already matches for stats
+   * whose label IS the real title (e.g. "USD / PKR").
+   */
+  kpiTitle?: string;
 }
 
 export interface SectionContent {
