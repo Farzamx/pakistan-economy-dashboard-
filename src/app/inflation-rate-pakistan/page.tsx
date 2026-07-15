@@ -33,7 +33,7 @@ export default async function InflationRatePage() {
       kpiQuality={cpiInflation.kpi}
       chartTitle="CPI Inflation — 24-Month Trend"
       chartData={cpiInflation.trend}
-      chartColor="#a855f7"
+      chartColor="#38bdf8"
       chartUnit="%"
       chartGradientId="seoInflationGradient"
       chartCaption="Source: SBP EasyData, monthly national CPI, year-over-year."

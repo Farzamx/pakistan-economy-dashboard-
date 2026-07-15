@@ -21,7 +21,7 @@ interface InsightLink {
 const CATEGORY_COLOR: Record<InsightLink["category"], string> = {
   Comparison: "#38bdf8",
   Budget: "#34d399",
-  Provincial: "#a855f7",
+  Provincial: "#22d3ee",
 };
 
 export default function PopularInsights() {

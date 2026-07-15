@@ -37,7 +37,7 @@ export default async function PakistanEconomicDashboardPage() {
       kpiQuality={cpiInflation.kpi}
       chartTitle="CPI Inflation — 24-Month Trend (Preview)"
       chartData={cpiInflation.trend}
-      chartColor="#a855f7"
+      chartColor="#38bdf8"
       chartUnit="%"
       chartGradientId="seoDashboardGradient"
       chartCaption="This is a preview chart. The full dashboard includes 15+ live charts covering every major indicator."

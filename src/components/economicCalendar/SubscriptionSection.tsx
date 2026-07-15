@@ -78,7 +78,7 @@ export default function SubscriptionSection() {
       <ViewportFadeIn>
         <div className="mx-auto max-w-2xl text-center">
           <p className="text-xs font-semibold uppercase tracking-[0.25em] text-sky-400">{t("subscription.notificationsTitle")}</p>
-          <h2 id="subscribe-heading" className="mt-3 text-2xl font-bold tracking-tight text-white sm:text-[34px]">
+          <h2 id="subscribe-heading" className="text-headline mt-3 text-white">
             {t("subscription.neverMiss")}
           </h2>
           <p className="mt-4 text-base leading-relaxed text-slate-400">{t("subscription.officialDesc")}</p>

@@ -9,8 +9,10 @@ import MotionProvider from "@/components/MotionProvider";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { AuthProvider } from "@/components/AuthProvider";
 import { PreferencesProvider } from "@/components/PreferencesProvider";
+import { SidebarProvider } from "@/components/SidebarProvider";
 import { LanguageProvider } from "@/components/LanguageProvider";
 import MobileNav from "@/components/MobileNav";
+import TopNav from "@/components/TopNav";
 import MobileStickyCta from "@/components/MobileStickyCta";
 import BfcacheGuard from "@/components/BfcacheGuard";
 
@@ -150,13 +152,16 @@ export default function RootLayout({
           <LanguageProvider>
           <AuthProvider>
             <PreferencesProvider>
-              <GalaxyBackground />
-              <MotionProvider>
-                <MobileNav />
-                {children}
-                <CreatorBadge />
-                <MobileStickyCta />
-              </MotionProvider>
+              <SidebarProvider>
+                <GalaxyBackground />
+                <MotionProvider>
+                  <MobileNav />
+                  <TopNav />
+                  {children}
+                  <CreatorBadge />
+                  <MobileStickyCta />
+                </MotionProvider>
+              </SidebarProvider>
             </PreferencesProvider>
           </AuthProvider>
           </LanguageProvider>

@@ -32,7 +32,7 @@ export default async function PrivateCreditGrowthPage() {
       kpiQuality={credit.kpi}
       chartTitle="Private Sector Credit Growth — 24-Month Trend"
       chartData={credit.trend}
-      chartColor="#a855f7"
+      chartColor="#38bdf8"
       chartUnit="%"
       chartGradientId="seoPrivateCreditGradient"
       chartCaption="Source: SBP EasyData, weekly, credit to private sector, year-over-year growth."

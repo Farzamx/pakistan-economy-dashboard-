@@ -70,9 +70,12 @@ function TickerChip({ item }: { item: TickerItem }) {
 
 interface MarketTickerProps {
   items: TickerItem[];
+  /** Skip the rounded/bordered card wrapper — for embedding as a tier inside another panel (e.g. MacroSnapshot) that already provides its own container. */
+  bare?: boolean;
+  className?: string;
 }
 
-export default function MarketTicker({ items }: MarketTickerProps) {
+export default function MarketTicker({ items, bare = false, className = "" }: MarketTickerProps) {
   const [paused, setPaused] = useState(false);
   const prefersReducedMotion = useSafeReducedMotion();
 
@@ -84,7 +87,7 @@ export default function MarketTicker({ items }: MarketTickerProps) {
   return (
     <div
       aria-label="Live market data"
-      className="mt-6 rounded-xl border border-white/[0.06] light:border-slate-200 bg-white/[0.02] light:bg-white"
+      className={bare ? className : `mt-6 rounded-xl border border-white/[0.06] light:border-slate-200 bg-white/[0.02] light:bg-white ${className}`}
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >

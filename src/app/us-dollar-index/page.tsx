@@ -44,7 +44,7 @@ export default async function DxyPage() {
       chartTitle="US Dollar Index — 10-Year Historical Trend"
       chartData={chartData}
       chartUnavailableNote="Historical chart data is currently unavailable."
-      chartColor="#a855f7"
+      chartColor="#38bdf8"
       chartUnit=""
       chartGradientId="seoDxyGradient"
       chartCaption="Source: Yahoo Finance, ICE US Dollar Index futures (DX-Y.NYB), monthly closes."

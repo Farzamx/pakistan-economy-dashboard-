@@ -32,7 +32,7 @@ export default async function ImportsPage() {
       kpiQuality={imports_.kpi}
       chartTitle="Imports — 24-Month Trend"
       chartData={imports_.trend}
-      chartColor="#a855f7"
+      chartColor="#38bdf8"
       chartUnit="B"
       chartGradientId="seoImportsGradient"
       chartCaption="Source: SBP EasyData (BPM6 basis) / Pakistan Bureau of Statistics advance release, monthly."

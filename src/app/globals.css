@@ -43,6 +43,11 @@
   --chart-tooltip-value:   #ffffff;
   --chart-cursor:          rgba(255, 255, 255, 0.15);
   --chart-active-stroke:   #05060f;
+  --chart-average:         rgba(255, 255, 255, 0.28);
+  --chart-average-label:   rgba(255, 255, 255, 0.45);
+  --chart-marker:          rgba(56, 189, 248, 0.55);
+  --chart-positive:        #34d399;
+  --chart-negative:        #fb7185;
 }
 
 /* ── Design tokens: light theme ──────────────────────────────────────────── */
@@ -76,7 +81,12 @@
   --chart-tooltip-label:   #475569;
   --chart-tooltip-value:   #0F172A;
   --chart-cursor:          rgba(0, 0, 0, 0.10);
-  --chart-active-stroke:   #F4F6FA;
+  --chart-active-stroke:   #FFFFFF;
+  --chart-average:         rgba(0, 0, 0, 0.28);
+  --chart-average-label:   rgba(0, 0, 0, 0.45);
+  --chart-marker:          rgba(2, 132, 199, 0.55);
+  --chart-positive:        #047857;
+  --chart-negative:        #be123c;
 }
 
 @theme inline {
@@ -107,6 +117,10 @@ body {
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border-radius: 1rem;
+  /* Now that the background is a flat matte fill (no animated galaxy behind
+     it for contrast), a soft shadow is what makes a card read as a raised
+     layer rather than a flat blend into the page. */
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.22);
 }
 
 [data-theme="light"] .glass-card {
@@ -148,6 +162,11 @@ body {
   background: var(--surface-2);
   border: 1px solid var(--border);
   border-radius: 0.75rem;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.03) inset;
+}
+
+[data-theme="light"] .glass-card-raised {
+  box-shadow: none;
 }
 
 /* ── Hairline section divider — replaces ad hoc border-t utilities with
@@ -203,52 +222,24 @@ body {
   box-shadow: 0 0 16px rgba(124, 58, 237, 0.15);
 }
 
-/* Animated galaxy background: drifting nebula blobs + twinkling stars */
-.nebula-blob {
-  position: absolute;
-  border-radius: 9999px;
-  filter: blur(80px);
-  animation: nebula-drift ease-in-out infinite alternate;
-  will-change: transform;
-}
-
-@keyframes nebula-drift {
-  from {
-    transform: translate3d(0, 0, 0) scale(1);
-  }
-  to {
-    transform: translate3d(60px, -40px, 0) scale(1.1);
-  }
-}
-
-.star {
-  position: absolute;
-  border-radius: 50%;
-  background: #ffffff;
-  animation: star-twinkle ease-in-out infinite;
-}
-
-@keyframes star-twinkle {
-  0%,
-  100% {
-    opacity: 0.2;
-    transform: scale(0.85);
-  }
-  50% {
-    opacity: 1;
-    transform: scale(1.15);
-  }
-}
-
-/* ── Light mode background — subtle dot grid, no animation ──────────────── */
-.light-bg {
+/* ── Ambient background (PEIC v3) — a single flat fill + soft top vignette.
+   Replaces the prior animated galaxy (nebula blobs + twinkling stars) and
+   light-mode dot-grid: no motion, no color, just enough gradient to keep
+   a full-bleed flat fill from looking dead. Theme-aware via [data-theme],
+   the same pattern already used by .glass-card/.glass-panel-deep/.panel-flat
+   above rather than the old light:hidden / hidden light:block dual-div
+   toggle — one div, one class. */
+.ambient-bg {
   position: fixed;
   inset: 0;
   z-index: -10;
   pointer-events: none;
-  background-color: #F4F6FA;
-  background-image: radial-gradient(circle, rgba(0, 0, 0, 0.08) 1px, transparent 1px);
-  background-size: 24px 24px;
+  background-color: var(--background);
+  background-image: radial-gradient(ellipse 1200px 800px at 50% -10%, rgba(255, 255, 255, 0.035), transparent 60%);
+}
+
+[data-theme="light"] .ambient-bg {
+  background-image: radial-gradient(ellipse 1200px 800px at 50% -10%, rgba(15, 23, 42, 0.035), transparent 60%);
 }
 
 /* ── PEIC v2.1 type scale ──────────────────────────────────────────────────
@@ -284,6 +275,23 @@ body {
   .text-display { font-size: 2.25rem; }
 }
 
+/* ── metric   Bloomberg-register counterpart to .text-display — every
+   individual KPI card's own value (as opposed to the singular editorial
+   "hero" figures like the Health Score, which stay serif). Monospace +
+   tabular-nums so figures line up vertically across a dense grid of cards,
+   the way a terminal's columns do. */
+.text-metric {
+  font-family: var(--font-geist-mono);
+  font-size: 1.625rem;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+@media (min-width: 640px) {
+  .text-metric { font-size: 1.875rem; }
+}
+
 .text-headline {
   font-family: var(--font-serif);
   font-size: 1.375rem;
@@ -293,6 +301,22 @@ body {
 }
 @media (min-width: 640px) {
   .text-headline { font-size: 1.625rem; }
+}
+
+/* ── hero-headline   The homepage briefing's own large editorial statement
+   (PEIC v3 restructure) — one size up from .text-headline and reserved for
+   the single AI-derived headline sentence at the top of the Hero, matching
+   the "large editorial headline" register of a research institute's front
+   page rather than a section title. */
+.text-hero-headline {
+  font-family: var(--font-serif);
+  font-size: 1.75rem;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  font-weight: 500;
+}
+@media (min-width: 640px) {
+  .text-hero-headline { font-size: 2.25rem; }
 }
 
 .text-title {
@@ -372,14 +396,6 @@ body {
 @keyframes ticker-scroll {
   from { transform: translateX(0); }
   to   { transform: translateX(-50%); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .nebula-blob,
-  .star {
-    animation: none;
-    opacity: 0.5;
-  }
 }
 
 /* ── Floating AI Assistant ─────────────────────────────────────── */

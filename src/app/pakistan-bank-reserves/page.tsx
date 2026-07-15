@@ -32,7 +32,7 @@ export default async function BankReservesPage() {
       kpiQuality={bankReserves.kpi}
       chartTitle="Bank Reserves — 24-Month Trend"
       chartData={bankReserves.trend}
-      chartColor="#a855f7"
+      chartColor="#38bdf8"
       chartUnit="B"
       chartGradientId="seoBankReservesGradient"
       chartCaption="Source: SBP EasyData, monthly, net foreign exchange reserves held with commercial banks."

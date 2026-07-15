@@ -66,7 +66,7 @@ export default function MobileStickyCta() {
             href="/signup"
             data-cta="signup"
             data-cta-source="mobile-sticky"
-            className="glow-blue flex items-center gap-2 rounded-full bg-gradient-to-r from-neon-blue to-neon-purple px-5 py-3 text-sm font-semibold text-white shadow-2xl"
+            className="flex items-center gap-2 rounded-md bg-neon-blue px-5 py-3 text-sm font-semibold text-[#05060f] shadow-lg light:text-white"
           >
             <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z" />

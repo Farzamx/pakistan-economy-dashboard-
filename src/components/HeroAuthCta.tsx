@@ -41,7 +41,7 @@ export default function HeroAuthCta() {
           href="/signup"
           data-cta="signup"
           data-cta-source="hero"
-          className="glow-blue rounded-xl bg-gradient-to-r from-neon-blue to-neon-purple px-5 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+          className="rounded-md bg-neon-blue px-5 py-2.5 text-sm font-semibold text-[#05060f] transition-colors hover:bg-neon-blue/90 light:text-white"
         >
           {t("hero.createAccount")}
         </Link>

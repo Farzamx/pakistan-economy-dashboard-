@@ -155,7 +155,7 @@ export default function LessonView({ lesson, category, prevLesson, nextLesson }:
 
       <div className="grid gap-4 sm:grid-cols-2 mt-8">
         <Section title={t("workshop.whyTraders")}>
-          <div className="rounded-xl border border-neon-purple/20 bg-neon-purple/5 px-4 py-4">
+          <div className="rounded-xl border border-cyan-400/20 bg-cyan-400/5 px-4 py-4">
             <div className={`prose-lesson ${textClass}`}>
               {pick(lesson.content.whyTraders, language)
                 .split("\n\n")

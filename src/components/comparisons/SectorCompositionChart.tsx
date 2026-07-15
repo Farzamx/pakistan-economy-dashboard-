@@ -30,7 +30,7 @@ interface SectorCompositionChartProps {
 const COLORS = {
   agriculture: "#34d399",
   industry: "#38bdf8",
-  services: "#a855f7",
+  services: "#fb923c",
 };
 
 export default function SectorCompositionChart({ data }: SectorCompositionChartProps) {

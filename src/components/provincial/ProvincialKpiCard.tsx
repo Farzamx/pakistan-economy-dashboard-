@@ -34,13 +34,13 @@ function TrendArrow({ direction }: { direction: YoyChange["direction"] }) {
 export default function ProvincialKpiCard({ title, valueRs, subValue, yoy, fiscalYear, sourceLabel, highlight }: ProvincialKpiCardProps) {
   return (
     <motion.div
-      whileHover={{ scale: 1.03 }}
-      transition={{ type: "spring", stiffness: 300, damping: 22 }}
-      className={`glass-card flex h-full flex-col gap-3 p-6 ${highlight ? "border-neon-purple/40 shadow-[0_0_28px_rgba(168,85,247,0.25)]" : ""}`}
+      whileHover={{ borderColor: "var(--border-emphasis)" }}
+      transition={{ duration: 0.15, ease: "easeOut" }}
+      className={`panel-flat flex h-full flex-col gap-2.5 p-4 ${highlight ? "border-white/25 light:border-slate-400" : ""}`}
     >
       <span className="text-sm font-medium text-white/60 light:text-slate-500">{title}</span>
       <div className="flex items-baseline gap-2">
-        <span className="text-3xl font-semibold text-white light:text-slate-900">
+        <span className="text-metric text-white light:text-slate-900">
           {valueRs === null ? "—" : <AnimatedValue value={formatRsNumeric(valueRs)} />}
         </span>
         <span className="text-sm text-white/50 light:text-slate-400">
@@ -48,7 +48,7 @@ export default function ProvincialKpiCard({ title, valueRs, subValue, yoy, fisca
         </span>
       </div>
       {subValue && (
-        <span className={`text-sm font-semibold ${highlight ? "text-neon-purple" : "text-white/70 light:text-slate-600"}`}>
+        <span className={`text-sm font-semibold ${highlight ? "text-white light:text-slate-900" : "text-white/70 light:text-slate-600"}`}>
           {subValue}
         </span>
       )}

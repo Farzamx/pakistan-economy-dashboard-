@@ -1,13 +1,21 @@
 import type { Translations } from "../types";
 
 export const ur: Translations = {
+  topNav: {
+    overview: "جائزہ", markets: "منڈیاں", calendar: "کیلنڈر",
+    research: "تحقیق", academy: "اکیڈمی", riskIntel: "خطرے کی انٹیلی جنس", premium: "پریمیم",
+  },
+
   nav: {
     main: "مرکزی", analytics: "تجزیات", premiumTools: "پریمیم ٹولز",
     overview: "جائزہ", riskIntel: "خطرے کی انٹیلی جنس", gdp: "جی ڈی پی", inflation: "مہنگائی",
     prices: "قیمتیں", monetaryPolicy: "مالیاتی پالیسی", globalMarkets: "عالمی منڈیاں",
     realEconomy: "حقیقی معیشت", reserves: "ذخائر", liveFX: "لائیو زرمبادلہ",
     exchangeRate: "شرح تبادلہ", remittances: "ترسیلات زر", externalSector: "بیرونی شعبہ",
-    news: "خبریں", comparisons: "موازنہ", budgetTracker: "بجٹ ٹریکر",
+    news: "خبریں",
+    healthScore: "ہیلتھ سکور", macroSnapshot: "معاشی جائزہ", intelligenceFeed: "انٹیلی جنس فیڈ",
+    calendar: "کیلنڈر", research: "تحقیق",
+    comparisons: "موازنہ", budgetTracker: "بجٹ ٹریکر",
     provincialBudget: "صوبائی بجٹ", economicCalendar: "معاشی کیلنڈر",
     workshop: "اقتصادی ورک شاپ", academy: "اقتصادی اکیڈمی", freeSubscription: "مفت سبسکرپشن",
     rankings: "درجہ بندی", indicators: "معاشی اشارے", settings: "ترتیبات",
@@ -26,6 +34,9 @@ export const ur: Translations = {
     createAccount: "مفت اکاؤنٹ بنائیں", login: "لاگ ان",
     benefitComparisons: "موازنہ دیکھیں", benefitBudget: "بجٹ ورک شاپ دیکھیں",
     benefitProvincial: "صوبائی بجٹ انٹیلی جنس", benefitPremium: "مستقبل کی خصوصیات",
+    upcomingCalendar: "آئندہ کیلنڈر", criticalAlerts: "اہم انتباہات",
+    noCriticalAlerts: "کوئی اہم انتباہ نہیں",
+    riskStatus: "خطرے کی صورتحال", latestRelease: "تازہ ترین رپورٹ", nextRelease: "اگلی متوقع رپورٹ",
   },
 
   settings: {
@@ -463,6 +474,19 @@ export const ur: Translations = {
     unpin: "ان پن", pin: "پن کریں", hide: "چھپائیں", show: "دکھائیں",
     noPinned: "ابھی تک کوئی پن شدہ حصہ نہیں۔", noneLeft: "یہاں کچھ نہیں بچا۔", noneHidden: "کچھ نہیں چھپا۔",
     saving: "محفوظ ہو رہا ہے…", mode: "موڈ",
+  },
+
+  researchTeaser: {
+    riskTitle: "کساد بازاری اور خودمختار نادہندگی کے امکانات",
+    academyTitle: "پاکستان کے اہم معاشی اشاریے پڑھنا سیکھیں",
+    comparisonsTitle: "پاکستان کا علاقائی ممالک اور ماضی سے موازنہ کریں",
+  },
+
+  macroSnapshot: {
+    title: "پاکستان معاشی جائزہ",
+    liveFrom: "براہ راست SBP EasyData، PBS، ورلڈ بینک سے",
+    driversTitle: "معاشی محرکات — بیرونی شعبہ اور سرکاری مالیات",
+    marketsTitle: "منڈیاں",
   },
 
   riskIntel: {

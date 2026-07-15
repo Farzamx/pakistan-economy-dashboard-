@@ -10,7 +10,6 @@ import { getDataQuality, DATA_QUALITY_DOT } from "@/lib/dataQuality";
 import { getActiveTier, SOURCE_CHAINS } from "@/lib/marketDataSources";
 import { KPI_SEO_SLUG } from "@/lib/seoConfig";
 import { TrendArrowIcon, TREND_TEXT_COLOR, TREND_STROKE_COLOR } from "@/components/TrendIndicator";
-import { useTheme } from "@/components/ThemeProvider";
 import { useLanguage } from "@/components/LanguageProvider";
 
 // Hand-rolled inline SVG rather than mounting recharts for an 18px-tall
@@ -40,30 +39,8 @@ function Sparkline({ data, trend }: { data: number[]; trend: Kpi["trend"] }) {
   );
 }
 
-// PEIC v2: a single restrained hover treatment for every card, regardless
-// of `glow`. The old design gave each card its own 24px→44px neon glow
-// purely for visual variety — exactly the "cards compete for attention"
-// problem the v2 redesign exists to fix. `glow` is still respected (kept
-// for data-layer compatibility — no Kpi type change), just as a much
-// quieter tint so it reads as "this card is focused" rather than a light
-// show. Light mode keeps its existing flat elevation shadow.
-const restShadow: Record<Kpi["glow"], string> = {
-  blue:   "0 0 0 rgba(56, 189, 248, 0)",
-  purple: "0 0 0 rgba(168, 85, 247, 0)",
-};
-
-const hoverShadow: Record<Kpi["glow"], string> = {
-  blue:   "0 0 20px rgba(56, 189, 248, 0.12)",
-  purple: "0 0 20px rgba(168, 85, 247, 0.12)",
-};
-
-const lightRestShadow  = "0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)";
-const lightHoverShadow = "0 2px 8px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.05)";
-
-export default function KpiCard({ title, value, unit, change, trend, glow, source, latestDate, frequency, marketType, expectedReleaseDate, releaseAlreadyReflected, sourceStatus, snapshotDate, sparkline }: Kpi) {
-  const { theme } = useTheme();
+export default function KpiCard({ title, value, unit, change, trend, source, latestDate, frequency, marketType, expectedReleaseDate, releaseAlreadyReflected, sourceStatus, snapshotDate, sparkline }: Kpi) {
   const { t } = useLanguage();
-  const isLight = theme === "light";
 
   const trendColor = TREND_TEXT_COLOR[trend];
 
@@ -78,8 +55,6 @@ export default function KpiCard({ title, value, unit, change, trend, glow, sourc
     ? `${t("kpi.sourcePrimary")} ${chain.primary}, ${t("kpi.sourceSecondary")} ${chain.secondary ?? t("kpi.sourceNone")}, ${t("kpi.sourceFallback")} ${chain.fallback}. ${t("kpi.sourceCurrently")} ${activeTier}.`
     : null;
 
-  const cardShadow = isLight ? lightRestShadow : restShadow[glow];
-  const cardHoverShadow = isLight ? lightHoverShadow : hoverShadow[glow];
   const seoSlug = KPI_SEO_SLUG[title];
 
   // Header status dot — the same Verified/Delayed/Cached/Fallback/
@@ -92,10 +67,9 @@ export default function KpiCard({ title, value, unit, change, trend, glow, sourc
 
   return (
     <motion.div
-      style={{ boxShadow: cardShadow, borderColor: "var(--border)" }}
-      whileHover={{ y: -2, boxShadow: cardHoverShadow, borderColor: "var(--border-emphasis)" }}
-      transition={{ type: "spring", stiffness: 320, damping: 28 }}
-      className="glass-card group flex h-full flex-col gap-2.5 p-4"
+      whileHover={{ borderColor: "var(--border-emphasis)" }}
+      transition={{ duration: 0.15, ease: "easeOut" }}
+      className="panel-flat group flex h-full flex-col gap-2 p-3.5"
     >
       {/* Row 1 — label + freshness status dot */}
       <div className="flex items-center justify-between gap-2">
@@ -112,7 +86,7 @@ export default function KpiCard({ title, value, unit, change, trend, glow, sourc
 
       {/* Row 2 — the number, dominant */}
       <div className="flex items-baseline gap-1.5">
-        <span className="text-display text-white light:text-slate-900">
+        <span className="text-metric text-white light:text-slate-900">
           <AnimatedValue value={value} />
         </span>
         <span className="text-caption text-white/45 light:text-slate-400">{unit}</span>

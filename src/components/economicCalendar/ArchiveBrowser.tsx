@@ -18,9 +18,9 @@ interface Props {
 
 function StatTile({ label, value, accent }: { label: string; value: number; accent: string }) {
   return (
-    <div className="glass-card flex flex-col gap-1 rounded-xl p-4">
+    <div className="panel-flat flex flex-col gap-1 p-4">
       <span className="text-xs font-medium text-white/50 light:text-slate-500">{label}</span>
-      <span className="text-2xl font-bold" style={{ color: accent }}>{value}</span>
+      <span className="text-metric" style={{ color: accent }}>{value}</span>
     </div>
   );
 }

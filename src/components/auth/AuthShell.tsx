@@ -17,11 +17,11 @@ export default function AuthShell({ title, subtitle, children, footer }: AuthShe
     <main className="flex min-h-screen w-full items-center justify-center px-4 py-12 sm:px-6">
       <div className="w-full max-w-md">
         <Link href="/" className="mb-8 flex items-center justify-center gap-3">
-          <div className="glow-blue flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-neon-blue to-neon-purple text-lg font-bold text-white">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-neon-blue/50 font-serif text-lg font-semibold text-neon-blue">
             P
           </div>
           <div className="text-left">
-            <p className="text-sm font-semibold text-white light:text-slate-900">{t("nav.logoName")}</p>
+            <p className="font-serif text-[15px] font-semibold tracking-[-0.005em] text-white light:text-slate-900">{t("nav.logoName")}</p>
             <p className="text-xs text-white/40 light:text-slate-400">{t("nav.logoSubtitle")}</p>
           </div>
         </Link>

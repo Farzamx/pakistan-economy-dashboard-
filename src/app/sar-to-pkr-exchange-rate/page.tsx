@@ -34,7 +34,7 @@ export default async function SarPkrPage() {
       chartTitle="SAR / PKR — Historical Trend"
       chartData={null}
       chartUnavailableNote="No historical SAR/PKR trend chart is available — SBP does not publish a dedicated SAR/PKR historical series; only the live cross-rate above is available. SAR/PKR moves are driven almost entirely by USD/PKR, since the Saudi Riyal has been pegged to the US Dollar since 1986."
-      chartColor="#a855f7"
+      chartColor="#38bdf8"
       chartUnit=""
       chartGradientId="seoSarPkrGradient"
       chartCaption="Live rate only — no historical SAR/PKR series is published by SBP."

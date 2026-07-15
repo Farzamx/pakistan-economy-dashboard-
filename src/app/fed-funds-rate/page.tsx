@@ -43,7 +43,7 @@ export default async function FedFundsPage() {
       chartTitle="Fed Funds Effective Rate — 10-Year Historical Trend"
       chartData={chartData}
       chartUnavailableNote="Historical chart data is currently unavailable."
-      chartColor="#a855f7"
+      chartColor="#38bdf8"
       chartUnit=""
       chartGradientId="seoFedFundsGradient"
       chartCaption="Source: FRED (Federal Reserve Economic Data), DFF, Federal Funds effective rate, monthly."

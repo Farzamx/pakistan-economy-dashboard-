@@ -51,11 +51,11 @@ export default function SidebarAuthCard() {
   }
 
   if (loading) {
-    // Guest and authenticated cards are no longer the same height (138px
-    // vs 100px, measured live) now that the authenticated card carries
-    // Member Since + Premium Access. Biased toward the guest height since
-    // most visits to this dashboard are signed-out — the rarer
-    // authenticated case absorbs a small one-time height change instead.
+    // Guest and authenticated cards aren't quite the same height (the
+    // authenticated card carries an extra Member Since line). Biased
+    // toward the guest height since most visits to this dashboard are
+    // signed-out — the rarer authenticated case absorbs a small one-time
+    // height change instead.
     return <div className="h-[100px] rounded-xl border border-transparent" aria-hidden="true" />;
   }
 
@@ -75,12 +75,6 @@ export default function SidebarAuthCard() {
         </div>
         <div className="flex flex-col gap-1 text-[11px] text-[var(--text-muted)]">
           <span>{t("nav.memberSince")} {memberSince}</span>
-          <span className="flex items-center gap-1 font-medium text-neon-blue">
-            <svg className="h-3 w-3 shrink-0" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M8 1.5l1.9 3.85 4.25.62-3.07 3 .72 4.23L8 11.2l-3.8 2 .72-4.23-3.07-3 4.25-.62z" />
-            </svg>
-            {t("nav.premiumAccess")}
-          </span>
         </div>
         <button
           type="button"
@@ -102,7 +96,7 @@ export default function SidebarAuthCard() {
         href="/signup"
         data-cta="signup"
         data-cta-source="sidebar"
-        className="glow-blue w-full rounded-lg bg-gradient-to-r from-neon-blue to-neon-purple py-2 text-center text-xs font-semibold text-white transition-opacity hover:opacity-90"
+        className="w-full rounded-md bg-neon-blue py-2 text-center text-xs font-semibold text-[#05060f] transition-colors hover:bg-neon-blue/90 light:text-white"
       >
         {t("hero.createAccount")}
       </Link>

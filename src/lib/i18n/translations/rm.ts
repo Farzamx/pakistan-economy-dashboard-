@@ -1,13 +1,21 @@
 import type { Translations } from "../types";
 
 export const rm: Translations = {
+  topNav: {
+    overview: "Jaiza", markets: "Mandiyan", calendar: "Calendar",
+    research: "Tehqeeq", academy: "Academy", riskIntel: "Khatray ki Intel", premium: "Premium",
+  },
+
   nav: {
     main: "Markazi", analytics: "Tajziyat", premiumTools: "Premium Tools",
     overview: "Jaiza", riskIntel: "Khatray ki Intel", gdp: "GDP", inflation: "Mehngai",
     prices: "Qeemain", monetaryPolicy: "Maliyati Policy", globalMarkets: "Aalmi Mandiyan",
     realEconomy: "Haqeeqi Maashat", reserves: "Zakhayir", liveFX: "Live Zar-e-Mubadala",
     exchangeRate: "Shar-e-Tabadla", remittances: "Tarsilaat-e-Zar", externalSector: "Bairooni Shoba",
-    news: "Khabrein", comparisons: "Mawazna", budgetTracker: "Budget Tracker",
+    news: "Khabrein",
+    healthScore: "Health Score", macroSnapshot: "Macro Snapshot", intelligenceFeed: "Intelligence Feed",
+    calendar: "Calendar", research: "Tehqeeq",
+    comparisons: "Mawazna", budgetTracker: "Budget Tracker",
     provincialBudget: "Soobayi Budget", economicCalendar: "Maashi Calendar",
     workshop: "Iqtisadi Workshop", academy: "Iqtisadi Academy", freeSubscription: "Muft Subscription",
     rankings: "Rankings", indicators: "Indicators", settings: "Tartibaat",
@@ -26,6 +34,9 @@ export const rm: Translations = {
     createAccount: "Muft Account Banayein", login: "Log In",
     benefitComparisons: "Mawazna Dekhein", benefitBudget: "Budget Workshop Dekhein",
     benefitProvincial: "Soobayi Budget Intelligence", benefitPremium: "Mustaqbil ki Khasusiyaat",
+    upcomingCalendar: "Aainda Calendar", criticalAlerts: "Aham Ihtiyaat",
+    noCriticalAlerts: "Koi aham ihtiyaat nahin",
+    riskStatus: "Khatre ki Soorat-e-Haal", latestRelease: "Tazatareen Report", nextRelease: "Agli Mutawaqqa Report",
   },
 
   settings: {
@@ -467,6 +478,19 @@ export const rm: Translations = {
     unpin: "Unpin", pin: "Pin Karein", hide: "Chhupaein", show: "Dikhaein",
     noPinned: "Abhi tak koi pin shuda hissa nahin.", noneLeft: "Yahan kuch nahin bacha.", noneHidden: "Kuch nahin chhupa.",
     saving: "Mahfooz Ho Raha Hai…", mode: "Mode",
+  },
+
+  researchTeaser: {
+    riskTitle: "Recession aur sovereign default ke deterministic imkanaat",
+    academyTitle: "Pakistan ke aham economic indicators parhna seekhein",
+    comparisonsTitle: "Pakistan ka regional mumalik aur maazi se moazna karein",
+  },
+
+  macroSnapshot: {
+    title: "Pakistan Macro Snapshot",
+    liveFrom: "Live SBP EasyData, PBS, World Bank se",
+    driversTitle: "Macro Drivers — External Sector aur Government Finance",
+    marketsTitle: "Markets",
   },
 
   riskIntel: {

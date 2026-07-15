@@ -44,7 +44,7 @@ export default async function BrentPage() {
       chartTitle="Brent Crude Oil (USD/bbl) — 10-Year Historical Trend"
       chartData={chartData}
       chartUnavailableNote="Historical chart data is currently unavailable."
-      chartColor="#a855f7"
+      chartColor="#38bdf8"
       chartUnit=""
       chartGradientId="seoBrentGradient"
       chartCaption="Source: Yahoo Finance, Brent crude oil futures (BZ=F), monthly closes."

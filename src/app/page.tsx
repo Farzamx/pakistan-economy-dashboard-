@@ -6,10 +6,13 @@ import type { DashboardSnapshot } from "@/lib/assistantContext";
 import HealthScoreCard from "@/components/HealthScoreCard";
 import Hero from "@/components/Hero";
 import IntelligenceFeed, { type IntelligenceFeedItem } from "@/components/IntelligenceFeed";
+import WeekCalendarPanel from "@/components/WeekCalendarPanel";
+import ResearchTeaser from "@/components/ResearchTeaser";
 import IndicatorTable from "@/components/IndicatorTable";
 import InfoTooltip from "@/components/InfoTooltip";
-import KpiGrid from "@/components/KpiGrid";
+import MacroSnapshot from "@/components/MacroSnapshot";
 import MarketTicker, { type TickerItem } from "@/components/MarketTicker";
+import SectionNav, { type SectionNavItem } from "@/components/SectionNav";
 import NewsIntelligenceSection from "@/components/NewsIntelligenceSection";
 import ProvincialQuickAccess from "@/components/ProvincialQuickAccess";
 import PopularInsights from "@/components/PopularInsights";
@@ -52,6 +55,31 @@ import {
 } from "@/lib/riskModels";
 import { getHealthStatus, healthLabelToRiskLevel, type HealthModelResult } from "@/lib/economicHealth";
 import type { Kpi } from "@/data/kpiData";
+
+// Homepage in-page section nav (PEIC v3 navigation pass) — every id here is
+// a real anchor already rendered on this page; order matches document
+// order so scroll-spy's "last in view wins" tie-break reads naturally.
+const HOMEPAGE_SECTIONS: SectionNavItem[] = [
+  { key: "overview", id: "overview" },
+  { key: "healthScore", id: "health-score" },
+  { key: "macroSnapshot", id: "macro-snapshot" },
+  { key: "riskIntel", id: "risk-intelligence" },
+  { key: "intelligenceFeed", id: "intelligence-feed" },
+  { key: "calendar", id: "upcoming-calendar" },
+  { key: "research", id: "research" },
+  { key: "gdp", id: "gdp" },
+  { key: "inflation", id: "inflation" },
+  { key: "prices", id: "price-indices" },
+  { key: "monetaryPolicy", id: "monetary-policy" },
+  { key: "globalMarkets", id: "global-markets" },
+  { key: "realEconomy", id: "real-economy" },
+  { key: "reserves", id: "reserves" },
+  { key: "liveFX", id: "live-fx" },
+  { key: "exchangeRate", id: "exchange-rate" },
+  { key: "remittances", id: "remittances" },
+  { key: "externalSector", id: "external-sector" },
+  { key: "news", id: "news-intelligence" },
+];
 
 function makeTickerItem(
   kpi: Kpi,
@@ -229,6 +257,8 @@ export default async function Home() {
     makeTickerItem(fedFundsKpi,            "Fed Funds", "%",   "Fed Funds Rate"),
     makeTickerItem(sbp.foreignReserves.kpi,"Reserves",  "B",   "Foreign Reserves"),
     makeTickerItem(sbp.policyRate.kpi,     "SBP Rate",  "%",   "Policy Rate"),
+    makeTickerItem(sbp.pibYield3y.kpi,     "PK Bond 3Y","%",   "3Y PIB Yield"),
+    makeTickerItem(sbp.tbillYield3m.kpi,   "T-Bill 3M", "%",   "3M T-Bill Yield"),
   ];
 
   // ── Layer 1: Risk Engine — 6h cache ──────────────────────────────────────
@@ -384,6 +414,12 @@ export default async function Home() {
     .sort((a, b) => b.date.localeCompare(a.date));
   const latestRelease = recentReleasedEvents[0] ?? null;
 
+  // Hero briefing's "Upcoming Calendar" tile — getAllScheduledEvents() is
+  // already sorted soonest-first, so this is a plain slice/map, no new query.
+  const heroUpcomingEvents = scheduledCalendarEvents
+    .slice(0, 5)
+    .map((e) => ({ title: e.title, date: e.eventDate, importance: e.importance }));
+
   // Intelligence Feed — a "what changed" line per recent release (real
   // calendar facts) plus a few KPI trend blurbs built only from each
   // indicator's own already-computed trend/change string, never a new
@@ -483,6 +519,28 @@ export default async function Home() {
     sbp.moneySupplyM2.kpi,
   ];
 
+  // Tiered institutional KPI hierarchy (PEIC v3 IA restructure) — Tier 1 is
+  // the same headline figures already computed above for headlineKpis
+  // (reused by reference, not refetched); Tier 2 is a slimmer summary of
+  // the external-sector/fiscal Kpis already fetched for the sections
+  // further down the page. No new data anywhere in either tier.
+  const macroTier1: Kpi[] = [
+    gdpKpi,
+    headlineKpis[2],
+    withCalendarFreshness({ ...sbp.policyRate.kpi, sparkline: sbp.policyRate.trend.slice(-12).map((p) => p.value) }, policyRateEvent),
+    headlineKpis[3],
+  ];
+
+  const macroTier2 = [
+    { label: "Current Account", value: sbp.currentAccount.kpi.value, unit: sbp.currentAccount.kpi.unit, change: sbp.currentAccount.kpi.change, trend: sbp.currentAccount.kpi.trend },
+    { label: "Trade Balance", value: sbp.tradeBalance.kpi.value, unit: sbp.tradeBalance.kpi.unit, change: sbp.tradeBalance.kpi.change, trend: sbp.tradeBalance.kpi.trend },
+    { label: "Remittances", value: sbp.remittances.kpi.value, unit: sbp.remittances.kpi.unit, change: sbp.remittances.kpi.change, trend: sbp.remittances.kpi.trend },
+    { label: "Exports", value: sbp.exports.kpi.value, unit: sbp.exports.kpi.unit, change: sbp.exports.kpi.change, trend: sbp.exports.kpi.trend },
+    { label: "Imports", value: sbp.imports.kpi.value, unit: sbp.imports.kpi.unit, change: sbp.imports.kpi.change, trend: sbp.imports.kpi.trend },
+    { label: "Fiscal Balance", value: sbp.fiscalBalance.kpi.value, unit: sbp.fiscalBalance.kpi.unit, change: sbp.fiscalBalance.kpi.change, trend: sbp.fiscalBalance.kpi.trend },
+    { label: "Money Supply (M2)", value: sbp.moneySupplyM2.kpi.value, unit: sbp.moneySupplyM2.kpi.unit, change: sbp.moneySupplyM2.kpi.change, trend: sbp.moneySupplyM2.kpi.trend },
+  ];
+
   const globalMarketsKpis = [
     goldKpi,
     silverKpi,
@@ -539,57 +597,68 @@ export default async function Home() {
     sbp.netBankReserves.kpi,
   ];
 
-  // Market Status pass — the page's own render time, in Pakistan Standard
-  // Time (the dashboard's primary audience), not a client-side clock that
-  // would drift from when this data was actually fetched.
-  const marketStatusUpdatedAt = new Intl.DateTimeFormat("en-US", {
-    timeZone: "Asia/Karachi",
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(new Date());
 
   return (
     <div className="flex min-h-screen w-full">
       <HashScrollRestore />
       <Sidebar />
-      <main id="overview" className="min-w-0 flex-1 scroll-mt-8 px-6 py-8 sm:px-10 lg:px-16">
-        <Hero
-          rightSlot={<DataSourcesModal kpis={allKpis} />}
-          health={health}
-          aiAnalysis={aiAnalysis}
-          recessionResult={recessionResult}
-          defaultResult={defaultResult}
-          latestRelease={latestRelease ? { title: latestRelease.title, date: latestRelease.date, actual: latestRelease.actual ?? null } : null}
-          quickStats={[
-            { label: "CPI", value: sbp.cpiInflation.kpi.value, unit: sbp.cpiInflation.kpi.unit },
-            { label: "Policy Rate", value: sbp.policyRate.kpi.value, unit: sbp.policyRate.kpi.unit },
-            { label: "Reserves", value: sbp.foreignReserves.kpi.value, unit: sbp.foreignReserves.kpi.unit },
-            { label: "USD/PKR", value: sbp.usdPkr.kpi.value, unit: "" },
-          ]}
-          pktTimestamp={pktTimestamp}
-        />
+      <main id="overview" className="min-w-0 flex-1 scroll-mt-[100px] sm:scroll-mt-[160px]">
+        {/* Sticky market ribbon — pinned directly below TopNav (top-16),
+            visible throughout the scroll rather than living inside the
+            scrolling panel below. Same tickerItems used by every other
+            surface on this page, no new fetch. */}
+        <div className="sticky top-0 z-20 border-b border-[var(--border-subtle)] bg-[var(--background)]/95 backdrop-blur-xl sm:top-16">
+          <MarketTicker items={tickerItems} bare />
+        </div>
 
-        <div className="mt-4">
-          <IntelligenceFeed items={intelligenceFeedItems} />
+        <SectionNav items={HOMEPAGE_SECTIONS} />
+
+        <div className="px-6 py-8 sm:px-10 lg:px-16">
+        {/* Research Briefing panel — one continuous institutional panel
+            (hairline dividers between zones, not separate floating cards)
+            matching the reference design's flow: briefing -> tiered KPI
+            section -> feed+calendar -> research teaser. Everything after it
+            continues the existing homepage exactly as before. */}
+        <div className="glass-panel-deep overflow-hidden">
+          <Hero
+            rightSlot={<DataSourcesModal kpis={allKpis} />}
+            health={health}
+            aiAnalysis={aiAnalysis}
+            recessionResult={recessionResult}
+            defaultResult={defaultResult}
+            latestRelease={latestRelease ? { title: latestRelease.title, date: latestRelease.date, actual: latestRelease.actual ?? null } : null}
+            upcomingEvents={heroUpcomingEvents}
+            pktTimestamp={pktTimestamp}
+          />
+
+          <div id="macro-snapshot" className="section-divider scroll-mt-[100px] px-5 py-6 sm:scroll-mt-[160px] sm:px-8 sm:py-8">
+            <MacroSnapshot updatedAt={pktTimestamp} tier1={macroTier1} tier2={macroTier2} />
+          </div>
+
+          <div id="intelligence-feed" className="section-divider grid scroll-mt-[100px] grid-cols-1 gap-8 px-5 py-6 sm:scroll-mt-[160px] sm:px-8 sm:py-8 lg:grid-cols-[1.4fr_1fr]">
+            <IntelligenceFeed items={intelligenceFeedItems} />
+            <div id="upcoming-calendar" className="scroll-mt-[100px] sm:scroll-mt-[160px]">
+              <WeekCalendarPanel events={heroUpcomingEvents} />
+            </div>
+          </div>
+
+          <div id="research" className="section-divider scroll-mt-[100px] px-5 py-6 sm:scroll-mt-[160px] sm:px-8 sm:py-8">
+            <ResearchTeaser />
+          </div>
         </div>
 
         <PinnedIndicatorsRow />
 
-        <p className="mt-6 text-xs text-white/35 light:text-slate-400" suppressHydrationWarning>
-          <span className="font-medium text-white/50 light:text-slate-600"><T tKey="dashboard.marketStatus" /></span> &middot; <T tKey="dashboard.marketStatusUpdated" /> {marketStatusUpdatedAt} PKT
-        </p>
-        <MarketTicker items={tickerItems} />
-
-        <KpiGrid items={headlineKpis} cols={3} />
-
         {health && aiAnalysis && recessionResult && defaultResult && aiRisk && intelligenceComputedAt && intelligenceNextUpdateAt ? (
           <>
+            <div id="health-score" className="scroll-mt-[100px] sm:scroll-mt-[160px]">
             <HealthScoreCard
               health={health}
               ai={aiAnalysis}
               computedAt={intelligenceComputedAt}
               nextUpdateAt={intelligenceNextUpdateAt}
             />
+            </div>
 
             <HideableSection id="risk-intelligence">
               <RiskIntelligenceSection
@@ -695,7 +764,7 @@ export default async function Home() {
               gradientId="usdPkrGradient"
             />
           </div>
-          <div id="live-fx" className="mt-4 scroll-mt-8">
+          <div id="live-fx" className="mt-4 scroll-mt-[100px] sm:scroll-mt-[160px]">
             <p className="mb-2 text-xs font-medium text-white/40 light:text-slate-500">
               <T tKey="dashboard.liveExchangeRates" /> <span className="text-white/25 light:text-slate-400">· <T tKey="dashboard.liveExchangeRatesDesc" /></span>
             </p>
@@ -764,7 +833,7 @@ export default async function Home() {
             </p>
             <TrendLineChart
               data={sbp.cpiInflation.trend}
-              color="#a855f7"
+              color="#fb923c"
               unit="%"
               gradientId="cpiInflationGradient"
             />
@@ -781,7 +850,7 @@ export default async function Home() {
               </div>
               <TrendLineChart
                 data={spiYoyTrend}
-                color="#c084fc"
+                color="#fdba74"
                 unit="%"
                 gradientId="spiYoyGradient"
               />
@@ -835,7 +904,7 @@ export default async function Home() {
         </HideableSection>
 
         <HideableSection id="global-markets">
-        <div id="global-markets" className="scroll-mt-8">
+        <div id="global-markets" className="scroll-mt-[100px] sm:scroll-mt-[160px]">
           <ViewportFadeIn>
             <h2 className="text-headline mt-10 text-white light:text-slate-900">
               <T tKey="dashboard.globalMarkets" />
@@ -851,7 +920,7 @@ export default async function Home() {
         </HideableSection>
 
         <HideableSection id="real-economy">
-        <div id="real-economy" className="scroll-mt-8">
+        <div id="real-economy" className="scroll-mt-[100px] sm:scroll-mt-[160px]">
           <ViewportFadeIn>
             <h2 className="text-headline mt-10 text-white light:text-slate-900">
               <T tKey="dashboard.realEconomyFiscal" />
@@ -878,6 +947,7 @@ export default async function Home() {
         <ProvincialQuickAccess />
 
         <PopularInsights />
+        </div>
       </main>
       <FloatingAssistant context={dashboardSnapshot} />
     </div>

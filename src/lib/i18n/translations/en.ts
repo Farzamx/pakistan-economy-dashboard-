@@ -1,13 +1,21 @@
 import type { Translations } from "../types";
 
 export const en: Translations = {
+  topNav: {
+    overview: "Overview", markets: "Markets", calendar: "Calendar",
+    research: "Research", academy: "Academy", riskIntel: "Risk Intel", premium: "Premium",
+  },
+
   nav: {
     main: "Main", analytics: "Analytics", premiumTools: "Premium Tools",
     overview: "Overview", riskIntel: "Risk Intel", gdp: "GDP", inflation: "Inflation",
     prices: "Prices", monetaryPolicy: "Monetary Policy", globalMarkets: "Global Markets",
     realEconomy: "Real Economy", reserves: "Reserves", liveFX: "Live FX",
     exchangeRate: "Exchange Rate", remittances: "Remittances", externalSector: "External Sector",
-    news: "News", comparisons: "Comparisons", budgetTracker: "Budget Tracker",
+    news: "News",
+    healthScore: "Health Score", macroSnapshot: "Macro Snapshot", intelligenceFeed: "Intelligence Feed",
+    calendar: "Calendar", research: "Research",
+    comparisons: "Comparisons", budgetTracker: "Budget Tracker",
     provincialBudget: "Provincial Budget", economicCalendar: "Economic Calendar",
     workshop: "Economic Workshop", academy: "Economic Academy", freeSubscription: "Free Subscription",
     rankings: "Rankings", indicators: "Indicators", settings: "Settings",
@@ -26,6 +34,9 @@ export const en: Translations = {
     createAccount: "Create Free Account", login: "Log In",
     benefitComparisons: "Access Comparisons", benefitBudget: "Access Budget Workshops",
     benefitProvincial: "Provincial Budget Intelligence", benefitPremium: "Future Member Features",
+    upcomingCalendar: "Upcoming Calendar", criticalAlerts: "Critical Alerts",
+    noCriticalAlerts: "No critical alerts",
+    riskStatus: "Risk Status", latestRelease: "Latest Release", nextRelease: "Next Scheduled Release",
   },
 
   settings: {
@@ -463,6 +474,19 @@ export const en: Translations = {
     unpin: "Unpin", pin: "Pin", hide: "Hide", show: "Show",
     noPinned: "No pinned sections yet.", noneLeft: "Nothing left here.", noneHidden: "Nothing hidden.",
     saving: "Saving…", mode: "Mode",
+  },
+
+  researchTeaser: {
+    riskTitle: "Deterministic recession & sovereign default probabilities",
+    academyTitle: "Learn how to read Pakistan's key economic indicators",
+    comparisonsTitle: "Compare Pakistan against regional peers and past cycles",
+  },
+
+  macroSnapshot: {
+    title: "Pakistan Macro Snapshot",
+    liveFrom: "Live from SBP EasyData, PBS, World Bank",
+    driversTitle: "Macro Drivers — External Sector & Government Finance",
+    marketsTitle: "Markets",
   },
 
   riskIntel: {

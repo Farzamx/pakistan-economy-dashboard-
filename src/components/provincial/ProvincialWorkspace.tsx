@@ -114,7 +114,7 @@ export default function ProvincialWorkspace({ province }: ProvincialWorkspacePro
         <Link href="/provincial-budget/growth-explorer" className="rounded-full border border-white/10 light:border-slate-200 px-3 py-1.5 text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)]">
           {t("provincial.growthExplorer")}
         </Link>
-        <Link href="/provincial-budget/compare" className="rounded-full border border-neon-purple/30 bg-neon-purple/10 px-3 py-1.5 text-neon-purple transition-colors hover:bg-neon-purple/20">
+        <Link href="/provincial-budget/compare" className="rounded-full border border-neon-blue/30 bg-neon-blue/10 px-3 py-1.5 text-neon-blue transition-colors hover:bg-neon-blue/20">
           {t("provincial.compareAll")}
         </Link>
       </nav>

@@ -31,7 +31,7 @@ export default function IntelligenceFeed({ items }: Props) {
   if (items.length === 0) return null;
 
   return (
-    <div className="glass-card p-4 sm:p-5">
+    <div>
       <div className="flex items-center gap-2">
         <span className="text-label text-white/40 light:text-slate-400">Intelligence Feed</span>
         <span className="relative flex h-1.5 w-1.5">

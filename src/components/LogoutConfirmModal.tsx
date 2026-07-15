@@ -128,7 +128,7 @@ export default function LogoutConfirmModal({ open, onClose, onConfirm, loading =
                 </svg>
               </div>
 
-              <h2 className="mt-6 text-xl font-bold text-[var(--text-primary)]">{t("modal.logoutTitle")}</h2>
+              <h2 className="text-title mt-6 text-[var(--text-primary)]">{t("modal.logoutTitle")}</h2>
               <p className="mx-auto mt-3 max-w-xs text-sm leading-relaxed text-[var(--text-muted)]">
                 {t("modal.logoutDesc")}
               </p>

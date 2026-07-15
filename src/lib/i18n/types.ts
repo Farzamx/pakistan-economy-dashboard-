@@ -17,11 +17,17 @@ export const LANGUAGE_OPTIONS: LanguageOption[] = [
 export type TranslationValue = string | ((...args: string[]) => string);
 
 export interface Translations {
+  topNav: {
+    overview: string; markets: string; calendar: string;
+    research: string; academy: string; riskIntel: string; premium: string;
+  };
+
   nav: {
     main: string; analytics: string; premiumTools: string;
     overview: string; riskIntel: string; gdp: string; inflation: string; prices: string;
     monetaryPolicy: string; globalMarkets: string; realEconomy: string; reserves: string;
     liveFX: string; exchangeRate: string; remittances: string; externalSector: string; news: string;
+    healthScore: string; macroSnapshot: string; intelligenceFeed: string; calendar: string; research: string;
     comparisons: string; budgetTracker: string; provincialBudget: string;
     economicCalendar: string; workshop: string; academy: string; freeSubscription: string;
     rankings: string; indicators: string; settings: string;
@@ -34,6 +40,8 @@ export interface Translations {
     trust1: string; trust2: string; trust3: string;
     welcomeBack: string; createAccount: string; login: string;
     benefitComparisons: string; benefitBudget: string; benefitProvincial: string; benefitPremium: string;
+    upcomingCalendar: string; criticalAlerts: string; noCriticalAlerts: string;
+    riskStatus: string; latestRelease: string; nextRelease: string;
   };
 
   settings: {
@@ -303,6 +311,14 @@ export interface Translations {
     unpin: string; pin: string; hide: string; show: string;
     noPinned: string; noneLeft: string; noneHidden: string;
     saving: string; mode: string;
+  };
+
+  researchTeaser: {
+    riskTitle: string; academyTitle: string; comparisonsTitle: string;
+  };
+
+  macroSnapshot: {
+    title: string; liveFrom: string; driversTitle: string; marketsTitle: string;
   };
 
   riskIntel: {

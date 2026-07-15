@@ -25,43 +25,8 @@ interface DrawerLink {
   /** Translation key under nav.* — used for display label */
   navKey: string;
   href: string;
-  /** "purple" | "blue" | "emerald" | "cyan" | "rose" | "amber" match the desktop Sidebar's premium sections exactly; omitted for the plain items (Rankings, News, Indicators, Overview). */
-  premium?: "purple" | "blue" | "emerald" | "cyan" | "rose" | "amber";
   icon: React.ReactNode;
 }
-
-const PREMIUM_STYLES: Record<string, { active: string; inactive: string; iconColor: string }> = {
-  purple: {
-    active: "border-neon-purple/50 bg-gradient-to-r from-neon-blue/25 to-neon-purple/25 text-white shadow-[0_0_22px_rgba(168,85,247,0.45)]",
-    inactive: "border-neon-purple/25 bg-gradient-to-r from-neon-blue/10 to-neon-purple/10 text-white/90 shadow-[0_0_14px_rgba(168,85,247,0.2)]",
-    iconColor: "text-neon-purple drop-shadow-[0_0_6px_rgba(168,85,247,0.6)]",
-  },
-  blue: {
-    active: "border-neon-blue/40 bg-neon-blue/15 text-white shadow-[0_0_16px_rgba(56,189,248,0.35)]",
-    inactive: "border-neon-blue/20 bg-neon-blue/5 text-white/85",
-    iconColor: "text-neon-blue",
-  },
-  emerald: {
-    active: "border-emerald-400/40 bg-emerald-400/15 text-white shadow-[0_0_16px_rgba(52,211,153,0.35)]",
-    inactive: "border-emerald-400/20 bg-emerald-400/5 text-white/85",
-    iconColor: "text-emerald-400",
-  },
-  cyan: {
-    active: "border-cyan-400/40 bg-cyan-400/15 text-white shadow-[0_0_16px_rgba(34,211,238,0.35)]",
-    inactive: "border-cyan-400/20 bg-cyan-400/5 text-white/85",
-    iconColor: "text-cyan-400",
-  },
-  rose: {
-    active: "border-rose-400/40 bg-rose-400/15 text-white shadow-[0_0_16px_rgba(251,113,133,0.35)]",
-    inactive: "border-rose-400/20 bg-rose-400/5 text-white/85",
-    iconColor: "text-rose-400",
-  },
-  amber: {
-    active: "border-amber-400/40 bg-amber-400/15 text-white shadow-[0_0_16px_rgba(251,191,36,0.35)]",
-    inactive: "border-amber-400/20 bg-amber-400/5 text-white/85",
-    iconColor: "text-amber-400",
-  },
-};
 
 const LINKS: DrawerLink[] = [
   {
@@ -79,7 +44,6 @@ const LINKS: DrawerLink[] = [
   {
     navKey: "comparisons",
     href: "/comparisons",
-    premium: "purple",
     icon: (
       <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
         <path d="M3 16l4.5-7L12 13l4-6L21 8" />
@@ -90,7 +54,6 @@ const LINKS: DrawerLink[] = [
   {
     navKey: "budgetTracker",
     href: "/budget",
-    premium: "blue",
     icon: (
       <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
         <rect x="3" y="10" width="4" height="10" />
@@ -102,7 +65,6 @@ const LINKS: DrawerLink[] = [
   {
     navKey: "provincialBudget",
     href: "/provincial-budget",
-    premium: "emerald",
     icon: (
       <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
         <path d="M3 3v18h18" />
@@ -113,7 +75,6 @@ const LINKS: DrawerLink[] = [
   {
     navKey: "economicCalendar",
     href: "/economic-calendar",
-    premium: "cyan",
     icon: (
       <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
         <rect x="3" y="5" width="18" height="16" rx="2" />
@@ -124,7 +85,6 @@ const LINKS: DrawerLink[] = [
   {
     navKey: "freeSubscription",
     href: "/economic-calendar#email-alerts",
-    premium: "rose",
     icon: (
       <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
         <rect x="2" y="5" width="20" height="14" rx="2" />
@@ -135,7 +95,6 @@ const LINKS: DrawerLink[] = [
   {
     navKey: "academy",
     href: "/academy",
-    premium: "amber",
     icon: (
       <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
         <path d="M12 2L2 7l10 5 10-5-10-5z" />
@@ -361,11 +320,11 @@ export default function MobileNav() {
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="glow-blue flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-neon-blue to-neon-purple text-lg font-bold text-white">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-neon-blue/50 font-serif text-lg font-semibold text-neon-blue">
                     P
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-white light:text-slate-900">{t("nav.logoName")}</p>
+                    <p className="font-serif text-[15px] font-semibold tracking-[-0.005em] text-white light:text-slate-900">{t("nav.logoName")}</p>
                     <p className="text-xs text-white/40 light:text-slate-400">{t("nav.logoSubtitle")}</p>
                   </div>
                 </div>
@@ -400,7 +359,6 @@ export default function MobileNav() {
                     }
                     return !!pathname?.startsWith(link.href.split("?")[0]);
                   })();
-                  const style = link.premium ? PREMIUM_STYLES[link.premium] : null;
                   return (
                     <Link
                       key={link.navKey}
@@ -408,15 +366,13 @@ export default function MobileNav() {
                       onClick={(e) => handleLinkClick(e, link.href)}
                       aria-current={isActive ? "true" : undefined}
                       className={`flex items-center gap-2.5 rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors ${
-                        style
-                          ? isActive ? style.active : style.inactive
-                          : isActive
-                            ? "border-neon-blue/25 bg-neon-blue/10 text-white light:text-slate-900"
-                            : "border-transparent text-white/60 light:text-slate-600 hover:bg-white/5 light:hover:bg-slate-100"
+                        isActive
+                          ? "border-neon-blue/25 bg-neon-blue/10 text-white light:text-slate-900"
+                          : "border-transparent text-white/60 light:text-slate-600 hover:bg-white/5 light:hover:bg-slate-100"
                       }`}
                     >
-                      <span className={style ? style.iconColor : "text-white/40 light:text-slate-400"}>{link.icon}</span>
-                      <span className={link.premium ? "font-semibold" : undefined}>{t(`nav.${link.navKey}`)}</span>
+                      <span className={isActive ? "text-neon-blue" : "text-white/40 light:text-slate-400"}>{link.icon}</span>
+                      <span>{t(`nav.${link.navKey}`)}</span>
                     </Link>
                   );
                 })}

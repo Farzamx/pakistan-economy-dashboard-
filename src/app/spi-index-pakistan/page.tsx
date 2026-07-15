@@ -57,7 +57,7 @@ export default async function SpiIndexPage() {
       chartTitle="SPI Index Level — Historical Trend"
       chartData={chartData}
       chartUnavailableNote="Historical chart data is currently unavailable."
-      chartColor="#a855f7"
+      chartColor="#38bdf8"
       chartUnit=""
       chartGradientId="seoSpiIndexGradient"
       chartCaption="Source: Pakistan Bureau of Statistics, weekly. PBS embeds roughly the trailing 10 weeks in each release — there is no separate multi-year weekly archive file, so this chart shows the real, rolling recent history rather than an estimated longer series."

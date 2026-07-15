@@ -115,21 +115,9 @@ export default function InfoTooltip({ termKey, size = "sm" }: Props) {
   const panelRef = useRef<HTMLDivElement>(null);
   const closeTimerRef = useRef<ReturnType<typeof setTimeout>>(null);
 
-  // ── DEBUG: mount/unmount (temporary — remove once the close bug is verified fixed) ──
   useEffect(() => {
     setMounted(true);
-    console.log(`[InfoTooltip:DEBUG] mounted — termKey="${termKey}"`);
-    return () => console.log(`[InfoTooltip:DEBUG] unmounted — termKey="${termKey}"`);
-  }, [termKey]);
-
-  // ── DEBUG: open/close transitions (temporary) ──
-  const hasOpenedBeforeRef = useRef(false);
-  useEffect(() => {
-    if (open) hasOpenedBeforeRef.current = true;
-    // Skip the initial-mount "closed" log — only log real open->closed transitions.
-    if (!open && !hasOpenedBeforeRef.current) return;
-    console.log(`[InfoTooltip:DEBUG] ${open ? "opened" : "closed"} — termKey="${termKey}"`);
-  }, [open, termKey]);
+  }, []);
 
   const cancelClose = useCallback(() => {
     if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
@@ -196,14 +184,11 @@ export default function InfoTooltip({ termKey, size = "sm" }: Props) {
     // the AI translation request entirely for every term already covered.
     const cached = TOOLKIT_TRANSLATIONS[termKey];
     if (cached) {
-      console.log(`[Translation Cache] HIT — termKey="${termKey}"`);
       urduCache.set(termKey, cached.romanUrdu);
       setUrduVisible(true);
       return;
     }
-    console.log(`[Translation Cache] MISS — termKey="${termKey}"`);
 
-    console.log(`[InfoTooltip:DEBUG] translation started — termKey="${termKey}"`);
     setTranslating(true);
     const text = [
       `Kya hai?\n${entry.what}`,
@@ -223,7 +208,6 @@ export default function InfoTooltip({ termKey, size = "sm" }: Props) {
       urduCache.set(termKey, "Translation unavailable.");
     }
 
-    console.log(`[InfoTooltip:DEBUG] translation finished — termKey="${termKey}"`);
     setTranslating(false);
     setUrduVisible(true);
   }, [termKey]);

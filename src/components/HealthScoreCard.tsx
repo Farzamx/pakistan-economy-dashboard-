@@ -1,7 +1,8 @@
 "use client";
 
 import { motion } from "framer-motion";
-import HealthScoreGauge from "@/components/HealthScoreGauge";
+import AnimatedValue from "@/components/AnimatedValue";
+import HorizontalIndexBar from "@/components/HorizontalIndexBar";
 import { healthLabelToRiskLevel, type HealthModelResult } from "@/lib/economicHealth";
 import type { AiEconomicAnalysis } from "@/lib/data/aiEconomicAnalysis";
 import { useLanguage } from "@/components/LanguageProvider";
@@ -57,7 +58,18 @@ export default function HealthScoreCard({ health, ai, computedAt, nextUpdateAt }
       viewport={{ once: true, amount: 0.3 }}
       transition={{ duration: 0.5, ease: "easeOut" }}
     >
-      <HealthScoreGauge score={score} color={status.ringColor} />
+      <div className="w-full shrink-0 sm:w-[180px]">
+        <div className="flex items-baseline gap-1.5">
+          <span className="text-display tabular-nums text-white light:text-slate-900">
+            <AnimatedValue value={String(score)} />
+          </span>
+          <span className="text-caption text-white/40 light:text-slate-400">/ 100</span>
+        </div>
+        <HorizontalIndexBar score={score} color={status.ringColor} className="mt-2" />
+        <p className={`text-subtitle mt-2 font-semibold ${status.label === "Strong" ? "text-emerald-400 light:text-emerald-700" : status.label === "Weak" ? "text-rose-400 light:text-rose-700" : "text-amber-400 light:text-amber-700"}`}>
+          {statusMap[status.label] ?? status.label}
+        </p>
+      </div>
 
       <div className="flex flex-col items-center sm:items-start">
         <div className="flex items-center gap-2">
@@ -65,16 +77,14 @@ export default function HealthScoreCard({ health, ai, computedAt, nextUpdateAt }
             {t("health.title")}
           </span>
           <span className="rounded-full border border-neon-blue/20 bg-neon-blue/10 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-widest text-neon-blue/70">
+            {t("riskIntel.quant")}
+          </span>
+          <span className="rounded-full border border-neon-purple/20 bg-neon-purple/10 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-widest text-neon-purple/70">
             {modelDisplayName}
           </span>
         </div>
 
         <div className="mt-2 flex flex-wrap items-center gap-2">
-          <span
-            className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium ${status.badgeClass}`}
-          >
-            {statusMap[status.label] ?? status.label}
-          </span>
           <span
             className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium ${SENTIMENT_CLASS[sentiment]}`}
           >

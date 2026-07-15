@@ -1,7 +1,8 @@
 "use client";
 
 import { motion } from "framer-motion";
-import HealthScoreGauge from "@/components/HealthScoreGauge";
+import AnimatedValue from "@/components/AnimatedValue";
+import HorizontalIndexBar from "@/components/HorizontalIndexBar";
 import ViewportFadeIn from "@/components/ViewportFadeIn";
 import InfoTooltip from "@/components/InfoTooltip";
 import {
@@ -108,23 +109,29 @@ function RiskCard({ title, termKey, result, ai, confidence, modelDisplayName, de
       viewport={{ once: true, amount: 0.2 }}
       transition={{ duration: 0.5, ease: "easeOut", delay }}
     >
-      {/* Header row — gauge + title/badges/summary */}
-      <div className="flex flex-col items-center gap-5 text-center sm:flex-row sm:text-left">
-        <div className="shrink-0">
-          <HealthScoreGauge score={result.probability} color={gaugeColor} />
+      {/* Header row — horizontal index + title/badges/summary */}
+      <div className="flex flex-col gap-5 sm:flex-row sm:text-left">
+        <div className="w-full shrink-0 sm:w-[160px]">
+          <div className="flex items-baseline gap-1">
+            <span className="text-display tabular-nums text-white light:text-slate-900">
+              <AnimatedValue value={String(result.probability)} />
+            </span>
+            <span className="text-caption text-white/40 light:text-slate-400">%</span>
+          </div>
+          <HorizontalIndexBar score={result.probability} color={gaugeColor} className="mt-2" />
         </div>
 
-        <div className="flex flex-col items-center sm:items-start">
+        <div className="flex flex-col items-center text-center sm:items-start sm:text-left">
           {/* Title + methodology badges */}
           <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-start">
             <span className="text-xs font-semibold uppercase tracking-[0.3em] text-white/40 light:text-slate-500">
               {title}
             </span>
             <InfoTooltip termKey={termKey} size="xs" />
-            <span className="rounded-full border border-neon-purple/20 bg-neon-purple/10 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-widest text-neon-purple/70">
+            <span className="rounded-full border border-neon-blue/20 bg-neon-blue/10 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-widest text-neon-blue/70">
               {t("riskIntel.quant")}
             </span>
-            <span className="rounded-full border border-neon-blue/20 bg-neon-blue/10 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-widest text-neon-blue/70">
+            <span className="rounded-full border border-neon-purple/20 bg-neon-purple/10 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-widest text-neon-purple/70">
               {modelDisplayName}
             </span>
           </div>
@@ -223,7 +230,7 @@ export default function RiskIntelligenceSection({
 }: RiskIntelligenceSectionProps) {
   const { t } = useLanguage();
   return (
-    <div id="risk-intelligence" className="scroll-mt-8">
+    <div id="risk-intelligence" className="scroll-mt-[100px] sm:scroll-mt-[160px]">
       <ViewportFadeIn>
         <h2 className="text-headline mt-10 text-white light:text-slate-900">
           {t("riskIntel.title")}

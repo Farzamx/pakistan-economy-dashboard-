@@ -34,7 +34,7 @@ export default async function EconomicIndicatorsPage() {
       kpiQuality={sbp.cpiInflation.kpi}
       chartTitle="CPI Inflation — 24-Month Trend"
       chartData={sbp.cpiInflation.trend}
-      chartColor="#a855f7"
+      chartColor="#38bdf8"
       chartUnit="%"
       chartGradientId="seoIndicatorsGradient"
       chartCaption="Source: SBP EasyData, monthly national CPI, year-over-year."

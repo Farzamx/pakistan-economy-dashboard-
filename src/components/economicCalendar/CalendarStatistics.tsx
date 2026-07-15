@@ -12,9 +12,9 @@ interface KpiTileProps {
 
 function KpiTile({ label, value, accent }: KpiTileProps) {
   return (
-    <motion.div whileHover={{ scale: 1.03 }} transition={{ type: "spring", stiffness: 300, damping: 22 }} className="glass-card flex flex-col gap-1.5 p-5">
+    <motion.div whileHover={{ borderColor: "var(--border-emphasis)" }} transition={{ duration: 0.15, ease: "easeOut" }} className="panel-flat flex flex-col gap-1.5 p-4">
       <span className="text-xs font-medium text-white/50 light:text-slate-500">{label}</span>
-      <span className="text-3xl font-bold" style={{ color: accent }}>
+      <span className="text-metric" style={{ color: accent }}>
         {value}
       </span>
     </motion.div>
@@ -31,7 +31,7 @@ export default function CalendarStatistics({ kpis }: { kpis: CalendarKpis }) {
         <KpiTile label={t("calendar.upcomingEvents")} value={kpis.upcomingCount} accent="#38bdf8" />
         <KpiTile label={t("calendar.highImpactEvents")} value={kpis.highImpactCount} accent="#fb7185" />
         <KpiTile label={t("calendar.currentWeek")} value={kpis.thisWeekCount} accent="#34d399" />
-        <KpiTile label={t("calendar.remainingThisMonth")} value={kpis.remainingThisMonthCount} accent="#a855f7" />
+        <KpiTile label={t("calendar.remainingThisMonth")} value={kpis.remainingThisMonthCount} accent="#94a3b8" />
       </div>
     </section>
   );

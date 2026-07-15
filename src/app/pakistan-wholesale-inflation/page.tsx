@@ -32,7 +32,7 @@ export default async function WpiInflationPage() {
       kpiQuality={wpi.kpi}
       chartTitle="WPI Inflation — 24-Month Trend"
       chartData={wpi.trend}
-      chartColor="#a855f7"
+      chartColor="#38bdf8"
       chartUnit="%"
       chartGradientId="seoWpiGradient"
       chartCaption="Source: SBP EasyData / Pakistan Bureau of Statistics, monthly, year-over-year."

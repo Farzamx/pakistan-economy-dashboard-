@@ -12,41 +12,7 @@ import GlobalSearch from "@/components/GlobalSearch";
 import { useAuth } from "@/components/AuthProvider";
 import { isProtectedPath } from "@/lib/protectedSections";
 import { useLanguage } from "@/components/LanguageProvider";
-
-// `id` is the homepage section's element id. The rendered href is always
-// "/#id" (absolute, never a bare "#id") — these are anchors on `/` only,
-// and a bare "#id" resolves against whatever route is currently active. On
-// /comparisons (or any future non-homepage route) that silently produces
-// "/comparisons#id", which matches nothing and leaves the current page
-// mounted instead of navigating away — the bug this fixes.
-// Maps section id → translation key under nav.*
-const NAV_ITEMS: { key: string; id: string }[] = [
-  { key: "overview",        id: "overview" },
-  { key: "riskIntel",       id: "risk-intelligence" },
-  { key: "gdp",             id: "gdp" },
-  { key: "inflation",       id: "inflation" },
-  { key: "prices",          id: "price-indices" },
-  { key: "monetaryPolicy",  id: "monetary-policy" },
-  { key: "globalMarkets",   id: "global-markets" },
-  { key: "realEconomy",     id: "real-economy" },
-  { key: "reserves",        id: "reserves" },
-  { key: "liveFX",          id: "live-fx" },
-  { key: "exchangeRate",    id: "exchange-rate" },
-  { key: "remittances",     id: "remittances" },
-  { key: "externalSector",  id: "external-sector" },
-  { key: "news",            id: "news-intelligence" },
-];
-
-// Sidebar Information Architecture grouping — purely a rendering split of
-// NAV_ITEMS into labeled bands (Main / Analytics). NAV_ITEMS' own array
-// order is untouched, so the scroll-spy's "last in document order wins"
-// tie-break logic above stays correct; this only changes how the same
-// items are bucketed under headers, not their underlying order or ids.
-// "External Sector" and "News" aren't in the original IA spec's Analytics
-// list but are real, working sections — folding them into Analytics
-// (rather than dropping them) keeps that existing functionality intact.
-const MAIN_NAV_ITEMS = NAV_ITEMS.slice(0, 2);
-const ANALYTICS_NAV_ITEMS = NAV_ITEMS.slice(2);
+import { useSidebar } from "@/components/SidebarProvider";
 
 function SidebarSectionLabel({ children }: { children: React.ReactNode }) {
   return (
@@ -103,12 +69,11 @@ function SidebarNavLink({
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const isHomepage = pathname === "/";
   const { user, loading } = useAuth();
   const { t } = useLanguage();
+  const { collapsed, toggle } = useSidebar();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [psxOpen, setPsxOpen] = useState(false);
-  const [activeId, setActiveId] = useState<string>(NAV_ITEMS[0].id);
   const [guestModalOpen, setGuestModalOpen] = useState(false);
   const [guestDestination, setGuestDestination] = useState("/");
   const [hash, setHash] = useState("");
@@ -154,62 +119,21 @@ export default function Sidebar() {
     setGuestModalOpen(true);
   }
 
-  // Scroll-spy: highlights whichever section is currently in view. A thin
-  // detection band near the top of the viewport (via rootMargin) decides
-  // which section "counts" as current. When two adjacent sections both
-  // straddle that band during a fast scroll, the one furthest down the
-  // page (last in document order) wins — matching downward scroll intent.
-  // Only meaningful on the homepage — these section ids don't exist on any
-  // other route, so the effect is a no-op (and correctly inert) elsewhere.
-  useEffect(() => {
-    if (!isHomepage) return;
-
-    const ids = NAV_ITEMS.map((item) => item.id);
-    const sections = ids
-      .map((id) => document.getElementById(id))
-      .filter((el): el is HTMLElement => el !== null);
-
-    if (sections.length === 0) return;
-
-    const visible = new Set<string>();
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          if (entry.isIntersecting) {
-            visible.add(entry.target.id);
-          } else {
-            visible.delete(entry.target.id);
-          }
-        }
-        for (let i = ids.length - 1; i >= 0; i--) {
-          if (visible.has(ids[i])) {
-            setActiveId(ids[i]);
-            break;
-          }
-        }
-      },
-      { rootMargin: "-10% 0px -80% 0px", threshold: 0 },
-    );
-
-    sections.forEach((el) => observer.observe(el));
-    return () => observer.disconnect();
-  }, [isHomepage]);
-
   return (
     <>
-      <aside className="hidden w-64 shrink-0 flex-col gap-8 border-r border-white/5 light:border-slate-200 bg-white/[0.02] light:bg-white p-6 backdrop-blur-xl light:backdrop-blur-none sm:flex sticky top-0 h-screen overflow-y-auto hide-scrollbar light:shadow-[1px_0_0_0_#E2E6EF]">
-        {/* Logo */}
-        <div className="flex items-center gap-3">
-          <div className="glow-blue flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-neon-blue to-neon-purple text-lg font-bold text-white">
-            P
-          </div>
-          <div>
-            <p className="text-sm font-semibold text-white light:text-slate-900">{t("nav.logoName")}</p>
-            <p className="text-xs text-white/40 light:text-slate-400">{t("nav.logoSubtitle")}</p>
-          </div>
-        </div>
-
+      {/* Outer wrapper carries the sticky/viewport-height positioning (not
+          <aside> itself), so the collapse handle — absolutely positioned at
+          50% of THIS element — tracks the visible viewport at any scroll
+          position, and is never clipped by <aside>'s own overflow-y-auto
+          (which per the CSS overflow spec forces overflow-x to "auto" too,
+          the moment overflow-y isn't "visible"). */}
+      <div className="sticky top-16 hidden h-[calc(100vh-4rem)] shrink-0 sm:block">
+        <aside
+          className={`relative flex h-full flex-col overflow-y-auto overflow-x-hidden border-r border-white/5 light:border-slate-200 bg-white/[0.02] light:bg-white backdrop-blur-xl light:backdrop-blur-none hide-scrollbar light:shadow-[1px_0_0_0_#E2E6EF] transition-[width] duration-200 ease-out ${
+            collapsed ? "w-0 gap-0 p-0 opacity-0 pointer-events-none" : "w-64 gap-6 p-5 opacity-100"
+          }`}
+          aria-hidden={collapsed}
+        >
         {/* Auth card — near the top per the Auth UX Enhancement, replacing
             the old plain-text Login/Logout row that used to live at the
             bottom of the nav below (kept there would have been a duplicate
@@ -218,21 +142,12 @@ export default function Sidebar() {
 
         <GlobalSearch onLinkClick={handleProtectedNav} placeholder={t("search.placeholder")} />
 
-        {/* Navigation — grouped per the Sidebar Information Architecture
-            pass into Main / Analytics / Premium Tools bands. Premium Tools
-            (including PSX) now renders FIRST, directly below the search
-            bar — these are flagship/value-added features (Comparisons,
-            Budget Tracker, Provincial Budget, Economic Calendar, PSX) and
-            the Navigation UX Improvement pass moved them above the fold so
-            they're visible without scrolling, rather than after the full
-            Main/Analytics anchor list. This is purely a sidebar DOM
-            position change — it doesn't touch NAV_ITEMS' own order, so the
-            scroll-spy's "last in document order wins" tie-break and the
-            `activeId` default ("overview") are unaffected.
-            Economic Calendar joined this group (moved out of Analytics
-            below) when it became a premium tool — same gating, same
-            gradient/glow treatment as its three siblings here, just its
-            own color (cyan) so all four stay visually distinct. */}
+        {/* Secondary/tool navigation only (PEIC v3 nav restructure) — the
+            primary site-level nav (Overview, Markets, Calendar, Research,
+            Academy, Risk Intel) now lives in TopNav.tsx as a horizontal bar.
+            This sidebar keeps Premium Tools + Settings, matching an
+            institutional research site's "tools" rail rather than a full
+            page-section index. */}
         <nav className="flex flex-col gap-1">
           <SidebarSectionLabel>{t("nav.premiumTools")}</SidebarSectionLabel>
 
@@ -338,27 +253,6 @@ export default function Sidebar() {
             {t("nav.psxLabel")}
           </motion.button>
 
-          <SidebarSectionLabel>{t("nav.main")}</SidebarSectionLabel>
-          {MAIN_NAV_ITEMS.map((item) => (
-            <SidebarNavLink
-              key={item.key}
-              href={`/#${item.id}`}
-              isActive={isHomepage && activeId === item.id}
-              label={t(`nav.${item.key}`)}
-            />
-          ))}
-
-          <SidebarSectionLabel>{t("nav.analytics")}</SidebarSectionLabel>
-
-          {ANALYTICS_NAV_ITEMS.map((item) => (
-            <SidebarNavLink
-              key={item.key}
-              href={`/#${item.id}`}
-              isActive={isHomepage && activeId === item.id}
-              label={t(`nav.${item.key}`)}
-            />
-          ))}
-
           {/* Settings — opens modal, not a nav link */}
           <motion.button
             type="button"
@@ -379,7 +273,23 @@ export default function Sidebar() {
         <div className="mt-auto rounded-xl border border-white/5 light:border-slate-200 bg-white/[0.03] light:bg-slate-50 p-4 text-xs text-white/40 light:text-slate-400">
           {t("nav.liveData")}
         </div>
-      </aside>
+        </aside>
+
+        {/* Collapse handle — vertically centered on the sidebar's edge.
+            Only this remains visible while collapsed; <main> (already
+            flex-1) reflows into the reclaimed width automatically since
+            <aside> above shrinks to w-0, no per-page layout change needed. */}
+        <button
+          type="button"
+          onClick={toggle}
+          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          className="absolute top-1/2 -right-3 z-10 flex h-7 w-6 -translate-y-1/2 items-center justify-center rounded-md border border-white/10 light:border-slate-200 bg-[var(--surface-3)] text-white/50 light:text-slate-500 shadow-sm transition-colors hover:text-white light:hover:text-slate-900"
+        >
+          <svg className={`h-3 w-3 transition-transform ${collapsed ? "rotate-180" : ""}`} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M10 3L5 8l5 5" />
+          </svg>
+        </button>
+      </div>
 
       <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />
       <PsxComingSoonModal open={psxOpen} onClose={() => setPsxOpen(false)} />

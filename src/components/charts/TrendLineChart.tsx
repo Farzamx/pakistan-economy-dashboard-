@@ -15,7 +15,6 @@ import {
 } from "recharts";
 import type { DotItemDotProps, TooltipContentProps } from "recharts";
 import type { NameType, ValueType } from "recharts/types/component/DefaultTooltipContent";
-import { useTheme } from "@/components/ThemeProvider";
 
 export interface TrendPoint {
   month: string;
@@ -43,15 +42,11 @@ interface TrendLineChartProps {
 
 /** period-over-period institutional tooltip — shows the point's own date,
  * value, and change vs. the previous point, matching the same "value +
- * delta" convention KpiCard uses (arrow, signed, muted "vs" caption). */
-function buildTooltipContent(data: TrendPoint[], unit: string, color: string, isLight: boolean) {
-  const tooltipBg      = isLight ? "rgba(255, 255, 255, 0.97)" : "rgba(11, 14, 33, 0.94)";
-  const tooltipBorder  = isLight ? "1px solid rgba(0, 0, 0, 0.10)" : "1px solid rgba(255, 255, 255, 0.12)";
-  const labelColor     = isLight ? "rgba(0, 0, 0, 0.50)" : "rgba(255, 255, 255, 0.50)";
-  const valueColor     = isLight ? "rgba(0, 0, 0, 0.85)" : "#ffffff";
-  const upColor        = isLight ? "#047857" : "#34d399";
-  const downColor      = isLight ? "#be123c" : "#fb7185";
-
+ * delta" convention KpiCard uses (arrow, signed, muted "vs" caption).
+ * Colors reference the shared --chart-* design tokens (globals.css) via
+ * CSS variables so the tooltip re-themes automatically on data-theme
+ * changes — no isLight prop/recompute needed. */
+function buildTooltipContent(data: TrendPoint[], unit: string, color: string) {
   // eslint-disable-next-line react/display-name
   return ({ active, payload, label }: TooltipContentProps<ValueType, NameType>) => {
     if (!active || !payload || payload.length === 0) return null;
@@ -59,21 +54,21 @@ function buildTooltipContent(data: TrendPoint[], unit: string, color: string, is
     const idx = data.findIndex((p) => p.month === label);
     const prev = idx > 0 ? data[idx - 1] : null;
     const delta = prev ? value - prev.value : null;
-    const deltaColor = delta === null ? labelColor : delta >= 0 ? upColor : downColor;
+    const deltaColor = delta === null ? "var(--chart-tooltip-label)" : delta >= 0 ? "var(--chart-positive)" : "var(--chart-negative)";
 
     return (
       <div
         style={{
-          background: tooltipBg,
-          border: tooltipBorder,
+          background: "var(--chart-tooltip-bg)",
+          border: "1px solid var(--chart-tooltip-border)",
           borderRadius: "0.75rem",
           backdropFilter: "blur(16px)",
           padding: "8px 12px",
           minWidth: 120,
         }}
       >
-        <div style={{ color: labelColor, fontSize: 11, marginBottom: 3, letterSpacing: "0.02em" }}>{label}</div>
-        <div style={{ color: valueColor, fontWeight: 600, fontSize: 15, fontVariantNumeric: "tabular-nums" }}>
+        <div style={{ color: "var(--chart-tooltip-label)", fontSize: 11, marginBottom: 3, letterSpacing: "0.02em" }}>{label}</div>
+        <div style={{ color: "var(--chart-tooltip-value)", fontWeight: 600, fontSize: 15, fontVariantNumeric: "tabular-nums" }}>
           {value}{unit}
         </div>
         {delta !== null && (
@@ -98,25 +93,26 @@ export default function TrendLineChart({
   const containerRef = useRef<HTMLDivElement>(null);
   const isInView = useInView(containerRef, { once: true });
   const prefersReducedMotion = useSafeReducedMotion();
-  const { theme } = useTheme();
 
   const shouldRender = isInView || !!prefersReducedMotion;
-  const isLight = theme === "light";
 
-  const gridStroke     = isLight ? "rgba(0, 0, 0, 0.08)"   : "rgba(255, 255, 255, 0.06)";
-  const axisTickFill   = isLight ? "rgba(0, 0, 0, 0.50)"   : "rgba(255, 255, 255, 0.40)";
-  const cursorStroke   = isLight ? "rgba(0, 0, 0, 0.12)"   : "rgba(255, 255, 255, 0.15)";
-  const dotStroke      = isLight ? "#ffffff"                : "#05060f";
-  const avgStroke      = isLight ? "rgba(0, 0, 0, 0.28)"    : "rgba(255, 255, 255, 0.28)";
-  const avgLabelColor  = isLight ? "rgba(0, 0, 0, 0.45)"    : "rgba(255, 255, 255, 0.45)";
-  const markerStroke   = isLight ? "rgba(2, 132, 199, 0.55)" : "rgba(56, 189, 248, 0.55)";
+  // All colors below reference the shared --chart-* design tokens
+  // (globals.css) via CSS variables, which the browser resolves against
+  // the current [data-theme] automatically — no isLight/useTheme() needed.
+  const gridStroke    = "var(--chart-grid)";
+  const axisTickFill  = "var(--chart-axis)";
+  const cursorStroke  = "var(--chart-cursor)";
+  const dotStroke     = "var(--chart-active-stroke)";
+  const avgStroke     = "var(--chart-average)";
+  const avgLabelColor = "var(--chart-average-label)";
+  const markerStroke  = "var(--chart-marker)";
 
   const numericValues = data.map((p) => p.value).filter((v) => Number.isFinite(v));
   const average = numericValues.length > 0
     ? numericValues.reduce((sum, v) => sum + v, 0) / numericValues.length
     : null;
 
-  const tooltipContent = buildTooltipContent(data, unit, color, isLight);
+  const tooltipContent = buildTooltipContent(data, unit, color);
   const lastIndex = data.length - 1;
 
   /** Emphasized endpoint — the latest observation gets a permanently
