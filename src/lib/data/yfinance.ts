@@ -11,6 +11,7 @@ import type { MarketType } from "@/lib/marketCalendar";
 import { dedupeInFlight, getFresh, setCache } from "@/lib/memoryCache";
 import { resolveWithPersistedFallback } from "@/lib/marketFallbackSnapshot";
 import { fallbackPakEtfKpi } from "@/data/globalMarketsFallbackData";
+import { globalMarketCacheTag } from "@/lib/data/globalMarketsCacheTags";
 
 const YF_BASE = "https://query1.finance.yahoo.com/v8/finance/chart";
 const REVALIDATE = 60 * 60; // 1h
@@ -52,15 +53,25 @@ function formatUnixDate(epoch: number): string {
   return `${MONTH_NAMES[d.getUTCMonth()]} ${d.getUTCDate()}`;
 }
 
-export async function fetchYfQuote(symbol: string): Promise<{
+export interface YfQuoteOptions {
+  /** Next.js Data Cache tag — lets globalMarketsFreshnessAudit.ts force-revalidate this exact symbol via revalidateTag(), instead of waiting out REVALIDATE. Omitted for callers (fxRates.ts, getPakEtfKpi) that manage their own cache tag/layer. */
+  cacheTag?: string;
+  /** Bypasses the Data Cache entirely (cache: "no-store") for a genuinely-live re-check — used by the freshness audit, never by a normal page render. Mutually exclusive with cacheTag per Next.js's fetch cache rules. */
+  noCache?: boolean;
+}
+
+export async function fetchYfQuote(symbol: string, options?: YfQuoteOptions): Promise<{
   price: number;
   prevClose: number | null;
   updatedAt: number;
 }> {
   const encoded = encodeURIComponent(symbol);
+  const cacheOptions: RequestInit = options?.noCache
+    ? { cache: "no-store" }
+    : { next: { revalidate: REVALIDATE, ...(options?.cacheTag ? { tags: [options.cacheTag] } : {}) } };
   const res = await fetch(`${YF_BASE}/${encoded}?interval=1d&range=2d`, {
     headers: { "User-Agent": "Mozilla/5.0" },
-    next: { revalidate: REVALIDATE },
+    ...cacheOptions,
     signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
   });
   if (!res.ok) throw new Error(`Yahoo Finance HTTP ${res.status} for ${symbol}`);
@@ -114,51 +125,51 @@ export function buildYfKpi(
 
 // Individual getters — each returns null on failure so callers can chain fallbacks
 
-export async function getYfGoldKpi(): Promise<Kpi | null> {
+export async function getYfGoldKpi(noCache = false): Promise<Kpi | null> {
   try {
-    const { price, prevClose, updatedAt } = await fetchYfQuote(YF_SYMBOLS.gold);
+    const { price, prevClose, updatedAt } = await fetchYfQuote(YF_SYMBOLS.gold, { cacheTag: globalMarketCacheTag("gold"), noCache });
     return buildYfKpi(price, prevClose, updatedAt, "Gold", "$/oz", "blue", 2, YF_SYMBOLS.gold);
   } catch { return null; }
 }
 
-export async function getYfSilverKpi(): Promise<Kpi | null> {
+export async function getYfSilverKpi(noCache = false): Promise<Kpi | null> {
   try {
-    const { price, prevClose, updatedAt } = await fetchYfQuote(YF_SYMBOLS.silver);
+    const { price, prevClose, updatedAt } = await fetchYfQuote(YF_SYMBOLS.silver, { cacheTag: globalMarketCacheTag("silver"), noCache });
     return buildYfKpi(price, prevClose, updatedAt, "Silver", "$/oz", "purple", 2, YF_SYMBOLS.silver);
   } catch { return null; }
 }
 
-export async function getYfWtiKpi(): Promise<Kpi | null> {
+export async function getYfWtiKpi(noCache = false): Promise<Kpi | null> {
   try {
-    const { price, prevClose, updatedAt } = await fetchYfQuote(YF_SYMBOLS.wti);
+    const { price, prevClose, updatedAt } = await fetchYfQuote(YF_SYMBOLS.wti, { cacheTag: globalMarketCacheTag("wti"), noCache });
     return buildYfKpi(price, prevClose, updatedAt, "WTI Crude", "$/bbl", "blue", 2, YF_SYMBOLS.wti);
   } catch { return null; }
 }
 
-export async function getYfBrentKpi(): Promise<Kpi | null> {
+export async function getYfBrentKpi(noCache = false): Promise<Kpi | null> {
   try {
-    const { price, prevClose, updatedAt } = await fetchYfQuote(YF_SYMBOLS.brent);
+    const { price, prevClose, updatedAt } = await fetchYfQuote(YF_SYMBOLS.brent, { cacheTag: globalMarketCacheTag("brent"), noCache });
     return buildYfKpi(price, prevClose, updatedAt, "Brent Crude", "$/bbl", "purple", 2, YF_SYMBOLS.brent);
   } catch { return null; }
 }
 
-export async function getYfNaturalGasKpi(): Promise<Kpi | null> {
+export async function getYfNaturalGasKpi(noCache = false): Promise<Kpi | null> {
   try {
-    const { price, prevClose, updatedAt } = await fetchYfQuote(YF_SYMBOLS.naturalGas);
+    const { price, prevClose, updatedAt } = await fetchYfQuote(YF_SYMBOLS.naturalGas, { cacheTag: globalMarketCacheTag("natural-gas"), noCache });
     return buildYfKpi(price, prevClose, updatedAt, "Natural Gas", "$/MMBtu", "blue", 3, YF_SYMBOLS.naturalGas);
   } catch { return null; }
 }
 
-export async function getYfDxyKpi(): Promise<Kpi | null> {
+export async function getYfDxyKpi(noCache = false): Promise<Kpi | null> {
   try {
-    const { price, prevClose, updatedAt } = await fetchYfQuote(YF_SYMBOLS.dxy);
+    const { price, prevClose, updatedAt } = await fetchYfQuote(YF_SYMBOLS.dxy, { cacheTag: globalMarketCacheTag("dxy"), noCache });
     return buildYfKpi(price, prevClose, updatedAt, "US Dollar Index", "DXY", "purple", 2, YF_SYMBOLS.dxy);
   } catch { return null; }
 }
 
-export async function getYfUs10yKpi(): Promise<Kpi | null> {
+export async function getYfUs10yKpi(noCache = false): Promise<Kpi | null> {
   try {
-    const { price, prevClose, updatedAt } = await fetchYfQuote(YF_SYMBOLS.us10y);
+    const { price, prevClose, updatedAt } = await fetchYfQuote(YF_SYMBOLS.us10y, { cacheTag: globalMarketCacheTag("us10y"), noCache });
     return buildYfKpi(price, prevClose, updatedAt, "US 10Y Treasury", "%", "blue", 3, YF_SYMBOLS.us10y, "us-treasury");
   } catch { return null; }
 }

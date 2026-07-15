@@ -1,6 +1,7 @@
 import { unstable_cache } from "next/cache";
 import { fetchYfQuote } from "@/lib/data/yfinance";
 import { dedupeInFlight, getFresh, getStale, setCache } from "@/lib/memoryCache";
+import { savePersistedSnapshot, getPersistedSnapshot } from "@/lib/marketFallbackSnapshot";
 import type { Kpi } from "@/data/kpiData";
 import type { SourceStatus } from "@/lib/dataQuality";
 
@@ -183,6 +184,47 @@ const getFromL2 = unstable_cache(fetchFromUpstream, ["fx-rates-yf"], {
   tags: ["fx-rates"],
 });
 
+// ── Durable last-known-good persistence (market_fallback_snapshots) ─────────
+// FX predates resolveWithPersistedFallback() and can't adopt it directly —
+// that helper resolves one Kpi per upstream call, while fetchFromUpstream()
+// batches all 4 cross-pairs into a single Promise.all for efficiency.
+// Reusing its two underlying primitives directly (rather than the wrapper)
+// gets the same durable "last known good" floor the other 8 Global Markets
+// indicators have, without restructuring FX's already-verified-healthy
+// batched L1/L2 flow: persist on every successful upstream fetch, and read
+// the persisted value back — before ever touching the hardcoded, effectively
+// permanently-dated FALLBACK_RATES below — if a live fetch fails AND no
+// in-memory (L1) copy of any age survives (i.e. a cold instance whose very
+// first request already fails).
+const FX_PERSIST_KEYS: Record<keyof FxRateKpis, string> = {
+  usdPkr: "usd-pkr",
+  eurPkr: "eur-pkr",
+  gbpPkr: "gbp-pkr",
+  sarPkr: "sar-pkr",
+};
+
+function persistFxSnapshots(rates: FxRateKpis): void {
+  for (const [field, key] of Object.entries(FX_PERSIST_KEYS) as [keyof FxRateKpis, string][]) {
+    void savePersistedSnapshot(key, rates[field], rates[field].source ?? "Yahoo Finance");
+  }
+}
+
+/** Reads all 4 persisted snapshots; returns null unless every one exists (a partial set would mix cross-pairs from different moments in time, which is worse than the single hardcoded snapshot). */
+async function getPersistedFxSnapshots(): Promise<FxRateKpis | null> {
+  const entries = await Promise.all(
+    (Object.entries(FX_PERSIST_KEYS) as [keyof FxRateKpis, string][]).map(
+      async ([field, key]) => [field, await getPersistedSnapshot(key)] as const,
+    ),
+  );
+  if (entries.some(([, snapshot]) => !snapshot)) return null;
+
+  const result = {} as FxRateKpis;
+  for (const [field, snapshot] of entries) {
+    result[field] = { ...snapshot!.kpi, sourceStatus: "cache-stale", snapshotDate: snapshot!.capturedAt.slice(0, 10) };
+  }
+  return result;
+}
+
 /**
  * Stamps sourceStatus (and, for fallback, snapshotDate) onto all 4 rates at
  * once. Production Audit Part 3 fix (2026-06-30): this file predates
@@ -197,7 +239,18 @@ function withFxSourceStatus(rates: FxRateKpis, status: SourceStatus): FxRateKpis
   return { usdPkr: stamp(rates.usdPkr), eurPkr: stamp(rates.eurPkr), gbpPkr: stamp(rates.gbpPkr), sarPkr: stamp(rates.sarPkr) };
 }
 
-export async function getFxRates(): Promise<FxRateKpis> {
+/**
+ * `noCache=true` bypasses both L1 and L2 entirely for a genuinely-live
+ * re-check — used only by globalMarketsFreshnessAudit.ts, never by a normal
+ * page render (which should always prefer the cached fast path below).
+ */
+export async function getFxRates(noCache = false): Promise<FxRateKpis> {
+  if (noCache) {
+    const result = await fetchFromUpstream();
+    persistFxSnapshots(result);
+    return withFxSourceStatus(result, "live");
+  }
+
   // L1 fast path — a normal, healthy cache hit, not a degraded state.
   const l1 = getFresh<FxRateKpis>(L1_CACHE_KEY, L1_TTL_MS);
   if (l1) return withFxSourceStatus(l1.data, "cache-fresh");
@@ -208,6 +261,7 @@ export async function getFxRates(): Promise<FxRateKpis> {
     try {
       const result = await getFromL2();
       setCache(L1_CACHE_KEY, result);
+      persistFxSnapshots(result);
       return withFxSourceStatus(result, "live");
     } catch (err) {
       console.error(
@@ -218,6 +272,11 @@ export async function getFxRates(): Promise<FxRateKpis> {
       if (stale) {
         console.warn(`[fxRates] serving last-known-good rate, ${Math.round(stale.ageMs / 60_000)} min old`);
         return withFxSourceStatus(stale.data, "cache-stale");
+      }
+      const persisted = await getPersistedFxSnapshots();
+      if (persisted) {
+        console.warn("[fxRates] no in-memory cache on this instance — serving durable persisted snapshot instead of the hardcoded fallback");
+        return persisted;
       }
       console.warn("[fxRates] no cached rate available at all — serving hardcoded fallback snapshot");
       return withFxSourceStatus(FALLBACK_RATES, "fallback");

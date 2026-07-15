@@ -1,0 +1,95 @@
+# Global Markets Freshness Audit — Phase XX (Global Markets Data Freshness
+# Audit & Permanent Fix)
+#
+# Root-cause context: gold/silver/wti/brent/natural-gas/dxy/us10y/fed-funds
+# previously had no cache tags and no cron ever proactively re-checked them
+# against their upstream source — only a passive fetch-level revalidate
+# window (1h/6h/24h) with no automated drift detection, unlike SBP EasyData
+# (see sync-economic-calendar.yml / sbpFreshnessAudit.ts). This workflow
+# fires hourly and calls /api/cron/global-markets-freshness, which audits
+# every Global Markets indicator against a genuinely live re-check of its
+# own source and self-heals any drift it finds (see
+# globalMarketsFreshnessAudit.ts).
+#
+# Hourly matches Yahoo Finance's own revalidate window — the tightest
+# cadence among the 12 indicators; FRED (24h) and Twelve Data (6h) change
+# far less often, so hourly checks them far more frequently than needed,
+# which is exactly the point of an audit (catch drift early, not just meet
+# the minimum).
+#
+# Required GitHub repository configuration (already set for
+# sync-economic-calendar.yml, reused here):
+#   secrets.CRON_SECRET  — must match CRON_SECRET set on Vercel
+#   vars.APP_URL         — deployed base URL, e.g. https://your-app.vercel.app
+
+name: Global Markets Freshness Audit
+
+on:
+  schedule:
+    - cron: '0 * * * *' # every hour, on the hour
+
+  workflow_dispatch:
+    # Manual trigger — available from the Actions tab in GitHub UI, useful
+    # for on-demand verification right after a config change.
+
+jobs:
+  audit:
+    name: Trigger Global Markets freshness audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+
+    steps:
+      - name: Call freshness audit endpoint
+        env:
+          APP_URL: ${{ vars.APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          echo "=== Global Markets freshness audit trigger ==="
+          echo "run=${{ github.run_id }} event=${{ github.event_name }} time=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+          if [ -z "${APP_URL}" ]; then
+            echo "FATAL: APP_URL is empty or not configured."
+            echo "Set it in GitHub -> Settings -> Secrets and variables -> Variables -> APP_URL"
+            exit 1
+          fi
+
+          ENDPOINT="${APP_URL}/api/cron/global-markets-freshness"
+          echo "endpoint: ${ENDPOINT}"
+
+          set +e
+          response=$(curl -sS \
+            --max-time 55 \
+            -w '\n===curl-metrics===\nhttp_code=%{http_code}\ntime_total=%{time_total}s\n' \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            "${ENDPOINT}" 2>&1)
+          curl_exit=$?
+          set -e
+
+          if [ "${curl_exit}" -ne 0 ]; then
+            echo "curl failed before receiving a response (exit ${curl_exit})."
+            echo "${response}" | head -c 4000
+            exit "${curl_exit}"
+          fi
+
+          http_code=$(echo "${response}" | sed -n '/^===curl-metrics===/,$p' | grep '^http_code=' | cut -d= -f2)
+          body=$(echo "${response}" | sed '/^===curl-metrics===/,$d')
+
+          echo ""
+          echo "=== HTTP ${http_code} ==="
+          echo "${body}" | head -c 4000
+          echo ""
+          echo "=== Summary ==="
+          echo "${body}" | jq -r '.summary // "No summary in response"' 2>/dev/null || true
+
+          if [ "${http_code}" != "200" ]; then
+            echo "FAIL: freshness audit endpoint returned HTTP ${http_code} (expected 200)"
+            exit 1
+          fi
+
+          needs_review=$(echo "${body}" | jq -r '.summary.needsReview // 0' 2>/dev/null || echo 0)
+          pipeline_failure=$(echo "${body}" | jq -r '.summary.pipelineFailure // 0' 2>/dev/null || echo 0)
+          if [ "${needs_review}" != "0" ] || [ "${pipeline_failure}" != "0" ]; then
+            echo "WARN: ${needs_review} indicator(s) need review, ${pipeline_failure} in pipeline-failure — check the response body above."
+          fi
+
+          echo "OK: Global Markets freshness audit completed."

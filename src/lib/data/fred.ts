@@ -15,6 +15,7 @@ import {
 } from "./yfinance";
 import { dedupeInFlight, getFresh, setCache } from "@/lib/memoryCache";
 import { resolveWithPersistedFallback } from "@/lib/marketFallbackSnapshot";
+import { globalMarketCacheTag } from "@/lib/data/globalMarketsCacheTags";
 
 // All series are read from the St. Louis Fed's FRED API:
 // https://api.stlouisfed.org/fred/series/observations?series_id=...&api_key=...
@@ -82,7 +83,7 @@ function changeLabel(diff: number, previousDate: string | null, format: (value: 
  * Throws on a missing API key, non-200 response, or a series with no usable
  * numeric observations — callers are expected to catch and fall back.
  */
-async function fetchFredSeries(seriesId: string): Promise<FredSeries> {
+async function fetchFredSeries(seriesId: string, options?: { cacheTag?: string; noCache?: boolean }): Promise<FredSeries> {
   const apiKey = process.env.FRED_API_KEY;
   if (!apiKey) {
     throw new Error("FRED_API_KEY is not set");
@@ -96,8 +97,15 @@ async function fetchFredSeries(seriesId: string): Promise<FredSeries> {
     limit: "10",
   });
 
+  // noCache=true (globalMarketsFreshnessAudit.ts's live re-check) bypasses the
+  // Data Cache entirely; otherwise tag the request so a drifted indicator can
+  // be force-revalidated without waiting out REVALIDATE_SECONDS (24h).
+  const cacheOptions: RequestInit = options?.noCache
+    ? { cache: "no-store" }
+    : { next: { revalidate: REVALIDATE_SECONDS, ...(options?.cacheTag ? { tags: [options.cacheTag] } : {}) } };
+
   const response = await fetch(`${FRED_BASE_URL}?${params.toString()}`, {
-    next: { revalidate: REVALIDATE_SECONDS },
+    ...cacheOptions,
     signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
   });
 
@@ -151,13 +159,13 @@ function buildKpi(
 }
 
 /** West Texas Intermediate crude oil futures (CL=F) — Yahoo Finance primary, FRED daily as fallback. */
-export async function getWtiKpi(): Promise<Kpi> {
+export async function getWtiKpi(noCache = false): Promise<Kpi> {
   return resolveWithPersistedFallback(
     "wti",
     async () => {
-      const yfKpi = await getYfWtiKpi();
+      const yfKpi = await getYfWtiKpi(noCache);
       if (yfKpi) return yfKpi;
-      const series = await fetchFredSeries(SERIES_IDS.wti);
+      const series = await fetchFredSeries(SERIES_IDS.wti, { cacheTag: globalMarketCacheTag("wti"), noCache });
       return buildKpi(series, "WTI Crude", "$/bbl", "blue", 2, SERIES_IDS.wti);
     },
     fallbackWtiKpi,
@@ -165,13 +173,13 @@ export async function getWtiKpi(): Promise<Kpi> {
 }
 
 /** Brent crude oil futures (BZ=F) — Yahoo Finance primary, FRED daily as fallback. */
-export async function getBrentKpi(): Promise<Kpi> {
+export async function getBrentKpi(noCache = false): Promise<Kpi> {
   return resolveWithPersistedFallback(
     "brent",
     async () => {
-      const yfKpi = await getYfBrentKpi();
+      const yfKpi = await getYfBrentKpi(noCache);
       if (yfKpi) return yfKpi;
-      const series = await fetchFredSeries(SERIES_IDS.brent);
+      const series = await fetchFredSeries(SERIES_IDS.brent, { cacheTag: globalMarketCacheTag("brent"), noCache });
       return buildKpi(series, "Brent Crude", "$/bbl", "purple", 2, SERIES_IDS.brent);
     },
     fallbackBrentKpi,
@@ -179,13 +187,13 @@ export async function getBrentKpi(): Promise<Kpi> {
 }
 
 /** Henry Hub natural gas futures (NG=F) — Yahoo Finance primary, FRED daily as fallback. */
-export async function getNaturalGasKpi(): Promise<Kpi> {
+export async function getNaturalGasKpi(noCache = false): Promise<Kpi> {
   return resolveWithPersistedFallback(
     "natural-gas",
     async () => {
-      const yfKpi = await getYfNaturalGasKpi();
+      const yfKpi = await getYfNaturalGasKpi(noCache);
       if (yfKpi) return yfKpi;
-      const series = await fetchFredSeries(SERIES_IDS.naturalGas);
+      const series = await fetchFredSeries(SERIES_IDS.naturalGas, { cacheTag: globalMarketCacheTag("natural-gas"), noCache });
       return buildKpi(series, "Natural Gas", "$/MMBtu", "blue", 2, SERIES_IDS.naturalGas);
     },
     fallbackNatGasKpi,
@@ -193,15 +201,15 @@ export async function getNaturalGasKpi(): Promise<Kpi> {
 }
 
 /** US 10-Year Treasury constant maturity yield, in percent. */
-export async function getUs10yKpi(): Promise<Kpi> {
+export async function getUs10yKpi(noCache = false): Promise<Kpi> {
   return resolveWithPersistedFallback(
     "us10y",
     async () => {
       try {
-        const series = await fetchFredSeries(SERIES_IDS.us10y);
+        const series = await fetchFredSeries(SERIES_IDS.us10y, { cacheTag: globalMarketCacheTag("us10y"), noCache });
         return buildKpi(series, "US 10Y Treasury", "%", "blue", 2, SERIES_IDS.us10y, "us-treasury");
       } catch {
-        const yfKpi = await getYfUs10yKpi();
+        const yfKpi = await getYfUs10yKpi(noCache);
         if (yfKpi) return yfKpi;
         throw new Error("Both FRED and Yahoo Finance failed for US 10Y");
       }
@@ -214,10 +222,10 @@ export async function getUs10yKpi(): Promise<Kpi> {
  *  FRED is the authoritative source; no free keyless alternative exists.
  *  The rate only changes 8 times/year so the fallback stays accurate
  *  between FOMC meetings. */
-export async function getFedFundsKpi(): Promise<Kpi> {
+export async function getFedFundsKpi(noCache = false): Promise<Kpi> {
   return resolveWithPersistedFallback(
     "fed-funds",
-    () => fetchFredSeries(SERIES_IDS.fedFunds).then((series) => buildKpi(series, "Fed Funds Rate", "%", "purple", 2, SERIES_IDS.fedFunds, "us-treasury")),
+    () => fetchFredSeries(SERIES_IDS.fedFunds, { cacheTag: globalMarketCacheTag("fed-funds"), noCache }).then((series) => buildKpi(series, "Fed Funds Rate", "%", "purple", 2, SERIES_IDS.fedFunds, "us-treasury")),
     fallbackFedFundsKpi,
   );
 }

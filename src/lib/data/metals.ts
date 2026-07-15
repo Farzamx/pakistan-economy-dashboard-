@@ -10,12 +10,28 @@ import {
   getYfGoldKpi,
   getYfSilverKpi,
 } from "./yfinance";
+import { globalMarketCacheTag } from "@/lib/data/globalMarketsCacheTags";
 
 // Gold, Silver and the US Dollar Index are read from Twelve Data's time
 // series endpoint: https://api.twelvedata.com/time_series?symbol=...&apikey=...
 //
 // The API key is a secret and must only ever be read from the server-side
 // environment — never hardcoded, never exposed to the client.
+//
+// PRODUCTION STATUS (verified 2026-07-15 via `vercel env ls production` —
+// Global Markets Data Freshness Audit): TWELVEDATA_API_KEY is NOT configured
+// in production or preview. fetchTwelveDataSeries() below always throws
+// immediately ("TWELVEDATA_API_KEY is not set"), so fetchPrimaryThenSecondary()
+// falls through to the Yahoo Finance secondary (yfinance.ts) on every single
+// call — Yahoo is the de facto primary for Gold/Silver/DXY right now, not
+// Twelve Data, despite marketDataSources.ts's SOURCE_CHAINS registry (and the
+// DataSourcesModal UI it feeds) documenting Twelve Data as primary. This is
+// not causing any user-facing harm — Yahoo's 1h revalidate window is
+// actually fresher than Twelve Data's own 6h window would be — so it's
+// documented here rather than "fixed": either add TWELVEDATA_API_KEY to the
+// Vercel project, or update SOURCE_CHAINS to reflect Yahoo as primary for
+// these three, so the audit trail and the UI agree with what's actually
+// running.
 const TWELVE_DATA_BASE_URL = "https://api.twelvedata.com/time_series";
 
 // Daily closes — re-checking every 6h is plenty and keeps well within
@@ -75,7 +91,7 @@ function changeLabel(diff: number, previousDate: string | null, format: (value: 
  * Throws on a missing API key, non-200 response, or an error/empty payload —
  * callers are expected to catch and fall back.
  */
-async function fetchTwelveDataSeries(symbol: string): Promise<MetalSeries> {
+async function fetchTwelveDataSeries(symbol: string, options?: { cacheTag?: string; noCache?: boolean }): Promise<MetalSeries> {
   const apiKey = process.env.TWELVEDATA_API_KEY;
   if (!apiKey) {
     throw new Error("TWELVEDATA_API_KEY is not set");
@@ -88,8 +104,15 @@ async function fetchTwelveDataSeries(symbol: string): Promise<MetalSeries> {
     apikey: apiKey,
   });
 
+  // noCache=true (globalMarketsFreshnessAudit.ts's live re-check) bypasses the
+  // Data Cache entirely; otherwise tag the request so a drifted indicator can
+  // be force-revalidated without waiting out REVALIDATE_SECONDS (6h).
+  const cacheOptions: RequestInit = options?.noCache
+    ? { cache: "no-store" }
+    : { next: { revalidate: REVALIDATE_SECONDS, ...(options?.cacheTag ? { tags: [options.cacheTag] } : {}) } };
+
   const response = await fetch(`${TWELVE_DATA_BASE_URL}?${params.toString()}`, {
-    next: { revalidate: REVALIDATE_SECONDS },
+    ...cacheOptions,
     signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
   });
 
@@ -144,40 +167,40 @@ function buildKpi(series: MetalSeries, title: string, unit: string, glow: Kpi["g
  * result also gets persisted as this symbol's auto-regenerating fallback
  * (Production Audit Part 6).
  */
-async function fetchPrimaryThenSecondary(symbol: string, title: string, unit: string, glow: Kpi["glow"], getSecondary: () => Promise<Kpi | null>): Promise<Kpi> {
+async function fetchPrimaryThenSecondary(symbol: string, title: string, unit: string, glow: Kpi["glow"], getSecondary: (noCache?: boolean) => Promise<Kpi | null>, cacheTag: string, noCache = false): Promise<Kpi> {
   try {
-    const series = await fetchTwelveDataSeries(symbol);
+    const series = await fetchTwelveDataSeries(symbol, { cacheTag, noCache });
     return buildKpi(series, title, unit, glow, symbol);
   } catch {
-    const secondary = await getSecondary();
+    const secondary = await getSecondary(noCache);
     if (secondary) return secondary;
     throw new Error(`Both Twelve Data and Yahoo Finance failed for ${symbol}`);
   }
 }
 
 /** Gold spot price (XAU/USD), in USD per troy ounce. */
-export async function getGoldKpi(): Promise<Kpi> {
+export async function getGoldKpi(noCache = false): Promise<Kpi> {
   return resolveWithPersistedFallback(
     "gold",
-    () => fetchPrimaryThenSecondary(SYMBOLS.gold, "Gold", "$/oz", "blue", getYfGoldKpi),
+    () => fetchPrimaryThenSecondary(SYMBOLS.gold, "Gold", "$/oz", "blue", getYfGoldKpi, globalMarketCacheTag("gold"), noCache),
     fallbackGoldKpi,
   );
 }
 
 /** Silver spot price (XAG/USD), in USD per troy ounce. */
-export async function getSilverKpi(): Promise<Kpi> {
+export async function getSilverKpi(noCache = false): Promise<Kpi> {
   return resolveWithPersistedFallback(
     "silver",
-    () => fetchPrimaryThenSecondary(SYMBOLS.silver, "Silver", "$/oz", "purple", getYfSilverKpi),
+    () => fetchPrimaryThenSecondary(SYMBOLS.silver, "Silver", "$/oz", "purple", getYfSilverKpi, globalMarketCacheTag("silver"), noCache),
     fallbackSilverKpi,
   );
 }
 
 /** ICE US Dollar Index (DXY). */
-export async function getDxyKpi(): Promise<Kpi> {
+export async function getDxyKpi(noCache = false): Promise<Kpi> {
   return resolveWithPersistedFallback(
     "dxy",
-    () => fetchPrimaryThenSecondary(SYMBOLS.dxy, "US Dollar Index", "DXY", "purple", getYfDxyKpi),
+    () => fetchPrimaryThenSecondary(SYMBOLS.dxy, "US Dollar Index", "DXY", "purple", getYfDxyKpi, globalMarketCacheTag("dxy"), noCache),
     fallbackDxyKpi,
   );
 }
