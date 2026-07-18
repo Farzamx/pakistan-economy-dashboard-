@@ -7,16 +7,25 @@
 // mean every route change re-fetches preferences for no reason, or every
 // preference write risks interfering with the auth-state effect).
 //
-// Fetches once when `user` becomes available and again whenever `user`
-// changes (covers sign-in/sign-out without a page reload). There is no
-// localStorage cache for preferences themselves — Supabase is the single
-// source of truth, so a second device always sees this device's latest
-// write on its own next fetch, which is the entire mechanism behind
-// "sync across devices."
+// Fetches once when the user's ID becomes available and again only if it
+// actually changes (covers sign-in/sign-out without a page reload) — keyed
+// on `user?.id` (a stable string), NOT the `user` object itself. Bug fix:
+// AuthProvider's `user` gets a brand-new object reference on every route
+// change (its own pathname effect calls supabase.auth.getUser() again) and
+// on every token refresh, for the SAME logical session — depending on the
+// object here re-ran this fetch on every navigation, each one an
+// independent Supabase read racing against any theme write still in
+// flight, with no ordering guarantee between them. Confirmed live: toggling
+// Light Mode then immediately navigating anywhere reverted it back to
+// Dark, because the read triggered by that navigation could resolve before
+// the write from the toggle had landed. There is no localStorage cache for
+// preferences themselves — Supabase is the single source of truth, so a
+// second device always sees this device's latest write on its own next
+// fetch, which is the entire mechanism behind "sync across devices."
 
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { useAuth } from "@/components/AuthProvider";
-import { useTheme } from "@/components/ThemeProvider";
+import { useTheme, STORAGE_UPDATED_AT_KEY } from "@/components/ThemeProvider";
 import {
   getUserPreferences,
   upsertUserPreferences,
@@ -87,14 +96,27 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
         // This device's localStorage may predate the account, or another
         // device may have changed the theme since — DB wins on first load,
         // but ONLY if the user hasn't already made a fresh local choice
-        // since this fetch started (themeRef.current === themeAtFetchStart).
+        // since this fetch started (themeRef.current === themeAtFetchStart)
+        // AND the DB row isn't older than this device's last local write.
+        // The second check matters even with the effect now keyed on a
+        // stable user?.id (see the file-level comment): a fetch and a write
+        // are two independent network requests with no ordering guarantee,
+        // so a fetch can still resolve before an in-flight write lands —
+        // confirmed live on a hard reload taken within ~1s of toggling.
+        // Comparing timestamps (not just "is it different") tells "the DB
+        // is genuinely newer, e.g. from another device" apart from "my own
+        // write just hasn't propagated to this read yet."
         if (
           user &&
           prefs?.preferredTheme &&
           prefs.preferredTheme !== themeAtFetchStart &&
           themeRef.current === themeAtFetchStart
         ) {
-          setTheme(prefs.preferredTheme);
+          const localWriteAt = Number(localStorage.getItem(STORAGE_UPDATED_AT_KEY) ?? 0);
+          const dbUpdatedAt = prefs.updatedAt ? new Date(prefs.updatedAt).getTime() : 0;
+          if (localWriteAt <= dbUpdatedAt) {
+            setTheme(prefs.preferredTheme);
+          }
         }
       })
       .catch(() => { if (!cancelled) setPreferences(null); })
@@ -102,9 +124,12 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     return () => { cancelled = true; };
     // theme/setTheme intentionally omitted — this effect's job is "run once
     // per user/login," not "re-run whenever the theme changes" (which would
-    // happen on every toggle, since this same effect just set it).
+    // happen on every toggle, since this same effect just set it). `user`
+    // itself is also intentionally omitted in favor of `user?.id` below —
+    // see the file-level comment for why depending on the object caused
+    // this effect to re-fire on every route change.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, authLoading]);
+  }, [user?.id, authLoading]);
 
   const updatePreferences = useCallback(
     async (patch: PreferencesPatch) => {
