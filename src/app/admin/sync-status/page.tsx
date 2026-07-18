@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createPublicDataClient } from "@/lib/supabase/publicDataClient";
 import { getDataIntegrityAlerts } from "@/lib/economicCalendar/dataIntegrityAlerts";
+import { getLatestWeeklyIntelligenceSnapshot } from "@/lib/data/weeklyIntelligence";
 
 export const metadata: Metadata = {
   robots: { index: false, follow: false },
@@ -134,6 +135,11 @@ export default async function SyncStatusPage() {
   // than a new page so there is one internal monitoring surface, not two.
   const integrityAlerts = await getDataIntegrityAlerts("open", 50);
 
+  // Weekly Intelligence Engine audit trail (migration 0042) — which of the
+  // two paths (scheduled Monday cron vs. a critical-release event trigger)
+  // produced the CURRENT Health Score / Recession / Default numbers.
+  const latestIntelligence = await getLatestWeeklyIntelligenceSnapshot();
+
   return (
     <main className="min-h-screen bg-[#05060f] px-6 py-10 text-white sm:px-10">
       <div className="mx-auto max-w-6xl space-y-10">
@@ -143,6 +149,21 @@ export default async function SyncStatusPage() {
             Last released and next scheduled event per automated series. Generated at {fmt(new Date().toISOString())}.
           </p>
         </div>
+
+        {/* ── Weekly Intelligence Engine audit trail ──────────────────────── */}
+        {latestIntelligence && (
+          <div className={`rounded-xl border px-4 py-3 ${latestIntelligence.triggerReason === "event" ? "border-sky-500/40 bg-sky-950/20" : "border-white/10 bg-white/[0.02]"}`}>
+            <p className={`text-sm font-semibold ${latestIntelligence.triggerReason === "event" ? "text-sky-400" : "text-slate-300"}`}>
+              Current Health/Risk snapshot: {latestIntelligence.triggerReason === "event" ? "event-triggered" : "scheduled (weekly)"}
+            </p>
+            <p className="mt-1 text-xs text-slate-400">
+              Computed {fmt(latestIntelligence.computedAt)}
+              {latestIntelligence.triggerReason === "event" && latestIntelligence.triggerSeriesSlug
+                ? ` — triggered by the ${latestIntelligence.triggerSeriesSlug} release`
+                : " — next scheduled run: Monday"}
+            </p>
+          </div>
+        )}
 
         {/* ── Overdue banner ──────────────────────────────────────────────── */}
         {overdue.length > 0 && (

@@ -19,8 +19,17 @@ export interface RiskFactorBreakdown {
   topCushionFactors: RiskFactor[];
 }
 
+export type IntelligenceTriggerReason = "scheduled" | "event";
+
 export interface WeeklyIntelligenceSnapshot {
   computedAt: string;
+  /** "scheduled" (the weekly Monday cron) or "event" (fired by a confirmed
+   * critical-priority release — see syncPipeline.ts's Step 11). Weekly
+   * Intelligence Engine Audit, 2026-07-18 — see migration 0042. */
+  triggerReason: IntelligenceTriggerReason;
+  /** Populated only when triggerReason is "event" — the series slug whose
+   * release caused this recompute (e.g. "sbp-monetary-policy-committee-meeting"). */
+  triggerSeriesSlug: string | null;
   health: { score: number; label: HealthLabel; factors: HealthFactor[] };
   recession: { probability: number; category: RiskCategory; modelScore: number; factors: RiskFactorBreakdown };
   default: { probability: number; category: RiskCategory; modelScore: number; factors: RiskFactorBreakdown };
@@ -37,6 +46,8 @@ export interface WeeklyIntelligenceSnapshot {
 
 interface SnapshotRow {
   computed_at: string;
+  trigger_reason: IntelligenceTriggerReason;
+  trigger_series_slug: string | null;
   health_score: number;
   health_label: HealthLabel;
   health_factors: HealthFactor[];
@@ -60,6 +71,8 @@ interface SnapshotRow {
 function rowToSnapshot(row: SnapshotRow): WeeklyIntelligenceSnapshot {
   return {
     computedAt: row.computed_at,
+    triggerReason: row.trigger_reason ?? "scheduled",
+    triggerSeriesSlug: row.trigger_series_slug ?? null,
     health: { score: row.health_score, label: row.health_label, factors: row.health_factors },
     recession: { probability: row.recession_probability, category: row.recession_category, modelScore: row.recession_model_score, factors: row.recession_factors },
     default: { probability: row.default_probability, category: row.default_category, modelScore: row.default_model_score, factors: row.default_factors },
@@ -116,22 +129,35 @@ export interface StoreWeeklyIntelligencePayload {
 }
 
 /**
- * Called only from the weekly cron route, with the trusted server-side
+ * Called from the weekly cron route (triggerReason "scheduled") AND from
+ * syncPipeline.ts's Step 11 (triggerReason "event", after a confirmed
+ * critical-priority release — see that file for the trigger logic and
+ * migration 0042 for the full rationale), with the trusted server-side
  * internal secret (reuses the 'notification_worker' key — same threat
  * model as the existing notification cron, see 0017's migration header).
  *
  * `skipped: true` is a normal, non-error outcome (Final Production
- * Hardening Part 1) — the DB enforces at most one snapshot per ISO week
- * via a unique constraint on a generated `week_start` column (0019); a
- * second attempt in the same week (Vercel Cron's at-least-once delivery,
- * a manual re-trigger, a near-simultaneous race) hits that constraint and
+ * Hardening Part 1, extended by the Weekly Intelligence Engine Audit,
+ * 2026-07-18) — the DB enforces at most one SCHEDULED snapshot per ISO
+ * week (a partial unique constraint on `week_start`, migration 0042) AND
+ * a minimum 20h interval between ANY two snapshots regardless of trigger
+ * reason. A second attempt within either window (Vercel Cron's
+ * at-least-once delivery, a manual re-trigger, two critical releases on
+ * the same day, a near-simultaneous race) hits one of those guards and
  * comes back here as `skipped`, not a thrown error.
  */
-export async function storeWeeklyIntelligenceSnapshot(payload: StoreWeeklyIntelligencePayload, internalSecret: string): Promise<{ success: boolean; skipped?: boolean; error?: string }> {
+export async function storeWeeklyIntelligenceSnapshot(
+  payload: StoreWeeklyIntelligencePayload,
+  internalSecret: string,
+  triggerReason: IntelligenceTriggerReason = "scheduled",
+  triggerSeriesSlug: string | null = null,
+): Promise<{ success: boolean; skipped?: boolean; error?: string }> {
   const supabase = createPublicDataClient();
   const { data, error } = await supabase.rpc("store_weekly_intelligence_snapshot", {
     p_internal_secret: internalSecret,
     p_payload: payload,
+    p_trigger_reason: triggerReason,
+    p_trigger_series_slug: triggerSeriesSlug,
   });
   if (error) {
     console.error(`[WeeklyIntelligence] store_weekly_intelligence_snapshot failed: ${error.message}`);

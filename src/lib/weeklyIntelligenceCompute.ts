@@ -13,7 +13,12 @@ import { calculateEconomicHealth } from "@/lib/economicHealth";
 import { calculateRecessionRisk, calculateDefaultRisk } from "@/lib/riskModels";
 import { getAiEconomicAnalysis } from "@/lib/data/aiEconomicAnalysis";
 import { getAiRiskIntelligence } from "@/lib/data/aiRiskIntelligence";
-import type { StoreWeeklyIntelligencePayload } from "@/lib/data/weeklyIntelligence";
+import {
+  getLatestWeeklyIntelligenceSnapshot,
+  storeWeeklyIntelligenceSnapshot,
+  type StoreWeeklyIntelligencePayload,
+  type IntelligenceTriggerReason,
+} from "@/lib/data/weeklyIntelligence";
 
 export async function computeWeeklyIntelligence(): Promise<StoreWeeklyIntelligencePayload> {
   const [gdpKpi, sbp, quarterlyGdp, newsItems, m2YoyOfficial] = await Promise.all([
@@ -114,5 +119,58 @@ export async function computeWeeklyIntelligence(): Promise<StoreWeeklyIntelligen
     aiDefaultExplanation: aiRisk.default,
     aiModelUsed: aiRisk.modelUsed,
     aiModelDisplayName: aiRisk.modelDisplayName,
+  };
+}
+
+/** Minimum time between ANY two snapshots (scheduled or event-triggered) — mirrors the hard guard inside store_weekly_intelligence_snapshot (migration 0042). Checked here too as a cheap pre-check so a rejected attempt doesn't pay for a live-data fetch + AI narration cycle first. */
+const MIN_RECOMPUTE_INTERVAL_MS = 20 * 60 * 60 * 1000;
+
+export interface WeeklyIntelligenceCycleResult {
+  success: boolean;
+  skipped: boolean;
+  reason?: string;
+  error?: string;
+  healthScore?: number;
+  recessionProbability?: number;
+  defaultProbability?: number;
+}
+
+/**
+ * Runs the full check → compute → store cycle, shared by the weekly cron
+ * route (triggerReason "scheduled") and syncPipeline.ts's Step 11
+ * (triggerReason "event" — see that file for what qualifies as a trigger).
+ * Extracted (Weekly Intelligence Engine Audit, 2026-07-18) so both callers
+ * share one implementation of the pre-check + compute + store + outcome
+ * shape, rather than the route's logic being duplicated a second time for
+ * the new event path.
+ */
+export async function runWeeklyIntelligenceCycle(
+  internalSecret: string,
+  triggerReason: IntelligenceTriggerReason,
+  triggerSeriesSlug: string | null = null,
+): Promise<WeeklyIntelligenceCycleResult> {
+  // Cheap pre-check — the DB's own interval guard (migration 0042) is the
+  // hard guarantee; this just avoids paying for a live-data fetch + AI
+  // narration cycle when we already know it would be rejected.
+  const existing = await getLatestWeeklyIntelligenceSnapshot();
+  if (existing) {
+    const ageMs = Date.now() - new Date(existing.computedAt).getTime();
+    if (ageMs < MIN_RECOMPUTE_INTERVAL_MS) {
+      return { success: true, skipped: true, reason: `Last snapshot is ${Math.round(ageMs / 60_000)} min old — within the minimum recompute interval.` };
+    }
+  }
+
+  const payload = await computeWeeklyIntelligence();
+  const result = await storeWeeklyIntelligenceSnapshot(payload, internalSecret, triggerReason, triggerSeriesSlug);
+  if (!result.success) {
+    return { success: false, skipped: false, error: result.error };
+  }
+  return {
+    success: true,
+    skipped: result.skipped ?? false,
+    reason: result.skipped ? "Rejected by the database's own interval/uniqueness guard (a concurrent run won the race)." : undefined,
+    healthScore: payload.healthScore,
+    recessionProbability: payload.recessionProbability,
+    defaultProbability: payload.defaultProbability,
   };
 }

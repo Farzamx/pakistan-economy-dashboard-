@@ -134,6 +134,16 @@ async function fetchNextScheduledRelease(supabase: SupabaseClient): Promise<Aler
 export interface JobProcessingSummary {
   jobId: string;
   economicEventId: string;
+  /** The released event's series slug — null only for the already_completed
+   * short-circuit below, which returns before fetching event details.
+   * Weekly Intelligence Engine Audit (2026-07-18): syncPipeline.ts's Step 11
+   * reads this to detect a critical-priority release worth an event-triggered
+   * intelligence recompute — reuses this existing per-job fetch rather than
+   * a second query, and correctly covers manually-released events too (this
+   * job exists regardless of whether sync_event_actual or a manual DB edit
+   * caused the release — see create_notification_job_on_release()'s trigger,
+   * which fires on the status change itself, not on which code path caused it). */
+  seriesSlug: string | null;
   emailsTotal: number;
   sentThisPass: number;
   failedThisPass: number;
@@ -165,7 +175,7 @@ async function processJob(supabase: SupabaseClient, jobId: string, deadline: num
     return null;
   }
   if (claimResult.already_completed) {
-    return { jobId, economicEventId: claimResult.economic_event_id!, emailsTotal: 0, sentThisPass: 0, failedThisPass: 0, completed: true };
+    return { jobId, economicEventId: claimResult.economic_event_id!, seriesSlug: null, emailsTotal: 0, sentThisPass: 0, failedThisPass: 0, completed: true };
   }
 
   const economicEventId = claimResult.economic_event_id!;
@@ -242,7 +252,7 @@ async function processJob(supabase: SupabaseClient, jobId: string, deadline: num
     }
   }
 
-  return { jobId, economicEventId, emailsTotal: claimResult.emails_total ?? 0, sentThisPass, failedThisPass, completed };
+  return { jobId, economicEventId, seriesSlug: event.seriesSlug, emailsTotal: claimResult.emails_total ?? 0, sentThisPass, failedThisPass, completed };
 }
 
 /**

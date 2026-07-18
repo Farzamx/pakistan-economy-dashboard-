@@ -13,9 +13,30 @@
 //   6. SBP EasyData + PBS SPI  — EasyData for all monthly series (CPI/Core skipped if already synced)
 //   7. LSM sync                — PBS WordPress primary → EasyData fallback
 //   8. Notification worker     — drains jobs created by steps 3-7's DB trigger
+//   9. SBP freshness audit     — all 20 SBP EasyData indicators vs. SBP's own /meta
+//  10. Post-release verification — re-checks everything released in the last 48h
+//  11. Event-triggered intelligence — see below
 //
 // Each step is independently try/caught — a hard throw in one does not prevent
 // the others from running. All outcomes are logged to cron_run_log.
+//
+// Step 11 (Weekly Intelligence Engine Audit, 2026-07-18): the Health Score /
+// Recession / Default Probability models normally only recompute on the
+// Monday cron (weeklyIntelligenceCompute.ts). That cadence is deliberately
+// unchanged for the common case — but a `notificationPriority: "critical"`
+// release (currently: SBP policy rate decisions, GDP, Federal Budget — see
+// SERIES_PUBLICATION_META) changes those models' direct inputs materially
+// enough that a multi-day lag is a real accuracy problem, not noise. Step 11
+// inspects step 8's own job results (already fetched, no new query) for a
+// critical-tier release and, if found, triggers an immediate recompute —
+// gated by the same 20h minimum-interval guard as the DB itself (migration
+// 0042), so a burst of releases can only ever produce one extra recompute.
+// Deliberately NOT triggered for every series in this audit's original
+// example list (CPI, Trade Balance, FX Reserves, etc.) — most of those
+// release monthly-or-more-often (FX Reserves is weekly), which would make
+// "event-triggered" indistinguishable from "continuous", reintroducing the
+// AI-cost/rate-limit problem the weekly cadence exists to avoid. See the
+// Weekly Intelligence Engine Audit report for the full Option A/B/C analysis.
 
 import { syncAllFromSbpEasyData, type SyncResult } from "@/lib/economicCalendar/automation/syncFromSbpEasyData";
 import { syncOfficialCalendars, type ReconcileSummary } from "@/lib/economicCalendar/automation/syncOfficialCalendars";
@@ -31,6 +52,8 @@ import { formatPipelineSummary, formatDetailBlocks } from "@/lib/economicCalenda
 import type { TriggerMeta } from "@/lib/economicCalendar/automation/schedulerMeta";
 import { auditSbpFreshness, type FreshnessAuditEntry } from "@/lib/data/sbpFreshnessAudit";
 import { verifyRecentReleases, type VerificationEntry } from "@/lib/economicCalendar/automation/postReleaseVerification";
+import { SERIES_PUBLICATION_META } from "@/lib/economicCalendar/seriesPublicationConfig";
+import { runWeeklyIntelligenceCycle } from "@/lib/weeklyIntelligenceCompute";
 
 export interface JobSummaryEntry {
   jobName: string;
@@ -292,6 +315,39 @@ export async function runSyncPipeline(meta: TriggerMeta): Promise<PipelineResult
       const detail = err instanceof Error ? err.message : String(err);
       await logCronRun("post-release-verification", stepStart, "failure", detail);
       jobsSummary.push({ jobName: "post-release-verification", status: "failure", durationMs: Date.now() - stepStart.getTime(), detail });
+    }
+  }
+
+  // ── Step 11: Event-triggered intelligence recompute ────────────────────────
+  // Scans this run's own notification-job results (step 8) for a
+  // critical-priority release. See the header comment above and migration
+  // 0042 for the full design (interval guard, why only "critical", why this
+  // is safe against manual releases too). Never blocks or fails the rest of
+  // the pipeline — this is strictly additive.
+  {
+    const stepStart = new Date();
+    try {
+      const criticalJob = notifications.find((n) => {
+        if (!n.seriesSlug) return false;
+        return SERIES_PUBLICATION_META[n.seriesSlug]?.notificationPriority === "critical";
+      });
+      if (!criticalJob) {
+        jobsSummary.push({ jobName: "event-triggered-intelligence", status: "success", durationMs: Date.now() - stepStart.getTime(), detail: "No critical-priority release in this run — nothing to trigger." });
+      } else {
+        const cycle = await runWeeklyIntelligenceCycle(workerSecret, "event", criticalJob.seriesSlug);
+        const detail = cycle.skipped
+          ? `Skipped for ${criticalJob.seriesSlug}: ${cycle.reason}`
+          : cycle.success
+            ? `Recomputed for ${criticalJob.seriesSlug}: health=${cycle.healthScore} recession=${cycle.recessionProbability}% default=${cycle.defaultProbability}%`
+            : `Failed for ${criticalJob.seriesSlug}: ${cycle.error}`;
+        const status = cycle.success ? "success" : "failure";
+        await logCronRun("event-triggered-intelligence", stepStart, status, detail);
+        jobsSummary.push({ jobName: "event-triggered-intelligence", status, durationMs: Date.now() - stepStart.getTime(), detail });
+      }
+    } catch (err) {
+      const detail = err instanceof Error ? err.message : String(err);
+      await logCronRun("event-triggered-intelligence", stepStart, "failure", detail);
+      jobsSummary.push({ jobName: "event-triggered-intelligence", status: "failure", durationMs: Date.now() - stepStart.getTime(), detail });
     }
   }
 

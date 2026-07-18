@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { computeWeeklyIntelligence } from "@/lib/weeklyIntelligenceCompute";
-import { storeWeeklyIntelligenceSnapshot, getLatestWeeklyIntelligenceSnapshot } from "@/lib/data/weeklyIntelligence";
+import { runWeeklyIntelligenceCycle } from "@/lib/weeklyIntelligenceCompute";
 import { logCronRun } from "@/lib/cronLogging";
 
 // Vercel Cron target (see vercel.json) — runs every Monday. Computes the
@@ -12,17 +11,18 @@ import { logCronRun } from "@/lib/cronLogging";
 // Auth follows the exact same pattern as the other cron routes in this
 // project: Vercel sends `Authorization: Bearer ${CRON_SECRET}` automatically
 // for scheduled invocations.
+//
+// Weekly Intelligence Engine Audit (2026-07-18): the check -> compute ->
+// store cycle previously lived inline here. It's now shared with
+// syncPipeline.ts's Step 11 (event-triggered recompute after a
+// critical-priority release) via runWeeklyIntelligenceCycle() — this route
+// is now a thin HTTP wrapper that always passes triggerReason "scheduled",
+// exactly like every other cron route in this project is a thin adapter
+// over its own pure engine function. See migration 0042 and
+// weeklyIntelligenceCompute.ts for the full design.
 export const maxDuration = 60;
 
 const JOB_NAME = "weekly-intelligence";
-
-/** Monday 00:00 UTC of the week containing `now` — ISO-8601 week start, matching the DB's date_trunc('week', ...) boundary (0019 migration) exactly. */
-function mostRecentMondayUtc(now: Date): Date {
-  const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-  const isoDayOfWeek = d.getUTCDay() === 0 ? 7 : d.getUTCDay(); // Sun=0 -> 7, so Mon=1..Sun=7
-  d.setUTCDate(d.getUTCDate() - (isoDayOfWeek - 1));
-  return d;
-}
 
 export async function GET(request: Request) {
   const startedAt = new Date();
@@ -37,39 +37,25 @@ export async function GET(request: Request) {
   }
 
   try {
-    // Cheap pre-check (Final Production Hardening Part 1): avoids paying
-    // for a full live-data fetch + AI narration cycle on a duplicate
-    // invocation (Vercel Cron's documented at-least-once delivery, a
-    // manual re-trigger, etc.) when we already know this week is done.
-    // This is an optimization, not the actual guarantee — the database's
-    // unique constraint on week_start (0019 migration) is what makes a
-    // duplicate genuinely impossible even if two requests race past this
-    // check at the same instant.
-    const existing = await getLatestWeeklyIntelligenceSnapshot();
-    if (existing && new Date(existing.computedAt) >= mostRecentMondayUtc(new Date())) {
-      await logCronRun(JOB_NAME, startedAt, "skipped", "Already computed this ISO week");
-      return NextResponse.json({ ranAt: new Date().toISOString(), success: true, skipped: true, reason: "Already computed this ISO week", lastComputedAt: existing.computedAt });
-    }
-
-    const payload = await computeWeeklyIntelligence();
-    const result = await storeWeeklyIntelligenceSnapshot(payload, internalSecret);
-    if (!result.success) {
-      await logCronRun(JOB_NAME, startedAt, "failure", result.error);
-      return NextResponse.json({ ranAt: new Date().toISOString(), success: false, error: result.error }, { status: 500 });
+    const cycle = await runWeeklyIntelligenceCycle(internalSecret, "scheduled");
+    if (!cycle.success) {
+      await logCronRun(JOB_NAME, startedAt, "failure", cycle.error);
+      return NextResponse.json({ ranAt: new Date().toISOString(), success: false, error: cycle.error }, { status: 500 });
     }
     await logCronRun(
       JOB_NAME,
       startedAt,
-      result.skipped ? "skipped" : "success",
-      result.skipped ? "Duplicate-week insert rejected by DB constraint" : `health=${payload.healthScore} recession=${payload.recessionProbability}% default=${payload.defaultProbability}%`,
+      cycle.skipped ? "skipped" : "success",
+      cycle.skipped ? (cycle.reason ?? "Skipped") : `health=${cycle.healthScore} recession=${cycle.recessionProbability}% default=${cycle.defaultProbability}%`,
     );
     return NextResponse.json({
       ranAt: new Date().toISOString(),
       success: true,
-      skipped: result.skipped ?? false,
-      healthScore: payload.healthScore,
-      recessionProbability: payload.recessionProbability,
-      defaultProbability: payload.defaultProbability,
+      skipped: cycle.skipped,
+      reason: cycle.reason,
+      healthScore: cycle.healthScore,
+      recessionProbability: cycle.recessionProbability,
+      defaultProbability: cycle.defaultProbability,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
