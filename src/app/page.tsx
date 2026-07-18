@@ -415,19 +415,6 @@ export default async function Home() {
     return change.trim().startsWith("-") ? "decreased" : "increased";
   }
 
-  // Hero briefing's "Key Risk Signals" — same deltaDirection sign already
-  // used above, just paired with a plain-language label per indicator
-  // instead of the raw KPI title (a rising fiscal balance means the deficit
-  // is narrowing, a rising current account means the external position is
-  // improving, etc.) — no new figures, only real signs already computed.
-  const heroRiskSignals: string[] = [
-    { kpi: sbp.cpiInflation.kpi,   rising: "Inflation accelerating",              falling: "Inflation easing" },
-    { kpi: sbp.fiscalBalance.kpi,  rising: "Fiscal deficit narrowing",            falling: "Fiscal deficit widening" },
-    { kpi: sbp.currentAccount.kpi, rising: "External account improving",          falling: "External account weakening" },
-    { kpi: sbp.foreignReserves.kpi,rising: "FX reserves increasing",              falling: "FX reserves declining" },
-    { kpi: sbp.lsm.kpi,            rising: "Manufacturing output expanding",      falling: "Manufacturing output weakening" },
-  ].map((s) => (deltaDirection(s.kpi.change) === "increased" ? s.rising : s.falling));
-
   // Hero briefing's "Data Status" — one representative live indicator per
   // upstream provider actually used on this page (SBP EasyData, PBS, World
   // Bank), reusing the same isFallback()/isStale() signals already computed
@@ -635,11 +622,11 @@ export default async function Home() {
             defaultResult={defaultResult}
             aiRisk={aiRisk}
             dataConfidence={heroDataConfidence}
-            riskSignals={heroRiskSignals}
             dataStatus={heroDataStatus}
             latestRelease={latestRelease ? { title: latestRelease.title, date: latestRelease.date, actual: latestRelease.actual ?? null } : null}
             upcomingEvents={heroUpcomingEvents}
             pktTimestamp={pktTimestamp}
+            healthComputedAt={intelligenceComputedAt}
           />
 
           <div id="macro-snapshot" className="section-divider scroll-mt-[60px] px-5 py-6 sm:scroll-mt-[120px] sm:px-8 sm:py-8">

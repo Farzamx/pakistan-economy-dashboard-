@@ -316,7 +316,11 @@ body {
   font-weight: 500;
 }
 @media (min-width: 640px) {
-  .text-hero-headline { font-size: 2.25rem; }
+  /* Trimmed from 2.25rem (Hero typography audit, 2026-07-18) — modestly
+     smaller while staying clearly above .text-headline's 1.625rem, so the
+     Hero headline still reads as the largest editorial statement on the
+     page. Line-height/letter-spacing/weight unchanged. */
+  .text-hero-headline { font-size: 2rem; }
 }
 
 .text-title {

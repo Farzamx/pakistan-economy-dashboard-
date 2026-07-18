@@ -35,11 +35,22 @@ interface Props {
   defaultResult: RiskModelResult | null;
   aiRisk: AiRiskIntelligence | null;
   dataConfidence: DataConfidence;
-  riskSignals: string[];
   dataStatus: HeroDataStatusRow[];
   latestRelease: HeroLatestRelease | null;
   upcomingEvents: HeroUpcomingEvent[];
   pktTimestamp: string;
+  /**
+   * When the Weekly Intelligence Engine actually computed health/aiAnalysis/
+   * recessionResult/defaultResult — NOT the current render time. Production
+   * audit (2026-07-18): this tile previously showed `pktTimestamp` (now),
+   * which reads as "the Health Score was just computed" when the underlying
+   * weekly snapshot can genuinely be up to 6 days old (cron runs Monday).
+   * page.tsx already computes this correctly as `intelligenceComputedAt` for
+   * HealthScoreCard/RiskIntelligenceSection further down the same page —
+   * this just reuses that same value instead of a second, wrong one.
+   * Null only before the very first weekly cron run has ever completed.
+   */
+  healthComputedAt: string | null;
 }
 
 const RISK_TONE: Record<RiskModelResult["riskCategory"], { dot: string; text: string; bar: string }> = {
@@ -112,11 +123,11 @@ export default function Hero({
   defaultResult,
   aiRisk,
   dataConfidence,
-  riskSignals,
   dataStatus,
   latestRelease,
   upcomingEvents,
   pktTimestamp,
+  healthComputedAt,
 }: Props) {
   const { t } = useLanguage();
 
@@ -173,13 +184,15 @@ export default function Hero({
 
           {/* 12-column editorial grid (PEIC v3 fold-density pass): left ~8/12
               carries the executive narrative + 2x2 status grid, right ~4/12
-              stays a compact decision-support column. lg:items-start (not
-              the grid default of stretch) so each column sizes to its own
-              content — the right column naturally runs longer than the
-              left, and stretch was forcing the left column's box to match
-              it, leaving a bare, contentless gap above where Macro Snapshot
-              begins. */}
-          <div className="mt-6 grid grid-cols-1 gap-8 lg:grid-cols-[2fr_1fr] lg:items-start">
+              stays a compact decision-support column. lg:items-stretch (the
+              grid default) so both columns' boxes span the full row height —
+              since the Key Risk Signals removal (Hero refinement pass,
+              2026-07-18) the LEFT column now typically runs longer than the
+              right, and the right column's own justify-between (below)
+              distributes its content across that full stretched height
+              instead of leaving a bare gap under a divider line that stops
+              short of the left column's actual bottom. */}
+          <div className="mt-6 grid grid-cols-1 gap-8 lg:grid-cols-[2fr_1fr] lg:items-stretch">
             {/* Left column — briefing body + Health Index / Risk Status pair */}
             <div>
               {body && (
@@ -234,10 +247,11 @@ export default function Hero({
                   </div>
                 </div>
 
-                {/* Last Updated */}
+                {/* Last Updated — the weekly snapshot's own compute time, not
+                    the current render time (see healthComputedAt prop doc). */}
                 <div className="border-t border-[var(--border-subtle)] pt-3 sm:pl-6">
                   <p className="text-label text-white/40 light:text-slate-400">Last Updated</p>
-                  <p className="text-title mt-1.5 text-white light:text-slate-900" suppressHydrationWarning>{pktTimestamp}</p>
+                  <p className="text-title mt-1.5 text-white light:text-slate-900" suppressHydrationWarning>{healthComputedAt ?? pktTimestamp}</p>
                 </div>
               </div>
 
@@ -266,12 +280,21 @@ export default function Hero({
               <HeroAuthCta />
             </div>
 
-            {/* Right column — compact decision-support panel: Latest Release
-                (small, editorial) followed by the Institutional Risk Summary
-                (thin horizontal probability bars, no radial gauges — this is
-                the signature "risk terminal" element referenced in the PEIC
-                v3 Institutional Risk Summary pass). Border-left on desktop. */}
-            <div className="flex flex-col gap-3 lg:border-l lg:border-[var(--border-subtle)] lg:pl-8">
+            {/* Right column — compact decision-support panel: Latest Release,
+                then the Institutional Risk Summary (thin horizontal
+                probability bars, no radial gauges). Border-left on desktop.
+                Hero refinement pass (2026-07-18): flattened into 4 direct
+                flex children (was 2, with Recession/Default/Data Status
+                nested inside one shared wrapper) with `justify-between` and
+                no flex `gap` — each child keeps its own compact `border-t
+                pt-3` divider (avoids the gap+padding stacking a shared flex
+                gap would add), while justify-between distributes any extra
+                height from the taller left column as breathing room between
+                sections instead of leaving it as one dead strip at the
+                bottom. Net effect: denser per-section spacing, but the
+                column as a whole still fills to match the left column at
+                any content length or breakpoint. */}
+            <div className="flex h-full flex-col justify-between lg:border-l lg:border-[var(--border-subtle)] lg:pl-8">
               <div>
                 <p className="text-label text-white/40 light:text-slate-400">{t("hero.latestRelease")}</p>
                 {latestRelease ? (
@@ -289,36 +312,21 @@ export default function Hero({
               </div>
 
               {recessionResult && defaultResult && aiRisk ? (
-                // No flex `gap` here, deliberately — every child below already
-                // carries its own `border-t pt-3` as its section divider, so a
-                // shared flex gap on top of that would double the space
-                // between every pair of sections (gap + padding stacking)
-                // instead of a single clean hairline-divided gap.
-                <div className="section-divider pt-3">
-                  <RiskProbabilityRow
-                    label="Recession Probability"
-                    result={recessionResult}
-                    explanation={firstSentence(aiRisk.recession.explanation)}
-                  />
+                <>
+                  <div className="section-divider pt-3">
+                    <RiskProbabilityRow
+                      label="Recession Probability"
+                      result={recessionResult}
+                      explanation={firstSentence(aiRisk.recession.explanation)}
+                    />
+                  </div>
+
                   <div className="border-t border-[var(--border-subtle)] pt-3">
                     <RiskProbabilityRow
                       label="Sovereign Default Probability"
                       result={defaultResult}
                       explanation={firstSentence(aiRisk.default.explanation)}
                     />
-                  </div>
-
-                  {/* Key Risk Signals — plain-language direction per already-computed indicator, no new figures */}
-                  <div className="border-t border-[var(--border-subtle)] pt-3">
-                    <p className="text-label text-white/40 light:text-slate-400">Key Risk Signals</p>
-                    <ul className="mt-2 flex flex-col gap-1.5">
-                      {riskSignals.map((signal) => (
-                        <li key={signal} className="flex items-start gap-2 text-caption text-white/70 light:text-slate-600">
-                          <span className="mt-[5px] h-1 w-1 shrink-0 rounded-full bg-white/30 light:bg-slate-400" />
-                          {signal}
-                        </li>
-                      ))}
-                    </ul>
                   </div>
 
                   {/* Data Status — one representative live indicator per upstream provider */}
@@ -338,7 +346,7 @@ export default function Hero({
                       Last update &middot; {pktTimestamp}
                     </p>
                   </div>
-                </div>
+                </>
               ) : null}
             </div>
           </div>
