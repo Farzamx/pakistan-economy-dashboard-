@@ -36,7 +36,7 @@ const FOREX_ARCH_URL = "https://www.sbp.org.pk/assets/document/Forex_Arch.xlsx";
 const FETCH_TIMEOUT_MS = 20_000;
 const SERIES_SLUG = "sbp-foreign-exchange-reserves";
 
-interface FxReservesRow {
+export interface FxReservesRow {
   weekEndingDate: string; // "YYYY-MM-DD"
   netSbpReservesBn: number; // USD billions, rounded to 2 decimal places
 }
@@ -89,8 +89,8 @@ function parseFxReservesSheet(wb: XLSX.WorkBook): FxReservesRow {
     // Find the header row: look for a row where col 0 contains "END PERIOD" or "PERIOD"
     // and col 1 contains "SBP" (case-insensitive)
     let headerIdx = -1;
-    let dateCol = 0;  // always column 0 in this file
-    let sbpCol = 1;   // always column 1 in this file
+    const dateCol = 0;  // always column 0 in this file
+    const sbpCol = 1;   // always column 1 in this file
 
     for (let i = 0; i < Math.min(rows.length, 15); i++) {
       const row = rows[i];
@@ -148,6 +148,25 @@ function parseFxReservesSheet(wb: XLSX.WorkBook): FxReservesRow {
 }
 
 /**
+ * Fetches and parses Forex_Arch.xlsx with no DB read/write — the shared fetch
+ * step used by both the sync path below and postReleaseVerification.ts's
+ * re-check (production-hardening audit, 2026-07-18), so there is exactly one
+ * implementation of "download and parse the live SBP file" rather than two
+ * that could silently diverge. Throws on fetch/parse failure — callers decide
+ * how to record/report that.
+ */
+export async function fetchFxReservesRowFresh(): Promise<FxReservesRow> {
+  const res = await fetch(FOREX_ARCH_URL, {
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    cache: "no-store",
+  });
+  if (!res.ok) throw new Error(`SBP Forex_Arch.xlsx fetch returned ${res.status}`);
+  const buf = await res.arrayBuffer();
+  const wb = XLSX.read(new Uint8Array(buf), { type: "array" });
+  return parseFxReservesSheet(wb);
+}
+
+/**
  * Syncs SBP weekly net FX reserves from Forex_Arch.xlsx (primary source).
  * Matches the observation week-ending date to the due scheduled event.
  */
@@ -168,14 +187,7 @@ export async function syncFxReservesFromSbpExcel(): Promise<SyncResult> {
     // Download Forex_Arch.xlsx
     let fxRow: FxReservesRow;
     try {
-      const res = await fetch(FOREX_ARCH_URL, {
-        signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-        cache: "no-store",
-      });
-      if (!res.ok) throw new Error(`SBP Forex_Arch.xlsx fetch returned ${res.status}`);
-      const buf = await res.arrayBuffer();
-      const wb = XLSX.read(new Uint8Array(buf), { type: "array" });
-      fxRow = parseFxReservesSheet(wb);
+      fxRow = await fetchFxReservesRowFresh();
     } catch (fetchErr) {
       void recordSourceAttempt(
         {

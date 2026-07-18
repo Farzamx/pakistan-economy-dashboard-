@@ -9,6 +9,7 @@ import { SERIES_PUBLICATION_META } from "@/lib/economicCalendar/seriesPublicatio
 import { recordSourceAttempt } from "@/lib/economicCalendar/sourceHealthTracker";
 import type { SyncResult, SyncProvenance } from "@/lib/economicCalendar/automation/syncFromSbpEasyData";
 import { invalidate } from "@/lib/memoryCache";
+import { canonicalObsCacheKey } from "@/lib/data/canonicalObservation";
 
 // PBS CPI Sync — Phase 7 Step 5
 //
@@ -311,7 +312,7 @@ async function writeSyncResult(
   };
 
   if (didUpdate) {
-    invalidate(`canonical-obs:${seriesSlug}`);
+    invalidate(canonicalObsCacheKey(seriesSlug));
     const { data: nextEvt } = await supabase
       .from("economic_events")
       .select("event_date, economic_event_series!inner(slug)")

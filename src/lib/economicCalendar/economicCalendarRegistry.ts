@@ -122,3 +122,24 @@ export const EVENT_STATUS_META: Record<EventStatus, StatusMeta> = {
   postponed: { label: "Postponed", badgeClass: "border-amber-400/30 bg-amber-400/10 text-amber-400" },
   cancelled: { label: "Cancelled", badgeClass: "border-rose-400/30 bg-rose-400/10 text-rose-400" },
 };
+
+/**
+ * Automation-coverage badge (production-hardening audit, 2026-07-18):
+ * economic_event_series.automation_tier was already fetched from the DB but
+ * never rendered anywhere, so a manually-entered series (e.g. Federal Budget,
+ * PSX Holiday Calendar) looked identical to a fully automated one (e.g. CPI).
+ * "automated" renders no badge at all (the expected, majority case — adding
+ * a badge there would just be noise). "semi_automated"/"manual" render a
+ * visible amber badge so users never assume a release is machine-verified
+ * when it isn't. Unrecognized/missing tier values are treated as "manual"
+ * (fail safe toward disclosure, never toward silently implying automation).
+ */
+export interface AutomationTierMeta {
+  label: string;
+  badgeClass: string;
+}
+
+export const AUTOMATION_TIER_META: Record<"semi_automated" | "manual", AutomationTierMeta> = {
+  semi_automated: { label: "Partial Automation", badgeClass: "border-amber-400/30 bg-amber-400/10 text-amber-400" },
+  manual: { label: "Manual Update Required", badgeClass: "border-amber-400/30 bg-amber-400/10 text-amber-400" },
+};

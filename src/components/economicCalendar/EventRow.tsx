@@ -7,6 +7,7 @@ import { formatEventDate, formatEventTime, resolveStatus } from "@/lib/economicC
 import EventCategoryBadge from "./EventCategoryBadge";
 import EventImportanceBadge from "./EventImportanceBadge";
 import EventStatusBadge from "./EventStatusBadge";
+import AutomationStatusBadge from "./AutomationStatusBadge";
 
 interface Props {
   event: EconomicEvent;
@@ -45,6 +46,7 @@ export default function EventRow({ event, showDate = true }: Props) {
           <EventCategoryBadge category={event.category} />
           <EventImportanceBadge importance={event.importance} withTooltip={false} />
           <EventStatusBadge status={status} />
+          <AutomationStatusBadge tier={event.automationTier} />
         </div>
       </div>
 

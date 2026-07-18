@@ -152,8 +152,15 @@ async function processJob(supabase: SupabaseClient, jobId: string, deadline: num
   }
   const claimResult = claim as ClaimResult;
   if (!claimResult.success) {
-    // job_locked_or_not_found just means another invocation has it (or it
-    // raced with this one) — not an error worth surfacing loudly.
+    // job_locked_or_not_found: a concurrent transaction has the row lock.
+    // already_processing: a live worker (this pipeline run overlapping the
+    // next cron tick, or the daily safety-net cron running concurrently)
+    // already claimed this job within the 6-minute lease window — see
+    // 0040_notification_worker_claim_hardening.sql. Neither is an error:
+    // returning null here means this pass simply doesn't touch the job,
+    // which is exactly the fix for the confirmed double-send bug (the old
+    // RPC used to return success:true here and let this function send a
+    // second batch of real emails for a job another invocation already owned).
     console.warn(`[Notifications] Job ${jobId}: could not claim — ${claimResult.error}`);
     return null;
   }

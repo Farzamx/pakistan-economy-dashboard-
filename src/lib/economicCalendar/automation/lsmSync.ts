@@ -5,6 +5,7 @@ import { SERIES_PUBLICATION_META } from "@/lib/economicCalendar/seriesPublicatio
 import { recordSourceAttempt } from "@/lib/economicCalendar/sourceHealthTracker";
 import type { SyncResult, SyncProvenance } from "@/lib/economicCalendar/automation/syncFromSbpEasyData";
 import { invalidate } from "@/lib/memoryCache";
+import { canonicalObsCacheKey } from "@/lib/data/canonicalObservation";
 
 // LSM YoY Sync — Part 4 of Phase 3 (Institutional-Grade Source Intelligence)
 //
@@ -35,6 +36,53 @@ import { invalidate } from "@/lib/memoryCache";
 // NOTIFICATION_WORKER_SECRET (migration 0027 hardening). No service-role key.
 
 const SERIES_SLUG = "large-scale-manufacturing-lsm-growth";
+
+export interface LsmYoyPoint {
+  date: string;
+  value: number;
+}
+
+export type LsmYoyComputation =
+  | { ok: true; actualValue: string; obsDate: string; currentValue: number; priorYearDate: string; priorYearValue: number }
+  | { ok: false; error: string };
+
+/**
+ * Deterministic LSM YoY computation shared by the sync path and
+ * postReleaseVerification.ts's re-check (production-hardening audit,
+ * 2026-07-18) — a single implementation of "find the same-month observation
+ * one year prior and apply the standard formula" so the two call sites can
+ * never silently diverge.
+ */
+export function computeLsmYoY(points: readonly LsmYoyPoint[]): LsmYoyComputation {
+  if (points.length < 13) {
+    return { ok: false, error: `LSM history too short for YoY computation (${points.length} points, need ≥ 13).` };
+  }
+  const latest = points[points.length - 1];
+  const obsDate = latest.date;
+  const obsYear = parseInt(obsDate.slice(0, 4), 10);
+  const obsMonth = obsDate.slice(5, 7);
+  const priorYearPrefix = `${obsYear - 1}-${obsMonth}`;
+  const priorYearPoint = points.find((p) => p.date.startsWith(priorYearPrefix));
+  if (!priorYearPoint) {
+    return {
+      ok: false,
+      error: `No prior-year LSM observation found for ${priorYearPrefix} — history starts at ${points[0]?.date ?? "unknown"}.`,
+    };
+  }
+  if (priorYearPoint.value === 0) {
+    return { ok: false, error: `Prior-year LSM index is zero for ${priorYearPoint.date} — division undefined.` };
+  }
+  const yoyPct = ((latest.value / priorYearPoint.value) - 1) * 100;
+  const sign = yoyPct >= 0 ? "+" : "";
+  return {
+    ok: true,
+    actualValue: `${sign}${yoyPct.toFixed(1)}% YoY`,
+    obsDate,
+    currentValue: latest.value,
+    priorYearDate: priorYearPoint.date,
+    priorYearValue: priorYearPoint.value,
+  };
+}
 
 /**
  * Computes LSM year-over-year growth deterministically from SBP EasyData's
@@ -97,51 +145,19 @@ export async function syncLsmYoYFromEasyData(): Promise<SyncResult> {
       };
     }
 
-    const points = history.points; // oldest → newest, raw quantum index values
-    if (points.length < 13) {
-      return {
-        seriesSlug: SERIES_SLUG,
-        status: "error",
-        detail: `LSM history too short for YoY computation (${points.length} points, need ≥13).`,
-        durationMs: Date.now() - entryMs,
-      };
-    }
-
-    const latest = points[points.length - 1];
-    const obsDate = latest.date; // "YYYY-MM-DD" (typically month-end, e.g. "2026-04-30")
-    const obsYear = parseInt(obsDate.slice(0, 4), 10);
-    const obsMonth = obsDate.slice(5, 7); // "MM"
-
-    // Find the same-month observation from exactly one calendar year ago.
-    // SBP EasyData uses month-end dates ("YYYY-MM-DD") consistently, so
-    // matching on year-1 and the same month prefix is deterministic.
-    const priorYearPrefix = `${obsYear - 1}-${obsMonth}`;
-    const priorYearPoint = points.find((p) => p.date.startsWith(priorYearPrefix));
-    if (!priorYearPoint) {
-      return {
-        seriesSlug: SERIES_SLUG,
-        status: "error",
-        detail:
-          `No prior-year LSM observation found for ${priorYearPrefix} — ` +
-          `history starts at ${points[0]?.date ?? "unknown"}. Cannot compute YoY.`,
-        durationMs: Date.now() - entryMs,
-      };
-    }
-
-    if (priorYearPoint.value === 0) {
-      return {
-        seriesSlug: SERIES_SLUG,
-        status: "error",
-        detail: `Prior-year LSM index is zero for ${priorYearPoint.date} — division undefined.`,
-        durationMs: Date.now() - entryMs,
-      };
-    }
-
     // YoY formula: PBS/SBP official methodology (Laspeyres chain-type index).
     // Both values are official SBP EasyData Quantum Index observations.
-    const yoyPct = ((latest.value / priorYearPoint.value) - 1) * 100;
-    const sign = yoyPct >= 0 ? "+" : "";
-    const actualValue = `${sign}${yoyPct.toFixed(1)}% YoY`;
+    // Shared with postReleaseVerification.ts's re-check — see computeLsmYoY.
+    const computation = computeLsmYoY(history.points);
+    if (!computation.ok) {
+      return {
+        seriesSlug: SERIES_SLUG,
+        status: "error",
+        detail: computation.error,
+        durationMs: Date.now() - entryMs,
+      };
+    }
+    const { actualValue, obsDate, priorYearDate, priorYearValue, currentValue } = computation;
 
     // Find the due LSM event (scheduled, event_date <= today).
     const supabase = createPublicDataClient();
@@ -177,7 +193,7 @@ export async function syncLsmYoYFromEasyData(): Promise<SyncResult> {
         status: "skipped-period-mismatch",
         detail:
           `${periodCheck.reason} ` +
-          `(current: ${obsDate} [${latest.value.toFixed(2)}] vs prior year: ${priorYearPoint.date} [${priorYearPoint.value.toFixed(2)}])`,
+          `(current: ${obsDate} [${currentValue.toFixed(2)}] vs prior year: ${priorYearDate} [${priorYearValue.toFixed(2)}])`,
         durationMs: Date.now() - entryMs,
         observationPeriod: obsDate,
         dueEventDate: dueEvent.event_date,
@@ -208,7 +224,7 @@ export async function syncLsmYoYFromEasyData(): Promise<SyncResult> {
 
     let nextEventDate: string | undefined;
     if (didUpdate) {
-      invalidate(`canonical-obs:${SERIES_SLUG}`);
+      invalidate(canonicalObsCacheKey(SERIES_SLUG));
       const { data: nextEvt } = await supabase
         .from("economic_events")
         .select("event_date, economic_event_series!inner(slug)")
@@ -222,8 +238,8 @@ export async function syncLsmYoYFromEasyData(): Promise<SyncResult> {
         seriesSlug: SERIES_SLUG,
         status: "synced",
         detail:
-          `YoY=${actualValue} | current=${obsDate}:${latest.value.toFixed(2)} | ` +
-          `prior=${priorYearPoint.date}:${priorYearPoint.value.toFixed(2)} | event=${dueEvent.event_date}`,
+          `YoY=${actualValue} | current=${obsDate}:${currentValue.toFixed(2)} | ` +
+          `prior=${priorYearDate}:${priorYearValue.toFixed(2)} | event=${dueEvent.event_date}`,
         provenance,
         durationMs: Date.now() - entryMs,
         observationPeriod: periodCheck.expectedPeriod ?? obsDate,

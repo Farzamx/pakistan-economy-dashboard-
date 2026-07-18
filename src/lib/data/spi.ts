@@ -55,6 +55,18 @@ export interface SpiPoint {
   yoyPct: number;
 }
 
+/**
+ * Formats a week-over-week % change the same way syncSpiFromPbs() writes it
+ * to economic_events.actual_value (e.g. "+1.40% WoW", "-0.45% WoW").
+ * Exported (production-hardening audit, 2026-07-18) so postReleaseVerification.ts
+ * can re-derive the expected string from a fresh SpiPoint without duplicating
+ * this formatting rule a second time.
+ */
+export function formatSpiWowActual(wowPct: number): string {
+  const sign = wowPct >= 0 ? "+" : "";
+  return `${sign}${wowPct.toFixed(2)}% WoW`;
+}
+
 export interface SpiResult {
   /** Oldest -> newest. PBS embeds roughly the trailing 10 weeks in each report — there is no separate multi-year archive file. */
   points: SpiPoint[];

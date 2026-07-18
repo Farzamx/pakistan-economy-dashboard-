@@ -1,6 +1,6 @@
 import { getSbpIndicatorFresh, type SbpIndicatorKey } from "@/lib/data/sbp";
 import { invalidateSbpIndicatorCache } from "@/lib/data/sbpCacheInvalidation";
-import { getSpiHistoryFresh, invalidateSpiCache } from "@/lib/data/spi";
+import { getSpiHistoryFresh, invalidateSpiCache, formatSpiWowActual } from "@/lib/data/spi";
 import { createPublicDataClient } from "@/lib/supabase/publicDataClient";
 import { validateObservationPeriod } from "@/lib/economicCalendar/observationPeriodValidator";
 import { SERIES_PUBLICATION_META } from "@/lib/economicCalendar/seriesPublicationConfig";
@@ -81,7 +81,11 @@ function parseLeadingNumber(value: string | null): number | null {
 //   EasyData LSM000160000 returns quantum index (~114.56), not YoY growth.
 //   format(v) => `${v}% YoY` would produce "114.56% YoY". See PENDING registry.
 
-const SYNC_TARGETS: Record<string, SyncTarget> = {
+// Exported (production-hardening audit, 2026-07-18) so postReleaseVerification.ts
+// can reuse the exact same indicatorKey + format() per series when re-checking an
+// already-released event against a fresh live fetch, instead of duplicating this
+// mapping a second time with its own risk of drifting out of sync.
+export const SYNC_TARGETS: Record<string, SyncTarget> = {
   "current-account-balance": {
     indicatorKey: "currentAccount",
     format: (v) => `$${v}B`,
@@ -413,7 +417,15 @@ export async function syncSpiFromPbs(): Promise<SyncResult> {
     // week yet, the sync skips cleanly rather than stamping the prior
     // week's figure onto the next slot (the original SPI mis-attribution).
     // spi is non-null here — the !spiHealthy guard above returned early.
-    const matchingPoint = spi!.points.find((p) => p.date === dueEvent.event_date);
+    // Routed through the shared validateObservationPeriod() (production-
+    // hardening audit, 2026-07-18) instead of a hand-rolled `===` — this
+    // used to duplicate weekly-cadence's exact-match rule inline, so a
+    // future change to that rule (e.g. a tolerance window) would silently
+    // not apply to SPI. Searches every point (not just the latest) so a
+    // multi-week catch-up after downtime still matches the right one.
+    const matchingPoint = spi!.points.find(
+      (p) => validateObservationPeriod(p.date, dueEvent.event_date, { cadence: "weekly" }).valid,
+    );
     if (!matchingPoint) {
       return {
         seriesSlug,
@@ -425,8 +437,7 @@ export async function syncSpiFromPbs(): Promise<SyncResult> {
       };
     }
 
-    const sign = matchingPoint.wowPct >= 0 ? "+" : "";
-    const actualValue = `${sign}${matchingPoint.wowPct.toFixed(2)}% WoW`;
+    const actualValue = formatSpiWowActual(matchingPoint.wowPct);
     const { data: didUpdate, error } = await supabase.rpc("sync_event_actual", {
       p_internal_secret: workerSecret,
       p_series_slug: seriesSlug,

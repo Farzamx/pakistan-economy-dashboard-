@@ -5,6 +5,7 @@ import { SERIES_PUBLICATION_META } from "@/lib/economicCalendar/seriesPublicatio
 import { recordSourceAttempt } from "@/lib/economicCalendar/sourceHealthTracker";
 import type { SyncResult, SyncProvenance } from "@/lib/economicCalendar/automation/syncFromSbpEasyData";
 import { invalidate } from "@/lib/memoryCache";
+import { canonicalObsCacheKey } from "@/lib/data/canonicalObservation";
 
 // PBS Trade Balance Sync — Phase 7 Step 4
 //
@@ -363,8 +364,7 @@ export async function syncTradeBalanceFromPbs(): Promise<SyncResult[]> {
         if (error) {
           results.push({ seriesSlug: SERIES_SLUG, status: "error", detail: error.message, durationMs: Date.now() - entryMs });
         } else if (didUpdate) {
-          invalidate(`canonical-obs:${SERIES_SLUG}`);
-          let tbNextDate: string | undefined;
+          invalidate(canonicalObsCacheKey(SERIES_SLUG));
           const { data: tbNext } = await supabase
             .from("economic_events")
             .select("event_date, economic_event_series!inner(slug)")
@@ -373,7 +373,7 @@ export async function syncTradeBalanceFromPbs(): Promise<SyncResult[]> {
             .gt("event_date", dueEvent.event_date)
             .order("event_date", { ascending: true })
             .limit(1);
-          tbNextDate = (tbNext?.[0] as { event_date?: string } | undefined)?.event_date;
+          const tbNextDate = (tbNext?.[0] as { event_date?: string } | undefined)?.event_date;
           results.push({
             seriesSlug: SERIES_SLUG,
             status: "synced",
@@ -464,8 +464,7 @@ export async function syncTradeBalanceFromPbs(): Promise<SyncResult[]> {
           if (error) {
             results.push({ seriesSlug: "exports-release", status: "error", detail: error.message, durationMs: Date.now() - entryMs });
           } else if (didUpdate) {
-            invalidate("canonical-obs:exports-release");
-            let exNextDate: string | undefined;
+            invalidate(canonicalObsCacheKey("exports-release"));
             const { data: exNext } = await supabase
               .from("economic_events")
               .select("event_date, economic_event_series!inner(slug)")
@@ -474,7 +473,7 @@ export async function syncTradeBalanceFromPbs(): Promise<SyncResult[]> {
               .gt("event_date", exportsDueEvent.event_date)
               .order("event_date", { ascending: true })
               .limit(1);
-            exNextDate = (exNext?.[0] as { event_date?: string } | undefined)?.event_date;
+            const exNextDate = (exNext?.[0] as { event_date?: string } | undefined)?.event_date;
             results.push({
               seriesSlug: "exports-release",
               status: "synced",
@@ -562,8 +561,7 @@ export async function syncTradeBalanceFromPbs(): Promise<SyncResult[]> {
           if (error) {
             results.push({ seriesSlug: "imports-release", status: "error", detail: error.message, durationMs: Date.now() - entryMs });
           } else if (didUpdate) {
-            invalidate("canonical-obs:imports-release");
-            let imNextDate: string | undefined;
+            invalidate(canonicalObsCacheKey("imports-release"));
             const { data: imNext } = await supabase
               .from("economic_events")
               .select("event_date, economic_event_series!inner(slug)")
@@ -572,7 +570,7 @@ export async function syncTradeBalanceFromPbs(): Promise<SyncResult[]> {
               .gt("event_date", importsDueEvent.event_date)
               .order("event_date", { ascending: true })
               .limit(1);
-            imNextDate = (imNext?.[0] as { event_date?: string } | undefined)?.event_date;
+            const imNextDate = (imNext?.[0] as { event_date?: string } | undefined)?.event_date;
             results.push({
               seriesSlug: "imports-release",
               status: "synced",

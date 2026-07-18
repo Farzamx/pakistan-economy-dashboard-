@@ -41,15 +41,28 @@ on:
     # Covers late publication, Friday-1st delays, and EasyData propagation lag.
     - cron: '*/5 8-13 1 * *'
 
-    # SPI: PBS publishes every Thursday at ~11:00–13:00 PKT (06:00–08:00 UTC).
-    - cron: '*/5 6-8 * * 4'
+    # SPI: PBS publishes every FRIDAY, verified live against PBS's own
+    # WordPress REST API (5 consecutive posts checked 2026-07-18, all Fridays,
+    # GMT timestamps 06:00–07:08 -> ~11:00–12:10 PKT). Corrected from an
+    # earlier, unverified "Thursday" assumption that never matched PBS's
+    # actual behavior (production-hardening audit, 2026-07-18) — the
+    # exact-date-match guard in syncSpiFromPbs() meant the wrong day never
+    # produced bad data, just wasted polling and a slower 15-min-baseline
+    # detection on the real Friday release. Window widened slightly
+    # (05:30–08:30 UTC) past the observed 06:00–07:08 range to absorb
+    # occasional late publication.
+    - cron: '*/5 5-8 * * 5'
 
     # Trade Balance (PBS advance release): published ~16th–18th of month
     # at ~10:00–12:00 PKT (05:00–07:00 UTC).
     - cron: '*/5 5-8 15,16,17,18 * *'
 
-    # FX Reserves (SBP Forex_Arch.xlsx): updated Thursdays/Fridays alongside
-    # the press release. Thursday window is shared with SPI above. Friday:
+    # FX Reserves (SBP Forex_Arch.xlsx): historically updated Thursdays or
+    # Fridays alongside the press release. Previously this relied on the SPI
+    # Thursday window (above) for Thursday coverage — now that SPI's window
+    # has moved to Friday (verified above), FX Reserves gets its own explicit
+    # Thursday window so it doesn't silently lose fast detection.
+    - cron: '*/5 5-9 * * 4'
     - cron: '*/5 5-9 * * 5'
 
     # LSM: PBS publishes 5th–18th of M+2 at ~10:00–12:00 PKT (05:00–07:00 UTC).

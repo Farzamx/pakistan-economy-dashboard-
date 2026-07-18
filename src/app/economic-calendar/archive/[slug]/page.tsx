@@ -6,6 +6,7 @@ import RelatedContent from "@/components/RelatedContent";
 import EventCategoryBadge from "@/components/economicCalendar/EventCategoryBadge";
 import EventImportanceBadge from "@/components/economicCalendar/EventImportanceBadge";
 import EventStatusBadge from "@/components/economicCalendar/EventStatusBadge";
+import AutomationStatusBadge from "@/components/economicCalendar/AutomationStatusBadge";
 import ImpactScoreBadge from "@/components/economicCalendar/ImpactScoreBadge";
 import { MarketReactionActual } from "@/components/economicCalendar/MarketReactionSection";
 import HistoricalContext from "@/components/economicCalendar/HistoricalContext";
@@ -172,6 +173,7 @@ export default async function ArchiveDetailPage({ params }: PageProps) {
             <EventImportanceBadge importance={event.importance} />
             <ImpactScoreBadge score={impactScore} />
             <EventStatusBadge status={event.status} />
+            <AutomationStatusBadge tier={event.series.automationTier} />
             {stillWithinRetention && (
               <span className="rounded-full border border-neon-blue/20 bg-neon-blue/5 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-neon-blue">
                 {formatReleasedAgo(event.eventDate, today)}

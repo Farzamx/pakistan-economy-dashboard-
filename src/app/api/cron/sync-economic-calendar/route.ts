@@ -39,8 +39,14 @@ export async function GET(request: Request) {
   // ── Run the sync pipeline ─────────────────────────────────────────────────
   const result = await runSyncPipeline(meta);
 
-  // ── Log the trigger (best-effort — never fails the response) ─────────────
-  void logSyncTrigger({
+  // ── Log the trigger (best-effort internally — logSyncTrigger swallows its
+  // own errors and never throws — but MUST be awaited here: on Vercel, the
+  // function's execution context can be frozen/recycled the instant
+  // NextResponse.json(...) is returned, so a fire-and-forget `void` call
+  // risked silently losing sync_trigger_log entries, especially on this
+  // route's every-15-minutes GitHub Actions cadence. Production-hardening
+  // audit, 2026-07-18.
+  await logSyncTrigger({
     triggeredAt,
     finishedAt: new Date(),
     schedulerName: meta.schedulerName,
@@ -68,6 +74,7 @@ export async function GET(request: Request) {
     lsmResult: result.lsmResult,
     notifications: result.notifications,
     freshnessAudit: result.freshnessAudit,
+    postReleaseVerification: result.postReleaseVerification,
     summary: result.summary,
   });
 }

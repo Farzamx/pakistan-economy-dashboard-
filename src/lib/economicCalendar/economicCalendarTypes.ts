@@ -52,4 +52,15 @@ export interface EconomicEvent {
    * date itself is on an investor-facing calendar.
    */
   dateConfirmed?: boolean;
+  /**
+   * Series-level automation tier ("automated" | "semi_automated" | "manual"),
+   * carried from economic_event_series.automation_tier. Untyped string (not a
+   * union) because it passes through from the DB uninterpreted — components
+   * that render it should treat anything other than "automated" as
+   * needing a visible "manual update required" style badge rather than
+   * silently implying automation where none exists (production-hardening
+   * audit, 2026-07-18: this field was already fetched into EventRecord.series
+   * but toEconomicEvent() dropped it, so no UI surface could ever show it).
+   */
+  automationTier?: string;
 }

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createPublicDataClient } from "@/lib/supabase/publicDataClient";
+import { getDataIntegrityAlerts } from "@/lib/economicCalendar/dataIntegrityAlerts";
 
 export const metadata: Metadata = {
   robots: { index: false, follow: false },
@@ -129,6 +130,10 @@ export default async function SyncStatusPage() {
     (r) => !r.nextScheduled || r.nextScheduled.event_date < today,
   );
 
+  // Post-release verification alerts (migration 0041) — surfaced here rather
+  // than a new page so there is one internal monitoring surface, not two.
+  const integrityAlerts = await getDataIntegrityAlerts("open", 50);
+
   return (
     <main className="min-h-screen bg-[#05060f] px-6 py-10 text-white sm:px-10">
       <div className="mx-auto max-w-6xl space-y-10">
@@ -150,6 +155,53 @@ export default async function SyncStatusPage() {
             </p>
           </div>
         )}
+
+        {/* ── Data integrity alerts (post-release verification, migration 0041) ── */}
+        <section>
+          <h2 className="mb-3 text-lg font-semibold">
+            Data Integrity Alerts ({integrityAlerts.length} open)
+          </h2>
+          {integrityAlerts.length === 0 ? (
+            <p className="rounded-xl border border-emerald-500/20 bg-emerald-950/10 px-4 py-3 text-sm text-emerald-400">
+              No open alerts — every event released in the last 48 hours that could be re-verified still matches its official source.
+            </p>
+          ) : (
+            <div className="overflow-x-auto rounded-xl border border-rose-500/30">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-white/10 bg-rose-950/20 text-left text-xs uppercase text-slate-400">
+                    <th className="px-4 py-3 font-medium">Series / Event</th>
+                    <th className="px-4 py-3 font-medium">Type</th>
+                    <th className="px-4 py-3 font-medium">Released Value</th>
+                    <th className="px-4 py-3 font-medium">Fresh Value</th>
+                    <th className="px-4 py-3 font-medium">Detected</th>
+                    <th className="px-4 py-3 font-medium">Detail</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {integrityAlerts.map((a) => (
+                    <tr key={a.id} className="hover:bg-white/[0.02] align-top">
+                      <td className="px-4 py-3">
+                        <p className="font-medium text-white">{a.seriesSlug}</p>
+                        <p className="text-[11px] text-slate-500">{fmtDate(a.eventDate)}</p>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="rounded bg-rose-500/20 px-2 py-0.5 text-[11px] font-semibold uppercase text-rose-400">{a.mismatchType}</span>
+                      </td>
+                      <td className="px-4 py-3 font-mono text-emerald-400">{a.releasedActualValue}</td>
+                      <td className="px-4 py-3 font-mono text-amber-400">{a.freshValue ?? "—"}</td>
+                      <td className="px-4 py-3 text-xs text-slate-400">{fmt(a.detectedAt)}</td>
+                      <td className="px-4 py-3 max-w-md text-xs text-slate-300">{a.detail}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+          <p className="mt-2 text-xs text-slate-600">
+            Never auto-corrected — the released value shown above remains authoritative until a maintainer reviews and calls resolve_data_integrity_alert().
+          </p>
+        </section>
 
         {/* ── Series table ────────────────────────────────────────────────── */}
         <section>

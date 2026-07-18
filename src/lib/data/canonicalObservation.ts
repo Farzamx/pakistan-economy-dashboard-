@@ -111,12 +111,24 @@ async function fetchFromDb(seriesSlug: string): Promise<CanonicalObservation | n
  * for the parent SBP indicator is cleared by invalidateSbpIndicatorCache(),
  * because that triggers a fresh getSbpIndicator() call which re-checks here.
  */
+/**
+ * The single source of truth for this module's L1 cache key format. Sync
+ * modules that write a fresh observation call `invalidate(canonicalObsCacheKey(slug))`
+ * afterward (production-hardening audit, 2026-07-18: previously each of the
+ * 5 call sites re-typed the `canonical-obs:${slug}` template string
+ * independently — a silent-drift risk if this format ever changed here
+ * without every invalidation call site being updated in lockstep).
+ */
+export function canonicalObsCacheKey(seriesSlug: string): string {
+  return `canonical-obs:${seriesSlug}`;
+}
+
 export async function getLatestCanonicalObservation(
   seriesSlug: string,
 ): Promise<CanonicalObservation | null> {
   if (!(seriesSlug in PARSERS)) return null;
 
-  const cacheKey = `canonical-obs:${seriesSlug}`;
+  const cacheKey = canonicalObsCacheKey(seriesSlug);
   const cached = getFresh<CanonicalObservation | null>(cacheKey, CANONICAL_CACHE_TTL_MS);
   if (cached) return cached.data;
 

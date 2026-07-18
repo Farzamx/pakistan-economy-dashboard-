@@ -165,6 +165,7 @@ export function toEconomicEvent(record: EventRecord): EconomicEvent {
     actual: record.actualValue,
     status: record.status,
     isHeadline: record.series.isHeadline,
+    automationTier: record.series.automationTier,
   };
 }
 

@@ -6,6 +6,7 @@ import RelatedContent from "@/components/RelatedContent";
 import EventCategoryBadge from "@/components/economicCalendar/EventCategoryBadge";
 import EventImportanceBadge from "@/components/economicCalendar/EventImportanceBadge";
 import EventStatusBadge from "@/components/economicCalendar/EventStatusBadge";
+import AutomationStatusBadge from "@/components/economicCalendar/AutomationStatusBadge";
 import ImpactScoreBadge from "@/components/economicCalendar/ImpactScoreBadge";
 import { MarketReactionPreview } from "@/components/economicCalendar/MarketReactionSection";
 import HistoricalContext from "@/components/economicCalendar/HistoricalContext";
@@ -170,6 +171,7 @@ export default async function EventDetailPage({ params }: PageProps) {
             <EventImportanceBadge importance={event.importance} />
             <ImpactScoreBadge score={impactScore} />
             <EventStatusBadge status={event.status} />
+            <AutomationStatusBadge tier={event.series.automationTier} />
           </div>
 
           <h1 className="mt-4 text-3xl font-bold tracking-tight text-white light:text-slate-900 sm:text-4xl">{event.title}</h1>

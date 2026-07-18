@@ -30,6 +30,7 @@ import { logCronRun } from "@/lib/cronLogging";
 import { formatPipelineSummary, formatDetailBlocks } from "@/lib/economicCalendar/automation/pipelineLogger";
 import type { TriggerMeta } from "@/lib/economicCalendar/automation/schedulerMeta";
 import { auditSbpFreshness, type FreshnessAuditEntry } from "@/lib/data/sbpFreshnessAudit";
+import { verifyRecentReleases, type VerificationEntry } from "@/lib/economicCalendar/automation/postReleaseVerification";
 
 export interface JobSummaryEntry {
   jobName: string;
@@ -56,6 +57,8 @@ export interface PipelineResult {
   notifications: JobProcessingSummary[];
   /** Freshness audit across all 20 SBP EasyData indicators against SBP's own /meta "Available Upto" (Step 9). */
   freshnessAudit: FreshnessAuditEntry[];
+  /** Post-release re-verification of everything released in the last 48h (Step 10) — see postReleaseVerification.ts. */
+  postReleaseVerification: VerificationEntry[];
   /** Count of SyncResult entries with status="synced" across all sync steps. */
   totalSynced: number;
   /** Count of SyncResult entries with status="error" across all sync steps. */
@@ -87,6 +90,7 @@ export async function runSyncPipeline(meta: TriggerMeta): Promise<PipelineResult
   let lsmResult: SyncResult | null = null;
   let notifications: JobProcessingSummary[] = [];
   let freshnessAudit: FreshnessAuditEntry[] = [];
+  let postReleaseVerification: VerificationEntry[] = [];
 
   // ── Step 1: Official calendar sync ──────────────────────────────────────────
   {
@@ -267,6 +271,30 @@ export async function runSyncPipeline(meta: TriggerMeta): Promise<PipelineResult
     }
   }
 
+  // ── Step 10: Post-release verification (everything released in last 48h) ──
+  // Re-fetches the official source for each recently-released event and
+  // compares against the stored actual_value. Never writes to economic_events
+  // — a mismatch only creates a data_integrity_alerts row for manual review.
+  // See postReleaseVerification.ts header for full rationale (production-
+  // hardening audit, 2026-07-18, Finding 2).
+  {
+    const stepStart = new Date();
+    try {
+      postReleaseVerification = await verifyRecentReleases();
+      const mismatches = postReleaseVerification.filter((e) => e.status === "mismatch");
+      const detail =
+        `${postReleaseVerification.length} checked, ${mismatches.length} mismatch(es)` +
+        (mismatches.length > 0 ? `: ${mismatches.map((e) => e.seriesSlug).join(", ")}` : "");
+      const status = mismatches.length > 0 ? "failure" : "success";
+      await logCronRun("post-release-verification", stepStart, status, detail);
+      jobsSummary.push({ jobName: "post-release-verification", status, durationMs: Date.now() - stepStart.getTime(), detail });
+    } catch (err) {
+      const detail = err instanceof Error ? err.message : String(err);
+      await logCronRun("post-release-verification", stepStart, "failure", detail);
+      jobsSummary.push({ jobName: "post-release-verification", status: "failure", durationMs: Date.now() - stepStart.getTime(), detail });
+    }
+  }
+
   const allSyncResults: SyncResult[] = [
     ...cpiPbsResults,
     ...tradeBalanceResults,
@@ -293,6 +321,7 @@ export async function runSyncPipeline(meta: TriggerMeta): Promise<PipelineResult
     totalSynced,
     totalFailed,
     freshnessAudit,
+    postReleaseVerification,
   };
 
   const summary = formatPipelineSummary(logInput);
@@ -312,6 +341,7 @@ export async function runSyncPipeline(meta: TriggerMeta): Promise<PipelineResult
     lsmResult,
     notifications,
     freshnessAudit,
+    postReleaseVerification,
     totalSynced,
     totalFailed,
     totalDurationMs,

@@ -16,6 +16,7 @@ import type { ReconcileSummary } from "./syncOfficialCalendars";
 import type { GapDetectionResult } from "./detectCalendarGaps";
 import type { JobProcessingSummary } from "@/lib/notifications/notificationJobWorker";
 import type { FreshnessAuditEntry } from "@/lib/data/sbpFreshnessAudit";
+import type { VerificationEntry } from "./postReleaseVerification";
 
 const LINE = "═".repeat(50);
 const THIN = "─".repeat(50);
@@ -123,6 +124,8 @@ export interface PipelineSummaryInput {
   totalSynced: number;
   totalFailed: number;
   freshnessAudit: FreshnessAuditEntry[];
+  /** Post-release re-verification of everything released in the last 48h (Step 10). */
+  postReleaseVerification: VerificationEntry[];
 }
 
 /**
@@ -135,7 +138,7 @@ export function formatPipelineSummary(input: PipelineSummaryInput): string {
     triggeredAt, schedulerName, totalDurationMs,
     cpiPbsResults, tradeBalanceResults, fxReservesResult, syncResults, lsmResult,
     officialCalendars, gapDetection, notifications, totalSynced, totalFailed,
-    freshnessAudit,
+    freshnessAudit, postReleaseVerification,
   } = input;
 
   const allResults: SyncResult[] = [
@@ -241,6 +244,20 @@ export function formatPipelineSummary(input: PipelineSummaryInput): string {
   }
   if (needsReview.length > 0) {
     for (const e of needsReview) lines.push(`  ⚠ ${e.indicator}: ${e.detail}`);
+  }
+  lines.push("");
+
+  // ── Post-Release Verification (Step 10) ──
+  const prvMatch = postReleaseVerification.filter((e) => e.status === "match").length;
+  const prvMismatch = postReleaseVerification.filter((e) => e.status === "mismatch");
+  const prvUnverifiable = postReleaseVerification.filter((e) => e.status === "unverifiable").length;
+  const prvNotImplemented = postReleaseVerification.filter((e) => e.status === "not-implemented").length;
+  lines.push(
+    `Post-Release Verification: ${postReleaseVerification.length} checked (last 48h) | ${prvMatch} match | ` +
+    `${prvMismatch.length} MISMATCH | ${prvUnverifiable} unverifiable | ${prvNotImplemented} no reverifier`,
+  );
+  if (prvMismatch.length > 0) {
+    for (const e of prvMismatch) lines.push(`  ‼ ${e.seriesSlug} (${e.eventDate}): ${e.detail}`);
   }
   lines.push(LINE);
 
