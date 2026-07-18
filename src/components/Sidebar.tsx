@@ -187,7 +187,11 @@ export default function Sidebar() {
           position, and is never clipped by <aside>'s own overflow-y-auto
           (which per the CSS overflow spec forces overflow-x to "auto" too,
           the moment overflow-y isn't "visible"). */}
-      <div className="sticky top-16 hidden h-[calc(100vh-4rem)] shrink-0 sm:block">
+      {/* min-[800px], matching TopNav/MobileNav's threshold (see TopNav.tsx)
+          — must switch at the exact same width those do, or this desktop
+          sidebar and the mobile hamburger nav would both be visible (or
+          both hidden) in between. */}
+      <div className="sticky top-16 hidden h-[calc(100vh-4rem)] shrink-0 min-[800px]:block">
         <aside
           className={`relative flex h-full flex-col overflow-y-auto overflow-x-hidden border-r border-white/5 light:border-slate-200 bg-white/[0.02] light:bg-white backdrop-blur-xl light:backdrop-blur-none hide-scrollbar light:shadow-[1px_0_0_0_#E2E6EF] transition-[width] duration-200 ease-out ${
             collapsed ? "w-0 gap-0 p-0 opacity-0 pointer-events-none" : "w-64 gap-5 p-5 opacity-100"

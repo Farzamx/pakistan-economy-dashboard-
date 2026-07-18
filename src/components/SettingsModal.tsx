@@ -5,6 +5,7 @@ import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { useTheme, type Theme } from "@/components/ThemeProvider";
 import { useAuth } from "@/components/AuthProvider";
+import { usePreferences } from "@/components/PreferencesProvider";
 import { useLanguage } from "@/components/LanguageProvider";
 import { LANGUAGE_OPTIONS, type Language } from "@/lib/i18n/types";
 
@@ -120,7 +121,19 @@ function LanguageOption({
 export default function SettingsModal({ open, onClose }: Props) {
   const { theme, setTheme } = useTheme();
   const { user } = useAuth();
+  const { updatePreferences } = usePreferences();
   const { language, setLanguage, t } = useLanguage();
+
+  // Bug fix: this modal used to call setTheme() alone, which only ever
+  // wrote to localStorage — a signed-in user's choice never reached
+  // Supabase, so PreferencesProvider's cross-device sync would silently
+  // revert it back to whatever (older) theme was last saved via the full
+  // /settings/preferences page, the next time its DB fetch resolved. Now
+  // mirrors PreferencesBoard.tsx's handleThemeChange exactly.
+  function handleThemeSelect(next: Theme) {
+    setTheme(next);
+    if (user) updatePreferences({ preferredTheme: next }).catch(() => {});
+  }
 
   // Close on Escape key
   useEffect(() => {
@@ -198,14 +211,14 @@ export default function SettingsModal({ open, onClose }: Props) {
                   <ThemeOption
                     value="dark"
                     current={theme}
-                    onSelect={setTheme}
+                    onSelect={handleThemeSelect}
                     label={t("settings.darkMode")}
                     description={t("settings.darkModeDesc")}
                   />
                   <ThemeOption
                     value="light"
                     current={theme}
-                    onSelect={setTheme}
+                    onSelect={handleThemeSelect}
                     label={t("settings.lightMode")}
                     description={t("settings.lightModeDesc")}
                   />

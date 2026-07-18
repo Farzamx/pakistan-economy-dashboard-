@@ -126,7 +126,7 @@ export default function SiteMapPage() {
           >
             <span aria-hidden="true">←</span> {SITE_NAME}
           </Link>
-          <span className="text-[10px] uppercase tracking-widest text-white/25 light:text-slate-400">
+          <span className="min-w-0 shrink break-all text-right text-[10px] uppercase tracking-widest text-white/25 light:text-slate-400">
             pakeconintel.com/site-map
           </span>
         </div>

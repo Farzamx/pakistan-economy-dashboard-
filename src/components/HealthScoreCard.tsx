@@ -50,15 +50,24 @@ export default function HealthScoreCard({ health, ai, computedAt, nextUpdateAt }
     High: t("health.riskHigh"),
   };
 
+  // min-[1150px], not sm (640px) — measured directly (mobile audit): this
+  // card's three-across row (180px gauge + flexible narrative/badges column
+  // + a factor-breakdown block whose sm:min-w-[200px] + sm:shrink-0 refuse
+  // to compress) does not actually fit without overflowing until ~1150px
+  // wide. Switching to row mode at the old 640px threshold left every
+  // tablet and small-laptop width (640-1149px) with the page scrolling
+  // horizontally by up to ~300px. Below 1150px this now simply stays in the
+  // already-correct, already-centered stacked mobile layout for longer,
+  // rather than forcing a row that doesn't fit.
   return (
     <motion.section
-      className="glass-card mt-8 flex flex-col items-center gap-6 p-6 text-center sm:flex-row sm:p-8 sm:text-left"
+      className="glass-card mt-8 flex flex-col items-center gap-6 p-6 text-center min-[1150px]:flex-row min-[1150px]:p-8 min-[1150px]:text-left"
       initial={{ opacity: 0, y: 24 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, amount: 0.3 }}
       transition={{ duration: 0.5, ease: "easeOut" }}
     >
-      <div className="w-full shrink-0 sm:w-[180px]">
+      <div className="w-full shrink-0 min-[1150px]:w-[180px]">
         <div className="flex items-baseline gap-1.5">
           <span className="text-display tabular-nums text-white light:text-slate-900">
             <AnimatedValue value={String(score)} />
@@ -71,7 +80,7 @@ export default function HealthScoreCard({ health, ai, computedAt, nextUpdateAt }
         </p>
       </div>
 
-      <div className="flex flex-col items-center sm:items-start">
+      <div className="flex flex-col items-center min-[1150px]:items-start">
         <div className="flex items-center gap-2">
           <span className="text-xs font-semibold uppercase tracking-[0.3em] text-white/40 light:text-slate-400">
             {t("health.title")}
@@ -126,7 +135,7 @@ export default function HealthScoreCard({ health, ai, computedAt, nextUpdateAt }
       {/* Factor breakdown — fills the wide card's remaining width with the
           same quantitative-model figures already computed for the score,
           instead of leaving it empty next to the gauge + narrative column. */}
-      <div className="grid w-full grid-cols-2 gap-4 border-t border-white/5 pt-5 text-left sm:ml-auto sm:w-auto sm:min-w-[200px] sm:shrink-0 sm:border-t-0 sm:border-l sm:border-white/5 sm:pt-0 sm:pl-6 light:border-slate-200">
+      <div className="grid w-full grid-cols-2 gap-4 border-t border-white/5 pt-5 text-left min-[1150px]:ml-auto min-[1150px]:w-auto min-[1150px]:min-w-[200px] min-[1150px]:shrink-0 min-[1150px]:border-t-0 min-[1150px]:border-l min-[1150px]:border-white/5 min-[1150px]:pt-0 min-[1150px]:pl-6 light:border-slate-200">
         <div>
           <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-emerald-400/60 light:text-emerald-700">
             {t("health.topStrengths")}

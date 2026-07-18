@@ -284,7 +284,7 @@ export default function MobileNav() {
         type="button"
         onClick={() => setOpen(true)}
         aria-label="Open navigation menu"
-        className="glass-card fixed left-3 top-3 z-40 flex h-11 w-11 items-center justify-center rounded-xl border-white/10 text-white/80 light:text-slate-700 shadow-[0_0_16px_rgba(56,189,248,0.15)] sm:hidden"
+        className="glass-card fixed left-3 top-3 z-40 flex h-11 w-11 items-center justify-center rounded-xl border-white/10 text-white/80 light:text-slate-700 shadow-[0_0_16px_rgba(56,189,248,0.15)] min-[800px]:hidden"
       >
         <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
           <path d="M3 6h18M3 12h18M3 18h18" />
@@ -296,7 +296,7 @@ export default function MobileNav() {
           <>
             <motion.div
               key="mobilenav-backdrop"
-              className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm sm:hidden"
+              className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm min-[800px]:hidden"
               variants={BACKDROP}
               initial="hidden"
               animate="visible"
@@ -310,7 +310,7 @@ export default function MobileNav() {
               role="dialog"
               aria-modal="true"
               aria-label="Navigation menu"
-              className="fixed inset-y-0 left-0 z-[60] flex w-[82vw] max-w-[320px] flex-col gap-6 overflow-y-auto border-r border-white/10 bg-[#05060f] light:bg-white p-5 shadow-2xl sm:hidden"
+              className="fixed inset-y-0 left-0 z-[60] flex w-[82vw] max-w-[320px] flex-col gap-6 overflow-y-auto border-r border-white/10 bg-[#05060f] light:bg-white p-5 shadow-2xl min-[800px]:hidden"
               variants={PANEL}
               initial="hidden"
               animate="visible"

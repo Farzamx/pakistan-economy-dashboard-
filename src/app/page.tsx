@@ -609,11 +609,14 @@ export default async function Home() {
       <HashScrollRestore />
       <Sidebar />
       <main id="overview" className="min-w-0 flex-1 scroll-mt-[60px] sm:scroll-mt-[120px]">
-        {/* Sticky market ribbon — pinned directly below TopNav (top-16),
-            visible throughout the scroll rather than living inside the
-            scrolling panel below. Same tickerItems used by every other
-            surface on this page, no new fetch. */}
-        <div className="sticky top-0 z-20 border-b border-[var(--border-subtle)] bg-[var(--background)]/95 backdrop-blur-xl sm:top-16">
+        {/* Sticky market ribbon — pinned directly below TopNav (top-16) once
+            TopNav is actually visible (min-[800px], matching TopNav's own
+            threshold — see TopNav.tsx), otherwise flush at top-0 since
+            MobileNav's hamburger button doesn't occupy a full-width header
+            row the way TopNav does. Visible throughout the scroll rather
+            than living inside the scrolling panel below. Same tickerItems
+            used by every other surface on this page, no new fetch. */}
+        <div className="sticky top-0 z-20 border-b border-[var(--border-subtle)] bg-[var(--background)]/95 backdrop-blur-xl min-[800px]:top-16">
           <MarketTicker items={tickerItems} bare />
         </div>
 

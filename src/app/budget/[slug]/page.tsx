@@ -87,7 +87,7 @@ export default async function BudgetCategoryPage({ params }: PageProps) {
           >
             <span aria-hidden="true">←</span> {SITE_NAME} Budget Workshop
           </ProtectedLink>
-          <span className="text-[10px] uppercase tracking-widest text-white/25 light:text-slate-400">
+          <span className="min-w-0 shrink break-all text-right text-[10px] uppercase tracking-widest text-white/25 light:text-slate-400">
             pakeconintel.com/budget/{category.slug}
           </span>
         </div>

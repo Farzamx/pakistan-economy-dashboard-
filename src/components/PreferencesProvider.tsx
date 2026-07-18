@@ -47,16 +47,29 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
   const { theme, setTheme } = useTheme();
   const [preferences, setPreferences] = useState<UserPreferences | null>(null);
   const [loading, setLoading] = useState(true);
-  // Cross-device theme sync needs to happen exactly once per fresh load —
-  // without this guard, every re-render after the fetch would re-apply the
-  // DB's theme and silently fight a manual toggle made later in the same
-  // session.
-  const syncedThemeRef = useRef(false);
+  // Live mirror of the current theme, updated synchronously on every
+  // change regardless of source (SettingsModal, PreferencesBoard, etc).
+  // The fetch effect below closes over `theme` as it was AT FETCH START —
+  // comparing that stale snapshot against this live ref at resolve time is
+  // how it detects "did the user change the theme while this request was
+  // still in flight," which the old boolean-flag guard could not do (see
+  // comment below).
+  const themeRef = useRef(theme);
+  useEffect(() => { themeRef.current = theme; }, [theme]);
 
   useEffect(() => {
     if (authLoading) return;
     let cancelled = false;
-    syncedThemeRef.current = false;
+    // Snapshot the theme as it is right now, before the async DB read
+    // below. Bug fix: the previous guard here (a `syncedThemeRef` boolean)
+    // only tracked "has this fetch resolved yet," not "did the user pick a
+    // theme in the meantime" — so a manual toggle made *while* this request
+    // was in flight (the common case: the fetch takes real network time,
+    // and toggling is instant) was silently reverted the moment the DB's
+    // — possibly older — value came back. Comparing `themeRef.current`
+    // (live) against `themeAtFetchStart` (frozen) at resolve time detects
+    // exactly that, from any theme-changing component, not just this effect.
+    const themeAtFetchStart = theme;
     // No synchronous setLoading(true) here — same convention as
     // AuthProvider.tsx's pathname effect: only the initial mount's
     // useState(true) default matters for `loading`; a later re-fetch
@@ -72,11 +85,17 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
         if (cancelled) return;
         setPreferences(prefs);
         // This device's localStorage may predate the account, or another
-        // device may have changed the theme since — DB wins on first load.
-        if (user && !syncedThemeRef.current && prefs?.preferredTheme && prefs.preferredTheme !== theme) {
+        // device may have changed the theme since — DB wins on first load,
+        // but ONLY if the user hasn't already made a fresh local choice
+        // since this fetch started (themeRef.current === themeAtFetchStart).
+        if (
+          user &&
+          prefs?.preferredTheme &&
+          prefs.preferredTheme !== themeAtFetchStart &&
+          themeRef.current === themeAtFetchStart
+        ) {
           setTheme(prefs.preferredTheme);
         }
-        syncedThemeRef.current = true;
       })
       .catch(() => { if (!cancelled) setPreferences(null); })
       .finally(() => { if (!cancelled) setLoading(false); });

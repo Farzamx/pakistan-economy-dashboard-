@@ -58,7 +58,16 @@ export default function TopNav() {
 
   return (
     <>
-      <header className="sticky top-0 z-30 hidden h-16 w-full items-center justify-between border-b border-[var(--border-subtle)] bg-[var(--background)]/95 px-8 backdrop-blur-xl sm:flex">
+      {/* min-[800px], not sm (640px) — measured: this header's own content
+          (logo + 7 nav items + Log In) needs 787px minimum to lay out
+          without overflowing. Switching to desktop nav any earlier than
+          that (the old sm:640px threshold) left every page's header
+          overflowing the viewport by up to ~150px for the entire
+          640-786px range — a real, site-wide bug, not a cosmetic one.
+          MobileNav/Sidebar/MobileStickyCta all switch at this same
+          min-[800px] threshold so the mobile and desktop nav paradigms
+          never overlap or leave a gap. */}
+      <header className="sticky top-0 z-30 hidden h-16 w-full items-center justify-between border-b border-[var(--border-subtle)] bg-[var(--background)]/95 px-8 backdrop-blur-xl min-[800px]:flex">
         <div className="flex items-center gap-10">
           <Link href="/" className="flex items-center gap-2.5 shrink-0">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-neon-blue/50 font-serif text-base font-semibold text-neon-blue">

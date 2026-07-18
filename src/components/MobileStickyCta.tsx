@@ -60,7 +60,7 @@ export default function MobileStickyCta() {
           // Intelligence Dashboard") spans most of the viewport width at
           // mobile sizes and would otherwise sit directly underneath this
           // button, overlapping it.
-          className="fixed inset-x-4 bottom-20 z-50 flex justify-center sm:hidden"
+          className="fixed inset-x-4 bottom-20 z-50 flex justify-center min-[800px]:hidden"
         >
           <Link
             href="/signup"

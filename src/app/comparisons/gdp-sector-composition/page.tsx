@@ -55,7 +55,7 @@ export default async function GdpSectorCompositionPage() {
           >
             <span aria-hidden="true">←</span> {SITE_NAME} Comparisons
           </ProtectedLink>
-          <span className="text-[10px] uppercase tracking-widest text-white/25 light:text-slate-400">
+          <span className="min-w-0 shrink break-all text-right text-[10px] uppercase tracking-widest text-white/25 light:text-slate-400">
             pakeconintel.com/comparisons/{SECTOR_COMPOSITION.slug}
           </span>
         </div>
