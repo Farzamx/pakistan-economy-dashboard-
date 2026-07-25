@@ -1,12 +1,18 @@
 @import "tailwindcss";
 
 /* ── Design tokens: dark theme (default) ─────────────────────────────────── */
+/* PEIC v4 "Sovereign Terminal": the accent pair keeps its historical token
+   names (--neon-blue/--neon-purple — renaming would touch hundreds of
+   call sites for zero visual gain) but the VALUES are retuned away from the
+   v2 neon identity: Signal Blue (#4D8DF7, two steps less saturated and one
+   deeper than the old sky #38BDF8) is the only interactive hue; Analyst
+   Violet (#9B8AFB) is reserved for AI-generated content surfaces. */
 :root,
 [data-theme="dark"] {
   --background: #05060f;
   --foreground: #e7e9f5;
-  --neon-blue: #38bdf8;
-  --neon-purple: #a855f7;
+  --neon-blue: #4d8df7;
+  --neon-purple: #9b8afb;
   --space-800: #0b0e21;
   --space-700: #141a3d;
 
@@ -16,6 +22,33 @@
   --surface-raised:   rgba(255, 255, 255, 0.03);
   --border:           rgba(255, 255, 255, 0.08);
   --border-subtle:    rgba(255, 255, 255, 0.05);
+
+  /* v4 opaque panel fills — replace translucent+backdrop-blur card fills.
+     Values are the pre-computed blend of the old rgba fills over the ink
+     ground, so the resting look is near-identical while the (now pointless
+     — the background behind cards is no longer a moving galaxy but cards
+     must stay opaque so the new ambient drift never shimmers through data)
+     blur cost disappears. */
+  --panel-card: #0f1019;
+  --panel-flat: #070913;
+
+  /* Motion tokens (v4): all UI motion derives from these four durations and
+     one curve. micro=hover/pressed, ui=drawers/modals/tabs, entrance=fold
+     fade-ins (once per load), data=count-ups/bar fills/chart draw-ins — the
+     one place motion is generous, because there it encodes magnitude. */
+  --motion-micro: 120ms;
+  --motion-ui: 200ms;
+  --motion-entrance: 400ms;
+  --motion-data: 600ms;
+  --ease-terminal: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* Elevation (v4): two neutral steps. No colored shadows anywhere — the
+     only glow left in the product is the focus ring. */
+  --elev-1: 0 1px 2px rgba(0, 0, 0, 0.35), 0 6px 20px rgba(0, 0, 0, 0.20);
+  --elev-2: 0 8px 28px rgba(0, 0, 0, 0.45);
+
+  /* Focus ring (v4): deliberately the most vivid element in the product. */
+  --focus-ring: rgba(77, 141, 247, 0.85);
 
   /* PEIC v2 — elevation ladder (institutional redesign). surface-0 is the
      page/galaxy background itself (no class — components simply sit on
@@ -28,11 +61,13 @@
   --surface-3:        rgba(255, 255, 255, 0.09);
   --border-emphasis:  rgba(255, 255, 255, 0.16);
 
-  /* Semantic text tokens */
+  /* Semantic text tokens — muted/micro floors raised (v4 accessibility
+     pass: 0.40→0.48 and 0.25→0.35) so small labels clear WCAG AA against
+     the ink ground instead of sitting just under it. */
   --text-primary:   #e7e9f5;
   --text-secondary: rgba(231, 233, 245, 0.60);
-  --text-muted:     rgba(231, 233, 245, 0.40);
-  --text-micro:     rgba(231, 233, 245, 0.25);
+  --text-muted:     rgba(231, 233, 245, 0.48);
+  --text-micro:     rgba(231, 233, 245, 0.35);
 
   /* Chart tokens */
   --chart-grid:            rgba(255, 255, 255, 0.06);
@@ -45,7 +80,7 @@
   --chart-active-stroke:   #05060f;
   --chart-average:         rgba(255, 255, 255, 0.28);
   --chart-average-label:   rgba(255, 255, 255, 0.45);
-  --chart-marker:          rgba(56, 189, 248, 0.55);
+  --chart-marker:          rgba(77, 141, 247, 0.55);
   --chart-positive:        #34d399;
   --chart-negative:        #fb7185;
 }
@@ -54,10 +89,24 @@
 [data-theme="light"] {
   --background: #F4F6FA;
   --foreground: #0F172A;
-  --neon-blue: #0284C7;
-  --neon-purple: #7C3AED;
+  --neon-blue: #2563EB;
+  --neon-purple: #6D4FC7;
   --space-800: #F0F4FF;
   --space-700: #E8EFFE;
+
+  --panel-card: #FFFFFF;
+  --panel-flat: #FFFFFF;
+
+  --motion-micro: 120ms;
+  --motion-ui: 200ms;
+  --motion-entrance: 400ms;
+  --motion-data: 600ms;
+  --ease-terminal: cubic-bezier(0.22, 1, 0.36, 1);
+
+  --elev-1: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --elev-2: 0 8px 28px rgba(15, 23, 42, 0.14);
+
+  --focus-ring: #2563EB;
 
   --surface:          #FFFFFF;
   --surface-hover:    #F1F5FF;
@@ -84,7 +133,7 @@
   --chart-active-stroke:   #FFFFFF;
   --chart-average:         rgba(0, 0, 0, 0.28);
   --chart-average-label:   rgba(0, 0, 0, 0.45);
-  --chart-marker:          rgba(2, 132, 199, 0.55);
+  --chart-marker:          rgba(37, 99, 235, 0.55);
   --chart-positive:        #047857;
   --chart-negative:        #be123c;
 }
@@ -110,25 +159,26 @@ body {
   transition: background-color 0.25s ease, color 0.25s ease;
 }
 
-/* ── Frosted-glass card ───────────────────────────────────────────────────── */
+/* ── Card (v4: opaque panel, no blur) ─────────────────────────────────────
+   Was a 4%-white translucent fill with 16px backdrop-blur — a holdover from
+   frosting the old animated galaxy. The fill is now the pre-computed opaque
+   blend (--panel-card), so cards look the same at rest but: (a) the blur's
+   full-page GPU cost is gone, and (b) the new ambient drift can never
+   shimmer through data surfaces. Radius tightened 16px→12px (v4 radius
+   scale 6/10/12 — the 16px outer radius read consumer-SaaS). Class keeps
+   its historical name; renaming would touch every component for zero gain. */
 .glass-card {
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--panel-card);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border-radius: 1rem;
-  /* Now that the background is a flat matte fill (no animated galaxy behind
-     it for contrast), a soft shadow is what makes a card read as a raised
-     layer rather than a flat blend into the page. */
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.22);
+  border-radius: 0.75rem;
+  box-shadow: var(--elev-1);
+  transition: border-color var(--motion-micro) ease-out, background-color var(--motion-micro) ease-out;
 }
 
 [data-theme="light"] .glass-card {
-  background: #FFFFFF;
+  background: var(--panel-card);
   border: 1px solid #E2E6EF;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--elev-1);
 }
 
 /* ── Deep glass panel — elevated surface for major modules (e.g. News &
@@ -142,8 +192,12 @@ body {
 .glass-panel-deep {
   background: #05060f;
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 1rem;
-  box-shadow: none;
+  border-radius: 0.75rem;
+  /* v4 Phase 3 — editorial lighting: a hairline top highlight, as if the
+     panel catches a very faint overhead light, the same "desk lamp over a
+     briefing" cue as the atmosphere's Layer 1 vignette. Inset shadow only
+     — no glow, no color, just a 1px lit edge. */
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
 [data-theme="light"] .glass-panel-deep {
@@ -151,7 +205,7 @@ body {
   border: 1px solid #E2E6EF;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.03);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.03), inset 0 1px 0 rgba(255, 255, 255, 0.6);
 }
 
 /* ── Raised surface — a nested tile one elevation step above its parent
@@ -161,7 +215,7 @@ body {
 .glass-card-raised {
   background: var(--surface-2);
   border: 1px solid var(--border);
-  border-radius: 0.75rem;
+  border-radius: 0.625rem;
   box-shadow: 0 1px 0 rgba(255, 255, 255, 0.03) inset;
 }
 
@@ -175,6 +229,61 @@ body {
   border-top: 1px solid var(--border-subtle);
 }
 
+/* ── Premium fade divider (v4 Phase 3) — a hairline that fades out at both
+   ends instead of stopping hard at the container edge. Used for the Hero's
+   masthead rule and Macro Pulse band, where a full-bleed hard line reads
+   as a UI-kit default; a faded one reads as an editorial rule (the same
+   device broadsheets use under a masthead). One thin element, gradient
+   background — cheaper than a border-image and themes automatically via
+   the existing --border-subtle token's own alpha. */
+.divider-fade {
+  height: 1px;
+  background: linear-gradient(to right, transparent, var(--border-subtle) 15%, var(--border-subtle) 85%, transparent);
+}
+
+/* ── Live-data value flash (v4 Phase 3) — a ONE-SHOT tint on the number
+   itself when a KPI's value genuinely changed since the visitor last saw
+   it (KpiCard compares against localStorage on mount; never fires on a
+   visitor's first-ever view of a card, and never loops). `forwards` holds
+   the end state (transparent) so nothing needs a cleanup class swap after
+   the animation finishes. Colour only, no motion — exactly "flash once,
+   fade away" from the brief, not a bounce or pulse. */
+@keyframes value-flash-up {
+  0%   { background-color: rgba(52, 211, 153, 0.22); }
+  100% { background-color: transparent; }
+}
+@keyframes value-flash-down {
+  0%   { background-color: rgba(251, 113, 133, 0.22); }
+  100% { background-color: transparent; }
+}
+.value-flash-up {
+  animation: value-flash-up 1.6s ease-out forwards;
+  border-radius: 4px;
+}
+.value-flash-down {
+  animation: value-flash-down 1.6s ease-out forwards;
+  border-radius: 4px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .value-flash-up, .value-flash-down {
+    animation: none;
+  }
+}
+
+/* ── Metric emphasis (v4 Phase 3) — a barely-there soft glow behind the
+   Hero's four headline figures (Macro Pulse band), the terminal-register
+   equivalent of a broadsheet's largest pull-figure. Kept to a single
+   neutral white glow (not per-metric colour) so it reads as "this number
+   matters" rather than a status signal — risk colour is already carried
+   by the category text beside it. Text-shadow only: no layout impact, no
+   extra element, composites cheaply. */
+.metric-emphasis {
+  text-shadow: 0 0 24px rgba(255, 255, 255, 0.16);
+}
+[data-theme="light"] .metric-emphasis {
+  text-shadow: none;
+}
+
 /* ── Flat reference panel — PEIC v2.1's second surface register, deliberately
    NOT glassmorphism. The briefing zone (Hero, Health Score, Risk, Key
    Indicators) stays glass/glow — that's the premium, "look here first"
@@ -184,10 +293,13 @@ body {
    registers in the same product read as deliberate hierarchy; one register
    used for literally everything is what makes a page feel like a template. */
 .panel-flat {
-  background: rgba(8, 10, 22, 0.55);
+  /* v4: opaque blend of the old 55% translucent fill — terminal rows must
+     never show the ambient drift through the numbers. Radius 8px→6px. */
+  background: var(--panel-flat);
   border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 0.5rem;
+  border-radius: 0.375rem;
   box-shadow: 0 1px 0 rgba(255, 255, 255, 0.03) inset;
+  transition: border-color var(--motion-micro) ease-out, background-color var(--motion-micro) ease-out;
 }
 
 [data-theme="light"] .panel-flat {
@@ -205,41 +317,197 @@ body {
   border-top: none;
 }
 
-/* ── Soft neon glow accents ──────────────────────────────────────────────── */
-.glow-blue {
-  box-shadow: 0 0 24px rgba(56, 189, 248, 0.25);
-}
+/* ── Decorative glow classes (v2 "neon" identity) removed in v4 —
+   .glow-blue/.glow-purple had zero component usages (verified by grep);
+   the only glow left in the product is the focus ring. ─────────────────── */
 
-.glow-purple {
-  box-shadow: 0 0 24px rgba(168, 85, 247, 0.25);
-}
+/* ── Atmospheric System (PEIC v4 "Sovereign Terminal" Phase 3) ─────────────
+   Six independent layers rendered by GalaxyBackground.tsx inside one fixed
+   `.atm` wrapper — see that file's header for the full layer list and the
+   GPU/reduced-motion reasoning. Every value here is tuned to the brief's
+   "almost invisible; notice after several seconds" bar — verified against
+   real screenshots at 0s/3s/8s, not chosen by eye on paper. `.ambient-bg`
+   (Phase 1's 3-layer version) is retired; nothing outside this file
+   referenced that class name (grep-verified). */
 
-[data-theme="light"] .glow-blue {
-  box-shadow: 0 0 16px rgba(2, 132, 199, 0.20);
-}
-
-[data-theme="light"] .glow-purple {
-  box-shadow: 0 0 16px rgba(124, 58, 237, 0.15);
-}
-
-/* ── Ambient background (PEIC v3) — a single flat fill + soft top vignette.
-   Replaces the prior animated galaxy (nebula blobs + twinkling stars) and
-   light-mode dot-grid: no motion, no color, just enough gradient to keep
-   a full-bleed flat fill from looking dead. Theme-aware via [data-theme],
-   the same pattern already used by .glass-card/.glass-panel-deep/.panel-flat
-   above rather than the old light:hidden / hidden light:block dual-div
-   toggle — one div, one class. */
-.ambient-bg {
+.atm {
   position: fixed;
   inset: 0;
   z-index: -10;
   pointer-events: none;
+  overflow: hidden;
   background-color: var(--background);
-  background-image: radial-gradient(ellipse 1200px 800px at 50% -10%, rgba(255, 255, 255, 0.035), transparent 60%);
+  /* Layer 1 — depth: a top vignette (unchanged from Phase 1) plus a second,
+     darker vignette low-center, so the frame reads as very subtly "lit"
+     top-of-page — like a desk lamp over a briefing, not a flat fill. */
+  background-image:
+    radial-gradient(ellipse 1200px 800px at 50% -10%, rgba(255, 255, 255, 0.035), transparent 60%),
+    radial-gradient(ellipse 1400px 700px at 50% 120%, rgba(0, 0, 0, 0.4), transparent 65%),
+    /* Layer 2 — grain: static feTurbulence texture, anti-banding. */
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.015'/%3E%3C/svg%3E");
 }
 
-[data-theme="light"] .ambient-bg {
-  background-image: radial-gradient(ellipse 1200px 800px at 50% -10%, rgba(15, 23, 42, 0.035), transparent 60%);
+/* Layer 3 — longitude/latitude reference grid. Large-scale (112px cells),
+   ~1.2% opacity, drifting on a 112s alternate loop — the same oversized-
+   inset + translate3d technique as Layer 6 (never a paint-triggering
+   background-position animation, transform only). */
+.atm-grid {
+  position: absolute;
+  inset: -8%;
+  background-image:
+    repeating-linear-gradient(to right, rgba(255, 255, 255, 0.012) 0 1px, transparent 1px 112px),
+    repeating-linear-gradient(to bottom, rgba(255, 255, 255, 0.01) 0 1px, transparent 1px 112px);
+  animation: atm-grid-drift 112s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+@keyframes atm-grid-drift {
+  from { transform: translate3d(-1.2%, -0.8%, 0); }
+  to   { transform: translate3d(1.2%, 0.8%, 0); }
+}
+
+/* Layer 4 — topographic "macro terrain" contour lines. One large,
+   non-repeating SVG (repeating a contour pattern reads as an obvious tile,
+   which the brief explicitly rules out) drifting slowly on its own period
+   (140s, deliberately not a clean multiple of the grid's 112s so the two
+   never appear to move in lockstep) with an irregular opacity breathe —
+   five uneven keyframe stops rather than a symmetric pulse, so it never
+   reads as a metronome. */
+.atm-contour {
+  position: absolute;
+  inset: -10%;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1400 700'%3E%3Cg fill='none' stroke='%23ffffff' stroke-width='1.1'%3E%3Cpath d='M-50,120 C150,60 300,180 480,120 C660,60 800,190 980,130 C1160,70 1300,150 1450,110' opacity='0.55'/%3E%3Cpath d='M-50,220 C180,160 320,270 520,215 C700,165 860,280 1040,225 C1200,180 1330,240 1450,210' opacity='0.8'/%3E%3Cpath d='M-50,330 C160,290 340,380 540,325 C740,270 880,390 1080,335 C1240,295 1350,350 1450,320' opacity='0.4'/%3E%3Cpath d='M-50,430 C190,390 360,470 560,420 C760,370 900,480 1100,430 C1250,395 1360,445 1450,420' opacity='0.65'/%3E%3Cpath d='M-50,540 C200,500 380,570 580,525 C780,480 920,580 1120,535 C1260,505 1370,545 1450,525' opacity='0.3'/%3E%3C/g%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-size: 130% auto;
+  background-position: center;
+  opacity: 0.028;
+  animation: atm-contour-drift 140s ease-in-out infinite alternate, atm-contour-breathe 47s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
+@keyframes atm-contour-drift {
+  from { transform: translate3d(-1.8%, -1%, 0) scale(1); }
+  to   { transform: translate3d(1.8%, 1%, 0) scale(1.02); }
+}
+
+/* Irregular stop spacing (not 0/25/50/75/100) is what keeps this from
+   reading as a mechanical pulse. */
+@keyframes atm-contour-breathe {
+  0%   { opacity: 0.02; }
+  18%  { opacity: 0.034; }
+  31%  { opacity: 0.022; }
+  58%  { opacity: 0.038; }
+  76%  { opacity: 0.024; }
+  100% { opacity: 0.02; }
+}
+
+/* Layer 5 — global economic network mesh (inline SVG, see
+   GalaxyBackground.tsx). Edges are static hairlines at near-zero opacity;
+   only individual nodes animate, each on its own delay, so brightening
+   never happens in visible unison across the mesh. */
+.atm-mesh {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  color: #7fa4f2;
+}
+
+.atm-mesh-edges {
+  stroke-width: 0.6;
+  opacity: 0.05;
+}
+
+.atm-mesh-node {
+  opacity: 0.07;
+  animation: atm-node-pulse 16s ease-in-out infinite;
+  transform-origin: center;
+}
+
+/* A brief brighten-and-glow, then back to resting — not a loop that reads
+   as breathing, because each of the 12 nodes carries its own delay
+   (authored in GalaxyBackground.tsx), so at any moment at most one or two
+   nodes are ever mid-pulse — "information travelling through the network"
+   rather than the whole mesh flashing together. */
+@keyframes atm-node-pulse {
+  0%, 82%, 100% { opacity: 0.07; filter: none; }
+  90%           { opacity: 0.55; filter: drop-shadow(0 0 3px currentColor); }
+}
+
+/* Layer 6 — ambient macro-flow: two large radial light fields, continuous
+   slow drift, never pulsing/breathing (transform only — carried over from
+   Phase 1's .ambient-bg::after, unchanged in spirit). */
+.atm-flow {
+  position: absolute;
+  inset: -25%;
+  background-image:
+    radial-gradient(ellipse 900px 700px at 22% 30%, rgba(77, 141, 247, 0.04), transparent 65%),
+    radial-gradient(ellipse 1100px 800px at 78% 72%, rgba(231, 233, 245, 0.03), transparent 65%);
+  animation: atm-flow-drift 90s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+@keyframes atm-flow-drift {
+  from { transform: translate3d(-2.5%, -1.5%, 0); }
+  to   { transform: translate3d(2.5%, 1.5%, 0); }
+}
+
+[data-theme="light"] .atm {
+  background-image:
+    radial-gradient(ellipse 1200px 800px at 50% -10%, rgba(15, 23, 42, 0.035), transparent 60%),
+    radial-gradient(ellipse 1400px 700px at 50% 120%, rgba(15, 23, 42, 0.05), transparent 65%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.01'/%3E%3C/svg%3E");
+}
+
+/* Lighter alphas relative to ground than dark theme throughout — on
+   paper-white the same relative contrast reads much louder (Phase 1
+   finding, verified against live screenshots, applies here too). */
+[data-theme="light"] .atm-grid {
+  background-image:
+    repeating-linear-gradient(to right, rgba(15, 23, 42, 0.011) 0 1px, transparent 1px 112px),
+    repeating-linear-gradient(to bottom, rgba(15, 23, 42, 0.009) 0 1px, transparent 1px 112px);
+}
+
+[data-theme="light"] .atm-contour {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1400 700'%3E%3Cg fill='none' stroke='%230f172a' stroke-width='1.1'%3E%3Cpath d='M-50,120 C150,60 300,180 480,120 C660,60 800,190 980,130 C1160,70 1300,150 1450,110' opacity='0.55'/%3E%3Cpath d='M-50,220 C180,160 320,270 520,215 C700,165 860,280 1040,225 C1200,180 1330,240 1450,210' opacity='0.8'/%3E%3Cpath d='M-50,330 C160,290 340,380 540,325 C740,270 880,390 1080,335 C1240,295 1350,350 1450,320' opacity='0.4'/%3E%3Cpath d='M-50,430 C190,390 360,470 560,420 C760,370 900,480 1100,430 C1250,395 1360,445 1450,420' opacity='0.65'/%3E%3Cpath d='M-50,540 C200,500 380,570 580,525 C780,480 920,580 1120,535 C1260,505 1370,545 1450,525' opacity='0.3'/%3E%3C/g%3E%3C/svg%3E");
+  opacity: 0.02;
+}
+
+[data-theme="light"] .atm-mesh {
+  color: #2f5fc4;
+}
+
+[data-theme="light"] .atm-mesh-edges {
+  opacity: 0.06;
+}
+
+[data-theme="light"] .atm-flow {
+  background-image:
+    radial-gradient(ellipse 900px 700px at 22% 30%, rgba(37, 99, 235, 0.03), transparent 65%),
+    radial-gradient(ellipse 1100px 800px at 78% 72%, rgba(15, 23, 42, 0.02), transparent 65%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .atm-grid, .atm-contour, .atm-flow {
+    animation: none;
+    transform: none;
+  }
+  .atm-contour {
+    opacity: 0.026;
+  }
+  .atm-mesh-node {
+    animation: none;
+    opacity: 0.1;
+  }
+}
+
+/* ── Focus ring (v4) — the one glow in the product. :focus-visible only, so
+   mouse clicks don't flash rings but every keyboard user always sees
+   exactly where they are. Applies product-wide without per-component work. */
+:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+  border-radius: 2px;
 }
 
 /* ── PEIC v2.1 type scale ──────────────────────────────────────────────────
@@ -353,6 +621,26 @@ body {
 .text-mono-num {
   font-family: var(--font-geist-mono);
   font-variant-numeric: tabular-nums;
+}
+
+/* ── data      v4: dense-table evidence size — the role components were
+   improvising around with ad hoc text-[11px]/text-[12px]. Mono, tabular,
+   12.5px/1.5 — every figure in a terminal-register table uses this. */
+.text-data {
+  font-family: var(--font-geist-mono);
+  font-size: 0.78125rem;
+  line-height: 1.5;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── overline   v4: section eyebrow above a headline (smaller sibling of
+   .text-label, for zone headers rather than inline field labels). */
+.text-overline {
+  font-size: 0.625rem;
+  line-height: 1.3;
+  letter-spacing: 0.14em;
+  font-weight: 600;
+  text-transform: uppercase;
 }
 
 /* Hide scrollbar while preserving scroll functionality — cross-browser */

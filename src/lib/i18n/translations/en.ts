@@ -28,6 +28,9 @@ export const en: Translations = {
 
   hero: {
     eyebrow: "Live Economic Overview",
+    morningBrief: "Morning Economic Brief",
+    nextUp: "Next Release",
+    topRisks: "Top Risks",
     title1: "Pakistan Economic", title2: "Intelligence Center",
     description: "Real-time tracking of GDP, inflation, exchange rates, reserves, markets, and monetary policy — all in one dashboard.",
     trust1: "Official Government Sources", trust2: "Updated Automatically",

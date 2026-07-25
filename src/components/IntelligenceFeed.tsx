@@ -27,6 +27,15 @@ function formatFeedDate(dateStr: string): string {
  * assembled into a sentence by the caller (page.tsx) — this component only
  * renders, never characterizes data itself.
  */
+/**
+ * v4 Phase 2 — recomposed as ANALYST NOTES rather than a bullet list: each
+ * entry leads with a fixed-width mono date/tag column (the desk-note
+ * convention: when + what kind, then the note), with the release/signal
+ * distinction carried by a typographic tag ("REL" / "SIG") instead of an
+ * anonymous colored dot. The single entrance fade covers the whole list —
+ * the old per-item stagger re-animated on every scroll into view, which the
+ * v4 motion rules classify as decoration, not explanation.
+ */
 export default function IntelligenceFeed({ items }: Props) {
   if (items.length === 0) return null;
 
@@ -34,36 +43,31 @@ export default function IntelligenceFeed({ items }: Props) {
     <div>
       <div className="flex items-center gap-2">
         <span className="text-label text-white/40 light:text-slate-400">Intelligence Feed</span>
-        <span className="relative flex h-1.5 w-1.5">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-neon-blue opacity-75" />
-          <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-neon-blue" />
-        </span>
+        <span className="inline-flex h-1.5 w-1.5 rounded-full bg-neon-blue" />
       </div>
-      <ul className="mt-3 divide-y divide-white/[0.04] light:divide-slate-100">
+      <motion.ul
+        initial={{ opacity: 0, y: 8 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.2 }}
+        transition={{ duration: 0.35, ease: "easeOut" }}
+        className="mt-3 divide-y divide-white/[0.04] light:divide-slate-100"
+      >
         {items.map((item, i) => (
-          <motion.li
-            key={`${item.text}-${i}`}
-            initial={{ opacity: 0, x: -8 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true, amount: 0.3 }}
-            transition={{ duration: 0.3, ease: "easeOut", delay: Math.min(i * 0.05, 0.3) }}
-            className="flex items-baseline gap-2.5 py-2"
-          >
-            <span
-              className={`mt-0.5 h-1 w-1 shrink-0 rounded-full ${
-                item.kind === "release" ? "bg-neon-blue" : "bg-white/30 light:bg-slate-400"
-              }`}
-              aria-hidden="true"
-            />
-            <span className="text-sm text-white/75 light:text-slate-600">{item.text}</span>
-            {item.date && (
-              <span className="text-caption ml-auto shrink-0 text-white/35 light:text-slate-400">
-                {formatFeedDate(item.date)}
+          <li key={`${item.text}-${i}`} className="flex items-baseline gap-3 py-2">
+            <span className="text-data w-[5.5rem] shrink-0 text-white/40 light:text-slate-400">
+              {item.date ? formatFeedDate(item.date) : "—"}
+              <span
+                className={`ml-1.5 text-[9px] font-semibold tracking-wider ${
+                  item.kind === "release" ? "text-neon-blue" : "text-white/35 light:text-slate-400"
+                }`}
+              >
+                {item.kind === "release" ? "REL" : "SIG"}
               </span>
-            )}
-          </motion.li>
+            </span>
+            <span className="text-sm leading-relaxed text-white/75 light:text-slate-600">{item.text}</span>
+          </li>
         ))}
-      </ul>
+      </motion.ul>
     </div>
   );
 }

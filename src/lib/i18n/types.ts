@@ -44,6 +44,7 @@ export interface Translations {
     benefitComparisons: string; benefitBudget: string; benefitProvincial: string; benefitPremium: string;
     upcomingCalendar: string; criticalAlerts: string; noCriticalAlerts: string;
     riskStatus: string; latestRelease: string; nextRelease: string;
+    morningBrief: string; nextUp: string; topRisks: string;
   };
 
   settings: {

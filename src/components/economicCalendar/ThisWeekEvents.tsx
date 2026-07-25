@@ -17,7 +17,9 @@ export default function ThisWeekEvents({ events }: { events: EconomicEvent[] }) 
           {t("calendar.thisWeekEmpty")}
         </p>
       ) : (
-        <div className="flex flex-col gap-2.5">
+        // v4 Phase 2: one flat terminal panel with hairline-divided rows —
+        // was a stack of individual glass cards (see EventRow's header).
+        <div className="panel-flat overflow-hidden">
           {events.map((event) => (
             <EventRow key={event.id} event={event} />
           ))}

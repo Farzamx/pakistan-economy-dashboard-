@@ -56,10 +56,10 @@ function SidebarTreeRow({
       onClick={onClick}
       aria-label={ariaLabel}
       aria-current={isActive ? "true" : undefined}
-      className={`flex items-center gap-2 rounded-md px-4 py-1.5 text-[13px] transition-colors ${
+      className={`flex items-center gap-2 rounded-md px-4 py-1.5 text-[13px] transition-colors duration-[var(--motion-micro)] ${
         isActive
           ? "text-neon-blue"
-          : "text-white/55 light:text-slate-500 hover:text-white light:hover:text-slate-900"
+          : "text-white/55 light:text-slate-500 hover:bg-white/[0.04] hover:text-white light:hover:bg-slate-50 light:hover:text-slate-900"
       }`}
     >
       <span className={`h-1 w-1 shrink-0 rounded-full ${isActive ? "bg-neon-blue" : "bg-white/20 light:bg-slate-300"}`} />
@@ -73,7 +73,7 @@ function SidebarTreeButton({ label, onClick }: { label: string; onClick: () => v
     <button
       type="button"
       onClick={onClick}
-      className="flex w-full items-center gap-2 rounded-md px-4 py-1.5 text-left text-[13px] text-white/55 light:text-slate-500 transition-colors hover:text-white light:hover:text-slate-900"
+      className="flex w-full items-center gap-2 rounded-md px-4 py-1.5 text-left text-[13px] text-white/55 light:text-slate-500 transition-colors duration-[var(--motion-micro)] hover:bg-white/[0.04] hover:text-white light:hover:bg-slate-50 light:hover:text-slate-900"
     >
       <span className="h-1 w-1 shrink-0 rounded-full bg-white/20 light:bg-slate-300" />
       {label}
@@ -193,7 +193,7 @@ export default function Sidebar() {
           both hidden) in between. */}
       <div className="sticky top-16 hidden h-[calc(100vh-4rem)] shrink-0 min-[800px]:block">
         <aside
-          className={`relative flex h-full flex-col overflow-y-auto overflow-x-hidden border-r border-white/5 light:border-slate-200 bg-white/[0.02] light:bg-white backdrop-blur-xl light:backdrop-blur-none hide-scrollbar light:shadow-[1px_0_0_0_#E2E6EF] transition-[width] duration-200 ease-out ${
+          className={`relative flex h-full flex-col overflow-y-auto overflow-x-hidden border-r border-white/5 light:border-slate-200 bg-[#070812] light:bg-white hide-scrollbar light:shadow-[1px_0_0_0_#E2E6EF] transition-[width] duration-200 ease-out ${
             collapsed ? "w-0 gap-0 p-0 opacity-0 pointer-events-none" : "w-64 gap-5 p-5 opacity-100"
           }`}
           aria-hidden={collapsed}

@@ -28,6 +28,9 @@ export const rm: Translations = {
 
   hero: {
     eyebrow: "Live Maashi Jaiza",
+    morningBrief: "Subah ka Maashi Khulasa",
+    nextUp: "Agla Ijraa",
+    topRisks: "Aham Khatraat",
     title1: "Pakistan Maashi", title2: "Intelligence Center",
     description: "GDP, mehngai, shar-e-tabadla, zakhayir, mandiyon aur maliyati policy ki haqeeqi waqt mein nigrani — sab ek dashboard mein.",
     trust1: "Sarkari Hukumati Zaraye", trust2: "Khudkar Update",
