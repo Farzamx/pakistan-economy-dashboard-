@@ -1,36 +1,65 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Pakistan Economic Intelligence Center (PEIC)
 
-## Getting Started
+An institutional-grade macroeconomic intelligence platform for Pakistan.
 
-First, run the development server:
+## Overview
+
+PEIC provides real-time monitoring and analysis of Pakistan's economy through a modern intelligence dashboard.
+
+The platform combines official economic data, research workflows, market intelligence, and automated monitoring into a single interface.
+
+## Features
+
+- Real-time economic dashboard
+- Economic calendar
+- Pakistan macroeconomic indicators
+- Research workspace
+- Weekly Intelligence Engine
+- Automated data validation
+- Production monitoring
+- Responsive institutional UI
+
+## Technology Stack
+
+- Next.js
+- TypeScript
+- Tailwind CSS
+- Supabase
+- Vercel
+- GitHub Actions
+
+## Screenshots
+
+(Add screenshots here)
+
+## Roadmap
+
+- AI Research Assistant
+- Scenario Analysis
+- Advanced Market Intelligence
+- Enhanced Data Sources
+
+## Development
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Project Status
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+PEIC is under active development with production deployments and continuous feature improvements.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Current focus:
+- Sovereign Terminal UI
+- Weekly Intelligence Engine
+- Data integrity and monitoring
+- AI-powered macroeconomic research
 
-## Learn More
+## Data Sources
 
-To learn more about Next.js, take a look at the following resources:
+PEIC integrates official and trusted macroeconomic data sources, including:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- State Bank of Pakistan (SBP)
+- Pakistan Bureau of Statistics (PBS)
+- World Bank
+- International Monetary Fund (IMF)
