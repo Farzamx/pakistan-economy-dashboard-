@@ -9,6 +9,8 @@ interface Props {
   totalAllocated: number;
   monthlyBudget: number;
   onBudgetChange: (value: number) => void;
+  /** Shown as a small "use your saved profile" suggestion when the Decision Support Lab's shared Economic Identity has a different Monthly Spending figure on file — applying it is an explicit click, never a silent overwrite. */
+  identitySuggestion?: { amount: number; onApply: () => void };
 }
 
 const STATUS_TOLERANCE_PCT = 0.5;
@@ -26,7 +28,7 @@ const STATUS_STYLE: Record<Status, string> = {
   over: "bg-rose-500/10 text-rose-400 border-rose-400/30",
 };
 
-export default function AllocationSummaryPanel({ mode, onModeChange, totalAllocated, monthlyBudget, onBudgetChange }: Props) {
+export default function AllocationSummaryPanel({ mode, onModeChange, totalAllocated, monthlyBudget, onBudgetChange, identitySuggestion }: Props) {
   const { t } = useLanguage();
   const isPercent = mode === "percent";
 
@@ -60,6 +62,15 @@ export default function AllocationSummaryPanel({ mode, onModeChange, totalAlloca
             className="text-mono-num w-full bg-transparent text-lg font-semibold tabular-nums text-white outline-none light:text-slate-900"
           />
         </div>
+        {identitySuggestion && (
+          <button
+            type="button"
+            onClick={identitySuggestion.onApply}
+            className="mt-1.5 text-xs font-medium text-neon-blue hover:underline"
+          >
+            {t("decisionSupportLab.useIdentitySuggestion")} (Rs {identitySuggestion.amount.toLocaleString("en-US")})
+          </button>
+        )}
       </div>
 
       <div role="tablist" aria-label={t("personalInflation.inputModePercent")} className="inline-flex w-fit rounded-lg border border-[var(--border-subtle)] p-0.5">

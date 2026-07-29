@@ -9,11 +9,44 @@ import PersonalInflationResults from "@/components/personalInflation/PersonalInf
 import ContributionTable from "@/components/personalInflation/ContributionTable";
 import PersonalInflationCharts from "@/components/personalInflation/PersonalInflationCharts";
 import ShareCard from "@/components/personalInflation/ShareCard";
+import ReportDownloadButton from "@/components/decisionSupportLab/ReportDownloadButton";
 import { CPI_GROUPS } from "@/lib/personalInflation/cpiGroups";
 import { SCENARIO_PRESETS } from "@/lib/personalInflation/scenarios";
-import { computePersonalInflation } from "@/lib/personalInflation/engine";
+import { computePersonalInflation, type PersonalInflationResult } from "@/lib/personalInflation/engine";
 import { useSavedScenarios, saveScenario, deleteScenario, type SavedScenario } from "@/lib/personalInflation/localScenarios";
+import { useEconomicIdentity } from "@/lib/decisionSupportLab/economicIdentity";
+import type { ReportDefinition } from "@/lib/decisionSupportLab/reportFramework";
 import type { CpiCategoryBreakdown } from "@/lib/data/cpiCategoryBreakdown";
+
+function buildPersonalInflationReport(result: PersonalInflationResult, observationDate: string): ReportDefinition {
+  const diffSign = result.differencePct > 0 ? "+" : "";
+  return {
+    toolName: "Personal Inflation Calculator",
+    subtitle: "Pakistan Economic Intelligence Center — Decision Support Lab",
+    generatedAt: new Date().toISOString().slice(0, 10),
+    sourceNote: "Source: Pakistan Bureau of Statistics — Monthly Inflation Report",
+    sections: [
+      {
+        heading: "Summary",
+        paragraphs: [
+          `Your personal inflation rate is ${result.personalCpiPct.toFixed(1)}%, compared with an official CPI of ${result.officialCpiPct.toFixed(1)}% (${diffSign}${result.differencePct.toFixed(1)} percentage points), based on the PBS release dated ${observationDate}.`,
+        ],
+        facts: [
+          { label: "Official CPI", value: `${result.officialCpiPct.toFixed(1)}%` },
+          { label: "Your Personal Inflation", value: `${result.personalCpiPct.toFixed(1)}%` },
+          { label: "Difference", value: `${diffSign}${result.differencePct.toFixed(1)} pp` },
+        ],
+      },
+      {
+        heading: "Category Breakdown",
+        facts: result.contributions.map((c) => ({
+          label: c.groupName,
+          value: `${c.yourWeightPct.toFixed(1)}% weight · ${c.categoryInflationPct.toFixed(1)}% inflation · ${c.yourContributionPct.toFixed(2)}pp contribution`,
+        })),
+      },
+    ],
+  };
+}
 
 interface Props {
   breakdown: CpiCategoryBreakdown | null;
@@ -35,6 +68,13 @@ export default function PersonalInflationCalculator({ breakdown }: Props) {
   const [percentValues, setPercentValues] = useState<Record<number, number>>(DEFAULT_ALLOCATION_PCT);
   const [spendingValues, setSpendingValues] = useState<Record<number, number>>(() => percentToSpending(DEFAULT_ALLOCATION_PCT, DEFAULT_MONTHLY_BUDGET));
   const savedScenarios = useSavedScenarios();
+  // Decision Support Lab's shared Economic Identity — if the visitor set a
+  // Monthly Spending figure on the Lab landing page, offer to reuse it here
+  // rather than silently overwriting whatever budget they've already
+  // typed. Demonstrates "future tools reuse this automatically" without a
+  // hydration-timing effect quietly rewriting state out from under the user.
+  const identity = useEconomicIdentity();
+  const hasIdentitySpending = identity.monthlySpending > 0 && identity.monthlySpending !== monthlyBudget;
 
   const allocation = mode === "percent" ? percentValues : spendingValues;
   const totalAllocated = useMemo(() => CPI_GROUPS.reduce((s, g) => s + (allocation[g.groupNo] || 0), 0), [allocation]);
@@ -95,7 +135,14 @@ export default function PersonalInflationCalculator({ breakdown }: Props) {
     <div id="calculator-input" className="flex flex-col gap-6">
       {/* Top: budget + mode + live status, then Save Profile */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 lg:items-start">
-        <AllocationSummaryPanel mode={mode} onModeChange={setMode} totalAllocated={totalAllocated} monthlyBudget={monthlyBudget} onBudgetChange={setMonthlyBudget} />
+        <AllocationSummaryPanel
+          mode={mode}
+          onModeChange={setMode}
+          totalAllocated={totalAllocated}
+          monthlyBudget={monthlyBudget}
+          onBudgetChange={setMonthlyBudget}
+          identitySuggestion={hasIdentitySpending ? { amount: identity.monthlySpending, onApply: () => setMonthlyBudget(identity.monthlySpending) } : undefined}
+        />
         <ScenarioPicker
           onLoadPreset={handleLoadPreset}
           savedScenarios={savedScenarios}
@@ -118,6 +165,14 @@ export default function PersonalInflationCalculator({ breakdown }: Props) {
 
       {result && <PersonalInflationResults result={result} />}
       {result && <ShareCard result={result} observationDate={breakdown.observationDate} />}
+      {result && (
+        <ReportDownloadButton
+          buildDefinition={() => buildPersonalInflationReport(result, breakdown.observationDate)}
+          filename="personal-inflation-report.pdf"
+          label={t("decisionSupportLab.downloadReport")}
+          generatingLabel={t("decisionSupportLab.generatingReport")}
+        />
+      )}
       {result && <ContributionTable contributions={result.contributions} monthlyBudget={monthlyBudget} />}
       {result && <PersonalInflationCharts result={result} />}
 

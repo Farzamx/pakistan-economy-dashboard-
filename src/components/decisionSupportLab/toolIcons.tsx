@@ -1,0 +1,89 @@
+// Minimal line-icon set, one per Decision Support Lab tool (keyed by tool
+// id — see src/lib/decisionSupportLab/tools.ts). Same hand-rolled
+// convention as src/components/personalInflation/categoryIcons.tsx: a
+// stroke-based 24x24 glyph inheriting currentColor rather than an icon
+// library dependency for 8 glyphs.
+import type { SVGProps } from "react";
+
+type IconProps = SVGProps<SVGSVGElement>;
+
+function Base({ children, ...props }: IconProps & { children: React.ReactNode }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...props}>
+      {children}
+    </svg>
+  );
+}
+
+const ICONS: Record<string, (props: IconProps) => React.ReactElement> = {
+  // Personal Inflation Calculator — a rising line with a percent mark
+  "personal-inflation": (p) => (
+    <Base {...p}>
+      <path d="M3 17l5-6 4 3 8-9" />
+      <circle cx="8" cy="6" r="1.6" />
+      <circle cx="17" cy="17" r="1.6" />
+    </Base>
+  ),
+  // Purchasing Power Calculator — a banknote losing value
+  "purchasing-power": (p) => (
+    <Base {...p}>
+      <rect x="2.5" y="7" width="19" height="11" rx="1.5" />
+      <circle cx="12" cy="12.5" r="2.75" />
+      <path d="M12 4v3M12 20v0" />
+    </Base>
+  ),
+  // Salary Purchasing Power — a briefcase
+  "salary-purchasing-power": (p) => (
+    <Base {...p}>
+      <rect x="3" y="8" width="18" height="12" rx="1.5" />
+      <path d="M8 8V6a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+      <path d="M3 13h18" />
+    </Base>
+  ),
+  // Budget Allocation — a donut/pie slice
+  "budget-allocation": (p) => (
+    <Base {...p}>
+      <path d="M12 3a9 9 0 1 0 9 9h-9V3Z" />
+      <path d="M15 3.5A9 9 0 0 1 20.5 9H15V3.5Z" />
+    </Base>
+  ),
+  // Inflation Impact — a gauge
+  "inflation-impact": (p) => (
+    <Base {...p}>
+      <path d="M4 18a8 8 0 1 1 16 0" />
+      <path d="M12 18l4-6" />
+      <path d="M4 18h1M19 18h1M12 6v1" />
+    </Base>
+  ),
+  // Savings Erosion — coin stack with a downward arrow
+  "savings-erosion": (p) => (
+    <Base {...p}>
+      <ellipse cx="9" cy="6" rx="6" ry="2.4" />
+      <path d="M3 6v5c0 1.3 2.7 2.4 6 2.4s6-1.1 6-2.4V6" />
+      <path d="M3 11v5c0 1.3 2.7 2.4 6 2.4 1 0 1.9-.08 2.7-.22" />
+      <path d="M18 12v7M15.5 16.5 18 19l2.5-2.5" />
+    </Base>
+  ),
+  // Future Value — clock with a forward arrow
+  "future-value": (p) => (
+    <Base {...p}>
+      <circle cx="10" cy="12" r="7" />
+      <path d="M10 8v4l3 2" />
+      <path d="M18 9l3 3-3 3" />
+    </Base>
+  ),
+  // Present Value — a calendar/today mark
+  "present-value": (p) => (
+    <Base {...p}>
+      <rect x="3" y="5" width="18" height="16" rx="2" />
+      <path d="M3 10h18M8 3v4M16 3v4" />
+      <circle cx="12" cy="15" r="2" />
+    </Base>
+  ),
+};
+
+export function ToolIcon({ toolId, className = "h-5 w-5" }: { toolId: string; className?: string }) {
+  const Icon = ICONS[toolId];
+  if (!Icon) return null;
+  return <Icon className={className} />;
+}

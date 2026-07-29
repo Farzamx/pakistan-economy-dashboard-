@@ -31,6 +31,7 @@ const NAV_ITEMS: { key: string; href: string; protected?: boolean }[] = [
   { key: "markets", href: "/#global-markets" },
   { key: "calendar", href: "/economic-calendar", protected: true },
   { key: "research", href: "/comparisons", protected: true },
+  { key: "decisionLab", href: "/decision-support-lab" },
   { key: "academy", href: "/academy" },
   { key: "riskIntel", href: "/#risk-intelligence" },
   { key: "premium", href: "/signup" },
@@ -67,18 +68,27 @@ export default function TopNav() {
           MobileNav/Sidebar/MobileStickyCta all switch at this same
           min-[800px] threshold so the mobile and desktop nav paradigms
           never overlap or leave a gap. */}
-      <header className="sticky top-0 z-30 hidden h-16 w-full items-center justify-between border-b border-[var(--border-subtle)] bg-[var(--background)]/95 px-8 backdrop-blur-xl min-[800px]:flex">
-        <div className="flex items-center gap-10">
+      <header className="sticky top-0 z-30 hidden h-16 w-full items-center justify-between border-b border-[var(--border-subtle)] bg-[var(--background)]/95 px-6 backdrop-blur-xl min-[800px]:flex">
+        <div className="flex items-center gap-8">
           <Link href="/" className="flex items-center gap-2.5 shrink-0">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-neon-blue/50 font-serif text-base font-semibold text-neon-blue">
               P
             </div>
-            <span className="font-serif text-[15px] font-semibold tracking-[-0.005em] text-white light:text-slate-900">
+            <span className="hidden font-serif text-[15px] font-semibold tracking-[-0.005em] text-white min-[880px]:inline light:text-slate-900">
               {t("nav.logoName")}
             </span>
           </Link>
 
-          <nav className="flex items-center gap-7">
+          {/* v4 8-item nav audit: adding "Decision Lab" as an 8th item made
+              the pre-existing 787px-minimum layout overflow right at the
+              min-[800px] breakpoint (measured: 871px of content in an
+              820px header). Fixed with three changes together rather than
+              one: gap-7→gap-5 (saves ~84px across 7 gaps), whitespace-nowrap
+              per item (a wrapped 2-line label was the visible symptom),
+              and the logo wordmark hiding below 880px (the logo mark alone
+              still identifies the site) to give the nav itself more room
+              exactly in the tightest 800-880px band. */}
+          <nav className="flex items-center gap-5">
             {NAV_ITEMS.map((item) => {
               const active = isActive(item.href);
               return (
@@ -87,7 +97,7 @@ export default function TopNav() {
                   href={item.href}
                   onClick={(e) => handleClick(e, item.href, item.protected)}
                   aria-current={active ? "true" : undefined}
-                  className={`text-sm font-medium transition-colors ${
+                  className={`whitespace-nowrap text-sm font-medium transition-colors ${
                     active ? "text-white light:text-slate-900" : "text-white/60 light:text-slate-500 hover:text-white light:hover:text-slate-900"
                   }`}
                 >

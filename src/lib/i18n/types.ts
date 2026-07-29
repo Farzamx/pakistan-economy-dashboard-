@@ -20,6 +20,7 @@ export interface Translations {
   topNav: {
     overview: string; markets: string; calendar: string;
     research: string; academy: string; riskIntel: string; premium: string;
+    decisionLab: string;
   };
 
   nav: {
@@ -35,7 +36,7 @@ export interface Translations {
     memberBadge: string; memberSince: string; premiumAccess: string;
     executiveSummary: string; macroeconomy: string; tools: string;
     bonds: string; yieldCurve: string; commodities: string; researchLibrary: string;
-    personalInflationCalculator: string;
+    personalInflationCalculator: string; decisionSupportLab: string;
   };
 
   hero: {
@@ -449,7 +450,7 @@ export interface Translations {
     colOfficialWeight: string; colCategoryInflation: string; colContribution: string; colAmount: string;
     chartComparisonTitle: string; chartContributionTitle: string; chartCompositionTitle: string;
     shareTitle: string; shareDownload: string; shareCopyLink: string;
-    shareToX: string; shareToLinkedIn: string; shareToWhatsApp: string; shareDownloadPdf: string;
+    shareToX: string; shareToLinkedIn: string; shareToWhatsApp: string; shareDownloadPdf: string; shareNative: string;
     shareCopied: string; shareCardFooter: string;
     dataQualityNote: string; dataAsOf: string; sourceLabel: string; verifiedBadge: string;
     notYetAvailableTitle: string; notYetAvailableDesc: string;
@@ -460,5 +461,33 @@ export interface Translations {
     faq: string;
     faq1Q: string; faq1A: string; faq2Q: string; faq2A: string;
     faq3Q: string; faq3A: string; faq4Q: string; faq4A: string; faq5Q: string; faq5A: string;
+  };
+
+  decisionSupportLab: {
+    eyebrow: string; title: string; subtitle: string;
+    trustSources: string; trustMethodology: string;
+    toolsTitle: string; toolsSubtitle: string;
+    statusAvailable: string; statusComingSoon: string; openTool: string;
+    estimate: { phase2: string; phase3: string };
+    tool: {
+      personalInflation: { description: string };
+      purchasingPower: { title: string; description: string };
+      salaryPurchasingPower: { title: string; description: string };
+      budgetAllocation: { title: string; description: string };
+      inflationImpact: { title: string; description: string };
+      savingsErosion: { title: string; description: string };
+      futureValue: { title: string; description: string };
+      presentValue: { title: string; description: string };
+    };
+    identityTitle: string; identityDesc: string;
+    identityCity: string; identityCityPlaceholder: string;
+    identityIncome: string; identitySpending: string; identityHousehold: string;
+    identityFilerStatus: string; identityFilerUnknown: string; identityFilerYes: string; identityFilerNo: string;
+    identityCurrency: string; identityCurrencyNote: string; identityCurrencyLabel: string;
+    useIdentitySuggestion: string;
+    explainTheMathTitle: string; explainSource: string; explainLastUpdated: string;
+    educationTitle: string;
+    eduWhatQuestion: string; eduWhyQuestion: string; eduHowQuestion: string; eduSourcesQuestion: string;
+    downloadReport: string; generatingReport: string;
   };
 }

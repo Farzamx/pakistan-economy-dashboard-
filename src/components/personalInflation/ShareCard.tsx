@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { useLanguage } from "@/components/LanguageProvider";
 import type { PersonalInflationResult } from "@/lib/personalInflation/engine";
 import { SITE_URL, SITE_NAME } from "@/lib/seoConfig";
+import { exportCanvasAsPdf, exportCanvasAsPng } from "@/lib/decisionSupportLab/exportFramework";
+import { buildShareMessage, useCanNativeShare, copyShareLink, nativeShare, shareToLinkedIn, shareToWhatsApp, shareToX } from "@/lib/decisionSupportLab/shareFramework";
 
 interface Props {
   result: PersonalInflationResult;
@@ -12,10 +14,15 @@ interface Props {
 
 const CARD_WIDTH = 1200;
 const CARD_HEIGHT = 630;
-const PAGE_URL = `${SITE_URL}/tools/personal-inflation`;
+const PAGE_URL = `${SITE_URL}/decision-support-lab/personal-inflation`;
 
 function toneColor(differencePct: number): string {
   return differencePct > 0.3 ? "#fb7185" : differencePct < -0.3 ? "#34d399" : "#9b8afb";
+}
+
+function resultSummary(result: PersonalInflationResult): string {
+  const diffSign = result.differencePct > 0 ? "+" : "";
+  return `My personal inflation rate is ${result.personalCpiPct.toFixed(1)}% vs the official CPI of ${result.officialCpiPct.toFixed(1)}% (${diffSign}${result.differencePct.toFixed(1)}pp).`;
 }
 
 // Fixed, always-dark "brand card" look regardless of the viewer's own site
@@ -104,68 +111,42 @@ export default function ShareCard({ result, observationDate }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const { t } = useLanguage();
   const [copied, setCopied] = useState(false);
+  const canShareNative = useCanNativeShare();
 
   useEffect(() => {
     if (canvasRef.current) drawShareCard(canvasRef.current, result, observationDate);
   }, [result, observationDate]);
 
   function handleDownload() {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    canvas.toBlob((blob) => {
-      if (!blob) return;
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "my-personal-inflation-rate.png";
-      a.click();
-      URL.revokeObjectURL(url);
-    }, "image/png");
+    if (canvasRef.current) exportCanvasAsPng(canvasRef.current, "my-personal-inflation-rate.png");
+  }
+
+  async function handleDownloadPdf() {
+    if (canvasRef.current) await exportCanvasAsPdf(canvasRef.current, "my-personal-inflation-rate.pdf");
   }
 
   async function handleCopyLink() {
-    try {
-      await navigator.clipboard.writeText(PAGE_URL);
+    const ok = await copyShareLink(PAGE_URL);
+    if (ok) {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // Clipboard API unavailable (older browser / permissions denied) — no
-      // fallback needed here since Copy Link is a convenience, not the
-      // primary share path (the PNG download and native share intents are).
     }
   }
 
-  function shareText(): string {
-    const diffSign = result.differencePct > 0 ? "+" : "";
-    return `My personal inflation rate is ${result.personalCpiPct.toFixed(1)}% vs the official CPI of ${result.officialCpiPct.toFixed(1)}% (${diffSign}${result.differencePct.toFixed(1)}pp). Calculate yours:`;
-  }
-
   function handleShareX() {
-    const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText())}&url=${encodeURIComponent(PAGE_URL)}`;
-    window.open(url, "_blank", "noopener,noreferrer");
+    shareToX(buildShareMessage({ summary: resultSummary(result) }), PAGE_URL);
   }
 
   function handleShareLinkedIn() {
-    const url = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(PAGE_URL)}`;
-    window.open(url, "_blank", "noopener,noreferrer");
+    shareToLinkedIn(PAGE_URL);
   }
 
   function handleShareWhatsApp() {
-    const url = `https://wa.me/?text=${encodeURIComponent(`${shareText()} ${PAGE_URL}`)}`;
-    window.open(url, "_blank", "noopener,noreferrer");
+    shareToWhatsApp(buildShareMessage({ summary: resultSummary(result) }), PAGE_URL);
   }
 
-  // jsPDF is dynamically imported so it never enters the initial bundle —
-  // only fetched the first time a visitor actually clicks "Download as
-  // PDF," same lazy-loading rationale as the Recharts charts bundle.
-  async function handleDownloadPdf() {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const { jsPDF } = await import("jspdf");
-    const imgData = canvas.toDataURL("image/png");
-    const pdf = new jsPDF({ orientation: "landscape", unit: "px", format: [CARD_WIDTH, CARD_HEIGHT] });
-    pdf.addImage(imgData, "PNG", 0, 0, CARD_WIDTH, CARD_HEIGHT);
-    pdf.save("my-personal-inflation-rate.pdf");
+  async function handleNativeShare() {
+    await nativeShare({ title: "My Personal Inflation Rate", text: resultSummary(result), url: PAGE_URL });
   }
 
   return (
@@ -205,6 +186,15 @@ export default function ShareCard({ result, observationDate }: Props) {
         >
           {copied ? t("personalInflation.shareCopied") : t("personalInflation.shareCopyLink")}
         </button>
+        {canShareNative && (
+          <button
+            type="button"
+            onClick={handleNativeShare}
+            className="rounded-lg border border-[var(--border-subtle)] px-4 py-2.5 text-sm font-medium text-white/80 transition-colors hover:border-neon-blue active:scale-95 light:text-slate-700"
+          >
+            {t("personalInflation.shareNative")}
+          </button>
+        )}
         <button
           type="button"
           onClick={handleShareWhatsApp}

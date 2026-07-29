@@ -5,8 +5,8 @@ import { useInView } from "framer-motion";
 import { Bar, BarChart, CartesianGrid, Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { useSafeReducedMotion } from "@/hooks/useSafeReducedMotion";
 import { useIsMobile } from "@/hooks/useIsMobile";
-import { useTheme } from "@/components/ThemeProvider";
 import { useLanguage } from "@/components/LanguageProvider";
+import { useChartTheme } from "@/lib/decisionSupportLab/chartTheme";
 import type { PersonalInflationResult } from "@/lib/personalInflation/engine";
 import { CPI_GROUP_BY_NO } from "@/lib/personalInflation/cpiGroups";
 
@@ -35,15 +35,9 @@ export default function PersonalInflationChartsInner({ result }: Props) {
   const isInView = useInView(containerRef, { once: true });
   const prefersReducedMotion = useSafeReducedMotion();
   const isMobile = useIsMobile();
-  const { theme } = useTheme();
   const { t } = useLanguage();
-  const isLight = theme === "light";
+  const { gridStroke, axisTickFill, tooltipStyle } = useChartTheme();
   const shouldRender = isInView || !!prefersReducedMotion;
-
-  const gridStroke = isLight ? "rgba(0, 0, 0, 0.08)" : "rgba(255, 255, 255, 0.06)";
-  const axisTickFill = isLight ? "rgba(0, 0, 0, 0.50)" : "rgba(255, 255, 255, 0.40)";
-  const tooltipBg = isLight ? "rgba(255, 255, 255, 0.97)" : "rgba(11, 14, 33, 0.90)";
-  const tooltipBorder = isLight ? "1px solid rgba(0, 0, 0, 0.10)" : "1px solid rgba(255, 255, 255, 0.10)";
 
   const comparisonData = [
     { name: t("personalInflation.officialCpiLabel"), value: result.officialCpiPct, color: "#4d8df7" },
@@ -69,7 +63,7 @@ export default function PersonalInflationChartsInner({ result }: Props) {
               <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} horizontal={false} />
               <XAxis type="number" tickFormatter={(v) => `${v}%`} stroke="transparent" tick={{ fill: axisTickFill, fontSize: 11 }} tickLine={false} axisLine={false} />
               <YAxis type="category" dataKey="name" stroke="transparent" tick={{ fill: axisTickFill, fontSize: 12 }} tickLine={false} axisLine={false} width={110} />
-              <Tooltip contentStyle={{ background: tooltipBg, border: tooltipBorder, borderRadius: "0.75rem" }} formatter={(v) => [`${typeof v === "number" ? v.toFixed(1) : v}%`, ""]} />
+              <Tooltip contentStyle={tooltipStyle} formatter={(v) => [`${typeof v === "number" ? v.toFixed(1) : v}%`, ""]} />
               <Bar dataKey="value" radius={[0, 6, 6, 0]} isAnimationActive={!prefersReducedMotion} animationDuration={700}>
                 {comparisonData.map((d) => (
                   <Cell key={d.name} fill={d.color} />
@@ -89,7 +83,7 @@ export default function PersonalInflationChartsInner({ result }: Props) {
               <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} horizontal={false} />
               <XAxis type="number" tickFormatter={(v) => `${v}pp`} stroke="transparent" tick={{ fill: axisTickFill, fontSize: 11 }} tickLine={false} axisLine={false} />
               <YAxis type="category" dataKey="name" stroke="transparent" tick={{ fill: axisTickFill, fontSize: 11 }} tickLine={false} axisLine={false} width={isMobile ? 90 : 170} />
-              <Tooltip contentStyle={{ background: tooltipBg, border: tooltipBorder, borderRadius: "0.75rem" }} formatter={(v) => [`${typeof v === "number" ? v.toFixed(2) : v} pp`, ""]} />
+              <Tooltip contentStyle={tooltipStyle} formatter={(v) => [`${typeof v === "number" ? v.toFixed(2) : v} pp`, ""]} />
               <Bar dataKey="value" radius={[0, 6, 6, 0]} isAnimationActive={!prefersReducedMotion} animationDuration={700}>
                 {contributionData.map((d) => (
                   <Cell key={d.name} fill={d.color} />
@@ -123,7 +117,7 @@ export default function PersonalInflationChartsInner({ result }: Props) {
                   <Cell key={slice.label} fill={slice.color} stroke="none" />
                 ))}
               </Pie>
-              <Tooltip contentStyle={{ background: tooltipBg, border: tooltipBorder, borderRadius: "0.75rem" }} formatter={(v) => [`${typeof v === "number" ? v.toFixed(1) : v}%`, ""]} />
+              <Tooltip contentStyle={tooltipStyle} formatter={(v) => [`${typeof v === "number" ? v.toFixed(1) : v}%`, ""]} />
               <Legend
                 wrapperStyle={{ fontSize: isMobile ? 11 : 12, color: axisTickFill, lineHeight: isMobile ? "1.6" : undefined }}
                 layout="vertical"
