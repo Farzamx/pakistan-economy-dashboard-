@@ -797,3 +797,96 @@ body {
   line-height: 2;
   font-size: 1.05em;
 }
+
+/* ── Range slider (Personal Inflation Calculator's category cards) ────────
+   Native <input type="range"> reset to a thin track + a single accent-
+   colored thumb, colored per category via the --slider-accent custom
+   property set inline per instance — one rule set serves all 12 categories
+   instead of 12 near-duplicate classes. Track fill (the colored portion
+   left of the thumb) is painted by a linear-gradient background set inline
+   alongside --slider-accent, since CSS alone can't read an input's own
+   value to size a fill. */
+.range-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  outline: none;
+  cursor: pointer;
+}
+.range-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--slider-accent, var(--neon-blue));
+  border: 2px solid var(--background);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  transition: transform var(--motion-micro, 150ms) ease-out;
+}
+.range-slider::-webkit-slider-thumb:hover,
+.range-slider:focus-visible::-webkit-slider-thumb {
+  transform: scale(1.15);
+}
+.range-slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--slider-accent, var(--neon-blue));
+  border: 2px solid var(--background);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  transition: transform var(--motion-micro, 150ms) ease-out;
+}
+.range-slider::-moz-range-thumb:hover {
+  transform: scale(1.15);
+}
+.range-slider:focus-visible {
+  box-shadow: 0 0 0 3px rgba(77, 141, 247, 0.35);
+}
+@media (prefers-reduced-motion: reduce) {
+  .range-slider::-webkit-slider-thumb,
+  .range-slider::-moz-range-thumb {
+    transition: none;
+  }
+}
+
+/* ── Category card (Personal Inflation Calculator) ─────────────────────────
+   A step up from .glass-card-raised: a visible left accent bar per category
+   color plus a hover/focus-within lift, giving each of the 12 category
+   tiles a distinct, "premium fintech" identity without 12 bespoke classes. */
+.category-card {
+  position: relative;
+  background: var(--surface-2);
+  border: 1px solid var(--border-subtle);
+  border-radius: 0.75rem;
+  padding: 0.875rem 1rem;
+  transition: transform var(--motion-micro, 150ms) ease-out, border-color var(--motion-micro, 150ms) ease-out, box-shadow var(--motion-micro, 150ms) ease-out;
+}
+.category-card::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.75rem;
+  bottom: 0.75rem;
+  width: 3px;
+  border-radius: 999px;
+  background: var(--card-accent, var(--neon-blue));
+}
+.category-card:hover,
+.category-card:focus-within {
+  transform: translateY(-1px);
+  border-color: var(--border-emphasis);
+  box-shadow: var(--elev-1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .category-card {
+    transition: border-color var(--motion-micro, 150ms) ease-out;
+  }
+  .category-card:hover,
+  .category-card:focus-within {
+    transform: none;
+  }
+}

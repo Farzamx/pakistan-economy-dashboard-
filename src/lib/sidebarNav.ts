@@ -95,6 +95,7 @@ export const SIDEBAR_NAV_GROUPS: SidebarNavGroup[] = [
     key: "tools",
     labelKey: "nav.tools",
     items: [
+      { labelKey: "nav.personalInflationCalculator", target: { kind: "route", href: "/tools/personal-inflation" } },
       { labelKey: "nav.budgetTracker", target: { kind: "route", href: "/budget" } },
       { labelKey: "nav.provincialBudget", target: { kind: "route", href: "/provincial-budget" } },
       { labelKey: "nav.economicCalendar", target: { kind: "route", href: "/economic-calendar" } },

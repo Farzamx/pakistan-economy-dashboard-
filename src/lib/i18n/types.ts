@@ -35,6 +35,7 @@ export interface Translations {
     memberBadge: string; memberSince: string; premiumAccess: string;
     executiveSummary: string; macroeconomy: string; tools: string;
     bonds: string; yieldCurve: string; commodities: string; researchLibrary: string;
+    personalInflationCalculator: string;
   };
 
   hero: {
@@ -427,5 +428,37 @@ export interface Translations {
 
   errors: {
     notFound: string; serverError: string; noData: string; loadFailed: string; retry: string;
+  };
+
+  personalInflation: {
+    eyebrow: string; title: string; subtitle: string; ctaCalculate: string;
+    inputModePercent: string; inputModeSpending: string;
+    totalAllocated: string; totalMustEqual: string; totalOk: string;
+    monthlySpendingLabel: string; monthlySpendingTotal: string;
+    monthlyBudgetLabel: string; remaining: string;
+    statusOnTrack: string; statusUnder: string; statusOver: string;
+    scenariosTitle: string; scenariosDesc: string; loadScenario: string;
+    saveScenario: string; savedScenarios: string; scenarioNamePlaceholder: string;
+    saveCurrentAsScenario: string; deleteScenario: string; noSavedScenarios: string;
+    existingProfilesLabel: string; selectProfilePlaceholder: string;
+    resetBtn: string;
+    resultsTitle: string; officialCpiLabel: string; yourInflationLabel: string; differenceLabel: string;
+    verdictHigher: string; verdictLower: string; verdictNeutral: string;
+    explanationTitle: string;
+    breakdownTitle: string; colCategory: string; colYourWeight: string;
+    colOfficialWeight: string; colCategoryInflation: string; colContribution: string; colAmount: string;
+    chartComparisonTitle: string; chartContributionTitle: string; chartCompositionTitle: string;
+    shareTitle: string; shareDownload: string; shareCopyLink: string;
+    shareToX: string; shareToLinkedIn: string; shareToWhatsApp: string; shareDownloadPdf: string;
+    shareCopied: string; shareCardFooter: string;
+    dataQualityNote: string; dataAsOf: string; sourceLabel: string; verifiedBadge: string;
+    notYetAvailableTitle: string; notYetAvailableDesc: string;
+    scenarioStudentLabel: string; scenarioStudentDesc: string;
+    scenarioFamilyLabel: string; scenarioFamilyDesc: string;
+    scenarioRetiredLabel: string; scenarioRetiredDesc: string;
+    scenarioSmallBusinessLabel: string; scenarioSmallBusinessDesc: string;
+    faq: string;
+    faq1Q: string; faq1A: string; faq2Q: string; faq2A: string;
+    faq3Q: string; faq3A: string; faq4Q: string; faq4A: string; faq5Q: string; faq5A: string;
   };
 }

@@ -10,6 +10,7 @@ import { recordSourceAttempt } from "@/lib/economicCalendar/sourceHealthTracker"
 import type { SyncResult, SyncProvenance } from "@/lib/economicCalendar/automation/syncFromSbpEasyData";
 import { invalidate } from "@/lib/memoryCache";
 import { canonicalObsCacheKey } from "@/lib/data/canonicalObservation";
+import { storeCpiCategoryBreakdown, type CpiCategoryRow } from "@/lib/data/cpiCategoryBreakdown";
 
 // PBS CPI Sync — Phase 7 Step 5
 //
@@ -46,6 +47,7 @@ const CORE_SERIES_SLUG = "core-inflation-release";
 interface CpiPbsResult {
   cpiYoYPct: number;
   coreYoYPct: number | null; // null if NFNE not found in the PDF
+  categoryGroups: CpiCategoryRow[] | null; // null if Table 1 could not be parsed/validated
   obsMonth: number; // 1-12
   obsYear: number;
   obsDate: string; // "YYYY-MM-DD" (last day of obs month)
@@ -150,6 +152,53 @@ function parseObsPeriod(text: string, title: string): { obsMonth: number; obsYea
   return null;
 }
 
+// Table 1 row format (verified against the live June 2026 PDF text), all on
+// one line since unpdf's mergePages flattens the whole document to a single
+// string with no newlines:
+//   "1. Food & Non-alcoholic Bev. 34.58 296.52 293.71 271.10 0.96 9.38 0.33 3.33"
+//    ^groupNo  ^name (may contain '.', ',', '&')   ^weight ^idx×3 ^MoM% ^YoY% ^impact×2
+//
+// Two disambiguation hazards this regex must avoid (both resolved by
+// requiring an uppercase letter immediately after "N. "):
+//   1. Unnumbered sub-rows nested under Food (e.g. "Non-perishable Food
+//      Items 29.60 ...") must NOT be matched as top-level groups — they
+//      have no leading "N." marker at all, so the (\d{1,2})\. prefix alone
+//      already excludes them.
+//   2. A bare "N." must not false-match inside a decimal weight like
+//      "34.58" or "4.10" — requiring a letter (not a digit) right after the
+//      period+space rules this out, since every real value is followed by
+//      another digit, never a letter.
+const CATEGORY_ROW_RE =
+  /(\d{1,2})\.\s+([A-Z][A-Za-z .,&()'-]*?)\s+(\d+\.\d+)\s+(-?\d+\.\d+)\s+(-?\d+\.\d+)\s+(-?\d+\.\d+)\s+(-?\d+\.\d+)\s+(-?\d+\.\d+)\s+(-?\d+\.\d+)\s+(-?\d+\.\d+)(?=\s|$)/g;
+
+/**
+ * Extracts the 12 official-group weight/YoY breakdown from "Table 1:
+ * Consumer Price Index (National) by Group of Commodities and Services",
+ * bounded before "Table 2:" (the Urban table immediately following it in
+ * the same PDF) so Urban/Rural rows are never matched. Returns null (never
+ * throws) if the table isn't found or fails plausibility checks — this is
+ * additive data for the Personal Inflation Calculator, so a parse failure
+ * here must not block the headline CPI/Core writes the rest of this module
+ * already handles.
+ */
+function parseCpiCategoryTable(text: string): CpiCategoryRow[] | null {
+  const startMarker = "Table 1: Consumer Price Index (National)";
+  const start = text.indexOf(startMarker);
+  if (start === -1) return null;
+  const end = text.indexOf("Table 2:", start);
+  const section = end === -1 ? text.slice(start) : text.slice(start, end);
+
+  const rows: CpiCategoryRow[] = [];
+  for (const m of section.matchAll(CATEGORY_ROW_RE)) {
+    const groupNo = parseInt(m[1], 10);
+    const weightPct = parseFloat(m[3]);
+    const yoyPctChange = parseFloat(m[8]); // "% Change ... June 2026 Over June 25" column
+    if (isNaN(groupNo) || isNaN(weightPct) || isNaN(yoyPctChange)) continue;
+    rows.push({ groupNo, groupName: m[2].trim(), weightPct, yoyPctChange });
+  }
+  return rows.length > 0 ? rows : null;
+}
+
 async function parseCpiPdf(pdfUrl: string, title: string, postDate: string): Promise<CpiPbsResult> {
   const res = await fetch(pdfUrl, {
     signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
@@ -176,6 +225,7 @@ async function parseCpiPdf(pdfUrl: string, title: string, postDate: string): Pro
   }
 
   const coreYoYPct = extractPercentage(text, CORE_PATTERNS, 0.5);
+  const categoryGroups = parseCpiCategoryTable(text);
 
   const period = parseObsPeriod(text, title);
   if (!period) {
@@ -188,7 +238,7 @@ async function parseCpiPdf(pdfUrl: string, title: string, postDate: string): Pro
   const lastDay = new Date(period.obsYear, period.obsMonth, 0).getDate();
   const obsDate = `${period.obsYear}-${String(period.obsMonth).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
 
-  return { cpiYoYPct, coreYoYPct, obsMonth: period.obsMonth, obsYear: period.obsYear, obsDate, pdfUrl, postDate };
+  return { cpiYoYPct, coreYoYPct, categoryGroups, obsMonth: period.obsMonth, obsYear: period.obsYear, obsDate, pdfUrl, postDate };
 }
 
 async function discoverCpiPost(): Promise<{
@@ -413,5 +463,45 @@ export async function syncCpiFromPbs(): Promise<SyncResult[]> {
     });
   }
 
+  // Category breakdown (Personal Inflation Calculator's underlying data,
+  // migration 0043) — reuses the already-fetched PDF text, no new network
+  // call. Additive/non-critical: a failure here is reported but never
+  // blocks or retries the CPI/Core writes above.
+  results.push(await writeCategoryBreakdownResult(pbsData, entryMs));
+
   return results;
+}
+
+const CATEGORY_BREAKDOWN_SLUG = "cpi-category-breakdown";
+
+async function writeCategoryBreakdownResult(pbsData: CpiPbsResult, entryMs: number): Promise<SyncResult> {
+  if (!pbsData.categoryGroups) {
+    return {
+      seriesSlug: CATEGORY_BREAKDOWN_SLUG,
+      status: "skipped-not-configured",
+      detail: "Table 1 (National group breakdown) not found or failed to parse in this month's PDF.",
+      durationMs: Date.now() - entryMs,
+      observationPeriod: pbsData.obsDate,
+    };
+  }
+
+  const workerSecret = process.env.NOTIFICATION_WORKER_SECRET ?? "";
+  const result = await storeCpiCategoryBreakdown(pbsData.categoryGroups, pbsData.obsDate, pbsData.pdfUrl, workerSecret);
+
+  if (!result.success) {
+    return {
+      seriesSlug: CATEGORY_BREAKDOWN_SLUG,
+      status: "error",
+      detail: result.error ?? "store_cpi_category_breakdown failed",
+      durationMs: Date.now() - entryMs,
+      observationPeriod: pbsData.obsDate,
+    };
+  }
+  return {
+    seriesSlug: CATEGORY_BREAKDOWN_SLUG,
+    status: "synced",
+    detail: `${pbsData.categoryGroups.length} groups written for ${pbsData.obsDate}`,
+    durationMs: Date.now() - entryMs,
+    observationPeriod: pbsData.obsDate,
+  };
 }
