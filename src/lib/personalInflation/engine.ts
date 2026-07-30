@@ -98,6 +98,25 @@ export function computePersonalInflation(userWeightsPct: Record<number, number>,
   };
 }
 
+/**
+ * The official (average-household) CPI YoY rate on its own, with no
+ * personal spending pattern involved — the same weighted-sum math
+ * computePersonalInflation() uses for its officialCpiPct field, exposed
+ * standalone so Income & Wealth tools (Raise Reality Check, Salary
+ * Required, Future Salary Projection, Savings Erosion) can default their
+ * "inflation" input to a real official figure without needing a user's
+ * household allocation.
+ */
+export function computeOfficialCpiPct(groups: CpiCategoryRow[]): number {
+  const weights: Record<number, number> = {};
+  const rates: Record<number, number> = {};
+  for (const g of groups) {
+    weights[g.groupNo] = g.weightPct;
+    rates[g.groupNo] = g.yoyPctChange;
+  }
+  return computeWeightedRate(weights, rates);
+}
+
 export type VerdictTone = "higher" | "lower" | "neutral";
 
 /** Threshold below which the difference is treated as "in line with" the national average rather than meaningfully higher/lower — avoids a verdict that reads as significant for a 0.1pp rounding-level gap. */

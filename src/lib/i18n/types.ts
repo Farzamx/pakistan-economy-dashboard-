@@ -467,7 +467,9 @@ export interface Translations {
     eyebrow: string; title: string; subtitle: string;
     trustSources: string; trustMethodology: string;
     toolsTitle: string; toolsSubtitle: string;
-    statusAvailable: string; statusComingSoon: string; openTool: string;
+    incomeWealthTitle: string; incomeWealthSubtitle: string;
+    statusAvailable: string; statusComingSoon: string; openTool: string; signInRequired: string;
+    guestBannerTitle: string; guestBannerDesc: string;
     estimate: { phase2: string; phase3: string };
     tool: {
       personalInflation: { description: string };
@@ -478,8 +480,13 @@ export interface Translations {
       savingsErosion: { title: string; description: string };
       futureValue: { title: string; description: string };
       presentValue: { title: string; description: string };
+      raiseRealityCheck: { title: string; description: string };
+      salaryRequired: { title: string; description: string };
+      futureSalaryProjection: { title: string; description: string };
+      healthScore: { title: string; description: string };
     };
     identityTitle: string; identityDesc: string;
+    identityGuestDesc: string; identityGuestCta: string;
     identityCity: string; identityCityPlaceholder: string;
     identityIncome: string; identitySpending: string; identityHousehold: string;
     identityFilerStatus: string; identityFilerUnknown: string; identityFilerYes: string; identityFilerNo: string;
@@ -508,5 +515,55 @@ export interface Translations {
     percentChangeLabel: string; realValueLabel: string; inflationAdjustedLabel: string;
     timelineTitle: string; waterfallTitle: string; comparisonTitle: string;
     asOfLabel: string; sourceOneLabel: string;
+  };
+
+  salaryPurchasingPower: {
+    eyebrow: string; title: string; subtitle: string; cta: string;
+    salaryLabel: string; baseYearLabel: string; targetYearLabel: string;
+    cityLabel: string; cityPlaceholder: string; cityDisclosureNote: string;
+    sourceLabel: string; sourceOneLabel: string;
+    resultsTitle: string; realSalaryTodayLabel: string; purchasingPowerLostLabel: string;
+    percentChangeLabel: string; inflationAdjustedSalaryLabel: string;
+    timelineTitle: string; comparisonTitle: string;
+  };
+
+  raiseRealityCheck: {
+    eyebrow: string; title: string; subtitle: string; cta: string;
+    currentSalaryLabel: string; nominalRaiseLabel: string; inflationLabel: string;
+    useOfficialInflationCta: string;
+    resultsTitle: string; realChangeLabel: string; newNominalSalaryLabel: string; realEquivalentSalaryLabel: string;
+    comparisonTitle: string;
+  };
+
+  salaryRequired: {
+    eyebrow: string; title: string; subtitle: string; cta: string;
+    currentSalaryLabel: string; yearsLabel: string; assumedRaiseLabel: string;
+    inflationSourceLabel: string; inflationSourcePersonal: string; inflationSourceOfficial: string;
+    resultsTitle: string; requiredSalaryLabel: string; requiredMonthlyIncomeLabel: string;
+    differenceLabel: string; realIncomeGapLabel: string;
+  };
+
+  futureSalaryProjection: {
+    eyebrow: string; title: string; subtitle: string; cta: string;
+    currentSalaryLabel: string; annualRaiseLabel: string; inflationLabel: string; yearsLabel: string;
+    resultsTitle: string; nominalSalaryLabel: string; realSalaryLabel: string; purchasingPowerLabel: string;
+    chartTitle: string;
+  };
+
+  savingsErosion: {
+    eyebrow: string; title: string; subtitle: string; cta: string;
+    savingsLabel: string; inflationLabel: string; yearsLabel: string;
+    resultsTitle: string; nominalValueLabel: string; realValueLabel: string;
+    purchasingPowerLostLabel: string; percentErosionLabel: string;
+    chartTitle: string;
+  };
+
+  healthScore: {
+    eyebrow: string; title: string; subtitle: string; cta: string;
+    overallScoreLabel: string; categoryScoresTitle: string;
+    strengthsTitle: string; weaknessesTitle: string; suggestedNextTitle: string;
+    categoryPersonalInflation: string; categoryBudgetBalance: string; categoryPurchasingPower: string;
+    categorySalaryGrowth: string; categorySavingsProtection: string; categoryInflationExposure: string;
+    dataIncompleteTitle: string; dataIncompleteDesc: string;
   };
 }

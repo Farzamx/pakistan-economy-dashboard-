@@ -81,6 +81,61 @@ export function buildPurchasingPowerTimeline(amount: number, base: CpiIndexPoint
     }));
 }
 
+// Phase 3 — Income & Wealth Intelligence primitives. These generalize
+// inflate()/deflate() (which compare two REAL index observations) to the
+// case every salary/savings tool actually has: a single annual rate
+// (a raise %, an inflation %) applied over N years of compounding. Kept
+// here rather than duplicated per-tool per the brief's explicit "Salary
+// tools should reuse the Purchasing Power Engine whenever possible"
+// instruction — Raise Reality Check, Salary Required, Future Salary
+// Projection and Savings Erosion all reduce to one of the two functions
+// below.
+
+/**
+ * Precise real (inflation-adjusted) rate of change from a nominal rate and
+ * an inflation rate, using compounding — NOT the common shorthand
+ * `nominal - inflation`, which is only a linear approximation. E.g. a 10%
+ * nominal raise against 12% inflation is a real change of
+ * ((1.10/1.12)-1)*100 = -1.79%, not -2%. Both inputs are percentages
+ * (e.g. 10 for 10%).
+ */
+export function computeRealRateChange(nominalPct: number, inflationPct: number): number {
+  return ((1 + nominalPct / 100) / (1 + inflationPct / 100) - 1) * 100;
+}
+
+/** Compounds `baseValue` forward by a constant annual `ratePct` over `years` — the nominal projection primitive every multi-year salary/savings tool needs. */
+export function projectCompounding(baseValue: number, ratePct: number, years: number): number {
+  return baseValue * Math.pow(1 + ratePct / 100, years);
+}
+
+/** Real (today's-purchasing-power) value of a nominal amount after `years` of `inflationPct` compounding — the multi-year generalization of deflate(), for when the two comparison points are "now" and "N years from now at a constant rate" rather than two real index observations. */
+export function deflateCompounding(nominalValue: number, inflationPct: number, years: number): number {
+  return nominalValue / Math.pow(1 + inflationPct / 100, years);
+}
+
+export interface ProjectionYearPoint {
+  year: number;
+  nominalValue: number;
+  realValue: number;
+}
+
+/**
+ * Year-by-year nominal and real value path of `baseValue` growing at
+ * `growthPct` annually while inflation runs at `inflationPct` — the shared
+ * data shape behind Future Salary Projection's chart and Savings Erosion's
+ * chart alike (a salary growing at a raise rate and idle savings growing
+ * at 0% are both just this function called with a different `growthPct`).
+ * Year 0 is the starting point (both values equal baseValue).
+ */
+export function buildProjectionSeries(baseValue: number, growthPct: number, inflationPct: number, years: number): ProjectionYearPoint[] {
+  const points: ProjectionYearPoint[] = [];
+  for (let y = 0; y <= years; y++) {
+    const nominalValue = projectCompounding(baseValue, growthPct, y);
+    points.push({ year: y, nominalValue, realValue: deflateCompounding(nominalValue, inflationPct, y) });
+  }
+  return points;
+}
+
 /** Finds the series point closest to (but not after) `date` — used to resolve a user's "Base Year"/"Target Year" selection to the nearest real observation. */
 export function findNearestIndexPoint(series: CpiIndexPoint[], date: string): CpiIndexPoint | null {
   const eligible = series.filter((p) => p.observationDate <= date);

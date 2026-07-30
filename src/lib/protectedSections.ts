@@ -49,7 +49,20 @@ export const PROTECTED_EXACT_PATHS = [
   "/provincial-budget/rankings",
 ];
 
+// PROTECTED_SUBSECTIONS: the inverse of PROTECTED_EXACT_PATHS's hub-gated
+// shape — here the HUB itself (/decision-support-lab) is deliberately
+// public (Phase 3: "allow viewing the landing page, feature descriptions,
+// screenshots, methodology" for guests), while every route *underneath* it
+// (every calculator: /decision-support-lab/personal-inflation,
+// /budget-allocation, /purchasing-power, and every Income & Wealth tool
+// added after it) requires a signed-in user. Prefix-matched but excluding
+// the bare prefix itself — PROTECTED_SECTIONS' `pathname === prefix` branch
+// would incorrectly gate the hub too, which is exactly the behavior this
+// category exists to avoid.
+export const PROTECTED_SUBSECTIONS = ["/decision-support-lab"];
+
 export function isProtectedPath(pathname: string): boolean {
   if (PROTECTED_EXACT_PATHS.includes(pathname)) return true;
-  return PROTECTED_SECTIONS.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
+  if (PROTECTED_SECTIONS.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))) return true;
+  return PROTECTED_SUBSECTIONS.some((prefix) => pathname.startsWith(`${prefix}/`));
 }

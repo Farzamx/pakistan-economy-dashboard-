@@ -89,11 +89,52 @@ export function generateIncomeErosionInsight(realValueLossPct: number, periodLab
   };
 }
 
+// Phase 3 — Income & Wealth Intelligence rules. Same deterministic,
+// threshold-only approach as the rules above: a raise/savings result is
+// either notably good, notably bad, or not worth a callout.
+const REAL_RAISE_NEUTRAL_BAND_PCT = 0.5;
+const SAVINGS_EROSION_THRESHOLD_PCT = 10;
+
+/** Whether a raise actually grew real income, shrank it, or was roughly a wash — the deterministic verdict behind Raise Reality Check's headline. */
+export function generateRealRaiseInsight(realChangePct: number): Insight | null {
+  if (Math.abs(realChangePct) <= REAL_RAISE_NEUTRAL_BAND_PCT) {
+    return {
+      id: "real-raise",
+      tone: "neutral",
+      message: `Your raise roughly kept pace with inflation — your real (inflation-adjusted) income changed by only ${realChangePct.toFixed(1)}%.`,
+    };
+  }
+  if (realChangePct < 0) {
+    return {
+      id: "real-raise",
+      tone: "warning",
+      message: `Despite the nominal raise, inflation outpaced it — your real income actually fell ${Math.abs(realChangePct).toFixed(1)}%.`,
+    };
+  }
+  return {
+    id: "real-raise",
+    tone: "positive",
+    message: `Your raise outpaced inflation — your real income grew ${realChangePct.toFixed(1)}% after accounting for rising prices.`,
+  };
+}
+
+/** Whether idle savings have lost enough real value over the horizon to be worth flagging. */
+export function generateSavingsErosionInsight(erosionPct: number, years: number): Insight | null {
+  if (erosionPct <= SAVINGS_EROSION_THRESHOLD_PCT) return null;
+  return {
+    id: "savings-erosion",
+    tone: "warning",
+    message: `Left idle for ${years} year${years === 1 ? "" : "s"} at this inflation rate, your savings would lose ${erosionPct.toFixed(1)}% of their real purchasing power.`,
+  };
+}
+
 export interface PersonalInsightsInput {
   contributions?: CategoryContribution[];
   personalCpiPct?: number;
   officialCpiPct?: number;
   incomeErosion?: { realValueLossPct: number; periodLabel: string };
+  realRaiseChangePct?: number;
+  savingsErosion?: { erosionPct: number; years: number };
 }
 
 /** Runs every applicable rule against whatever inputs are available and returns only the insights that actually fired — callers don't need to know which rules exist, just what data they can supply. */
@@ -116,6 +157,16 @@ export function generatePersonalInsights(input: PersonalInsightsInput): Insight[
   if (input.incomeErosion) {
     const erosion = generateIncomeErosionInsight(input.incomeErosion.realValueLossPct, input.incomeErosion.periodLabel);
     if (erosion) insights.push(erosion);
+  }
+
+  if (input.realRaiseChangePct !== undefined) {
+    const raise = generateRealRaiseInsight(input.realRaiseChangePct);
+    if (raise) insights.push(raise);
+  }
+
+  if (input.savingsErosion) {
+    const savings = generateSavingsErosionInsight(input.savingsErosion.erosionPct, input.savingsErosion.years);
+    if (savings) insights.push(savings);
   }
 
   return insights;

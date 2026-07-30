@@ -47,6 +47,39 @@ const ICONS: Record<string, (props: IconProps) => React.ReactElement> = {
       <path d="M15 3.5A9 9 0 0 1 20.5 9H15V3.5Z" />
     </Base>
   ),
+  // Raise Reality Check — a payslip with a check/cross split
+  "raise-reality-check": (p) => (
+    <Base {...p}>
+      <rect x="4" y="3" width="16" height="18" rx="1.5" />
+      <path d="M8 8h8M8 12h5" />
+      <path d="M8 16.5l2 2 4-4" />
+    </Base>
+  ),
+  // Salary Required — a target with an arrow
+  "salary-required": (p) => (
+    <Base {...p}>
+      <circle cx="12" cy="12" r="8" />
+      <circle cx="12" cy="12" r="3.5" />
+      <path d="M17 3l-3.5 6.5M20.5 6.5 14 10" />
+    </Base>
+  ),
+  // Future Salary Projection — an ascending line with dots
+  "future-salary-projection": (p) => (
+    <Base {...p}>
+      <path d="M3 18l5-5 4 3 8-9" />
+      <circle cx="3" cy="18" r="1.4" />
+      <circle cx="8" cy="13" r="1.4" />
+      <circle cx="12" cy="16" r="1.4" />
+      <circle cx="20" cy="7" r="1.4" />
+    </Base>
+  ),
+  // Personal Economic Health Score — a heartbeat pulse in a shield
+  "health-score": (p) => (
+    <Base {...p}>
+      <path d="M12 3l7 3v6c0 5-3.5 7.5-7 9-3.5-1.5-7-4-7-9V6l7-3Z" />
+      <path d="M8 12h2l1.5-3 2 6 1.5-3H16" />
+    </Base>
+  ),
   // Inflation Impact — a gauge
   "inflation-impact": (p) => (
     <Base {...p}>

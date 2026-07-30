@@ -1,10 +1,21 @@
-import Link from "next/link";
 import { T } from "@/components/T";
+import ProtectedLink from "@/components/ProtectedLink";
 import { ToolIcon } from "@/components/decisionSupportLab/toolIcons";
 import type { ToolDefinition } from "@/lib/decisionSupportLab/tools";
 
 interface Props {
   tool: ToolDefinition;
+  /** Server-computed (no client flash) — purely for the visual "sign in required" treatment. The actual click-time gate is ProtectedLink's own live auth check plus proxy.ts's server-side redirect; this prop never substitutes for either. */
+  isAuthenticated: boolean;
+}
+
+function LockIcon({ className = "h-3 w-3" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="5" y="11" width="14" height="9" rx="1.5" />
+      <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+    </svg>
+  );
 }
 
 /**
@@ -14,9 +25,17 @@ interface Props {
  * not a consumer app" design brief. Available tools are a real link;
  * coming-soon cards are static (no href, no hover affordance implying
  * they're clickable).
+ *
+ * Phase 3: the Lab is now sign-in-gated (protectedSections.ts's
+ * PROTECTED_SUBSECTIONS), so an "available" tool renders through
+ * ProtectedLink rather than a plain Link — for a signed-in visitor it
+ * behaves exactly like Link; for a signed-out one it intercepts the click
+ * and shows the same GuestAccessModal every other premium section uses,
+ * with proxy.ts's server-side redirect as the backstop for direct links.
  */
-export default function ToolCard({ tool }: Props) {
+export default function ToolCard({ tool, isAuthenticated }: Props) {
   const isAvailable = tool.status === "available";
+  const showLock = isAvailable && !isAuthenticated;
 
   const body = (
     <>
@@ -47,9 +66,15 @@ export default function ToolCard({ tool }: Props) {
           <T tKey={tool.estimatedReleaseKey} />
         </p>
       )}
-      {isAvailable && (
+      {isAvailable && !showLock && (
         <span className="mt-4 inline-flex items-center gap-1 text-xs font-medium text-neon-blue">
           <T tKey="decisionSupportLab.openTool" /> <span aria-hidden="true">→</span>
+        </span>
+      )}
+      {showLock && (
+        <span className="mt-4 inline-flex items-center gap-1.5 text-xs font-medium text-amber-400">
+          <LockIcon />
+          <T tKey="decisionSupportLab.signInRequired" />
         </span>
       )}
     </>
@@ -57,12 +82,12 @@ export default function ToolCard({ tool }: Props) {
 
   if (isAvailable && tool.href) {
     return (
-      <Link
+      <ProtectedLink
         href={tool.href}
         className="glass-card flex flex-col rounded-xl p-5 transition-all hover:-translate-y-0.5 hover:border-neon-blue/40 focus-visible:-translate-y-0.5 focus-visible:border-neon-blue/40"
       >
         {body}
-      </Link>
+      </ProtectedLink>
     );
   }
 

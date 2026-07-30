@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
 import Sidebar from "@/components/Sidebar";
 import DecisionSupportHero from "@/components/decisionSupportLab/DecisionSupportHero";
+import DecisionSupportGuestBanner from "@/components/decisionSupportLab/DecisionSupportGuestBanner";
 import EconomicIdentityPanel from "@/components/decisionSupportLab/EconomicIdentityPanel";
+import EconomicIdentityGuestPrompt from "@/components/decisionSupportLab/EconomicIdentityGuestPrompt";
 import ToolGrid from "@/components/decisionSupportLab/ToolGrid";
+import { createClient } from "@/lib/supabase/server";
 import { SITE_URL, SITE_NAME } from "@/lib/seoConfig";
 
 const PAGE_URL = `${SITE_URL}/decision-support-lab`;
@@ -18,19 +21,27 @@ export const metadata: Metadata = {
   twitter: { card: "summary_large_image", title: TITLE, description: DESCRIPTION },
 };
 
-// Same ISR cadence as the rest of the Lab's static shell — the tool
-// registry and landing copy change on a release cadence, not per-request.
-export const revalidate = 3600;
+// No `revalidate`/ISR export here (Phase 3): this page now reads the
+// visitor's own session via createClient() -> cookies(), a Dynamic API
+// that Next.js renders per-request regardless of any cache config — the
+// landing page's content (locked vs. unlocked tool cards, the guest
+// banner, Economic Identity vs. its guest prompt) genuinely differs per
+// visitor, so it must not be served from a shared static cache.
 
-export default function DecisionSupportLabPage() {
+export default async function DecisionSupportLabPage() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const isAuthenticated = Boolean(user);
+
   return (
     <div className="flex min-h-screen w-full">
       <Sidebar />
       <main className="min-w-0 flex-1 px-6 py-8 sm:px-10 lg:px-16">
         <div className="flex flex-col gap-10">
           <DecisionSupportHero />
-          <EconomicIdentityPanel />
-          <ToolGrid />
+          {!isAuthenticated && <DecisionSupportGuestBanner />}
+          {isAuthenticated ? <EconomicIdentityPanel /> : <EconomicIdentityGuestPrompt />}
+          <ToolGrid isAuthenticated={isAuthenticated} />
         </div>
       </main>
     </div>
