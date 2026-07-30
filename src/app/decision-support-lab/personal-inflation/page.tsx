@@ -4,8 +4,6 @@ import Sidebar from "@/components/Sidebar";
 import { T } from "@/components/T";
 import PersonalInflationHero from "@/components/personalInflation/PersonalInflationHero";
 import PersonalInflationCalculator from "@/components/personalInflation/PersonalInflationCalculator";
-import ExplainTheMath from "@/components/decisionSupportLab/ExplainTheMath";
-import EducationalPanel from "@/components/decisionSupportLab/EducationalPanel";
 import { getLatestCpiCategoryBreakdown } from "@/lib/data/cpiCategoryBreakdown";
 import { SITE_URL, SITE_NAME } from "@/lib/seoConfig";
 
@@ -13,7 +11,6 @@ const PAGE_URL = `${SITE_URL}/decision-support-lab/personal-inflation`;
 const TITLE = "Personal Inflation Calculator — What's Your Real Inflation Rate? | PEIC Decision Support Lab";
 const DESCRIPTION =
   "Official CPI measures the average Pakistani household. Enter your own spending pattern across PBS's 12 official categories and discover the inflation rate you're actually experiencing.";
-const SOURCE_URL = "https://www.pbs.gov.pk/";
 
 export const metadata: Metadata = {
   title: TITLE,
@@ -97,28 +94,6 @@ export default async function PersonalInflationPage() {
           <PersonalInflationHero />
 
           <PersonalInflationCalculator breakdown={breakdown} />
-
-          {breakdown && (
-            <ExplainTheMath
-              formula="Personal Rate = Σ (your weight_i × official inflation_i), for each of PBS's 12 groups"
-              variables={[
-                { symbol: "your weight_i", description: "The share of your monthly spending allocated to group i" },
-                { symbol: "official inflation_i", description: "PBS's published year-on-year inflation rate for group i" },
-                { symbol: "Σ", description: "Sum across all 12 official CPI groups" },
-              ]}
-              methodology="This is the same weighted-average method the Pakistan Bureau of Statistics uses to compute the national CPI — the only difference is whose spending weights are used: the average household's (official CPI) or yours (personal rate)."
-              sourceName="Pakistan Bureau of Statistics — Monthly Inflation Report"
-              sourceUrl={SOURCE_URL}
-              lastUpdated={breakdown.observationDate}
-            />
-          )}
-
-          <EducationalPanel
-            whatDoesThisMean="Your personal inflation rate is the year-on-year price increase your own household actually experiences, based on how you split your spending across food, housing, transport, and PBS's other official categories — as opposed to the official CPI, which reflects the spending pattern of an average Pakistani household."
-            whyDifferent="Every household spends differently. If you spend more than average on a category where prices rose sharply (like Transport in a fuel-price spike), your personal rate runs higher than the headline figure — and lower if you spend less on it."
-            howCalculated="For each of PBS's 12 official groups, your reported spending share is multiplied by that group's official year-on-year inflation rate, and the results are summed — see Explain the Math above for the full formula."
-            sources={["Pakistan Bureau of Statistics — Monthly Inflation Report (category-level group weights and YoY inflation)", "Same PBS release already used for PEIC's headline CPI/Core inflation figures"]}
-          />
 
           <section className="glass-card flex flex-col gap-4 rounded-2xl p-6 sm:p-8">
             <h2 className="text-xl font-semibold text-white light:text-slate-900">

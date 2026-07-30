@@ -486,8 +486,27 @@ export interface Translations {
     identityCurrency: string; identityCurrencyNote: string; identityCurrencyLabel: string;
     useIdentitySuggestion: string;
     explainTheMathTitle: string; explainSource: string; explainLastUpdated: string;
+    explainAssumptions: string; explainLimitations: string; explainFrequency: string;
     educationTitle: string;
     eduWhatQuestion: string; eduWhyQuestion: string; eduHowQuestion: string; eduSourcesQuestion: string;
     downloadReport: string; generatingReport: string;
+    decisionPanelTitle: string; whatHappenedQuestion: string; whyHappenedQuestion: string;
+    whatToUnderstandQuestion: string; relatedToolsLabel: string; suggestedNextLabel: string;
+    insightsTitle: string;
+    dataNotYetAvailableTitle: string; dataNotYetAvailableDesc: string;
+  };
+
+  budgetAllocation: {
+    eyebrow: string; title: string; subtitle: string; cta: string;
+    compositionTitle: string;
+  };
+
+  purchasingPower: {
+    eyebrow: string; title: string; subtitle: string; cta: string;
+    amountLabel: string; baseYearLabel: string; targetYearLabel: string; sourceLabel: string;
+    resultsTitle: string; purchasingPowerTodayLabel: string; inflationLossLabel: string;
+    percentChangeLabel: string; realValueLabel: string; inflationAdjustedLabel: string;
+    timelineTitle: string; waterfallTitle: string; comparisonTitle: string;
+    asOfLabel: string; sourceOneLabel: string;
   };
 }

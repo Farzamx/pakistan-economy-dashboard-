@@ -11,6 +11,7 @@ import type { SyncResult, SyncProvenance } from "@/lib/economicCalendar/automati
 import { invalidate } from "@/lib/memoryCache";
 import { canonicalObsCacheKey } from "@/lib/data/canonicalObservation";
 import { storeCpiCategoryBreakdown, type CpiCategoryRow } from "@/lib/data/cpiCategoryBreakdown";
+import { storeCpiMonthlyIndex, type CpiIndexUpsertRow } from "@/lib/data/cpiMonthlyIndex";
 
 // PBS CPI Sync — Phase 7 Step 5
 //
@@ -469,6 +470,13 @@ export async function syncCpiFromPbs(): Promise<SyncResult[]> {
   // blocks or retries the CPI/Core writes above.
   results.push(await writeCategoryBreakdownResult(pbsData, entryMs));
 
+  // Monthly index series (Purchasing Power Calculator's underlying data,
+  // migration 0044) — a genuinely separate PBS source (the SDMX index
+  // file, not the PDF), so this is its own network call. Additive/
+  // non-critical, same as the category breakdown: never blocks or retries
+  // the CPI/Core writes above.
+  results.push(await writeMonthlyIndexResult(entryMs));
+
   return results;
 }
 
@@ -503,5 +511,93 @@ async function writeCategoryBreakdownResult(pbsData: CpiPbsResult, entryMs: numb
     detail: `${pbsData.categoryGroups.length} groups written for ${pbsData.obsDate}`,
     durationMs: Date.now() - entryMs,
     observationPeriod: pbsData.obsDate,
+  };
+}
+
+// ── Monthly CPI index sync (Purchasing Power Calculator, migration 0044) ──
+//
+// PBS publishes the National CPI index level itself (not just YoY % change)
+// as a small SDMX-XML file — a genuinely different artifact from the PDF
+// this module otherwise parses, but from the same official source. This is
+// the only place in the codebase with real INDEX LEVEL history (needed for
+// "what is Rs X from month A worth in month B" deflation math), so it's
+// synced monthly here rather than reconstructed from YoY percentages
+// (compounding monthly YoY figures would accumulate rounding error a
+// direct index reading avoids).
+const CPI_MONTHLY_INDEX_XML_URL = "https://www.pbs.gov.pk/wp-content/uploads/2020/07/CPI.xml";
+const MONTHLY_INDEX_SLUG = "cpi-monthly-index";
+
+/**
+ * Extracts the overall National CPI index series (indicator PCPI_IX) from
+ * PBS's SDMX XML. Returns every point in the file (not just the latest) —
+ * store_cpi_monthly_index() upserts on observation_date, so re-sending
+ * already-known months is a harmless no-op and lets this self-heal any
+ * previously-missed month. Never throws: returns null on any parse/shape
+ * failure so this stays additive/non-blocking, same as the category table.
+ */
+function parseCpiMonthlyIndexXml(xml: string): CpiIndexUpsertRow[] | null {
+  const seriesMatch = xml.match(/<Series DATA_DOMAIN="CPI" REF_AREA="PK" INDICATOR="PCPI_IX"[^>]*>(.*?)<\/Series>/);
+  if (!seriesMatch) return null;
+
+  const rows: CpiIndexUpsertRow[] = [];
+  const obsRe = /<Obs TIME_PERIOD="(\d{4})-(\d{2})" OBS_VALUE="([\d.]+)"\s*\/>/g;
+  for (const m of seriesMatch[1].matchAll(obsRe)) {
+    const year = parseInt(m[1], 10);
+    const month = parseInt(m[2], 10);
+    const value = parseFloat(m[3]);
+    if (isNaN(year) || isNaN(month) || isNaN(value) || month < 1 || month > 12) continue;
+    // Plausibility guard: this index (base 2015-16 = 100) has never been
+    // below 100 or above 1000 in the modern data era — a value outside
+    // this band indicates a parse error, not a real observation.
+    if (value < 100 || value > 1000) continue;
+    const lastDay = new Date(year, month, 0).getDate();
+    const observationDate = `${year}-${String(month).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
+    rows.push({ observationDate, indexValue: Math.round(value * 100) / 100 });
+  }
+  return rows.length > 0 ? rows : null;
+}
+
+async function writeMonthlyIndexResult(entryMs: number): Promise<SyncResult> {
+  let rows: CpiIndexUpsertRow[] | null;
+  try {
+    const res = await fetch(CPI_MONTHLY_INDEX_XML_URL, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS), cache: "no-store" });
+    if (!res.ok) throw new Error(`PBS CPI index XML fetch returned ${res.status}`);
+    const xml = await res.text();
+    rows = parseCpiMonthlyIndexXml(xml);
+  } catch (err) {
+    return {
+      seriesSlug: MONTHLY_INDEX_SLUG,
+      status: "error",
+      detail: `PBS CPI index XML fetch/parse failed: ${err instanceof Error ? err.message : String(err)}`,
+      durationMs: Date.now() - entryMs,
+    };
+  }
+
+  if (!rows) {
+    return {
+      seriesSlug: MONTHLY_INDEX_SLUG,
+      status: "skipped-not-configured",
+      detail: "PBS CPI index XML did not contain a parseable PCPI_IX series.",
+      durationMs: Date.now() - entryMs,
+    };
+  }
+
+  const workerSecret = process.env.NOTIFICATION_WORKER_SECRET ?? "";
+  const result = await storeCpiMonthlyIndex(rows, CPI_MONTHLY_INDEX_XML_URL, workerSecret);
+
+  if (!result.success) {
+    return {
+      seriesSlug: MONTHLY_INDEX_SLUG,
+      status: "error",
+      detail: result.error ?? "store_cpi_monthly_index failed",
+      durationMs: Date.now() - entryMs,
+    };
+  }
+  return {
+    seriesSlug: MONTHLY_INDEX_SLUG,
+    status: "synced",
+    detail: `${rows.length} months written (latest: ${rows[rows.length - 1].observationDate})`,
+    durationMs: Date.now() - entryMs,
+    observationPeriod: rows[rows.length - 1].observationDate,
   };
 }

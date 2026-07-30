@@ -12,6 +12,12 @@ export interface ExplainTheMathProps {
   sourceName: string;
   sourceUrl?: string;
   lastUpdated: string;
+  /** e.g. "Monthly" — how often the underlying official data itself refreshes (Phase 2 addition, optional so Phase 1 call sites keep compiling unchanged). */
+  dataFrequency?: string;
+  /** Plain-English assumptions the calculation makes (e.g. "Assumes your reported spending share stays constant across the period"). */
+  assumptions?: string[];
+  /** Known limitations/caveats — institutional transparency about what this number does NOT capture. */
+  limitations?: string[];
 }
 
 /**
@@ -21,7 +27,17 @@ export interface ExplainTheMathProps {
  * markup baked in) rather than each tool hand-rolling its own version of
  * this block.
  */
-export default function ExplainTheMath({ formula, variables, methodology, sourceName, sourceUrl, lastUpdated }: ExplainTheMathProps) {
+export default function ExplainTheMath({
+  formula,
+  variables,
+  methodology,
+  sourceName,
+  sourceUrl,
+  lastUpdated,
+  dataFrequency,
+  assumptions,
+  limitations,
+}: ExplainTheMathProps) {
   return (
     <section className="glass-card rounded-xl p-5 sm:p-6">
       <h2 className="text-base font-semibold text-white light:text-slate-900">
@@ -43,6 +59,32 @@ export default function ExplainTheMath({ formula, variables, methodology, source
 
       <p className="mt-4 text-sm leading-relaxed text-white/60 light:text-slate-500">{methodology}</p>
 
+      {assumptions && assumptions.length > 0 && (
+        <div className="mt-4">
+          <p className="text-label text-white/40 light:text-slate-400">
+            <T tKey="decisionSupportLab.explainAssumptions" />
+          </p>
+          <ul className="mt-1.5 list-inside list-disc text-sm leading-relaxed text-white/60 light:text-slate-500">
+            {assumptions.map((a, i) => (
+              <li key={i}>{a}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {limitations && limitations.length > 0 && (
+        <div className="mt-4">
+          <p className="text-label text-white/40 light:text-slate-400">
+            <T tKey="decisionSupportLab.explainLimitations" />
+          </p>
+          <ul className="mt-1.5 list-inside list-disc text-sm leading-relaxed text-white/60 light:text-slate-500">
+            {limitations.map((l, i) => (
+              <li key={i}>{l}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       <div className="section-divider mt-4 flex flex-wrap items-center gap-x-2 gap-y-1 pt-3 text-xs text-white/40 light:text-slate-400">
         <span>
           <T tKey="decisionSupportLab.explainSource" />:
@@ -53,6 +95,14 @@ export default function ExplainTheMath({ formula, variables, methodology, source
           </a>
         ) : (
           <span>{sourceName}</span>
+        )}
+        {dataFrequency && (
+          <>
+            <span className="text-white/20 light:text-slate-300">·</span>
+            <span>
+              <T tKey="decisionSupportLab.explainFrequency" />: {dataFrequency}
+            </span>
+          </>
         )}
         <span className="text-white/20 light:text-slate-300">·</span>
         <span>

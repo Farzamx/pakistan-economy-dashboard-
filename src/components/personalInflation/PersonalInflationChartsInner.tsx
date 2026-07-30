@@ -2,32 +2,17 @@
 
 import { useRef } from "react";
 import { useInView } from "framer-motion";
-import { Bar, BarChart, CartesianGrid, Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { useSafeReducedMotion } from "@/hooks/useSafeReducedMotion";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { useLanguage } from "@/components/LanguageProvider";
 import { useChartTheme } from "@/lib/decisionSupportLab/chartTheme";
+import SpendingCompositionDonut from "@/components/decisionSupportLab/SpendingCompositionDonut";
 import type { PersonalInflationResult } from "@/lib/personalInflation/engine";
 import { CPI_GROUP_BY_NO } from "@/lib/personalInflation/cpiGroups";
 
 interface Props {
   result: PersonalInflationResult;
-}
-
-const RADIAN = Math.PI / 180;
-
-function makeRingLabel(fontSize: number) {
-  return function RingLabel({ cx = 0, cy = 0, midAngle = 0, innerRadius = 0, outerRadius = 0, percent = 0 }: { cx?: number; cy?: number; midAngle?: number; innerRadius?: number; outerRadius?: number; percent?: number }) {
-    if (percent < 0.03) return null;
-    const radius = innerRadius + (outerRadius - innerRadius) * 0.58;
-    const x = cx + radius * Math.cos(-midAngle * RADIAN);
-    const y = cy + radius * Math.sin(-midAngle * RADIAN);
-    return (
-      <text x={x} y={y} textAnchor="middle" dominantBaseline="central" fontSize={fontSize} fontWeight={700} fill="#fff" stroke="rgba(0,0,0,0.45)" strokeWidth={3} paintOrder="stroke">
-        {`${(percent * 100).toFixed(0)}%`}
-      </text>
-    );
-  };
 }
 
 export default function PersonalInflationChartsInner({ result }: Props) {
@@ -50,7 +35,7 @@ export default function PersonalInflationChartsInner({ result }: Props) {
 
   const compositionData = result.contributions
     .filter((c) => c.yourWeightPct > 0.05)
-    .map((c) => ({ label: c.groupName, value: c.yourWeightPct, color: colorForGroup(c.groupNo) }));
+    .map((c) => ({ label: c.groupName, value: c.yourWeightPct, color: CPI_GROUP_BY_NO.get(c.groupNo)?.color ?? "#828282" }));
 
   return (
     <div ref={containerRef} className="flex flex-col gap-8">
@@ -97,42 +82,8 @@ export default function PersonalInflationChartsInner({ result }: Props) {
       {/* Spending composition donut */}
       <div>
         <h3 className="mb-2 text-sm font-semibold text-white light:text-slate-900">{t("personalInflation.chartCompositionTitle")}</h3>
-        {shouldRender && (
-          <ResponsiveContainer width="100%" height={isMobile ? 420 : 320}>
-            <PieChart margin={isMobile ? { top: 0, right: 8, bottom: 0, left: 8 } : undefined}>
-              <Pie
-                data={compositionData}
-                dataKey="value"
-                nameKey="label"
-                cx="50%"
-                cy={isMobile ? "38%" : "50%"}
-                innerRadius={isMobile ? 48 : 70}
-                outerRadius={isMobile ? 78 : 120}
-                paddingAngle={1.5}
-                isAnimationActive={false}
-                label={makeRingLabel(isMobile ? 10 : 12)}
-                labelLine={false}
-              >
-                {compositionData.map((slice) => (
-                  <Cell key={slice.label} fill={slice.color} stroke="none" />
-                ))}
-              </Pie>
-              <Tooltip contentStyle={tooltipStyle} formatter={(v) => [`${typeof v === "number" ? v.toFixed(1) : v}%`, ""]} />
-              <Legend
-                wrapperStyle={{ fontSize: isMobile ? 11 : 12, color: axisTickFill, lineHeight: isMobile ? "1.6" : undefined }}
-                layout="vertical"
-                align={isMobile ? "center" : "right"}
-                verticalAlign={isMobile ? "bottom" : "middle"}
-                iconSize={isMobile ? 9 : 10}
-              />
-            </PieChart>
-          </ResponsiveContainer>
-        )}
+        {shouldRender && <SpendingCompositionDonut data={compositionData} />}
       </div>
     </div>
   );
-}
-
-function colorForGroup(groupNo: number): string {
-  return CPI_GROUP_BY_NO.get(groupNo)?.color ?? "#828282";
 }

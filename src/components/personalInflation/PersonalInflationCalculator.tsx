@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useLanguage } from "@/components/LanguageProvider";
 import AllocationSummaryPanel from "@/components/personalInflation/AllocationSummaryPanel";
 import CategoryAllocationInput, { type InputMode } from "@/components/personalInflation/CategoryAllocationInput";
@@ -10,11 +10,17 @@ import ContributionTable from "@/components/personalInflation/ContributionTable"
 import PersonalInflationCharts from "@/components/personalInflation/PersonalInflationCharts";
 import ShareCard from "@/components/personalInflation/ShareCard";
 import ReportDownloadButton from "@/components/decisionSupportLab/ReportDownloadButton";
+import PersonalInsightsPanel from "@/components/decisionSupportLab/PersonalInsightsPanel";
+import DecisionSupportPanel from "@/components/decisionSupportLab/DecisionSupportPanel";
+import ExplainTheMath from "@/components/decisionSupportLab/ExplainTheMath";
+import EducationalPanel from "@/components/decisionSupportLab/EducationalPanel";
 import { CPI_GROUPS } from "@/lib/personalInflation/cpiGroups";
 import { SCENARIO_PRESETS } from "@/lib/personalInflation/scenarios";
 import { computePersonalInflation, type PersonalInflationResult } from "@/lib/personalInflation/engine";
 import { useSavedScenarios, saveScenario, deleteScenario, type SavedScenario } from "@/lib/personalInflation/localScenarios";
 import { useEconomicIdentity } from "@/lib/decisionSupportLab/economicIdentity";
+import { useHouseholdAllocation, setHouseholdAllocation, setAllocationValue, replaceAllocation } from "@/lib/decisionSupportLab/householdAllocation";
+import { generatePersonalInsights } from "@/lib/decisionSupportLab/insightEngine";
 import type { ReportDefinition } from "@/lib/decisionSupportLab/reportFramework";
 import type { CpiCategoryBreakdown } from "@/lib/data/cpiCategoryBreakdown";
 
@@ -55,53 +61,49 @@ interface Props {
 const DEFAULT_ALLOCATION_PCT = SCENARIO_PRESETS.find((s) => s.id === "family")?.allocationPct ?? {};
 const DEFAULT_MONTHLY_BUDGET = 60_000;
 
-function percentToSpending(pct: Record<number, number>, total: number): Record<number, number> {
-  const out: Record<number, number> = {};
-  for (const g of CPI_GROUPS) out[g.groupNo] = Math.round(((pct[g.groupNo] || 0) / 100) * total);
-  return out;
-}
-
 export default function PersonalInflationCalculator({ breakdown }: Props) {
   const { t } = useLanguage();
-  const [mode, setMode] = useState<InputMode>("percent");
-  const [monthlyBudget, setMonthlyBudget] = useState(DEFAULT_MONTHLY_BUDGET);
-  const [percentValues, setPercentValues] = useState<Record<number, number>>(DEFAULT_ALLOCATION_PCT);
-  const [spendingValues, setSpendingValues] = useState<Record<number, number>>(() => percentToSpending(DEFAULT_ALLOCATION_PCT, DEFAULT_MONTHLY_BUDGET));
   const savedScenarios = useSavedScenarios();
-  // Decision Support Lab's shared Economic Identity — if the visitor set a
-  // Monthly Spending figure on the Lab landing page, offer to reuse it here
-  // rather than silently overwriting whatever budget they've already
-  // typed. Demonstrates "future tools reuse this automatically" without a
-  // hydration-timing effect quietly rewriting state out from under the user.
   const identity = useEconomicIdentity();
+
+  // Phase 2: reads/writes the Lab's shared household allocation store
+  // (householdAllocation.ts) instead of its own local state — this is the
+  // "no duplicate inputs" fix: whatever you entered in the Budget
+  // Allocation Calculator shows up here automatically, and vice versa.
+  const shared = useHouseholdAllocation();
+  const hasStoredAllocation = Object.keys(shared.allocation).length > 0;
+  const mode: InputMode = hasStoredAllocation ? shared.mode : "percent";
+  const monthlyBudget = shared.monthlyBudget > 0 ? shared.monthlyBudget : DEFAULT_MONTHLY_BUDGET;
+  const allocation = hasStoredAllocation ? shared.allocation : DEFAULT_ALLOCATION_PCT;
+
   const hasIdentitySpending = identity.monthlySpending > 0 && identity.monthlySpending !== monthlyBudget;
 
-  const allocation = mode === "percent" ? percentValues : spendingValues;
   const totalAllocated = useMemo(() => CPI_GROUPS.reduce((s, g) => s + (allocation[g.groupNo] || 0), 0), [allocation]);
 
   function handleAllocationChange(groupNo: number, value: number) {
-    if (mode === "percent") setPercentValues((prev) => ({ ...prev, [groupNo]: value }));
-    else setSpendingValues((prev) => ({ ...prev, [groupNo]: value }));
+    if (!hasStoredAllocation) setHouseholdAllocation({ mode, monthlyBudget, allocation: { ...allocation, [groupNo]: value } });
+    else setAllocationValue(groupNo, value);
+  }
+
+  function handleModeChange(nextMode: InputMode) {
+    setHouseholdAllocation({ mode: nextMode, monthlyBudget, allocation });
+  }
+
+  function handleBudgetChange(nextBudget: number) {
+    setHouseholdAllocation({ mode, monthlyBudget: nextBudget, allocation });
   }
 
   function handleLoadPreset(allocationPct: Record<number, number>) {
-    setPercentValues(allocationPct);
-    setSpendingValues(percentToSpending(allocationPct, monthlyBudget || DEFAULT_MONTHLY_BUDGET));
+    replaceAllocation(allocationPct, "percent");
+    setHouseholdAllocation({ monthlyBudget: monthlyBudget || DEFAULT_MONTHLY_BUDGET });
   }
 
   function handleLoadSaved(scenario: SavedScenario) {
-    setMode(scenario.mode);
-    if (scenario.mode === "percent") {
-      setPercentValues(scenario.allocation);
-    } else {
-      setSpendingValues(scenario.allocation);
+    replaceAllocation(scenario.allocation, scenario.mode);
+    if (scenario.mode === "spending") {
       const total = Object.values(scenario.allocation).reduce((s, v) => s + v, 0);
-      if (total > 0) setMonthlyBudget(total);
+      if (total > 0) setHouseholdAllocation({ monthlyBudget: total });
     }
-  }
-
-  function handleDeleteSaved(id: string) {
-    deleteScenario(id);
   }
 
   function handleSaveCurrent(name: string) {
@@ -109,9 +111,7 @@ export default function PersonalInflationCalculator({ breakdown }: Props) {
   }
 
   function handleReset() {
-    setPercentValues(DEFAULT_ALLOCATION_PCT);
-    setMonthlyBudget(DEFAULT_MONTHLY_BUDGET);
-    setSpendingValues(percentToSpending(DEFAULT_ALLOCATION_PCT, DEFAULT_MONTHLY_BUDGET));
+    setHouseholdAllocation({ mode: "percent", monthlyBudget: DEFAULT_MONTHLY_BUDGET, allocation: DEFAULT_ALLOCATION_PCT });
   }
 
   // Memoized so typing in one input doesn't re-run the weighted-average
@@ -121,6 +121,11 @@ export default function PersonalInflationCalculator({ breakdown }: Props) {
     if (!breakdown) return null;
     return computePersonalInflation(allocation, breakdown.groups);
   }, [allocation, breakdown]);
+
+  const insights = useMemo(
+    () => (result ? generatePersonalInsights({ contributions: result.contributions, personalCpiPct: result.personalCpiPct, officialCpiPct: result.officialCpiPct }) : []),
+    [result],
+  );
 
   if (!breakdown) {
     return (
@@ -137,17 +142,17 @@ export default function PersonalInflationCalculator({ breakdown }: Props) {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 lg:items-start">
         <AllocationSummaryPanel
           mode={mode}
-          onModeChange={setMode}
+          onModeChange={handleModeChange}
           totalAllocated={totalAllocated}
           monthlyBudget={monthlyBudget}
-          onBudgetChange={setMonthlyBudget}
-          identitySuggestion={hasIdentitySpending ? { amount: identity.monthlySpending, onApply: () => setMonthlyBudget(identity.monthlySpending) } : undefined}
+          onBudgetChange={handleBudgetChange}
+          identitySuggestion={hasIdentitySpending ? { amount: identity.monthlySpending, onApply: () => handleBudgetChange(identity.monthlySpending) } : undefined}
         />
         <ScenarioPicker
           onLoadPreset={handleLoadPreset}
           savedScenarios={savedScenarios}
           onLoadSaved={handleLoadSaved}
-          onDeleteSaved={handleDeleteSaved}
+          onDeleteSaved={deleteScenario}
           onSaveCurrent={handleSaveCurrent}
         />
       </div>
@@ -173,6 +178,9 @@ export default function PersonalInflationCalculator({ breakdown }: Props) {
           generatingLabel={t("decisionSupportLab.generatingReport")}
         />
       )}
+
+      <PersonalInsightsPanel insights={insights} />
+
       {result && <ContributionTable contributions={result.contributions} monthlyBudget={monthlyBudget} />}
       {result && <PersonalInflationCharts result={result} />}
 
@@ -183,6 +191,41 @@ export default function PersonalInflationCalculator({ breakdown }: Props) {
           <span className="font-medium text-emerald-400">{t("personalInflation.verifiedBadge")}</span>
         </p>
       </div>
+
+      <ExplainTheMath
+        formula="Personal Rate = Σ (your weight_i × official inflation_i), for each of PBS's 12 groups"
+        variables={[
+          { symbol: "your weight_i", description: "The share of your monthly spending allocated to group i" },
+          { symbol: "official inflation_i", description: "PBS's published year-on-year inflation rate for group i" },
+          { symbol: "Σ", description: "Sum across all 12 official CPI groups" },
+        ]}
+        methodology="This is the same weighted-average method the Pakistan Bureau of Statistics uses to compute the national CPI — the only difference is whose spending weights are used: the average household's (official CPI) or yours (personal rate)."
+        sourceName="Pakistan Bureau of Statistics — Monthly Inflation Report"
+        sourceUrl="https://www.pbs.gov.pk/"
+        lastUpdated={breakdown.observationDate}
+        dataFrequency="Monthly"
+        assumptions={["Assumes your reported spending share stays roughly constant across the year.", "Uses National (not provincial or city-level) category inflation rates."]}
+        limitations={["Category inflation rates are National averages — actual prices you personally pay may differ by city or retailer.", "Does not account for one-off or irregular expenses (e.g. annual insurance premiums)."]}
+      />
+
+      <EducationalPanel
+        whatDoesThisMean="Your personal inflation rate is the year-on-year price increase your own household actually experiences, based on how you split your spending across food, housing, transport, and PBS's other official categories — as opposed to the official CPI, which reflects the spending pattern of an average Pakistani household."
+        whyDifferent="Every household spends differently. If you spend more than average on a category where prices rose sharply (like Transport in a fuel-price spike), your personal rate runs higher than the headline figure — and lower if you spend less on it."
+        howCalculated="For each of PBS's 12 official groups, your reported spending share is multiplied by that group's official year-on-year inflation rate, and the results are summed — see Explain the Math above for the full formula."
+        sources={["Pakistan Bureau of Statistics — Monthly Inflation Report (category-level group weights and YoY inflation)", "Same PBS release already used for PEIC's headline CPI/Core inflation figures"]}
+      />
+
+      <DecisionSupportPanel
+        whatHappened={result ? `You calculated a personal inflation rate of ${result.personalCpiPct.toFixed(1)}%, ${result.differencePct >= 0 ? "above" : "below"} the official CPI of ${result.officialCpiPct.toFixed(1)}%.` : "Enter your spending allocation to see your personal inflation rate."}
+        whyItHappened="Your spending mix — not just the national average — determines how much inflation you personally feel, since some categories rise faster than others."
+        whatToUnderstand="This same spending allocation carries over automatically to the Purchasing Power and Budget Allocation calculators — you won't need to re-enter it."
+        relatedTools={[{ title: "Budget Allocation Calculator", href: "/decision-support-lab/budget-allocation" }]}
+        suggestedNext={{
+          title: "See how this affects your Purchasing Power",
+          href: "/decision-support-lab/purchasing-power",
+          reason: "Now that you know your personal inflation rate, see what it means for the real value of your money over time.",
+        }}
+      />
     </div>
   );
 }
