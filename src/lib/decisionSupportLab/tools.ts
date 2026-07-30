@@ -9,7 +9,7 @@
 // category (ToolGrid.tsx), so "Income & Wealth Intelligence" reads as its
 // own part of the Lab rather than getting mixed into the original grid.
 export type ToolStatus = "available" | "coming-soon";
-export type ToolCategoryId = "core" | "income-wealth";
+export type ToolCategoryId = "core" | "income-wealth" | "time-value";
 
 export interface ToolDefinition {
   id: string;
@@ -34,6 +34,7 @@ export interface ToolCategory {
 export const TOOL_CATEGORIES: ToolCategory[] = [
   { id: "core", titleKey: "decisionSupportLab.toolsTitle", subtitleKey: "decisionSupportLab.toolsSubtitle" },
   { id: "income-wealth", titleKey: "decisionSupportLab.incomeWealthTitle", subtitleKey: "decisionSupportLab.incomeWealthSubtitle" },
+  { id: "time-value", titleKey: "decisionSupportLab.timeValueTitle", subtitleKey: "decisionSupportLab.timeValueSubtitle" },
 ];
 
 export const DECISION_SUPPORT_TOOLS: ToolDefinition[] = [
@@ -118,19 +119,59 @@ export const DECISION_SUPPORT_TOOLS: ToolDefinition[] = [
     estimatedReleaseKey: "decisionSupportLab.estimate.phase3",
   },
   {
-    id: "future-value",
-    category: "income-wealth",
-    titleKey: "decisionSupportLab.tool.futureValue.title",
-    descriptionKey: "decisionSupportLab.tool.futureValue.description",
-    status: "coming-soon",
-    estimatedReleaseKey: "decisionSupportLab.estimate.phase3",
-  },
-  {
     id: "present-value",
-    category: "income-wealth",
+    category: "time-value",
     titleKey: "decisionSupportLab.tool.presentValue.title",
     descriptionKey: "decisionSupportLab.tool.presentValue.description",
-    status: "coming-soon",
-    estimatedReleaseKey: "decisionSupportLab.estimate.phase3",
+    status: "available",
+    href: "/decision-support-lab/present-value",
+  },
+  {
+    id: "future-value",
+    category: "time-value",
+    titleKey: "decisionSupportLab.tool.futureValue.title",
+    descriptionKey: "decisionSupportLab.tool.futureValue.description",
+    status: "available",
+    href: "/decision-support-lab/future-value",
+  },
+  {
+    id: "compound-interest",
+    category: "time-value",
+    titleKey: "decisionSupportLab.tool.compoundInterest.title",
+    descriptionKey: "decisionSupportLab.tool.compoundInterest.description",
+    status: "available",
+    href: "/decision-support-lab/compound-interest",
+  },
+  {
+    id: "loan-emi",
+    category: "time-value",
+    titleKey: "decisionSupportLab.tool.loanEmi.title",
+    descriptionKey: "decisionSupportLab.tool.loanEmi.description",
+    status: "available",
+    href: "/decision-support-lab/loan-emi",
+  },
+  {
+    id: "annuity",
+    category: "time-value",
+    titleKey: "decisionSupportLab.tool.annuity.title",
+    descriptionKey: "decisionSupportLab.tool.annuity.description",
+    status: "available",
+    href: "/decision-support-lab/annuity",
+  },
+  {
+    id: "discount-factor-explorer",
+    category: "time-value",
+    titleKey: "decisionSupportLab.tool.discountFactorExplorer.title",
+    descriptionKey: "decisionSupportLab.tool.discountFactorExplorer.description",
+    status: "available",
+    href: "/decision-support-lab/discount-factor-explorer",
+  },
+  {
+    id: "formula-explorer",
+    category: "time-value",
+    titleKey: "decisionSupportLab.tool.formulaExplorer.title",
+    descriptionKey: "decisionSupportLab.tool.formulaExplorer.description",
+    status: "available",
+    href: "/decision-support-lab/formula-explorer",
   },
 ];

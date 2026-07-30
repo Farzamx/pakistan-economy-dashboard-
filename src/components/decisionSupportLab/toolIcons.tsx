@@ -80,6 +80,46 @@ const ICONS: Record<string, (props: IconProps) => React.ReactElement> = {
       <path d="M8 12h2l1.5-3 2 6 1.5-3H16" />
     </Base>
   ),
+  // Compound Interest — a stacked/accelerating bar growth
+  "compound-interest": (p) => (
+    <Base {...p}>
+      <path d="M4 20V14M10 20V10M16 20V6M4 14l6-4 6-4" />
+      <circle cx="20" cy="4.5" r="1.6" />
+    </Base>
+  ),
+  // Loan & EMI — a document with a payment checkmark
+  "loan-emi": (p) => (
+    <Base {...p}>
+      <rect x="4" y="3" width="14" height="18" rx="1.5" />
+      <path d="M7.5 8h7M7.5 12h7M7.5 16h4" />
+      <circle cx="18.5" cy="17.5" r="3.5" />
+      <path d="M17 17.5l1 1 2-2" />
+    </Base>
+  ),
+  // Annuity — repeating equal payment ticks along a line
+  annuity: (p) => (
+    <Base {...p}>
+      <path d="M3 12h18" />
+      <path d="M6 8v8M11 8v8M16 8v8" />
+      <path d="M20 9l1.5 3-1.5 3" />
+    </Base>
+  ),
+  // Discount Factor Explorer — a shrinking-toward-origin curve
+  "discount-factor-explorer": (p) => (
+    <Base {...p}>
+      <path d="M3 4v16h18" />
+      <path d="M4 6c4 0 8 3 16 12" />
+      <circle cx="4" cy="6" r="1.3" />
+      <circle cx="20" cy="18" r="1.3" />
+    </Base>
+  ),
+  // Financial Formula Explorer — an open book/reference
+  "formula-explorer": (p) => (
+    <Base {...p}>
+      <path d="M12 6.5c-1.8-1.3-4-2-6.5-2A2.5 2.5 0 0 0 3 7v11c2.5 0 4.7.7 6.5 2 1.8-1.3 4-2 6.5-2s4 .7 5.5 1.5V7A2.5 2.5 0 0 0 18.5 4.5c-2.5 0-4.7.7-6.5 2Z" />
+      <path d="M12 6.5V20" />
+    </Base>
+  ),
   // Inflation Impact — a gauge
   "inflation-impact": (p) => (
     <Base {...p}>

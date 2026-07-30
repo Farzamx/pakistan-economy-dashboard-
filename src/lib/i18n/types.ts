@@ -468,9 +468,15 @@ export interface Translations {
     trustSources: string; trustMethodology: string;
     toolsTitle: string; toolsSubtitle: string;
     incomeWealthTitle: string; incomeWealthSubtitle: string;
+    timeValueTitle: string; timeValueSubtitle: string;
     statusAvailable: string; statusComingSoon: string; openTool: string; signInRequired: string;
     guestBannerTitle: string; guestBannerDesc: string;
     estimate: { phase2: string; phase3: string };
+    // Shared compounding-frequency option labels — Present Value, Future
+    // Value and Compound Interest all offer the same frequency select, so
+    // this lives once here rather than once per tool namespace.
+    compoundingMonthly: string; compoundingQuarterly: string; compoundingSemiannual: string;
+    compoundingAnnual: string; compoundingDaily: string; compoundingContinuous: string;
     tool: {
       personalInflation: { description: string };
       purchasingPower: { title: string; description: string };
@@ -484,6 +490,11 @@ export interface Translations {
       salaryRequired: { title: string; description: string };
       futureSalaryProjection: { title: string; description: string };
       healthScore: { title: string; description: string };
+      compoundInterest: { title: string; description: string };
+      loanEmi: { title: string; description: string };
+      annuity: { title: string; description: string };
+      discountFactorExplorer: { title: string; description: string };
+      formulaExplorer: { title: string; description: string };
     };
     identityTitle: string; identityDesc: string;
     identityGuestDesc: string; identityGuestCta: string;
@@ -565,5 +576,59 @@ export interface Translations {
     categoryPersonalInflation: string; categoryBudgetBalance: string; categoryPurchasingPower: string;
     categorySalaryGrowth: string; categorySavingsProtection: string; categoryInflationExposure: string;
     dataIncompleteTitle: string; dataIncompleteDesc: string;
+  };
+
+  presentValue: {
+    eyebrow: string; title: string; subtitle: string; cta: string;
+    futureValueLabel: string; discountRateLabel: string; yearsLabel: string; compoundingLabel: string;
+    resultsTitle: string; presentValueLabel: string; discountFactorLabel: string; realValueLabel: string;
+    timelineTitle: string; sensitivityTitle: string;
+  };
+
+  futureValue: {
+    eyebrow: string; title: string; subtitle: string; cta: string;
+    presentValueLabel: string; annualReturnLabel: string; yearsLabel: string; compoundingLabel: string;
+    resultsTitle: string; futureValueLabel: string; growthMultipleLabel: string; realFutureValueLabel: string;
+    timelineTitle: string;
+  };
+
+  compoundInterest: {
+    eyebrow: string; title: string; subtitle: string; cta: string;
+    principalLabel: string; rateLabel: string; yearsLabel: string; compoundingLabel: string;
+    resultsTitle: string; interestEarnedLabel: string; endingValueLabel: string; effectiveRateLabel: string;
+    growthCurveTitle: string; contributionBreakdownTitle: string;
+    principalSliceLabel: string; interestSliceLabel: string;
+  };
+
+  loanEmi: {
+    eyebrow: string; title: string; subtitle: string; cta: string;
+    loanAmountLabel: string; rateLabel: string; termYearsLabel: string; paymentFrequencyLabel: string;
+    resultsTitle: string; paymentLabel: string; totalInterestLabel: string; totalPrincipalLabel: string;
+    amortizationTitle: string; remainingBalanceTitle: string;
+    periodColumn: string; paymentColumn: string; principalColumn: string; interestColumn: string; balanceColumn: string;
+  };
+
+  annuity: {
+    eyebrow: string; title: string; subtitle: string; cta: string;
+    typeLabel: string; typeOrdinary: string; typeDue: string;
+    modeLabel: string; modeContribution: string; modeTarget: string;
+    paymentLabel: string; rateLabel: string; yearsLabel: string; targetValueLabel: string;
+    resultsTitle: string; presentValueLabel: string; futureValueLabel: string; requiredContributionLabel: string;
+    growthChartTitle: string;
+  };
+
+  discountFactorExplorer: {
+    eyebrow: string; title: string; subtitle: string; cta: string;
+    rateLabel: string; yearsLabel: string;
+    discountFactorLabel: string; presentValueMultiplierLabel: string;
+    chartTitle: string;
+  };
+
+  formulaExplorer: {
+    eyebrow: string; title: string; subtitle: string;
+    formulaLabel: string; variablesLabel: string; interpretationLabel: string; exampleLabel: string;
+    presentValueName: string; futureValueName: string; compoundInterestName: string; simpleInterestName: string;
+    continuousCompoundingName: string; discountFactorName: string; annuityPresentValueName: string;
+    annuityFutureValueName: string; loanPaymentName: string; effectiveAnnualRateName: string;
   };
 }

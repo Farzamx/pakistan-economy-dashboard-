@@ -128,6 +128,50 @@ export function generateSavingsErosionInsight(erosionPct: number, years: number)
   };
 }
 
+// Phase 4 — Time Value of Money rules. Same deterministic, threshold-only
+// approach: each rule fires only when the effect is large enough over a
+// long enough horizon to be worth a callout, never on every input change.
+const DISCOUNT_RATE_IMPACT_THRESHOLD_PCT = 8;
+const DISCOUNT_RATE_IMPACT_MIN_YEARS = 10;
+// Later-half growth must be at least this many times the earlier-half
+// growth before compounding's "back-loaded" shape is worth pointing out —
+// avoids firing on short/near-linear horizons where it isn't yet visible.
+const LATE_GROWTH_DOMINANCE_RATIO = 1.5;
+// Minimum effective-annual-rate improvement (percentage points) a switch
+// to monthly compounding would need to produce before it's worth
+// surfacing — a few basis points isn't a meaningful "materially improves."
+const FREQUENCY_UPGRADE_THRESHOLD_PP = 0.15;
+
+/** Whether the chosen discount rate, over a long enough horizon, meaningfully shrinks how much a future rupee is worth today — the deterministic callout behind Present Value / Discount Factor Explorer's "your rate matters a lot over time" message. */
+export function generateDiscountRateImpactInsight(discountRatePct: number, years: number): Insight | null {
+  if (discountRatePct < DISCOUNT_RATE_IMPACT_THRESHOLD_PCT || years < DISCOUNT_RATE_IMPACT_MIN_YEARS) return null;
+  return {
+    id: "discount-rate-impact",
+    tone: "warning",
+    message: `Your ${discountRatePct.toFixed(1)}% discount rate significantly reduces long-term value — at this rate, money received in ${years} years is worth only a fraction of its face amount today.`,
+  };
+}
+
+/** Whether growth in the second half of the horizon dwarfs growth in the first half — the concrete, numeric evidence behind "most of your investment growth happens in later years due to compounding." Callers supply the two halves' growth amounts (endingValue − startingValue for each half) rather than this module recomputing a series itself. */
+export function generateCompoundingAccelerationInsight(firstHalfGrowth: number, secondHalfGrowth: number): Insight | null {
+  if (firstHalfGrowth <= 0 || secondHalfGrowth / firstHalfGrowth < LATE_GROWTH_DOMINANCE_RATIO) return null;
+  return {
+    id: "compounding-acceleration",
+    tone: "positive",
+    message: "Most of your growth happens in the later years, not the earlier ones — compounding accelerates over time, so staying invested for the full horizon matters more than the early years suggest.",
+  };
+}
+
+/** Whether compounding more frequently (monthly) would meaningfully raise the effective annual rate compared to the visitor's chosen frequency — the deterministic evidence behind "a higher contribution/compounding frequency materially improves long-term wealth." */
+export function generateContributionFrequencyInsight(currentEffectiveAnnualRatePct: number, monthlyEffectiveAnnualRatePct: number): Insight | null {
+  if (monthlyEffectiveAnnualRatePct - currentEffectiveAnnualRatePct < FREQUENCY_UPGRADE_THRESHOLD_PP) return null;
+  return {
+    id: "contribution-frequency",
+    tone: "neutral",
+    message: `A higher compounding frequency would materially improve your long-term wealth — switching to monthly compounding would raise your effective annual rate from ${currentEffectiveAnnualRatePct.toFixed(2)}% to ${monthlyEffectiveAnnualRatePct.toFixed(2)}%.`,
+  };
+}
+
 export interface PersonalInsightsInput {
   contributions?: CategoryContribution[];
   personalCpiPct?: number;
@@ -135,6 +179,9 @@ export interface PersonalInsightsInput {
   incomeErosion?: { realValueLossPct: number; periodLabel: string };
   realRaiseChangePct?: number;
   savingsErosion?: { erosionPct: number; years: number };
+  discountRateImpact?: { discountRatePct: number; years: number };
+  compoundingAcceleration?: { firstHalfGrowth: number; secondHalfGrowth: number };
+  contributionFrequency?: { currentEffectiveAnnualRatePct: number; monthlyEffectiveAnnualRatePct: number };
 }
 
 /** Runs every applicable rule against whatever inputs are available and returns only the insights that actually fired — callers don't need to know which rules exist, just what data they can supply. */
@@ -167,6 +214,24 @@ export function generatePersonalInsights(input: PersonalInsightsInput): Insight[
   if (input.savingsErosion) {
     const savings = generateSavingsErosionInsight(input.savingsErosion.erosionPct, input.savingsErosion.years);
     if (savings) insights.push(savings);
+  }
+
+  if (input.discountRateImpact) {
+    const discountImpact = generateDiscountRateImpactInsight(input.discountRateImpact.discountRatePct, input.discountRateImpact.years);
+    if (discountImpact) insights.push(discountImpact);
+  }
+
+  if (input.compoundingAcceleration) {
+    const acceleration = generateCompoundingAccelerationInsight(input.compoundingAcceleration.firstHalfGrowth, input.compoundingAcceleration.secondHalfGrowth);
+    if (acceleration) insights.push(acceleration);
+  }
+
+  if (input.contributionFrequency) {
+    const frequency = generateContributionFrequencyInsight(
+      input.contributionFrequency.currentEffectiveAnnualRatePct,
+      input.contributionFrequency.monthlyEffectiveAnnualRatePct,
+    );
+    if (frequency) insights.push(frequency);
   }
 
   return insights;
