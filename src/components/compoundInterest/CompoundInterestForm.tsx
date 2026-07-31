@@ -33,7 +33,7 @@ export default function CompoundInterestForm({ principal, onPrincipalChange, rat
             min={0}
             step={1000}
             value={principal === 0 ? "" : principal}
-            placeholder="100000"
+            placeholder={t("decisionSupportLab.placeholderPrincipal")}
             onChange={(e) => {
               const parsed = parseFloat(e.target.value);
               onPrincipalChange(isNaN(parsed) ? 0 : Math.max(0, parsed));
@@ -54,7 +54,7 @@ export default function CompoundInterestForm({ principal, onPrincipalChange, rat
             inputMode="decimal"
             step={0.1}
             value={ratePct === 0 ? "" : ratePct}
-            placeholder="0"
+            placeholder={t("decisionSupportLab.placeholderInterestRate")}
             onChange={(e) => {
               const parsed = parseFloat(e.target.value);
               onRatePctChange(isNaN(parsed) ? 0 : parsed);

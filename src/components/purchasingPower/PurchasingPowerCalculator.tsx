@@ -26,7 +26,7 @@ interface Props {
   series: CpiIndexPoint[] | null;
 }
 
-const DEFAULT_AMOUNT = 100_000;
+const DEFAULT_AMOUNT = 0;
 
 export default function PurchasingPowerCalculator({ series }: Props) {
   const { t } = useLanguage();
@@ -123,6 +123,10 @@ export default function PurchasingPowerCalculator({ series }: Props) {
         targetYear={effectiveTargetYear}
         onTargetYearChange={setTargetYear}
       />
+
+      {amount <= 0 && (
+        <div className="rounded-lg border border-amber-400/25 bg-amber-500/10 px-4 py-3 text-sm text-amber-300">{t("decisionSupportLab.validationEnterAmount")}</div>
+      )}
 
       {result && <PurchasingPowerResults result={result} />}
 

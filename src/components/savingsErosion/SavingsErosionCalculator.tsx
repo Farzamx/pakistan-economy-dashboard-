@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useLanguage } from "@/components/LanguageProvider";
 import SavingsErosionForm from "@/components/savingsErosion/SavingsErosionForm";
+import InflationRateField from "@/components/decisionSupportLab/InflationRateField";
 import SavingsErosionResults from "@/components/savingsErosion/SavingsErosionResults";
 import SavingsErosionCharts from "@/components/savingsErosion/SavingsErosionCharts";
 import ToolShareCard from "@/components/decisionSupportLab/ToolShareCard";
@@ -38,7 +39,9 @@ export default function SavingsErosionCalculator({ breakdown }: Props) {
   const officialInflationPct = useMemo(() => (breakdown ? computeOfficialCpiPct(breakdown.groups) : 0), [breakdown]);
 
   const [savingsAmount, setSavingsAmountState] = useState(() => shared.savingsAmount);
-  const [inflationPct, setInflationPct] = useState(() => officialInflationPct);
+  const [useCustomInflation, setUseCustomInflation] = useState(false);
+  const [customInflationPct, setCustomInflationPct] = useState(0);
+  const inflationPct = useCustomInflation ? customInflationPct : officialInflationPct;
   const [years, setYearsState] = useState(() => shared.projectionYears);
 
   function setSavingsAmount(value: number) {
@@ -104,11 +107,25 @@ export default function SavingsErosionCalculator({ breakdown }: Props) {
       <SavingsErosionForm
         savingsAmount={savingsAmount}
         onSavingsAmountChange={setSavingsAmount}
-        inflationPct={inflationPct}
-        onInflationPctChange={setInflationPct}
         years={years}
         onYearsChange={setYears}
       />
+
+      <div className="glass-card rounded-xl p-4 sm:p-5">
+        <InflationRateField
+          autoValuePct={officialInflationPct}
+          autoLabel="Official Inflation (Latest)"
+          tooltipText="Calculated automatically from the latest official CPI data. Since this projects into a future period, you can adjust this assumption below."
+          useCustom={useCustomInflation}
+          onUseCustomChange={setUseCustomInflation}
+          customValuePct={customInflationPct}
+          onCustomValuePctChange={setCustomInflationPct}
+        />
+      </div>
+
+      {savingsAmount <= 0 && (
+        <div className="rounded-lg border border-amber-400/25 bg-amber-500/10 px-4 py-3 text-sm text-amber-300">{t("decisionSupportLab.validationEnterAmount")}</div>
+      )}
 
       {result && <SavingsErosionResults result={result} />}
 

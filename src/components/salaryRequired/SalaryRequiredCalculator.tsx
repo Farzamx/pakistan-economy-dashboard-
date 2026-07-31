@@ -100,6 +100,10 @@ export default function SalaryRequiredCalculator({ breakdown }: Props) {
         personalCpiAvailable={personalCpiAvailable}
       />
 
+      {currentSalary <= 0 && (
+        <div className="rounded-lg border border-amber-400/25 bg-amber-500/10 px-4 py-3 text-sm text-amber-300">{t("decisionSupportLab.validationEnterAmount")}</div>
+      )}
+
       {result && <SalaryRequiredResults result={result} />}
 
       {result && (

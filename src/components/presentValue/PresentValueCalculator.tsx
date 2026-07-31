@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useLanguage } from "@/components/LanguageProvider";
 import PresentValueForm from "@/components/presentValue/PresentValueForm";
+import InflationRateField from "@/components/decisionSupportLab/InflationRateField";
 import PresentValueResults from "@/components/presentValue/PresentValueResults";
 import PresentValueCharts from "@/components/presentValue/PresentValueCharts";
 import ToolShareCard from "@/components/decisionSupportLab/ToolShareCard";
@@ -26,17 +27,20 @@ export default function PresentValueCalculator({ breakdown }: Props) {
   const { t } = useLanguage();
   const officialInflationPct = useMemo(() => (breakdown ? computeOfficialCpiPct(breakdown.groups) : 0), [breakdown]);
 
-  const [futureValueAmount, setFutureValueAmount] = useState(100_000);
-  const [discountRatePct, setDiscountRatePct] = useState(10);
+  const [futureValueAmount, setFutureValueAmount] = useState(0);
+  const [discountRatePct, setDiscountRatePct] = useState(0);
   const [years, setYears] = useState(10);
   const [frequency, setFrequency] = useState<CompoundingFrequency>("annual");
+  const [useCustomInflation, setUseCustomInflation] = useState(false);
+  const [customInflationPct, setCustomInflationPct] = useState(0);
+  const realValueInflationPct = useCustomInflation ? customInflationPct : officialInflationPct;
 
   const presentValueAmount = useMemo(
     () => (futureValueAmount > 0 ? presentValueWithFrequency(futureValueAmount, discountRatePct, years, frequency) : 0),
     [futureValueAmount, discountRatePct, years, frequency],
   );
   const discountFactorValue = futureValueAmount > 0 ? presentValueAmount / futureValueAmount : 0;
-  const realValueAmount = useMemo(() => (futureValueAmount > 0 ? deflateCompounding(futureValueAmount, officialInflationPct, years) : 0), [futureValueAmount, officialInflationPct, years]);
+  const realValueAmount = useMemo(() => (futureValueAmount > 0 ? deflateCompounding(futureValueAmount, realValueInflationPct, years) : 0), [futureValueAmount, realValueInflationPct, years]);
 
   const insights = useMemo(() => generatePersonalInsights({ discountRateImpact: { discountRatePct, years } }), [discountRatePct, years]);
 
@@ -78,6 +82,22 @@ export default function PresentValueCalculator({ breakdown }: Props) {
         frequency={frequency}
         onFrequencyChange={setFrequency}
       />
+
+      <div className="glass-card rounded-xl p-4 sm:p-5">
+        <InflationRateField
+          autoValuePct={officialInflationPct}
+          autoLabel="Official Inflation (Latest)"
+          tooltipText="Used only for the Real Value (Inflation-Adjusted) figure below — calculated automatically from the latest official CPI data."
+          useCustom={useCustomInflation}
+          onUseCustomChange={setUseCustomInflation}
+          customValuePct={customInflationPct}
+          onCustomValuePctChange={setCustomInflationPct}
+        />
+      </div>
+
+      {futureValueAmount <= 0 && (
+        <div className="rounded-lg border border-amber-400/25 bg-amber-500/10 px-4 py-3 text-sm text-amber-300">{t("decisionSupportLab.validationEnterAmount")}</div>
+      )}
 
       {futureValueAmount > 0 && (
         <PresentValueResults

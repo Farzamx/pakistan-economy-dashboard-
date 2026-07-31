@@ -18,9 +18,9 @@ export default function AnnuityCalculator() {
 
   const [type, setType] = useState<AnnuityType>("ordinary");
   const [mode, setMode] = useState<AnnuityMode>("contribution");
-  const [payment, setPayment] = useState(10_000);
-  const [targetValue, setTargetValue] = useState(1_000_000);
-  const [ratePct, setRatePct] = useState(1);
+  const [payment, setPayment] = useState(0);
+  const [targetValue, setTargetValue] = useState(0);
+  const [ratePct, setRatePct] = useState(0);
   const [periods, setPeriods] = useState(60);
 
   // In "target" mode, the required payment is solved by evaluating
@@ -84,6 +84,10 @@ export default function AnnuityCalculator() {
         periods={periods}
         onPeriodsChange={setPeriods}
       />
+
+      {!hasInput && (
+        <div className="rounded-lg border border-amber-400/25 bg-amber-500/10 px-4 py-3 text-sm text-amber-300">{t("decisionSupportLab.validationEnterAmount")}</div>
+      )}
 
       {hasInput && (
         <AnnuityResults mode={mode} presentValueAmount={presentValueAmount} futureValueAmount={futureValueAmount} requiredContribution={mode === "target" ? effectivePayment : null} />

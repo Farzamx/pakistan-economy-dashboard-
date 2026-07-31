@@ -469,6 +469,7 @@ export interface Translations {
     toolsTitle: string; toolsSubtitle: string;
     incomeWealthTitle: string; incomeWealthSubtitle: string;
     timeValueTitle: string; timeValueSubtitle: string;
+    investmentIntelligenceTitle: string; investmentIntelligenceSubtitle: string;
     statusAvailable: string; statusComingSoon: string; openTool: string; signInRequired: string;
     guestBannerTitle: string; guestBannerDesc: string;
     estimate: { phase2: string; phase3: string };
@@ -477,6 +478,25 @@ export interface Translations {
     // this lives once here rather than once per tool namespace.
     compoundingMonthly: string; compoundingQuarterly: string; compoundingSemiannual: string;
     compoundingAnnual: string; compoundingDaily: string; compoundingContinuous: string;
+    // Shared asset-name labels — Asset Comparison Lab, Portfolio Purchasing
+    // Power, Asset Allocation Explorer and Investment Scenario Simulator
+    // all reference the same asset set, so names live once here.
+    assetGold: string; assetUsd: string; assetSavingsAccount: string; assetMoneyMarketFund: string;
+    assetTreasuryBills: string; assetPib: string; assetPsxIndex: string; assetProperty: string;
+    assetCash: string; assetEquities: string; assetGovtSecurities: string; assetForeignCurrency: string;
+    estimateBadge: string;
+    customInflationLabel: string; placeholderInflationRate: string;
+    advancedOptions: string; useCustomInflation: string;
+    // Shared placeholder wording for monetary inputs — used across every
+    // tool in the Lab so "Enter investment amount" etc. never drifts
+    // between tools that ask for the same kind of figure.
+    placeholderInvestmentAmount: string; placeholderSalary: string; placeholderSavings: string;
+    placeholderTargetAmount: string; placeholderContribution: string; placeholderInterestRate: string;
+    placeholderPrincipal: string; placeholderLoanAmount: string; placeholderPortfolioValue: string;
+    placeholderStartingWealth: string; placeholderPresentValue: string; placeholderFutureValue: string;
+    placeholderPayment: string; placeholderSelectEntryYear: string; placeholderSelectExitYear: string;
+    placeholderPercentage: string;
+    validationEnterAmount: string;
     tool: {
       personalInflation: { description: string };
       purchasingPower: { title: string; description: string };
@@ -495,6 +515,14 @@ export interface Translations {
       annuity: { title: string; description: string };
       discountFactorExplorer: { title: string; description: string };
       formulaExplorer: { title: string; description: string };
+      realReturnDashboard: { title: string; description: string };
+      realReturnCalculator: { title: string; description: string };
+      assetComparisonLab: { title: string; description: string };
+      investmentGrowthExplorer: { title: string; description: string };
+      portfolioPurchasingPower: { title: string; description: string };
+      inflationDragAnalyzer: { title: string; description: string };
+      assetAllocationExplorer: { title: string; description: string };
+      investmentScenarioSimulator: { title: string; description: string };
     };
     identityTitle: string; identityDesc: string;
     identityGuestDesc: string; identityGuestCta: string;
@@ -630,5 +658,69 @@ export interface Translations {
     presentValueName: string; futureValueName: string; compoundInterestName: string; simpleInterestName: string;
     continuousCompoundingName: string; discountFactorName: string; annuityPresentValueName: string;
     annuityFutureValueName: string; loanPaymentName: string; effectiveAnnualRateName: string;
+  };
+
+  realReturnDashboard: {
+    eyebrow: string; title: string; subtitle: string;
+    nominalWealthLabel: string; inflationLabel: string; taxLabel: string;
+    realWealthLabel: string; purchasingPowerChangeLabel: string;
+    waterfallTitle: string; noTaxNote: string;
+  };
+
+  realReturnCalculator: {
+    eyebrow: string; title: string; subtitle: string; cta: string;
+    investmentAmountLabel: string; entryYearLabel: string; exitYearLabel: string;
+    nominalReturnLabel: string; inflationLabel: string;
+    resultsTitle: string; nominalGainLabel: string; realGainLabel: string;
+    purchasingPowerChangeLabel: string; inflationCostLabel: string;
+    chartTitle: string;
+  };
+
+  assetComparisonLab: {
+    eyebrow: string; title: string; subtitle: string; cta: string;
+    inflationLabel: string;
+    resultsTitle: string; assetColumn: string; nominalReturnColumn: string; realReturnColumn: string;
+    riskColumn: string; purchasingPowerColumn: string; rankColumn: string;
+    manualInputNote: string; liveDataNote: string;
+    chartTitle: string;
+  };
+
+  investmentGrowthExplorer: {
+    eyebrow: string; title: string; subtitle: string; cta: string;
+    yearsLabel: string; inflationLabel: string;
+    resultsTitle: string; growthTitle: string; realWealthLabel: string;
+    inflationContributionTitle: string;
+  };
+
+  portfolioPurchasingPower: {
+    eyebrow: string; title: string; subtitle: string; cta: string;
+    inflationLabel: string;
+    resultsTitle: string; portfolioRealReturnLabel: string; realValueLabel: string;
+    inflationDragLabel: string; assetContributionTitle: string;
+    allocationColumn: string; returnColumn: string; contributionColumn: string;
+  };
+
+  inflationDragAnalyzer: {
+    eyebrow: string; title: string; subtitle: string; cta: string;
+    startingWealthLabel: string; nominalReturnLabel: string; inflationLabel: string; yearsLabel: string;
+    resultsTitle: string; endingWealthLabel: string; inflationLossLabel: string; realValueLabel: string;
+    decompositionTitle: string;
+  };
+
+  assetAllocationExplorer: {
+    eyebrow: string; title: string; subtitle: string; cta: string;
+    resultsTitle: string; blendedReturnLabel: string; blendedRealReturnLabel: string;
+    inflationProtectionLabel: string; diversificationScoreLabel: string;
+    allocationChartTitle: string;
+  };
+
+  investmentScenarioSimulator: {
+    eyebrow: string; title: string; subtitle: string; cta: string;
+    scenarioLabel: string;
+    scenarioBaseline: string; scenarioHigherInflation: string; scenarioLowerInflation: string;
+    scenarioMarketCrash: string; scenarioInterestRateIncrease: string; scenarioCurrencyDepreciation: string;
+    portfolioValueLabel: string; inflationLabel: string;
+    resultsTitle: string; portfolioImpactLabel: string; realReturnLabel: string; purchasingPowerLabel: string;
+    chartTitle: string;
   };
 }

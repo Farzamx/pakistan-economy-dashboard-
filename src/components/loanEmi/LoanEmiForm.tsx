@@ -40,7 +40,7 @@ export default function LoanEmiForm({ loanAmount, onLoanAmountChange, ratePct, o
             min={0}
             step={10000}
             value={loanAmount === 0 ? "" : loanAmount}
-            placeholder="1000000"
+            placeholder={t("decisionSupportLab.placeholderLoanAmount")}
             onChange={(e) => {
               const parsed = parseFloat(e.target.value);
               onLoanAmountChange(isNaN(parsed) ? 0 : Math.max(0, parsed));
@@ -61,7 +61,7 @@ export default function LoanEmiForm({ loanAmount, onLoanAmountChange, ratePct, o
             inputMode="decimal"
             step={0.1}
             value={ratePct === 0 ? "" : ratePct}
-            placeholder="0"
+            placeholder={t("decisionSupportLab.placeholderInterestRate")}
             onChange={(e) => {
               const parsed = parseFloat(e.target.value);
               onRatePctChange(isNaN(parsed) ? 0 : parsed);

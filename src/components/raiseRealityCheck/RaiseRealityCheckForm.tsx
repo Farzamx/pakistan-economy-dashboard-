@@ -7,9 +7,6 @@ interface Props {
   onCurrentSalaryChange: (value: number) => void;
   nominalRaisePct: number;
   onNominalRaisePctChange: (value: number) => void;
-  inflationPct: number;
-  onInflationPctChange: (value: number) => void;
-  officialInflationPct: number | null;
 }
 
 function NumberField({
@@ -20,6 +17,7 @@ function NumberField({
   prefix,
   suffix,
   step = 1,
+  placeholder,
 }: {
   id: string;
   label: string;
@@ -28,6 +26,7 @@ function NumberField({
   prefix?: string;
   suffix?: string;
   step?: number;
+  placeholder: string;
 }) {
   return (
     <div>
@@ -42,7 +41,7 @@ function NumberField({
           inputMode="decimal"
           step={step}
           value={value === 0 ? "" : value}
-          placeholder="0"
+          placeholder={placeholder}
           onChange={(e) => {
             const parsed = parseFloat(e.target.value);
             onChange(isNaN(parsed) ? 0 : parsed);
@@ -60,28 +59,29 @@ export default function RaiseRealityCheckForm({
   onCurrentSalaryChange,
   nominalRaisePct,
   onNominalRaisePctChange,
-  inflationPct,
-  onInflationPctChange,
-  officialInflationPct,
 }: Props) {
   const { t } = useLanguage();
 
   return (
-    <div className="glass-card grid grid-cols-1 gap-4 rounded-xl p-4 sm:grid-cols-3 sm:p-5">
-      <NumberField id="rrc-salary" label={t("raiseRealityCheck.currentSalaryLabel")} value={currentSalary} onChange={onCurrentSalaryChange} prefix="Rs" step={1000} />
-      <NumberField id="rrc-raise" label={t("raiseRealityCheck.nominalRaiseLabel")} value={nominalRaisePct} onChange={onNominalRaisePctChange} suffix="%" step={0.5} />
-      <div>
-        <NumberField id="rrc-inflation" label={t("raiseRealityCheck.inflationLabel")} value={inflationPct} onChange={onInflationPctChange} suffix="%" step={0.1} />
-        {officialInflationPct !== null && (
-          <button
-            type="button"
-            onClick={() => onInflationPctChange(officialInflationPct)}
-            className="mt-1.5 text-xs font-medium text-neon-blue hover:underline"
-          >
-            {t("raiseRealityCheck.useOfficialInflationCta")} ({officialInflationPct.toFixed(1)}%)
-          </button>
-        )}
-      </div>
+    <div className="glass-card grid grid-cols-1 gap-4 rounded-xl p-4 sm:grid-cols-2 sm:p-5">
+      <NumberField
+        id="rrc-salary"
+        label={t("raiseRealityCheck.currentSalaryLabel")}
+        value={currentSalary}
+        onChange={onCurrentSalaryChange}
+        prefix="Rs"
+        step={1000}
+        placeholder={t("decisionSupportLab.placeholderSalary")}
+      />
+      <NumberField
+        id="rrc-raise"
+        label={t("raiseRealityCheck.nominalRaiseLabel")}
+        value={nominalRaisePct}
+        onChange={onNominalRaisePctChange}
+        suffix="%"
+        step={0.5}
+        placeholder={t("decisionSupportLab.placeholderPercentage")}
+      />
     </div>
   );
 }

@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useLanguage } from "@/components/LanguageProvider";
 import FutureValueForm from "@/components/futureValue/FutureValueForm";
+import InflationRateField from "@/components/decisionSupportLab/InflationRateField";
 import FutureValueResults from "@/components/futureValue/FutureValueResults";
 import FutureValueCharts from "@/components/futureValue/FutureValueCharts";
 import ToolShareCard from "@/components/decisionSupportLab/ToolShareCard";
@@ -26,16 +27,19 @@ export default function FutureValueCalculator({ breakdown }: Props) {
   const { t } = useLanguage();
   const officialInflationPct = useMemo(() => (breakdown ? computeOfficialCpiPct(breakdown.groups) : 0), [breakdown]);
 
-  const [presentValueAmount, setPresentValueAmount] = useState(100_000);
-  const [annualReturnPct, setAnnualReturnPct] = useState(10);
+  const [presentValueAmount, setPresentValueAmount] = useState(0);
+  const [annualReturnPct, setAnnualReturnPct] = useState(0);
   const [years, setYears] = useState(10);
   const [frequency, setFrequency] = useState<CompoundingFrequency>("annual");
+  const [useCustomInflation, setUseCustomInflation] = useState(false);
+  const [customInflationPct, setCustomInflationPct] = useState(0);
+  const realValueInflationPct = useCustomInflation ? customInflationPct : officialInflationPct;
 
   const futureValueAmount = useMemo(
     () => (presentValueAmount > 0 ? futureValueWithFrequency(presentValueAmount, annualReturnPct, years, frequency) : 0),
     [presentValueAmount, annualReturnPct, years, frequency],
   );
-  const realFutureValueAmount = useMemo(() => (futureValueAmount > 0 ? deflateCompounding(futureValueAmount, officialInflationPct, years) : 0), [futureValueAmount, officialInflationPct, years]);
+  const realFutureValueAmount = useMemo(() => (futureValueAmount > 0 ? deflateCompounding(futureValueAmount, realValueInflationPct, years) : 0), [futureValueAmount, realValueInflationPct, years]);
 
   const insights = useMemo(() => {
     if (presentValueAmount <= 0) return [];
@@ -84,6 +88,22 @@ export default function FutureValueCalculator({ breakdown }: Props) {
         frequency={frequency}
         onFrequencyChange={setFrequency}
       />
+
+      <div className="glass-card rounded-xl p-4 sm:p-5">
+        <InflationRateField
+          autoValuePct={officialInflationPct}
+          autoLabel="Official Inflation (Latest)"
+          tooltipText="Used only for the Real Future Value (Inflation-Adjusted) figure below — calculated automatically from the latest official CPI data."
+          useCustom={useCustomInflation}
+          onUseCustomChange={setUseCustomInflation}
+          customValuePct={customInflationPct}
+          onCustomValuePctChange={setCustomInflationPct}
+        />
+      </div>
+
+      {presentValueAmount <= 0 && (
+        <div className="rounded-lg border border-amber-400/25 bg-amber-500/10 px-4 py-3 text-sm text-amber-300">{t("decisionSupportLab.validationEnterAmount")}</div>
+      )}
 
       {presentValueAmount > 0 && <FutureValueResults futureValueAmount={futureValueAmount} presentValueAmount={presentValueAmount} realFutureValueAmount={realFutureValueAmount} />}
 

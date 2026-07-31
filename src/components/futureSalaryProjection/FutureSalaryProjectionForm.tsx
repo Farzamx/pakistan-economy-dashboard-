@@ -7,8 +7,6 @@ interface Props {
   onCurrentSalaryChange: (value: number) => void;
   annualRaisePct: number;
   onAnnualRaisePctChange: (value: number) => void;
-  inflationPct: number;
-  onInflationPctChange: (value: number) => void;
   years: number;
   onYearsChange: (value: number) => void;
 }
@@ -23,6 +21,7 @@ function Field({
   step = 1,
   min,
   max,
+  placeholder = "0",
 }: {
   id: string;
   label: string;
@@ -33,6 +32,7 @@ function Field({
   step?: number;
   min?: number;
   max?: number;
+  placeholder?: string;
 }) {
   return (
     <div>
@@ -49,7 +49,7 @@ function Field({
           min={min}
           max={max}
           value={value === 0 ? "" : value}
-          placeholder="0"
+          placeholder={placeholder}
           onChange={(e) => {
             const parsed = parseFloat(e.target.value);
             let next = isNaN(parsed) ? 0 : parsed;
@@ -70,18 +70,15 @@ export default function FutureSalaryProjectionForm({
   onCurrentSalaryChange,
   annualRaisePct,
   onAnnualRaisePctChange,
-  inflationPct,
-  onInflationPctChange,
   years,
   onYearsChange,
 }: Props) {
   const { t } = useLanguage();
 
   return (
-    <div className="glass-card grid grid-cols-1 gap-4 rounded-xl p-4 sm:grid-cols-2 sm:p-5 lg:grid-cols-4">
-      <Field id="fsp-salary" label={t("futureSalaryProjection.currentSalaryLabel")} value={currentSalary} onChange={onCurrentSalaryChange} prefix="Rs" step={1000} />
-      <Field id="fsp-raise" label={t("futureSalaryProjection.annualRaiseLabel")} value={annualRaisePct} onChange={onAnnualRaisePctChange} suffix="%" step={0.5} />
-      <Field id="fsp-inflation" label={t("futureSalaryProjection.inflationLabel")} value={inflationPct} onChange={onInflationPctChange} suffix="%" step={0.1} />
+    <div className="glass-card grid grid-cols-1 gap-4 rounded-xl p-4 sm:grid-cols-2 sm:p-5 lg:grid-cols-3">
+      <Field id="fsp-salary" label={t("futureSalaryProjection.currentSalaryLabel")} value={currentSalary} onChange={onCurrentSalaryChange} prefix="Rs" step={1000} placeholder={t("decisionSupportLab.placeholderSalary")} />
+      <Field id="fsp-raise" label={t("futureSalaryProjection.annualRaiseLabel")} value={annualRaisePct} onChange={onAnnualRaisePctChange} suffix="%" step={0.5} placeholder={t("decisionSupportLab.placeholderPercentage")} />
       <Field id="fsp-years" label={t("futureSalaryProjection.yearsLabel")} value={years} onChange={onYearsChange} step={1} min={1} max={40} />
     </div>
   );

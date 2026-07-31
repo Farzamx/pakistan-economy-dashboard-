@@ -25,8 +25,8 @@ import type { ReportDefinition } from "@/lib/decisionSupportLab/reportFramework"
 export default function CompoundInterestCalculator() {
   const { t } = useLanguage();
 
-  const [principal, setPrincipal] = useState(100_000);
-  const [ratePct, setRatePct] = useState(10);
+  const [principal, setPrincipal] = useState(0);
+  const [ratePct, setRatePct] = useState(0);
   const [years, setYears] = useState(10);
   const [frequency, setFrequency] = useState<CompoundingFrequency>("annual");
 
@@ -95,6 +95,10 @@ export default function CompoundInterestCalculator() {
         frequency={frequency}
         onFrequencyChange={setFrequency}
       />
+
+      {principal <= 0 && (
+        <div className="rounded-lg border border-amber-400/25 bg-amber-500/10 px-4 py-3 text-sm text-amber-300">{t("decisionSupportLab.validationEnterAmount")}</div>
+      )}
 
       {principal > 0 && (
         <CompoundInterestResults principal={principal} interestEarned={interestEarned} endingValue={endingValue} effectiveAnnualRatePct={effectiveAnnualRatePct} />

@@ -165,3 +165,31 @@ export function getAvailableYears(series: CpiIndexPoint[]): YearOption[] {
   }
   return [...byYear.entries()].sort((a, b) => a[0] - b[0]).map(([year, point]) => ({ year, point }));
 }
+
+/**
+ * Average annual inflation between two dates, derived directly from the
+ * real historical CPI index — the compound annual growth rate of the
+ * index level itself, i.e. ((endIndex ÷ startIndex)^(1/years) − 1) × 100.
+ * This is what every "Entry Year → Exit Year" tool across the Lab uses
+ * to auto-fill an inflation rate instead of asking the visitor to type
+ * one in: select two years, and the rate is read off the same official
+ * series the Purchasing Power Calculator already uses, not estimated.
+ *
+ * Returns null when the series doesn't cover the requested range (no
+ * historical data available), or when the two dates resolve to the same
+ * observation — callers fall back to the latest official CPI rate in
+ * that case, never to a fabricated number.
+ */
+export function calculateAverageAnnualInflation(series: CpiIndexPoint[], startDate: string, endDate: string): number | null {
+  if (series.length === 0) return null;
+  const [fromDate, toDate] = startDate <= endDate ? [startDate, endDate] : [endDate, startDate];
+  const startPoint = findNearestIndexPoint(series, fromDate);
+  const endPoint = findNearestIndexPoint(series, toDate);
+  if (!startPoint || !endPoint || startPoint.observationDate === endPoint.observationDate || startPoint.indexValue <= 0) return null;
+
+  const msPerYear = 365.25 * 24 * 60 * 60 * 1000;
+  const years = (new Date(endPoint.observationDate).getTime() - new Date(startPoint.observationDate).getTime()) / msPerYear;
+  if (years <= 0) return null;
+
+  return (Math.pow(endPoint.indexValue / startPoint.indexValue, 1 / years) - 1) * 100;
+}

@@ -172,6 +172,60 @@ export function generateContributionFrequencyInsight(currentEffectiveAnnualRateP
   };
 }
 
+// Phase 5 — Investment Intelligence rules. Same deterministic, threshold-
+// only approach: each rule fires only when the effect is large enough to
+// be worth a callout.
+const INFLATION_GAIN_ELIMINATION_THRESHOLD_PCT = 15;
+const ASSET_PROTECTION_GAP_THRESHOLD_PP = 1;
+const CONSECUTIVE_NEGATIVE_REAL_RETURN_THRESHOLD_YEARS = 2;
+const COMPOUNDING_DOMINANCE_THRESHOLD_PCT = 50;
+
+/** What share of a nominal investment gain inflation actually ate — the deterministic evidence behind "inflation eliminated X% of your nominal investment gains." */
+export function generateInflationGainEliminationInsight(nominalGainAmount: number, realGainAmount: number): Insight | null {
+  if (nominalGainAmount <= 0) return null;
+  const eliminatedPct = ((nominalGainAmount - realGainAmount) / nominalGainAmount) * 100;
+  if (eliminatedPct <= INFLATION_GAIN_ELIMINATION_THRESHOLD_PCT) return null;
+  return {
+    id: "inflation-gain-elimination",
+    tone: "warning",
+    message: `Inflation eliminated ${eliminatedPct.toFixed(0)}% of your nominal investment gains — your real gain is substantially smaller than your statement's headline return.`,
+  };
+}
+
+/** Compares two named assets' real returns — the deterministic evidence behind "X preserved purchasing power better than Y." */
+export function generateAssetProtectionInsight(strongerAssetName: string, strongerRealReturnPct: number, weakerAssetName: string, weakerRealReturnPct: number): Insight | null {
+  const gapPp = strongerRealReturnPct - weakerRealReturnPct;
+  if (gapPp <= ASSET_PROTECTION_GAP_THRESHOLD_PP) return null;
+  return {
+    id: "asset-protection-comparison",
+    tone: "neutral",
+    message: `${strongerAssetName} preserved purchasing power better than ${weakerAssetName} — a real return of ${strongerRealReturnPct.toFixed(1)}% vs. ${weakerRealReturnPct.toFixed(1)}%.`,
+  };
+}
+
+/** Whether real return has been negative for a meaningful consecutive streak — callers count the streak themselves from a real-return series; this module only decides whether it's worth surfacing. */
+export function generateConsecutiveNegativeRealReturnInsight(consecutiveYears: number): Insight | null {
+  if (consecutiveYears < CONSECUTIVE_NEGATIVE_REAL_RETURN_THRESHOLD_YEARS) return null;
+  return {
+    id: "consecutive-negative-real-return",
+    tone: "warning",
+    message: `Your portfolio's real return has been negative for ${consecutiveYears} consecutive years — nominal gains have not kept pace with inflation over this stretch.`,
+  };
+}
+
+/** Whether most of a portfolio's total growth came from compounding rather than new contributions — the deterministic evidence behind "most of your wealth growth came from compounding rather than contributions." */
+export function generateCompoundingDominanceInsight(compoundingGrowthAmount: number, contributionGrowthAmount: number): Insight | null {
+  const totalGrowth = compoundingGrowthAmount + contributionGrowthAmount;
+  if (totalGrowth <= 0) return null;
+  const compoundingSharePct = (compoundingGrowthAmount / totalGrowth) * 100;
+  if (compoundingSharePct <= COMPOUNDING_DOMINANCE_THRESHOLD_PCT) return null;
+  return {
+    id: "compounding-dominance",
+    tone: "positive",
+    message: `Most of your wealth growth came from compounding rather than contributions — compounding accounts for ${compoundingSharePct.toFixed(0)}% of your total growth.`,
+  };
+}
+
 export interface PersonalInsightsInput {
   contributions?: CategoryContribution[];
   personalCpiPct?: number;
@@ -182,6 +236,10 @@ export interface PersonalInsightsInput {
   discountRateImpact?: { discountRatePct: number; years: number };
   compoundingAcceleration?: { firstHalfGrowth: number; secondHalfGrowth: number };
   contributionFrequency?: { currentEffectiveAnnualRatePct: number; monthlyEffectiveAnnualRatePct: number };
+  inflationGainElimination?: { nominalGainAmount: number; realGainAmount: number };
+  assetProtection?: { strongerAssetName: string; strongerRealReturnPct: number; weakerAssetName: string; weakerRealReturnPct: number };
+  consecutiveNegativeRealReturnYears?: number;
+  compoundingDominance?: { compoundingGrowthAmount: number; contributionGrowthAmount: number };
 }
 
 /** Runs every applicable rule against whatever inputs are available and returns only the insights that actually fired — callers don't need to know which rules exist, just what data they can supply. */
@@ -232,6 +290,31 @@ export function generatePersonalInsights(input: PersonalInsightsInput): Insight[
       input.contributionFrequency.monthlyEffectiveAnnualRatePct,
     );
     if (frequency) insights.push(frequency);
+  }
+
+  if (input.inflationGainElimination) {
+    const elimination = generateInflationGainEliminationInsight(input.inflationGainElimination.nominalGainAmount, input.inflationGainElimination.realGainAmount);
+    if (elimination) insights.push(elimination);
+  }
+
+  if (input.assetProtection) {
+    const protection = generateAssetProtectionInsight(
+      input.assetProtection.strongerAssetName,
+      input.assetProtection.strongerRealReturnPct,
+      input.assetProtection.weakerAssetName,
+      input.assetProtection.weakerRealReturnPct,
+    );
+    if (protection) insights.push(protection);
+  }
+
+  if (input.consecutiveNegativeRealReturnYears !== undefined) {
+    const streak = generateConsecutiveNegativeRealReturnInsight(input.consecutiveNegativeRealReturnYears);
+    if (streak) insights.push(streak);
+  }
+
+  if (input.compoundingDominance) {
+    const dominance = generateCompoundingDominanceInsight(input.compoundingDominance.compoundingGrowthAmount, input.compoundingDominance.contributionGrowthAmount);
+    if (dominance) insights.push(dominance);
   }
 
   return insights;

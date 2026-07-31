@@ -72,7 +72,7 @@ export default function AnnuityForm({ type, onTypeChange, mode, onModeChange, pa
                 min={0}
                 step={500}
                 value={payment === 0 ? "" : payment}
-                placeholder="10000"
+                placeholder={t("decisionSupportLab.placeholderPayment")}
                 onChange={(e) => {
                   const parsed = parseFloat(e.target.value);
                   onPaymentChange(isNaN(parsed) ? 0 : Math.max(0, parsed));
@@ -95,7 +95,7 @@ export default function AnnuityForm({ type, onTypeChange, mode, onModeChange, pa
                 min={0}
                 step={10000}
                 value={targetValue === 0 ? "" : targetValue}
-                placeholder="1000000"
+                placeholder={t("decisionSupportLab.placeholderTargetAmount")}
                 onChange={(e) => {
                   const parsed = parseFloat(e.target.value);
                   onTargetValueChange(isNaN(parsed) ? 0 : Math.max(0, parsed));
@@ -117,7 +117,7 @@ export default function AnnuityForm({ type, onTypeChange, mode, onModeChange, pa
               inputMode="decimal"
               step={0.1}
               value={ratePct === 0 ? "" : ratePct}
-              placeholder="0"
+              placeholder={t("decisionSupportLab.placeholderInterestRate")}
               onChange={(e) => {
                 const parsed = parseFloat(e.target.value);
                 onRatePctChange(isNaN(parsed) ? 0 : parsed);

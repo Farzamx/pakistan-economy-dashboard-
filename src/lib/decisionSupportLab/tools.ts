@@ -9,7 +9,7 @@
 // category (ToolGrid.tsx), so "Income & Wealth Intelligence" reads as its
 // own part of the Lab rather than getting mixed into the original grid.
 export type ToolStatus = "available" | "coming-soon";
-export type ToolCategoryId = "core" | "income-wealth" | "time-value";
+export type ToolCategoryId = "core" | "income-wealth" | "time-value" | "investment-intelligence";
 
 export interface ToolDefinition {
   id: string;
@@ -35,6 +35,7 @@ export const TOOL_CATEGORIES: ToolCategory[] = [
   { id: "core", titleKey: "decisionSupportLab.toolsTitle", subtitleKey: "decisionSupportLab.toolsSubtitle" },
   { id: "income-wealth", titleKey: "decisionSupportLab.incomeWealthTitle", subtitleKey: "decisionSupportLab.incomeWealthSubtitle" },
   { id: "time-value", titleKey: "decisionSupportLab.timeValueTitle", subtitleKey: "decisionSupportLab.timeValueSubtitle" },
+  { id: "investment-intelligence", titleKey: "decisionSupportLab.investmentIntelligenceTitle", subtitleKey: "decisionSupportLab.investmentIntelligenceSubtitle" },
 ];
 
 export const DECISION_SUPPORT_TOOLS: ToolDefinition[] = [
@@ -173,5 +174,69 @@ export const DECISION_SUPPORT_TOOLS: ToolDefinition[] = [
     descriptionKey: "decisionSupportLab.tool.formulaExplorer.description",
     status: "available",
     href: "/decision-support-lab/formula-explorer",
+  },
+  {
+    id: "real-return-dashboard",
+    category: "investment-intelligence",
+    titleKey: "decisionSupportLab.tool.realReturnDashboard.title",
+    descriptionKey: "decisionSupportLab.tool.realReturnDashboard.description",
+    status: "available",
+    href: "/decision-support-lab/real-return-dashboard",
+  },
+  {
+    id: "real-return-calculator",
+    category: "investment-intelligence",
+    titleKey: "decisionSupportLab.tool.realReturnCalculator.title",
+    descriptionKey: "decisionSupportLab.tool.realReturnCalculator.description",
+    status: "available",
+    href: "/decision-support-lab/real-return-calculator",
+  },
+  {
+    id: "asset-comparison-lab",
+    category: "investment-intelligence",
+    titleKey: "decisionSupportLab.tool.assetComparisonLab.title",
+    descriptionKey: "decisionSupportLab.tool.assetComparisonLab.description",
+    status: "available",
+    href: "/decision-support-lab/asset-comparison-lab",
+  },
+  {
+    id: "investment-growth-explorer",
+    category: "investment-intelligence",
+    titleKey: "decisionSupportLab.tool.investmentGrowthExplorer.title",
+    descriptionKey: "decisionSupportLab.tool.investmentGrowthExplorer.description",
+    status: "available",
+    href: "/decision-support-lab/investment-growth-explorer",
+  },
+  {
+    id: "portfolio-purchasing-power",
+    category: "investment-intelligence",
+    titleKey: "decisionSupportLab.tool.portfolioPurchasingPower.title",
+    descriptionKey: "decisionSupportLab.tool.portfolioPurchasingPower.description",
+    status: "available",
+    href: "/decision-support-lab/portfolio-purchasing-power",
+  },
+  {
+    id: "inflation-drag-analyzer",
+    category: "investment-intelligence",
+    titleKey: "decisionSupportLab.tool.inflationDragAnalyzer.title",
+    descriptionKey: "decisionSupportLab.tool.inflationDragAnalyzer.description",
+    status: "available",
+    href: "/decision-support-lab/inflation-drag-analyzer",
+  },
+  {
+    id: "asset-allocation-explorer",
+    category: "investment-intelligence",
+    titleKey: "decisionSupportLab.tool.assetAllocationExplorer.title",
+    descriptionKey: "decisionSupportLab.tool.assetAllocationExplorer.description",
+    status: "available",
+    href: "/decision-support-lab/asset-allocation-explorer",
+  },
+  {
+    id: "investment-scenario-simulator",
+    category: "investment-intelligence",
+    titleKey: "decisionSupportLab.tool.investmentScenarioSimulator.title",
+    descriptionKey: "decisionSupportLab.tool.investmentScenarioSimulator.description",
+    status: "available",
+    href: "/decision-support-lab/investment-scenario-simulator",
   },
 ];

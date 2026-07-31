@@ -16,8 +16,8 @@ import type { ReportDefinition } from "@/lib/decisionSupportLab/reportFramework"
 export default function LoanEmiCalculator() {
   const { t } = useLanguage();
 
-  const [loanAmount, setLoanAmount] = useState(1_000_000);
-  const [ratePct, setRatePct] = useState(12);
+  const [loanAmount, setLoanAmount] = useState(0);
+  const [ratePct, setRatePct] = useState(0);
   const [termYears, setTermYears] = useState(20);
   const [frequency, setFrequency] = useState<LoanPaymentFrequency>("monthly");
 
@@ -68,6 +68,10 @@ export default function LoanEmiCalculator() {
         frequency={frequency}
         onFrequencyChange={setFrequency}
       />
+
+      {loanAmount <= 0 && (
+        <div className="rounded-lg border border-amber-400/25 bg-amber-500/10 px-4 py-3 text-sm text-amber-300">{t("decisionSupportLab.validationEnterAmount")}</div>
+      )}
 
       {schedule && <LoanEmiResults schedule={schedule} />}
 

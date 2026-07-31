@@ -31,7 +31,7 @@ export default function PurchasingPowerForm({ amount, onAmountChange, years, bas
             min={0}
             step={1000}
             value={amount === 0 ? "" : amount}
-            placeholder="100000"
+            placeholder={t("decisionSupportLab.placeholderInvestmentAmount")}
             onChange={(e) => {
               const parsed = parseFloat(e.target.value);
               onAmountChange(isNaN(parsed) ? 0 : Math.max(0, parsed));

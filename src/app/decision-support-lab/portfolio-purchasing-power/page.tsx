@@ -1,0 +1,44 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import Sidebar from "@/components/Sidebar";
+import { T } from "@/components/T";
+import PortfolioPurchasingPowerHero from "@/components/portfolioPurchasingPower/PortfolioPurchasingPowerHero";
+import PortfolioPurchasingPowerCalculator from "@/components/portfolioPurchasingPower/PortfolioPurchasingPowerCalculator";
+import { getLatestCpiCategoryBreakdown } from "@/lib/data/cpiCategoryBreakdown";
+import { getLiveAssetData } from "@/lib/decisionSupportLab/liveAssetData";
+import { SITE_URL, SITE_NAME } from "@/lib/seoConfig";
+
+const PAGE_URL = `${SITE_URL}/decision-support-lab/portfolio-purchasing-power`;
+const TITLE = "Portfolio Purchasing Power | PEIC Decision Support Lab";
+const DESCRIPTION = "See your whole portfolio's real return and which assets protect your purchasing power, weighted by your actual allocation.";
+
+export const metadata: Metadata = {
+  title: TITLE,
+  description: DESCRIPTION,
+  alternates: { canonical: PAGE_URL },
+  openGraph: { title: TITLE, description: DESCRIPTION, url: PAGE_URL, siteName: SITE_NAME, type: "website" },
+  twitter: { card: "summary_large_image", title: TITLE, description: DESCRIPTION },
+};
+
+export const revalidate = 3600;
+
+export default async function PortfolioPurchasingPowerPage() {
+  const [breakdown, liveData] = await Promise.all([getLatestCpiCategoryBreakdown(), getLiveAssetData()]);
+
+  return (
+    <div className="flex min-h-screen w-full">
+      <Sidebar />
+      <main className="min-w-0 flex-1 px-6 py-8 sm:px-10 lg:px-16">
+        <div className="flex flex-col gap-10">
+          <Link href="/decision-support-lab" className="w-fit text-xs font-medium text-white/40 hover:text-neon-blue light:text-slate-400">
+            ← <T tKey="decisionSupportLab.title" />
+          </Link>
+
+          <PortfolioPurchasingPowerHero />
+
+          <PortfolioPurchasingPowerCalculator breakdown={breakdown} liveData={liveData} />
+        </div>
+      </main>
+    </div>
+  );
+}

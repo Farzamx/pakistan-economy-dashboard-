@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useLanguage } from "@/components/LanguageProvider";
 import RaiseRealityCheckForm from "@/components/raiseRealityCheck/RaiseRealityCheckForm";
+import InflationRateField from "@/components/decisionSupportLab/InflationRateField";
 import RaiseRealityCheckResults from "@/components/raiseRealityCheck/RaiseRealityCheckResults";
 import RaiseRealityCheckCharts from "@/components/raiseRealityCheck/RaiseRealityCheckCharts";
 import ToolShareCard from "@/components/decisionSupportLab/ToolShareCard";
@@ -35,7 +36,9 @@ export default function RaiseRealityCheckCalculator({ breakdown }: Props) {
   // lint rule flags (see economicIdentity.ts's header comment).
   const [currentSalary, setCurrentSalaryState] = useState(() => shared.currentSalary);
   const [nominalRaisePct, setNominalRaisePctState] = useState(() => shared.lastRaisePct);
-  const [inflationPct, setInflationPct] = useState(() => officialInflationPct ?? 0);
+  const [useCustomInflation, setUseCustomInflation] = useState(false);
+  const [customInflationPct, setCustomInflationPct] = useState(0);
+  const inflationPct = useCustomInflation ? customInflationPct : (officialInflationPct ?? 0);
 
   function setCurrentSalary(value: number) {
     setCurrentSalaryState(value);
@@ -88,10 +91,23 @@ export default function RaiseRealityCheckCalculator({ breakdown }: Props) {
         onCurrentSalaryChange={setCurrentSalary}
         nominalRaisePct={nominalRaisePct}
         onNominalRaisePctChange={setNominalRaisePct}
-        inflationPct={inflationPct}
-        onInflationPctChange={setInflationPct}
-        officialInflationPct={officialInflationPct}
       />
+
+      <div className="glass-card rounded-xl p-4 sm:p-5">
+        <InflationRateField
+          autoValuePct={officialInflationPct}
+          autoLabel="Official Inflation (Latest)"
+          tooltipText="Calculated automatically from the latest official CPI data."
+          useCustom={useCustomInflation}
+          onUseCustomChange={setUseCustomInflation}
+          customValuePct={customInflationPct}
+          onCustomValuePctChange={setCustomInflationPct}
+        />
+      </div>
+
+      {currentSalary <= 0 && (
+        <div className="rounded-lg border border-amber-400/25 bg-amber-500/10 px-4 py-3 text-sm text-amber-300">{t("decisionSupportLab.validationEnterAmount")}</div>
+      )}
 
       {result && <RaiseRealityCheckResults result={result} />}
 

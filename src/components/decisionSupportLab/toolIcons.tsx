@@ -120,6 +120,68 @@ const ICONS: Record<string, (props: IconProps) => React.ReactElement> = {
       <path d="M12 6.5V20" />
     </Base>
   ),
+  // Real Return Intelligence Dashboard — layered bars with a divider (nominal → real)
+  "real-return-dashboard": (p) => (
+    <Base {...p}>
+      <rect x="3" y="3" width="18" height="18" rx="2" />
+      <path d="M3 14h18M7 18v-4M12 18v-7M17 18v-10" />
+    </Base>
+  ),
+  // Real Return Calculator — a scale/balance (nominal vs real)
+  "real-return-calculator": (p) => (
+    <Base {...p}>
+      <path d="M12 3v18M5 8l-3 5a3 3 0 0 0 6 0l-3-5ZM19 8l-3 5a3 3 0 0 0 6 0l-3-5Z" />
+      <path d="M5 8h14M8 21h8" />
+    </Base>
+  ),
+  // Asset Comparison Lab — bars of different heights with a ranking dot
+  "asset-comparison-lab": (p) => (
+    <Base {...p}>
+      <path d="M4 20V11M10 20V6M16 20V13" />
+      <circle cx="10" cy="4" r="1.4" />
+    </Base>
+  ),
+  // Investment Growth Explorer — two diverging growth lines
+  "investment-growth-explorer": (p) => (
+    <Base {...p}>
+      <path d="M3 18l5-4 4 2 8-11" />
+      <path d="M3 18l5-8 4 3 8-4" opacity={0.5} />
+    </Base>
+  ),
+  // Portfolio Purchasing Power — a pie/donut slice with a shrinking arrow
+  "portfolio-purchasing-power": (p) => (
+    <Base {...p}>
+      <path d="M12 3a9 9 0 1 0 9 9h-9V3Z" />
+      <path d="M15 3.5A9 9 0 0 1 20.5 9H15V3.5Z" />
+      <path d="M16 16l3 3M19 16v3h-3" opacity={0.6} />
+    </Base>
+  ),
+  // Inflation Drag Analyzer — a downward drag arrow on a bar
+  "inflation-drag-analyzer": (p) => (
+    <Base {...p}>
+      <rect x="4" y="4" width="7" height="16" rx="1" />
+      <path d="M16 8v10M13 15l3 3 3-3" />
+    </Base>
+  ),
+  // Asset Allocation Explorer — sliders
+  "asset-allocation-explorer": (p) => (
+    <Base {...p}>
+      <path d="M4 6h16M4 12h16M4 18h16" />
+      <circle cx="9" cy="6" r="1.8" fill="currentColor" stroke="none" />
+      <circle cx="15" cy="12" r="1.8" fill="currentColor" stroke="none" />
+      <circle cx="7" cy="18" r="1.8" fill="currentColor" stroke="none" />
+    </Base>
+  ),
+  // Investment Scenario Simulator — branching paths
+  "investment-scenario-simulator": (p) => (
+    <Base {...p}>
+      <circle cx="5" cy="12" r="1.8" />
+      <path d="M6.5 12h3M9.5 12l7-6M9.5 12l7 0M9.5 12l7 6" />
+      <circle cx="19" cy="6" r="1.4" />
+      <circle cx="19" cy="12" r="1.4" />
+      <circle cx="19" cy="18" r="1.4" />
+    </Base>
+  ),
   // Inflation Impact — a gauge
   "inflation-impact": (p) => (
     <Base {...p}>

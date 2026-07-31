@@ -42,7 +42,7 @@ export default function PresentValueForm({
             min={0}
             step={1000}
             value={futureValueAmount === 0 ? "" : futureValueAmount}
-            placeholder="100000"
+            placeholder={t("decisionSupportLab.placeholderFutureValue")}
             onChange={(e) => {
               const parsed = parseFloat(e.target.value);
               onFutureValueChange(isNaN(parsed) ? 0 : Math.max(0, parsed));
@@ -63,7 +63,7 @@ export default function PresentValueForm({
             inputMode="decimal"
             step={0.1}
             value={discountRatePct === 0 ? "" : discountRatePct}
-            placeholder="0"
+            placeholder={t("decisionSupportLab.placeholderInterestRate")}
             onChange={(e) => {
               const parsed = parseFloat(e.target.value);
               onDiscountRatePctChange(isNaN(parsed) ? 0 : parsed);

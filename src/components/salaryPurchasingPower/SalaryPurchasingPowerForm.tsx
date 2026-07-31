@@ -32,7 +32,7 @@ export default function SalaryPurchasingPowerForm({ salary, onSalaryChange, year
             min={0}
             step={1000}
             value={salary === 0 ? "" : salary}
-            placeholder="100000"
+            placeholder={t("decisionSupportLab.placeholderSalary")}
             onChange={(e) => {
               const parsed = parseFloat(e.target.value);
               onSalaryChange(isNaN(parsed) ? 0 : Math.max(0, parsed));

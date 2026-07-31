@@ -43,7 +43,7 @@ export default function SalaryRequiredForm({
             min={0}
             step={1000}
             value={currentSalary === 0 ? "" : currentSalary}
-            placeholder="100000"
+            placeholder={t("decisionSupportLab.placeholderSalary")}
             onChange={(e) => {
               const parsed = parseFloat(e.target.value);
               onCurrentSalaryChange(isNaN(parsed) ? 0 : Math.max(0, parsed));
@@ -86,7 +86,7 @@ export default function SalaryRequiredForm({
             inputMode="decimal"
             step={0.5}
             value={assumedRaisePct === 0 ? "" : assumedRaisePct}
-            placeholder="0"
+            placeholder={t("decisionSupportLab.placeholderPercentage")}
             onChange={(e) => {
               const parsed = parseFloat(e.target.value);
               onAssumedRaisePctChange(isNaN(parsed) ? 0 : parsed);
