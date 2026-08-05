@@ -123,6 +123,28 @@ interface EconomicProfileRow {
   profile_completed_at: string | null;
 }
 
+// Every writer (setHouseholdAllocationValue, replaceHouseholdAllocation,
+// BudgetAllocationCalculator, PersonalInflationCalculator, the legacy
+// migration seed) always sends this full shape atomically — none of them
+// can produce anything malformed. The only source of a malformed value is
+// the DB column's own default ('{}'::jsonb, migration 0045), which fires
+// whenever a save never includes this field (e.g. a user who only fills
+// the 5 mandatory fields). Confirmed live against production: an account
+// that never touched the allocation UI has household_allocation = {}
+// stored. Validating the full shape here (not just presence of a key)
+// covers that case and any other malformed value, not just this one.
+function isValidHouseholdAllocation(value: unknown): value is HouseholdAllocationShape {
+  if (!value || typeof value !== "object") return false;
+  const v = value as Partial<HouseholdAllocationShape>;
+  return (
+    (v.mode === "percent" || v.mode === "spending") &&
+    typeof v.monthlyBudget === "number" &&
+    typeof v.allocation === "object" &&
+    v.allocation !== null &&
+    !Array.isArray(v.allocation)
+  );
+}
+
 function fromRow(row: EconomicProfileRow): EconomicProfile {
   return {
     schemaVersion: row.schema_version ?? 1,
@@ -136,7 +158,7 @@ function fromRow(row: EconomicProfileRow): EconomicProfile {
     expectedAnnualRaisePct: row.expected_annual_raise_pct ?? 0,
     householdSize: row.household_size ?? 1,
     monthlySpending: row.monthly_spending ?? 0,
-    householdAllocation: row.household_allocation ?? DEFAULT_ECONOMIC_PROFILE.householdAllocation,
+    householdAllocation: isValidHouseholdAllocation(row.household_allocation) ? row.household_allocation : DEFAULT_ECONOMIC_PROFILE.householdAllocation,
     housingStatus: (row.housing_status as HousingStatus | null) ?? null,
     monthlyHousingCost: row.monthly_housing_cost ?? 0,
     currentSavings: row.current_savings ?? 0,
