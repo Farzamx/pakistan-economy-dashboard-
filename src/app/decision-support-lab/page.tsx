@@ -7,8 +7,8 @@ import EconomicIdentityGuestPrompt from "@/components/decisionSupportLab/Economi
 import EconomicDashboardGate from "@/components/decisionSupportLab/EconomicDashboardGate";
 import ToolGrid from "@/components/decisionSupportLab/ToolGrid";
 import { createClient } from "@/lib/supabase/server";
-import { getLatestCpiCategoryBreakdown } from "@/lib/data/cpiCategoryBreakdown";
-import { getLiveAssetData } from "@/lib/decisionSupportLab/liveAssetData";
+import { getLatestCpiCategoryBreakdown, type CpiCategoryBreakdown } from "@/lib/data/cpiCategoryBreakdown";
+import { getLiveAssetData, type LiveAssetData } from "@/lib/decisionSupportLab/liveAssetData";
 import { SITE_URL, SITE_NAME } from "@/lib/seoConfig";
 
 const PAGE_URL = `${SITE_URL}/decision-support-lab`;
@@ -31,6 +31,26 @@ export const metadata: Metadata = {
 // banner, Economic Identity vs. its guest prompt) genuinely differs per
 // visitor, so it must not be served from a shared static cache.
 
+// getLiveAssetData() fans out to six external SBP/Yahoo Finance fetches,
+// each internally safe (try/catch + fallback) but willing to wait its own
+// full 10s AbortSignal timeout before falling back. On Vercel that
+// aggregate wait can creep past the platform's serverless function
+// duration limit (10s on Hobby, unconfigurable), which kills the function
+// outright — surfacing as a failed page load, not a catchable JS error.
+// Racing against a deadline well under that ceiling keeps the page
+// rendering (guest-safe null data) instead of the whole function timing out.
+const DASHBOARD_DATA_TIMEOUT_MS = 8000;
+
+function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => resolve(fallback), ms);
+    promise.then(
+      (value) => { clearTimeout(timer); resolve(value); },
+      () => { clearTimeout(timer); resolve(fallback); },
+    );
+  });
+}
+
 export default async function DecisionSupportLabPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -39,7 +59,10 @@ export default async function DecisionSupportLabPage() {
   // Fetched here (once, server-side) and passed down rather than each
   // Dashboard mini-card re-fetching — same pattern every individual tool
   // page already uses for its own breakdown/liveData props.
-  const [breakdown, liveData] = isAuthenticated ? await Promise.all([getLatestCpiCategoryBreakdown(), getLiveAssetData()]) : [null, null];
+  const dashboardData: Promise<[CpiCategoryBreakdown | null, LiveAssetData | null]> | null = isAuthenticated
+    ? Promise.all([getLatestCpiCategoryBreakdown(), getLiveAssetData()])
+    : null;
+  const [breakdown, liveData] = dashboardData ? await withTimeout(dashboardData, DASHBOARD_DATA_TIMEOUT_MS, [null, null]) : [null, null];
 
   return (
     <div className="flex min-h-screen w-full">
