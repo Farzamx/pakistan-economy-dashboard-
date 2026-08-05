@@ -141,12 +141,16 @@ export default function KpiCard({ title, value, unit, change, trend, source, lat
         />
       )}
 
-      {/* Hover-revealed action — was always-visible pale text before;
-          now a genuine "hover action" per the v2 KPI spec, not permanent chrome. */}
+      {/* Hover-revealed action on desktop (v2 KPI spec — not permanent
+          chrome there). Phase M1: opacity-0 + hover/focus-within reveal
+          only ever fires with a mouse or keyboard — a touch device has
+          neither, which silently hid this link on every phone. Always
+          visible below min-[800px]; desktop keeps the original hover
+          behavior unchanged. */}
       {seoSlug && (
         <Link
           href={`/${seoSlug}`}
-          className="mt-auto text-[11px] font-medium text-neon-blue underline-offset-2 opacity-0 transition-opacity duration-150 hover:underline group-hover:opacity-100 group-focus-within:opacity-100"
+          className="mt-auto text-[11px] font-medium text-neon-blue underline-offset-2 transition-opacity duration-150 hover:underline min-[800px]:opacity-0 min-[800px]:group-hover:opacity-100 min-[800px]:group-focus-within:opacity-100"
         >
           {t("common.learnMore")} →
         </Link>

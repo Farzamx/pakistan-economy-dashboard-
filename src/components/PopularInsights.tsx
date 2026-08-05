@@ -70,7 +70,10 @@ export default function PopularInsights() {
               {categoryLabel[item.category]}
             </span>
             <span className="text-sm font-medium leading-snug text-white light:text-slate-900">{item.label}</span>
-            <span className="mt-auto text-xs text-neon-blue opacity-0 transition-opacity group-hover:opacity-100">
+            {/* Phase M1 — was hover-only (opacity-0 + group-hover), which
+                never triggers on a touch device and silently hid this on
+                every phone. Always visible below min-[800px]. */}
+            <span className="mt-auto text-xs text-neon-blue transition-opacity min-[800px]:opacity-0 min-[800px]:group-hover:opacity-100">
               {t("popularInsights.explore")}
             </span>
           </ProtectedLink>

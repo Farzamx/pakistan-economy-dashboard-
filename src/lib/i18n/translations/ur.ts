@@ -20,6 +20,8 @@ export const ur: Translations = {
     provincialBudget: "صوبائی بجٹ", economicCalendar: "معاشی کیلنڈر",
     workshop: "اقتصادی ورک شاپ", academy: "اقتصادی اکیڈمی", freeSubscription: "مفت سبسکرپشن",
     rankings: "درجہ بندی", indicators: "معاشی اشارے", settings: "ترتیبات",
+    groupExplore: "دریافت کریں", groupTrack: "ٹریک کریں", groupMore: "مزید",
+    quickActions: "فوری اقدامات", search: "تلاش کریں",
     logoName: "پاکستان ای آئی سی", logoSubtitle: "معاشی ڈیش بورڈ",
     liveData: "SBP EasyData اور ورلڈ بینک سے لائیو ڈیٹا۔", psxLabel: "PSX",
     executiveSummary: "ایگزیکٹو خلاصہ", macroeconomy: "معاشیات", tools: "ٹولز",

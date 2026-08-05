@@ -14,6 +14,8 @@ import { LanguageProvider } from "@/components/LanguageProvider";
 import MobileNav from "@/components/MobileNav";
 import TopNav from "@/components/TopNav";
 import MobileStickyCta from "@/components/MobileStickyCta";
+import ScrollToTopButton from "@/components/ScrollToTopButton";
+import MobileWelcomeDialog from "@/components/MobileWelcomeDialog";
 import BfcacheGuard from "@/components/BfcacheGuard";
 import ProfileCompletionDrawer from "@/components/decisionSupportLab/ProfileCompletionDrawer";
 import RecentToolsTracker from "@/components/decisionSupportLab/RecentToolsTracker";
@@ -162,6 +164,8 @@ export default function RootLayout({
                   {children}
                   <CreatorBadge />
                   <MobileStickyCta />
+                  <ScrollToTopButton />
+                  <MobileWelcomeDialog />
                   <ProfileCompletionDrawer />
                   <RecentToolsTracker />
                 </MotionProvider>

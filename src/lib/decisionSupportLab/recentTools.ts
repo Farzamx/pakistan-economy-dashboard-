@@ -56,8 +56,12 @@ function subscribe(onChange: () => void): () => void {
   };
 }
 
+// Phase M1 fix: a fresh [] literal each call fails useSyncExternalStore's
+// Object.is stability check (confirmed live via a Playwright pass) — must
+// return the same reference every time.
+const SERVER_SNAPSHOT: string[] = [];
 function getServerSnapshot(): string[] {
-  return [];
+  return SERVER_SNAPSHOT;
 }
 
 export function useRecentToolIds(): string[] {

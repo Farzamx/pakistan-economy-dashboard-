@@ -28,6 +28,14 @@ export default function MobileStickyCta() {
   const { t } = useLanguage();
   const pathname = usePathname();
   const [scrolledPast, setScrolledPast] = useState(false);
+  // Phase M1 — found live via a Playwright screenshot pass: this fixed
+  // CTA and the new mobile Quick Actions/Pinned Indicators block (moved
+  // up near the Hero in this same phase) land at the same screen height
+  // for some scroll positions, so the CTA was drawing over that
+  // section's header text. An IntersectionObserver on that block — not
+  // a wider scroll-threshold — is the correct fix, since scrolledPast
+  // alone can't know THIS specific section is currently on screen.
+  const [overQuickActions, setOverQuickActions] = useState(false);
 
   useEffect(() => {
     // No explicit "reset to false" on navigation — onScroll() below runs
@@ -44,8 +52,42 @@ export default function MobileStickyCta() {
     return () => window.removeEventListener("scroll", onScroll);
   }, [pathname]);
 
+  useEffect(() => {
+    let intersectionObserver: IntersectionObserver | null = null;
+    let observedNode: Element | null = null;
+
+    function syncTarget() {
+      const target = document.getElementById("mobile-quick-actions");
+      if (target === observedNode) return;
+      // The homepage's heavy async content can cause this node to be
+      // replaced (not just mutated) as it streams/resolves — confirmed
+      // live: an IntersectionObserver attached to an early instance never
+      // fired again once React swapped it for the final one. Re-observing
+      // whenever the live element differs from what we last attached to
+      // (including transitioning to null, e.g. on route change) keeps
+      // this correct regardless of how many times that happens.
+      intersectionObserver?.disconnect();
+      observedNode = target;
+      if (!target) {
+        setOverQuickActions(false);
+        return;
+      }
+      intersectionObserver = new IntersectionObserver(([entry]) => setOverQuickActions(entry.isIntersecting));
+      intersectionObserver.observe(target);
+    }
+
+    syncTarget();
+    const mutationObserver = new MutationObserver(syncTarget);
+    mutationObserver.observe(document.body, { childList: true, subtree: true });
+
+    return () => {
+      mutationObserver.disconnect();
+      intersectionObserver?.disconnect();
+    };
+  }, [pathname]);
+
   const hiddenHere = HIDDEN_ON.some((p) => pathname?.startsWith(p));
-  const show = !loading && !user && !hiddenHere && scrolledPast;
+  const show = !loading && !user && !hiddenHere && scrolledPast && !overQuickActions;
 
   return (
     <AnimatePresence>
@@ -55,11 +97,11 @@ export default function MobileStickyCta() {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 24 }}
           transition={{ duration: 0.25, ease: "easeOut" }}
-          // bottom-20 (not bottom-4) — verified live that CreatorBadge
-          // (fixed bottom-3/5 right-3/5, "Farzam Arif · Economic
-          // Intelligence Dashboard") spans most of the viewport width at
-          // mobile sizes and would otherwise sit directly underneath this
-          // button, overlapping it.
+          // bottom-20 (not bottom-4) keeps this well clear of the bottom
+          // edge, where CreatorBadge (bottom-right) and the Phase M1
+          // scroll-to-top button (bottom-left) both now live — confirmed
+          // via a real Playwright screenshot pass (320-430px, portrait +
+          // landscape): no overlap at bottom-20 at any tested width.
           className="fixed inset-x-4 bottom-20 z-50 flex justify-center min-[800px]:hidden"
         >
           <Link

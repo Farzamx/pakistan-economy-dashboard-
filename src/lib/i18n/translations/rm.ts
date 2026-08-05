@@ -20,6 +20,8 @@ export const rm: Translations = {
     provincialBudget: "Soobayi Budget", economicCalendar: "Maashi Calendar",
     workshop: "Iqtisadi Workshop", academy: "Iqtisadi Academy", freeSubscription: "Muft Subscription",
     rankings: "Rankings", indicators: "Indicators", settings: "Tartibaat",
+    groupExplore: "Dekhein", groupTrack: "Track Karein", groupMore: "Mazeed",
+    quickActions: "Fori Iqdamat", search: "Talash Karein",
     logoName: "Pakistan EIC", logoSubtitle: "Maashi Dashboard",
     liveData: "SBP EasyData aur World Bank se live data.", psxLabel: "PSX",
     executiveSummary: "Executive Khulasa", macroeconomy: "Macroeconomy", tools: "Tools",

@@ -17,6 +17,9 @@ import ProvincialQuickAccess from "@/components/ProvincialQuickAccess";
 import PopularInsights from "@/components/PopularInsights";
 import HideableSection from "@/components/preferences/HideableSection";
 import PinnedIndicatorsRow from "@/components/preferences/PinnedIndicatorsRow";
+import QuickActionsGrid from "@/components/QuickActionsGrid";
+import MobileCollapsibleGroup from "@/components/MobileCollapsibleGroup";
+import ChartExpandButton from "@/components/ChartExpandButton";
 import RiskIntelligenceSection from "@/components/RiskIntelligenceSection";
 import Sidebar from "@/components/Sidebar";
 import HashScrollRestore from "@/components/HashScrollRestore";
@@ -629,6 +632,19 @@ export default async function Home() {
             healthComputedAt={intelligenceComputedAt}
           />
 
+          {/* Phase M1 §3 — mobile-only: Quick Actions + Pinned Indicators
+              surface immediately below the Hero rather than several
+              scrolls down, closing the "shortcuts are gone" gap for a
+              phone user. Desktop is untouched — QuickActionsGrid is
+              min-[800px]:hidden internally, and this is a second,
+              mobile-exclusive instance of PinnedIndicatorsRow (the
+              original further down becomes desktop-only, see below) so
+              neither ever renders twice on the same breakpoint. */}
+          <div id="mobile-quick-actions" className="section-divider px-5 py-6 min-[800px]:hidden sm:px-8">
+            <QuickActionsGrid />
+            <PinnedIndicatorsRow />
+          </div>
+
           <div id="macro-snapshot" className="section-divider scroll-mt-[60px] px-5 py-6 sm:scroll-mt-[120px] sm:px-8 sm:py-8">
             <MacroSnapshot updatedAt={pktTimestamp} tier1={macroTier1} tier2={macroTier2} />
           </div>
@@ -645,7 +661,12 @@ export default async function Home() {
           </div>
         </div>
 
-        <PinnedIndicatorsRow />
+        {/* Desktop-only now — the mobile-exclusive copy above the Hero
+            panel covers phones; this is the same component, just gated to
+            the other breakpoint so it never renders twice for one visitor. */}
+        <div className="hidden min-[800px]:block">
+          <PinnedIndicatorsRow />
+        </div>
 
         {health && aiAnalysis && recessionResult && defaultResult && aiRisk && intelligenceComputedAt && intelligenceNextUpdateAt ? (
           <>
@@ -688,12 +709,14 @@ export default async function Home() {
               </p>
               <InfoTooltip termKey="Quarterly GDP Growth (YoY)" size="xs" />
             </div>
-            <TrendLineChart
-              data={quarterlyGdp.trend}
-              color="#38bdf8"
-              unit="%"
-              gradientId="quarterlyGdpGradient"
-            />
+            <ChartExpandButton title="Quarterly GDP Growth — Real GVA">
+              <TrendLineChart
+                data={quarterlyGdp.trend}
+                color="#38bdf8"
+                unit="%"
+                gradientId="quarterlyGdpGradient"
+              />
+            </ChartExpandButton>
           </div>
         </DashboardSection>
         </HideableSection>
@@ -720,12 +743,14 @@ export default async function Home() {
             <p className="mb-2 text-xs font-medium text-white/40 light:text-slate-500">
               24-Month Trend <span className="text-white/25 light:text-slate-400">· SBP EasyData, monthly</span>
             </p>
-            <TrendLineChart
-              data={sbp.foreignReserves.trend}
-              color="#38bdf8"
-              unit="B"
-              gradientId="reservesGradient"
-            />
+            <ChartExpandButton title="Foreign Reserves — 24-Month Trend">
+              <TrendLineChart
+                data={sbp.foreignReserves.trend}
+                color="#38bdf8"
+                unit="B"
+                gradientId="reservesGradient"
+              />
+            </ChartExpandButton>
           </div>
         </DashboardSection>
         </HideableSection>
@@ -755,12 +780,14 @@ export default async function Home() {
             <p className="mb-2 text-xs font-medium text-white/40 light:text-slate-500">
               24-Month Trend <span className="text-white/25 light:text-slate-400">· SBP EasyData — Monthly Average Interbank Rate</span>
             </p>
-            <TrendLineChart
-              data={sbp.usdPkr.trend}
-              color="#f472b6"
-              unit=""
-              gradientId="usdPkrGradient"
-            />
+            <ChartExpandButton title="USD / PKR — 24-Month Trend">
+              <TrendLineChart
+                data={sbp.usdPkr.trend}
+                color="#f472b6"
+                unit=""
+                gradientId="usdPkrGradient"
+              />
+            </ChartExpandButton>
           </div>
           <div id="live-fx" className="mt-4 scroll-mt-[60px] sm:scroll-mt-[120px]">
             <p className="mb-2 text-xs font-medium text-white/40 light:text-slate-500">
@@ -829,12 +856,14 @@ export default async function Home() {
             <p className="mb-2 text-xs font-medium text-white/40 light:text-slate-500">
               24-Month Trend <span className="text-white/25 light:text-slate-400">· SBP EasyData, monthly</span>
             </p>
-            <TrendLineChart
-              data={sbp.cpiInflation.trend}
-              color="#fb923c"
-              unit="%"
-              gradientId="cpiInflationGradient"
-            />
+            <ChartExpandButton title="CPI Inflation — 24-Month Trend">
+              <TrendLineChart
+                data={sbp.cpiInflation.trend}
+                color="#fb923c"
+                unit="%"
+                gradientId="cpiInflationGradient"
+              />
+            </ChartExpandButton>
           </div>
 
           {spiYoyTrend.length > 0 && (
@@ -857,6 +886,12 @@ export default async function Home() {
         </DashboardSection>
         </HideableSection>
 
+        {/* Phase M1 §4 — these four are the deeper, more secondary
+            indicator sections; grouped behind one mobile-only "View more
+            indicators" accordion (pure CSS, see MobileCollapsibleGroup.tsx)
+            so a first-time phone visitor isn't handed the full desktop
+            scroll depth by default. Fully expanded on desktop, unchanged. */}
+        <MobileCollapsibleGroup label="View more indicators">
         <HideableSection id="price-indices">
         <DashboardSection {...getSection("price-indices")}>
           <div className="mt-6 glass-card-raised p-4">
@@ -932,6 +967,7 @@ export default async function Home() {
           </div>
         </div>
         </HideableSection>
+        </MobileCollapsibleGroup>
 
         <HideableSection id="news-intelligence">
         <NewsIntelligenceSection

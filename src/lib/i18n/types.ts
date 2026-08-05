@@ -32,6 +32,8 @@ export interface Translations {
     comparisons: string; budgetTracker: string; provincialBudget: string;
     economicCalendar: string; workshop: string; academy: string; freeSubscription: string;
     rankings: string; indicators: string; settings: string;
+    groupExplore: string; groupTrack: string; groupMore: string;
+    quickActions: string; search: string;
     logoName: string; logoSubtitle: string; liveData: string; psxLabel: string;
     memberBadge: string; memberSince: string; premiumAccess: string;
     executiveSummary: string; macroeconomy: string; tools: string;

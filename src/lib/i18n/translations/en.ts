@@ -20,6 +20,8 @@ export const en: Translations = {
     provincialBudget: "Provincial Budget", economicCalendar: "Economic Calendar",
     workshop: "Economic Workshop", academy: "Economic Academy", freeSubscription: "Free Subscription",
     rankings: "Rankings", indicators: "Indicators", settings: "Settings",
+    groupExplore: "Explore", groupTrack: "Track", groupMore: "More",
+    quickActions: "Quick Actions", search: "Search",
     logoName: "Pakistan EIC", logoSubtitle: "Economic Dashboard",
     liveData: "Live data from SBP EasyData & World Bank.", psxLabel: "PSX",
     executiveSummary: "Executive Summary", macroeconomy: "Macroeconomy", tools: "Tools",

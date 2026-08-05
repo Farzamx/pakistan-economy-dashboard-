@@ -104,8 +104,12 @@ function getSnapshot(): EconomicProfileSnapshot {
   return currentSnapshot;
 }
 
+// Phase M1 fix: a fresh object literal each call fails
+// useSyncExternalStore's Object.is stability check (confirmed live via a
+// Playwright pass) — must return the same reference every time.
+const SERVER_SNAPSHOT: EconomicProfileSnapshot = { status: "guest", profile: DEFAULT_ECONOMIC_PROFILE };
 function getServerSnapshot(): EconomicProfileSnapshot {
-  return { status: "guest", profile: DEFAULT_ECONOMIC_PROFILE };
+  return SERVER_SNAPSHOT;
 }
 
 function subscribe(onStoreChange: () => void): () => void {

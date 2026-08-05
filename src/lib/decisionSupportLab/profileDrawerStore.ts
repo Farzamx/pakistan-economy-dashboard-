@@ -37,8 +37,14 @@ function getSnapshot(): DrawerState {
   return state;
 }
 
+// Phase M1 fix: must return the SAME reference every call — a fresh
+// object literal here fails useSyncExternalStore's Object.is stability
+// check and produces a real "getServerSnapshot should be cached" console
+// warning on every page (confirmed live via a Playwright pass), since
+// ProfileCompletionDrawer mounts in the root layout on every route.
+const SERVER_SNAPSHOT: DrawerState = { open: false, highlightFieldId: null };
 function getServerSnapshot(): DrawerState {
-  return { open: false, highlightFieldId: null };
+  return SERVER_SNAPSHOT;
 }
 
 export function useProfileDrawer(): DrawerState {

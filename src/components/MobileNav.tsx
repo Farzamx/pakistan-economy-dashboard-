@@ -21,17 +21,27 @@ import { useLanguage } from "@/components/LanguageProvider";
 import { signOutAction } from "@/app/auth/actions";
 import { isProtectedPath } from "@/lib/protectedSections";
 
+type DrawerGroup = "explore" | "track" | "more";
+
 interface DrawerLink {
   /** Translation key under nav.* — used for display label */
   navKey: string;
   href: string;
   icon: React.ReactNode;
+  group: DrawerGroup;
 }
+
+// Phase M1 — grouped instead of one flat 11(+1)-item list, so the drawer
+// reads as 3 short sections (Explore / Track / More) rather than one long
+// scroll. Group boundaries are cosmetic only — isActive/handleLinkClick
+// logic below is unchanged and still runs over the flat LINKS array.
+const GROUP_ORDER: DrawerGroup[] = ["explore", "track", "more"];
 
 const LINKS: DrawerLink[] = [
   {
     navKey: "overview",
     href: "/#overview",
+    group: "explore",
     icon: (
       <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
         <rect x="3" y="3" width="7" height="7" rx="1" />
@@ -44,6 +54,7 @@ const LINKS: DrawerLink[] = [
   {
     navKey: "decisionSupportLab",
     href: "/decision-support-lab",
+    group: "explore",
     icon: (
       <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
         <path d="M9 3h6M10 3v6l-5.5 9.5A1.5 1.5 0 0 0 5.8 21h12.4a1.5 1.5 0 0 0 1.3-2.5L14 9V3" />
@@ -54,6 +65,7 @@ const LINKS: DrawerLink[] = [
   {
     navKey: "comparisons",
     href: "/comparisons",
+    group: "explore",
     icon: (
       <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
         <path d="M3 16l4.5-7L12 13l4-6L21 8" />
@@ -64,6 +76,7 @@ const LINKS: DrawerLink[] = [
   {
     navKey: "budgetTracker",
     href: "/budget",
+    group: "track",
     icon: (
       <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
         <rect x="3" y="10" width="4" height="10" />
@@ -75,6 +88,7 @@ const LINKS: DrawerLink[] = [
   {
     navKey: "provincialBudget",
     href: "/provincial-budget",
+    group: "track",
     icon: (
       <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
         <path d="M3 3v18h18" />
@@ -85,6 +99,7 @@ const LINKS: DrawerLink[] = [
   {
     navKey: "economicCalendar",
     href: "/economic-calendar",
+    group: "track",
     icon: (
       <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
         <rect x="3" y="5" width="18" height="16" rx="2" />
@@ -95,6 +110,7 @@ const LINKS: DrawerLink[] = [
   {
     navKey: "freeSubscription",
     href: "/economic-calendar#email-alerts",
+    group: "track",
     icon: (
       <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
         <rect x="2" y="5" width="20" height="14" rx="2" />
@@ -105,6 +121,7 @@ const LINKS: DrawerLink[] = [
   {
     navKey: "academy",
     href: "/academy",
+    group: "more",
     icon: (
       <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
         <path d="M12 2L2 7l10 5 10-5-10-5z" />
@@ -116,6 +133,7 @@ const LINKS: DrawerLink[] = [
   {
     navKey: "rankings",
     href: "/provincial-budget/rankings",
+    group: "more",
     icon: (
       <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
         <path d="M8 20V10M14 20V4M20 20v-7M4 20v-4" />
@@ -125,6 +143,7 @@ const LINKS: DrawerLink[] = [
   {
     navKey: "news",
     href: "/#news-intelligence",
+    group: "more",
     icon: (
       <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
         <rect x="3" y="4" width="18" height="16" rx="2" />
@@ -135,9 +154,26 @@ const LINKS: DrawerLink[] = [
   {
     navKey: "indicators",
     href: "/pakistan-economic-indicators",
+    group: "explore",
     icon: (
       <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
         <path d="M3 17l5-5 4 4 8-9" />
+      </svg>
+    ),
+  },
+  {
+    // Phase M1 — Settings had no path into mobile nav at all before this;
+    // desktop's only route is Sidebar -> SettingsModal -> /settings/preferences.
+    // Linking straight to the preferences page (skipping the modal) since
+    // the modal's other content (theme/language) is already reachable from
+    // this same drawer's own footer / LanguageProvider controls elsewhere.
+    navKey: "settings",
+    href: "/settings/preferences",
+    group: "more",
+    icon: (
+      <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="3" />
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09A1.65 1.65 0 0 0 15 4.6a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z" />
       </svg>
     ),
   },
@@ -352,40 +388,51 @@ export default function MobileNav() {
 
               <GlobalSearch onLinkClick={handleLinkClick} />
 
-              <nav className="flex flex-col gap-1.5">
-                {LINKS.map((link) => {
-                  // Three cases:
-                  //   "/#section" — hash-only homepage anchor → never active by route
-                  //   "/route#section" — route + hash (e.g. Free Subscription) → active
-                  //                      when on the right route AND hash matches
-                  //   "/route" — pure route → active when pathname starts with it
-                  const isActive = (() => {
-                    if (link.href.startsWith("/#")) return false;
-                    const hashIdx = link.href.indexOf("#");
-                    if (hashIdx !== -1) {
-                      const path = link.href.slice(0, hashIdx);
-                      const fragment = `#${link.href.slice(hashIdx + 1)}`;
-                      return pathname === path && hash === fragment;
-                    }
-                    return !!pathname?.startsWith(link.href.split("?")[0]);
-                  })();
-                  return (
-                    <Link
-                      key={link.navKey}
-                      href={link.href}
-                      onClick={(e) => handleLinkClick(e, link.href)}
-                      aria-current={isActive ? "true" : undefined}
-                      className={`flex items-center gap-2.5 rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors ${
-                        isActive
-                          ? "border-neon-blue/25 bg-neon-blue/10 text-white light:text-slate-900"
-                          : "border-transparent text-white/60 light:text-slate-600 hover:bg-white/5 light:hover:bg-slate-100"
-                      }`}
-                    >
-                      <span className={isActive ? "text-neon-blue" : "text-white/40 light:text-slate-400"}>{link.icon}</span>
-                      <span>{t(`nav.${link.navKey}`)}</span>
-                    </Link>
-                  );
-                })}
+              <nav className="flex flex-col gap-4">
+                {GROUP_ORDER.map((group) => (
+                  <div key={group} className="flex flex-col gap-1">
+                    <p className="px-1 text-[11px] font-semibold uppercase tracking-[0.1em] text-white/30 light:text-slate-400">{t(`nav.group${group.charAt(0).toUpperCase()}${group.slice(1)}`)}</p>
+                    {LINKS.filter((l) => l.group === group).map((link, i) => {
+                      // Three cases:
+                      //   "/#section" — hash-only homepage anchor → never active by route
+                      //   "/route#section" — route + hash (e.g. Free Subscription) → active
+                      //                      when on the right route AND hash matches
+                      //   "/route" — pure route → active when pathname starts with it
+                      const isActive = (() => {
+                        if (link.href.startsWith("/#")) return false;
+                        const hashIdx = link.href.indexOf("#");
+                        if (hashIdx !== -1) {
+                          const path = link.href.slice(0, hashIdx);
+                          const fragment = `#${link.href.slice(hashIdx + 1)}`;
+                          return pathname === path && hash === fragment;
+                        }
+                        return !!pathname?.startsWith(link.href.split("?")[0]);
+                      })();
+                      return (
+                        <motion.div
+                          key={link.navKey}
+                          initial={{ opacity: 0, x: -8 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ duration: 0.18, delay: i * 0.03 }}
+                        >
+                          <Link
+                            href={link.href}
+                            onClick={(e) => handleLinkClick(e, link.href)}
+                            aria-current={isActive ? "true" : undefined}
+                            className={`flex items-center gap-2.5 rounded-lg border px-4 py-2 text-sm font-medium transition-colors ${
+                              isActive
+                                ? "border-neon-blue/25 bg-neon-blue/10 text-white light:text-slate-900"
+                                : "border-transparent text-white/60 light:text-slate-600 hover:bg-white/5 light:hover:bg-slate-100"
+                            }`}
+                          >
+                            <span className={isActive ? "text-neon-blue" : "text-white/40 light:text-slate-400"}>{link.icon}</span>
+                            <span>{t(`nav.${link.navKey}`)}</span>
+                          </Link>
+                        </motion.div>
+                      );
+                    })}
+                  </div>
+                ))}
               </nav>
 
               <div className="mt-auto flex flex-col gap-2 border-t border-white/5 light:border-slate-200 pt-4">
