@@ -293,6 +293,7 @@ export default function Sidebar() {
           type="button"
           onClick={toggle}
           aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           className="absolute top-1/2 -right-3 z-10 flex h-7 w-6 -translate-y-1/2 items-center justify-center rounded-md border border-white/10 light:border-slate-200 bg-[var(--surface-3)] text-white/50 light:text-slate-500 shadow-sm transition-colors hover:text-white light:hover:text-slate-900"
         >
           <svg className={`h-3 w-3 transition-transform ${collapsed ? "rotate-180" : ""}`} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

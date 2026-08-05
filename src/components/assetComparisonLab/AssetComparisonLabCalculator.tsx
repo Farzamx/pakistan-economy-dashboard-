@@ -4,6 +4,8 @@ import { useMemo, useState } from "react";
 import { useLanguage } from "@/components/LanguageProvider";
 import AssetComparisonLabTable from "@/components/assetComparisonLab/AssetComparisonLabTable";
 import InflationRateField from "@/components/decisionSupportLab/InflationRateField";
+import ConfidenceBadge from "@/components/decisionSupportLab/ConfidenceBadge";
+import DataFreshnessBadge from "@/components/decisionSupportLab/DataFreshnessBadge";
 import AssetComparisonLabCharts from "@/components/assetComparisonLab/AssetComparisonLabCharts";
 import PersonalInsightsPanel from "@/components/decisionSupportLab/PersonalInsightsPanel";
 import DecisionSupportPanel from "@/components/decisionSupportLab/DecisionSupportPanel";
@@ -12,7 +14,10 @@ import EducationalPanel from "@/components/decisionSupportLab/EducationalPanel";
 import ReportDownloadButton from "@/components/decisionSupportLab/ReportDownloadButton";
 import { compareAssets, type AssetInput } from "@/lib/decisionSupportLab/investmentEngine";
 import { computeOfficialCpiPct } from "@/lib/personalInflation/engine";
+import { calculateConfidenceScore } from "@/lib/decisionSupportLab/confidenceEngine";
 import { generatePersonalInsights } from "@/lib/decisionSupportLab/insightEngine";
+import { getOverallCompletionPct } from "@/lib/decisionSupportLab/profileCompletion";
+import { useEconomicProfile } from "@/lib/decisionSupportLab/economicProfile";
 import type { ReportDefinition } from "@/lib/decisionSupportLab/reportFramework";
 import type { CpiCategoryBreakdown } from "@/lib/data/cpiCategoryBreakdown";
 import type { LiveAssetData } from "@/lib/decisionSupportLab/liveAssetData";
@@ -32,6 +37,7 @@ interface Props {
 
 export default function AssetComparisonLabCalculator({ breakdown, liveData }: Props) {
   const { t } = useLanguage();
+  const { profile } = useEconomicProfile();
   const officialInflationPct = useMemo(() => (breakdown ? computeOfficialCpiPct(breakdown.groups) : 0), [breakdown]);
 
   const [useCustomInflation, setUseCustomInflation] = useState(false);
@@ -71,6 +77,18 @@ export default function AssetComparisonLabCalculator({ breakdown, liveData }: Pr
     });
   }, [results]);
 
+  const confidence = useMemo(
+    () =>
+      calculateConfidenceScore({
+        profileCompletenessPct: getOverallCompletionPct(profile),
+        usesOfficialData: !useCustomInflation,
+        hasHistoricalCoverage: breakdown !== null,
+        manualEstimateCount: rows.filter((r) => r.isEstimate).length,
+        assumptionCount: useCustomInflation ? 1 : 0,
+      }),
+    [profile, useCustomInflation, breakdown, rows],
+  );
+
   function buildReport(): ReportDefinition {
     return {
       toolName: "Asset Comparison Lab",
@@ -100,6 +118,9 @@ export default function AssetComparisonLabCalculator({ breakdown, liveData }: Pr
         />
       </div>
 
+      <ConfidenceBadge result={confidence} toolId="asset-comparison-lab" />
+      <DataFreshnessBadge sourceName="SBP EasyData, Yahoo Finance" lastUpdated={liveData.asOfDate} dataFrequency="Daily (market data) / As published (SBP rates)" />
+
       <AssetComparisonLabTable rows={rows} results={results} onNominalReturnChange={handleNominalReturnChange} />
 
       <ReportDownloadButton buildDefinition={buildReport} filename="asset-comparison-report.pdf" label={t("decisionSupportLab.downloadReport")} generatingLabel={t("decisionSupportLab.generatingReport")} />
@@ -120,7 +141,7 @@ export default function AssetComparisonLabCalculator({ breakdown, liveData }: Pr
         lastUpdated={liveData.asOfDate}
         dataFrequency="Daily (market data) / As published (SBP rates)"
         assumptions={["Trailing 12-month returns are historical and not a guarantee of future performance.", "PSX Index uses the PAK ETF (NYSE) as a proxy — no direct PEIC data source for the KSE-100 exists."]}
-        limitations={["Money Market Fund and Property have no official PEIC data source — their figures are visitor-entered estimates, clearly marked.", "Risk (volatility) is shown only for assets with a real price history; quoted-rate assets (T-Bills, PIBs, Savings) show no volatility figure since a single rate has no return distribution."]}
+        limitations={["Historical return data isn't yet available for Money Market Fund and Property — enter your own realised annual return for these, clearly marked as a manual estimate rather than official data.", "Risk (volatility) is shown only for assets with a real price history; quoted-rate assets (T-Bills, PIBs, Savings) show no volatility figure since a single rate has no return distribution."]}
       />
 
       <EducationalPanel

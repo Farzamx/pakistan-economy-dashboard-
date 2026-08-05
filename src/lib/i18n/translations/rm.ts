@@ -1202,7 +1202,7 @@ export const rm: Translations = {
     riskColumn: "Risk (Volatility)",
     purchasingPowerColumn: "Purchasing Power",
     rankColumn: "Rank",
-    manualInputNote: "Is asset ke liye koi sarkari PEIC data zariya mojood nahin — apna takhmeena darj karein.",
+    manualInputNote: "Tareekhi takhmeena dastyaab nahin — apna hasil-shuda salana munafa darj karein",
     liveDataNote: "Live PEIC Data",
     chartTitle: "Asset ke Hisaab se Nominal bamuqabla Haqeeqi Return",
   },

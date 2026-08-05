@@ -4,6 +4,10 @@ import { useMemo, useState } from "react";
 import { useLanguage } from "@/components/LanguageProvider";
 import RealReturnDashboardForm from "@/components/realReturnDashboard/RealReturnDashboardForm";
 import InflationRateField from "@/components/decisionSupportLab/InflationRateField";
+import WhatIfToggle from "@/components/decisionSupportLab/WhatIfToggle";
+import ConfidenceBadge from "@/components/decisionSupportLab/ConfidenceBadge";
+import DataFreshnessBadge from "@/components/decisionSupportLab/DataFreshnessBadge";
+import RequiredInputsGate from "@/components/decisionSupportLab/RequiredInputsGate";
 import RealReturnDashboardResults from "@/components/realReturnDashboard/RealReturnDashboardResults";
 import RealReturnDashboardCharts from "@/components/realReturnDashboard/RealReturnDashboardCharts";
 import ToolShareCard from "@/components/decisionSupportLab/ToolShareCard";
@@ -15,7 +19,10 @@ import ReportDownloadButton from "@/components/decisionSupportLab/ReportDownload
 import { projectCompounding, deflateCompounding } from "@/lib/decisionSupportLab/purchasingPowerEngine";
 import { calculatePurchasingPowerPreservation } from "@/lib/decisionSupportLab/investmentEngine";
 import { computeOfficialCpiPct } from "@/lib/personalInflation/engine";
+import { calculateConfidenceScore } from "@/lib/decisionSupportLab/confidenceEngine";
 import { generatePersonalInsights } from "@/lib/decisionSupportLab/insightEngine";
+import { getOverallCompletionPct } from "@/lib/decisionSupportLab/profileCompletion";
+import { useEconomicProfile, setEconomicProfile } from "@/lib/decisionSupportLab/economicProfile";
 import type { ReportDefinition } from "@/lib/decisionSupportLab/reportFramework";
 import type { CpiCategoryBreakdown } from "@/lib/data/cpiCategoryBreakdown";
 
@@ -25,9 +32,12 @@ interface Props {
 
 export default function RealReturnDashboardCalculator({ breakdown }: Props) {
   const { t } = useLanguage();
+  const { profile } = useEconomicProfile();
   const officialInflationPct = useMemo(() => (breakdown ? computeOfficialCpiPct(breakdown.groups) : 0), [breakdown]);
 
-  const [startingWealth, setStartingWealth] = useState(0);
+  const [isWhatIfWealth, setIsWhatIfWealth] = useState(false);
+  const [whatIfWealth, setWhatIfWealth] = useState(0);
+  const startingWealth = isWhatIfWealth ? whatIfWealth : profile.currentInvestmentAmount;
   const [nominalReturnPct, setNominalReturnPct] = useState(0);
   const [useCustomInflation, setUseCustomInflation] = useState(false);
   const [customInflationPct, setCustomInflationPct] = useState(0);
@@ -42,8 +52,9 @@ export default function RealReturnDashboardCalculator({ breakdown }: Props) {
   // simplified illustrative order in ExplainTheMath's limitations, since
   // real capital-gains tax is typically levied on nominal, not real,
   // gains.
+  const hasNominalReturn = nominalReturnPct !== 0;
   const result = useMemo(() => {
-    if (startingWealth <= 0) return null;
+    if (startingWealth <= 0 || !hasNominalReturn) return null;
     const nominalWealth = projectCompounding(startingWealth, nominalReturnPct, years);
     const afterInflationValue = deflateCompounding(nominalWealth, inflationPct, years);
     const afterInflationGain = Math.max(0, afterInflationValue - startingWealth);
@@ -52,7 +63,7 @@ export default function RealReturnDashboardCalculator({ breakdown }: Props) {
     const inflationLoss = nominalWealth - afterInflationValue;
     const purchasingPowerChangePct = calculatePurchasingPowerPreservation(startingWealth, realWealth) - 100;
     return { nominalWealth, afterInflationValue, taxAmount, realWealth, inflationLoss, purchasingPowerChangePct };
-  }, [startingWealth, nominalReturnPct, inflationPct, taxRatePct, years]);
+  }, [startingWealth, hasNominalReturn, nominalReturnPct, inflationPct, taxRatePct, years]);
 
   const insights = useMemo(() => {
     if (!result) return [];
@@ -60,6 +71,18 @@ export default function RealReturnDashboardCalculator({ breakdown }: Props) {
     const realGain = result.realWealth - startingWealth;
     return generatePersonalInsights({ inflationGainElimination: { nominalGainAmount: nominalGain, realGainAmount: realGain } });
   }, [result, startingWealth]);
+
+  const confidence = useMemo(
+    () =>
+      calculateConfidenceScore({
+        profileCompletenessPct: getOverallCompletionPct(profile),
+        usesOfficialData: !useCustomInflation,
+        hasHistoricalCoverage: breakdown !== null,
+        manualEstimateCount: (isWhatIfWealth ? 1 : 0) + 1,
+        assumptionCount: useCustomInflation ? 1 : 0,
+      }),
+    [profile, useCustomInflation, breakdown, isWhatIfWealth],
+  );
 
   function buildReport(): ReportDefinition {
     if (!result) {
@@ -93,11 +116,51 @@ export default function RealReturnDashboardCalculator({ breakdown }: Props) {
     };
   }
 
+  if (profile.currentInvestmentAmount <= 0 && !isWhatIfWealth) {
+    return (
+      <div id="calculator-input" className="flex flex-col gap-6">
+        <div className="glass-card rounded-xl border border-neon-blue/20 p-4 sm:p-5">
+          <p className="text-sm font-semibold text-white light:text-slate-900">We need one more value.</p>
+          <p className="mt-1 text-xs text-white/50 light:text-slate-500">This saves to your Economic Profile, so you won&apos;t be asked again.</p>
+          <div className="mt-3 max-w-xs">
+            <label htmlFor="rrd-wealth-gate" className="text-label text-white/40 light:text-slate-400">
+              Nominal Wealth Today
+            </label>
+            <div className="mt-1.5 flex items-center gap-2 rounded-lg border border-[var(--border-subtle)] px-3 py-2.5">
+              <span className="text-sm text-white/40 light:text-slate-400">Rs</span>
+              <input
+                id="rrd-wealth-gate"
+                type="number"
+                inputMode="decimal"
+                step={10000}
+                placeholder="Enter your wealth today"
+                onChange={(e) => {
+                  const parsed = parseFloat(e.target.value);
+                  if (!isNaN(parsed) && parsed > 0) setEconomicProfile({ currentInvestmentAmount: parsed });
+                }}
+                className="text-mono-num w-full bg-transparent text-sm font-semibold tabular-nums text-white outline-none light:text-slate-900"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div id="calculator-input" className="flex flex-col gap-6">
+      <WhatIfToggle
+        label="Nominal Wealth Today"
+        currentValue={profile.currentInvestmentAmount}
+        whatIfValue={whatIfWealth}
+        onWhatIfValueChange={setWhatIfWealth}
+        isWhatIf={isWhatIfWealth}
+        onToggle={setIsWhatIfWealth}
+        formatValue={(v) => `Rs ${Math.round(v).toLocaleString("en-US")}`}
+        step={10000}
+      />
+
       <RealReturnDashboardForm
-        startingWealth={startingWealth}
-        onStartingWealthChange={setStartingWealth}
         nominalReturnPct={nominalReturnPct}
         onNominalReturnPctChange={setNominalReturnPct}
         taxRatePct={taxRatePct}
@@ -118,46 +181,47 @@ export default function RealReturnDashboardCalculator({ breakdown }: Props) {
         />
       </div>
 
-      {startingWealth <= 0 && (
-        <div className="rounded-lg border border-amber-400/25 bg-amber-500/10 px-4 py-3 text-sm text-amber-300">{t("decisionSupportLab.validationEnterAmount")}</div>
-      )}
+      <RequiredInputsGate requiredInputs={[{ id: "rrd-return", label: "Nominal Return", filled: hasNominalReturn }]}>
+        {result && <ConfidenceBadge result={confidence} toolId="real-return-dashboard" />}
+        {result && <DataFreshnessBadge sourceName="PEIC Investment Intelligence Engine" lastUpdated={breakdown?.observationDate ?? ""} dataFrequency="Monthly" />}
 
-      {result && (
-        <RealReturnDashboardResults
-          nominalWealth={result.nominalWealth}
-          inflationLoss={result.inflationLoss}
-          taxAmount={result.taxAmount}
-          realWealth={result.realWealth}
-          purchasingPowerChangePct={result.purchasingPowerChangePct}
-          hasTax={taxRatePct > 0}
-        />
-      )}
+        {result && (
+          <RealReturnDashboardResults
+            nominalWealth={result.nominalWealth}
+            inflationLoss={result.inflationLoss}
+            taxAmount={result.taxAmount}
+            realWealth={result.realWealth}
+            purchasingPowerChangePct={result.purchasingPowerChangePct}
+            hasTax={taxRatePct > 0}
+          />
+        )}
 
-      {result && (
-        <ToolShareCard
-          title="My Real Wealth"
-          headlineValue={`Rs ${Math.round(result.realWealth).toLocaleString("en-US")}`}
-          headlineTone={result.purchasingPowerChangePct >= 0 ? "down" : "up"}
-          comparisonLine={`Rs ${Math.round(startingWealth).toLocaleString("en-US")} today, ${years}-year projection`}
-          deltaLine={`${result.purchasingPowerChangePct >= 0 ? "+" : ""}${result.purchasingPowerChangePct.toFixed(1)}% purchasing power`}
-          bars={[
-            { label: "Nominal Wealth", value: result.nominalWealth, color: "#4d8df7" },
-            { label: "Real Wealth", value: result.realWealth, color: "#9b8afb" },
-          ]}
-          badgeLines={["PEIC Investment Intelligence", `${years}-year projection`]}
-          shareUrl="https://www.pakeconintel.com/decision-support-lab/real-return-dashboard"
-          shareSummary={`My Rs ${Math.round(startingWealth).toLocaleString("en-US")} grows to Rs ${Math.round(result.nominalWealth).toLocaleString("en-US")} nominal, but only Rs ${Math.round(result.realWealth).toLocaleString("en-US")} in real terms after inflation.`}
-          filenameBase="my-real-wealth"
-        />
-      )}
+        {result && (
+          <ToolShareCard
+            title="My Real Wealth"
+            headlineValue={`Rs ${Math.round(result.realWealth).toLocaleString("en-US")}`}
+            headlineTone={result.purchasingPowerChangePct >= 0 ? "down" : "up"}
+            comparisonLine={`Rs ${Math.round(startingWealth).toLocaleString("en-US")} today, ${years}-year projection`}
+            deltaLine={`${result.purchasingPowerChangePct >= 0 ? "+" : ""}${result.purchasingPowerChangePct.toFixed(1)}% purchasing power`}
+            bars={[
+              { label: "Nominal Wealth", value: result.nominalWealth, color: "#4d8df7" },
+              { label: "Real Wealth", value: result.realWealth, color: "#9b8afb" },
+            ]}
+            badgeLines={["PEIC Investment Intelligence", `${years}-year projection`]}
+            shareUrl="https://www.pakeconintel.com/decision-support-lab/real-return-dashboard"
+            shareSummary={`My Rs ${Math.round(startingWealth).toLocaleString("en-US")} grows to Rs ${Math.round(result.nominalWealth).toLocaleString("en-US")} nominal, but only Rs ${Math.round(result.realWealth).toLocaleString("en-US")} in real terms after inflation.`}
+            filenameBase="my-real-wealth"
+          />
+        )}
 
-      {result && (
-        <ReportDownloadButton buildDefinition={buildReport} filename="real-return-dashboard-report.pdf" label={t("decisionSupportLab.downloadReport")} generatingLabel={t("decisionSupportLab.generatingReport")} />
-      )}
+        {result && (
+          <ReportDownloadButton buildDefinition={buildReport} filename="real-return-dashboard-report.pdf" label={t("decisionSupportLab.downloadReport")} generatingLabel={t("decisionSupportLab.generatingReport")} />
+        )}
 
-      <PersonalInsightsPanel insights={insights} />
+        <PersonalInsightsPanel insights={insights} />
 
-      {result && <RealReturnDashboardCharts startingWealth={startingWealth} nominalWealth={result.nominalWealth} afterInflationValue={result.afterInflationValue} realWealth={result.realWealth} />}
+        {result && <RealReturnDashboardCharts startingWealth={startingWealth} nominalWealth={result.nominalWealth} afterInflationValue={result.afterInflationValue} realWealth={result.realWealth} />}
+      </RequiredInputsGate>
 
       <ExplainTheMath
         formula="Nominal Wealth = Starting Wealth × (1 + Return ÷ 100)^Years; After Inflation = Nominal Wealth ÷ (1 + Inflation ÷ 100)^Years; Real Wealth = After Inflation − (max(After Inflation − Starting Wealth, 0) × Tax Rate ÷ 100)"
@@ -198,6 +262,16 @@ export default function RealReturnDashboardCalculator({ breakdown }: Props) {
           href: "/decision-support-lab/portfolio-purchasing-power",
           reason: "Apply the nominal-to-real chain across your actual named assets and allocation weights.",
         }}
+        snapshotPayload={
+          result
+            ? () => ({
+                toolId: "real-return-dashboard",
+                inputs: { startingWealth, nominalReturnPct, taxRatePct, years },
+                assumptions: { inflationPct, useCustomInflation, isWhatIfWealth },
+                outputs: { nominalWealth: result.nominalWealth, inflationLoss: result.inflationLoss, taxAmount: result.taxAmount, realWealth: result.realWealth, purchasingPowerChangePct: result.purchasingPowerChangePct },
+              })
+            : undefined
+        }
       />
     </div>
   );

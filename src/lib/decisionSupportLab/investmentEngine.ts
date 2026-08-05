@@ -223,6 +223,103 @@ export function calculateDiversificationScore(weightsPct: number[]): number {
   return Math.max(0, Math.min(100, (1 - hhi) * 100));
 }
 
+// ---------------------------------------------------------------------
+// Scenario Engine — formalizes what was previously a private, non-exported
+// helper inside InvestmentScenarioSimulatorCalculator.tsx. Pure relocation,
+// no behavior change: that Calculator now imports this instead of defining
+// its own copy, and Asset Allocation Explorer's Scenario Comparison strip
+// (Phase 5.5) reuses the same function against its own bucket weights
+// rather than reimplementing scenario math a second time.
+// ---------------------------------------------------------------------
+
+export type ScenarioAssetId = "cash" | "gold" | "equities" | "govtSecurities" | "foreignCurrency";
+
+export interface ScenarioDefinitionInput {
+  inflationDeltaPp: number;
+  assetReturnDeltasPp: Partial<Record<ScenarioAssetId, number>>;
+}
+
+export interface ScenarioRunResult {
+  portfolioNominalReturnPct: number;
+  portfolioRealReturnPct: number;
+}
+
+/** Applies a scenario's fixed, documented deltas to a baseline allocation and inflation rate, then runs the result through calculatePortfolioReturn() — the same function every other portfolio tool in the Lab uses, so a scenario's outcome is always directly comparable to the unshocked baseline. */
+export function runInvestmentScenario(baseAllocations: PortfolioAllocationEntry[], baseInflationPct: number, scenario: ScenarioDefinitionInput): ScenarioRunResult {
+  const adjustedAllocations = baseAllocations.map((a) => ({ ...a, nominalReturnPct: a.nominalReturnPct + (scenario.assetReturnDeltasPp[a.assetId as ScenarioAssetId] ?? 0) }));
+  const adjustedInflation = baseInflationPct + scenario.inflationDeltaPp;
+  const result = calculatePortfolioReturn(adjustedAllocations, adjustedInflation);
+  return { portfolioNominalReturnPct: result.portfolioNominalReturnPct, portfolioRealReturnPct: result.portfolioRealReturnPct };
+}
+
+// ---------------------------------------------------------------------
+// Portfolio risk (correlation-adjusted volatility) & recommended
+// allocation — new for the Asset Allocation Explorer redesign (Phase
+// 5.5). ASSET_CORRELATIONS is explicitly a fixed, illustrative
+// assumption, not computed from live return data — no correlation data
+// source exists for these asset classes (quoted-rate assets like T-Bills
+// have no return distribution to correlate in the first place). Any
+// component rendering a correlation figure MUST label it as illustrative
+// directly on the panel, not only in ExplainTheMath's limitations prop —
+// the same credibility problem the Money Market Fund/Property copy fix
+// addressed would otherwise resurface here.
+// ---------------------------------------------------------------------
+
+/** Symmetric, illustrative correlation assumptions between the 5 Asset Allocation Explorer buckets — documented, fixed values, not derived from any live data source. */
+export const ASSET_CORRELATIONS: Record<ScenarioAssetId, Partial<Record<ScenarioAssetId, number>>> = {
+  cash: { cash: 1, gold: 0.05, equities: -0.1, govtSecurities: 0.3, foreignCurrency: 0.1 },
+  gold: { cash: 0.05, gold: 1, equities: -0.2, govtSecurities: 0.1, foreignCurrency: 0.3 },
+  equities: { cash: -0.1, gold: -0.2, equities: 1, govtSecurities: -0.1, foreignCurrency: 0.2 },
+  govtSecurities: { cash: 0.3, gold: 0.1, equities: -0.1, govtSecurities: 1, foreignCurrency: 0.15 },
+  foreignCurrency: { cash: 0.1, gold: 0.3, equities: 0.2, govtSecurities: 0.15, foreignCurrency: 1 },
+};
+
+/** Illustrative fallback annualized volatility (%) per bucket, used only when no real price-history volatility is available (e.g. quoted-rate assets) — same "documented assumption, not live data" caveat as ASSET_CORRELATIONS. */
+export const ASSET_VOLATILITY_FALLBACK_PCT: Record<ScenarioAssetId, number> = {
+  cash: 2,
+  gold: 15,
+  equities: 25,
+  govtSecurities: 5,
+  foreignCurrency: 8,
+};
+
+export interface VolatilityAllocationEntry {
+  assetId: ScenarioAssetId;
+  weightPct: number;
+  volatilityPct: number | null;
+}
+
+/** Portfolio-level volatility via the standard weighted-covariance formula (√ΣΣ wᵢwⱼσᵢσⱼρᵢⱼ) — legitimate textbook math; the illustrative *input* is ASSET_CORRELATIONS, not the formula itself. Falls back to ASSET_VOLATILITY_FALLBACK_PCT for any asset with no real volatility figure. */
+export function calculatePortfolioVolatility(allocations: VolatilityAllocationEntry[]): number {
+  const totalWeight = allocations.reduce((sum, a) => sum + a.weightPct, 0);
+  if (totalWeight <= 0) return 0;
+  const normalized = allocations.map((a) => ({ ...a, weight: a.weightPct / totalWeight, volatility: a.volatilityPct ?? ASSET_VOLATILITY_FALLBACK_PCT[a.assetId] }));
+
+  let variance = 0;
+  for (const i of normalized) {
+    for (const j of normalized) {
+      const rho = ASSET_CORRELATIONS[i.assetId]?.[j.assetId] ?? (i.assetId === j.assetId ? 1 : 0);
+      variance += i.weight * j.weight * i.volatility * j.volatility * rho;
+    }
+  }
+  return Math.sqrt(Math.max(0, variance));
+}
+
+export type RiskTolerance = "conservative" | "moderate" | "aggressive";
+
+/** 3 fixed preset target allocations, keyed by the profile's risk_tolerance — a starting point to compare against, staged into What-If rather than applied directly (the caller decides when/whether to adopt it). */
+export function getRecommendedAllocation(riskTolerance: RiskTolerance): Record<ScenarioAssetId, number> {
+  switch (riskTolerance) {
+    case "conservative":
+      return { cash: 40, gold: 15, equities: 10, govtSecurities: 30, foreignCurrency: 5 };
+    case "aggressive":
+      return { cash: 10, gold: 15, equities: 45, govtSecurities: 15, foreignCurrency: 15 };
+    case "moderate":
+    default:
+      return { cash: 20, gold: 20, equities: 25, govtSecurities: 25, foreignCurrency: 10 };
+  }
+}
+
 export interface RebalanceAction {
   assetId: string;
   assetName: string;

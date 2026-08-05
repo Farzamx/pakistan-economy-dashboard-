@@ -18,8 +18,7 @@ import { CPI_GROUPS } from "@/lib/personalInflation/cpiGroups";
 import { SCENARIO_PRESETS } from "@/lib/personalInflation/scenarios";
 import { computePersonalInflation, type PersonalInflationResult } from "@/lib/personalInflation/engine";
 import { useSavedScenarios, saveScenario, deleteScenario, type SavedScenario } from "@/lib/personalInflation/localScenarios";
-import { useEconomicIdentity } from "@/lib/decisionSupportLab/economicIdentity";
-import { useHouseholdAllocation, setHouseholdAllocation, setAllocationValue, replaceAllocation } from "@/lib/decisionSupportLab/householdAllocation";
+import { useEconomicProfile, setEconomicProfile } from "@/lib/decisionSupportLab/economicProfile";
 import { generatePersonalInsights } from "@/lib/decisionSupportLab/insightEngine";
 import type { ReportDefinition } from "@/lib/decisionSupportLab/reportFramework";
 import type { CpiCategoryBreakdown } from "@/lib/data/cpiCategoryBreakdown";
@@ -64,46 +63,41 @@ const DEFAULT_MONTHLY_BUDGET = 60_000;
 export default function PersonalInflationCalculator({ breakdown }: Props) {
   const { t } = useLanguage();
   const savedScenarios = useSavedScenarios();
-  const identity = useEconomicIdentity();
+  const { profile } = useEconomicProfile();
 
-  // Phase 2: reads/writes the Lab's shared household allocation store
-  // (householdAllocation.ts) instead of its own local state — this is the
-  // "no duplicate inputs" fix: whatever you entered in the Budget
-  // Allocation Calculator shows up here automatically, and vice versa.
-  const shared = useHouseholdAllocation();
+  // Reads/writes the Lab's shared Economic Profile instead of its own
+  // local state — this is the "no duplicate inputs" fix: whatever you
+  // entered in the Budget Allocation Calculator shows up here
+  // automatically, and vice versa.
+  const shared = profile.householdAllocation;
   const hasStoredAllocation = Object.keys(shared.allocation).length > 0;
   const mode: InputMode = hasStoredAllocation ? shared.mode : "percent";
   const monthlyBudget = shared.monthlyBudget > 0 ? shared.monthlyBudget : DEFAULT_MONTHLY_BUDGET;
   const allocation = hasStoredAllocation ? shared.allocation : DEFAULT_ALLOCATION_PCT;
 
-  const hasIdentitySpending = identity.monthlySpending > 0 && identity.monthlySpending !== monthlyBudget;
+  const hasIdentitySpending = profile.monthlySpending > 0 && profile.monthlySpending !== monthlyBudget;
 
   const totalAllocated = useMemo(() => CPI_GROUPS.reduce((s, g) => s + (allocation[g.groupNo] || 0), 0), [allocation]);
 
   function handleAllocationChange(groupNo: number, value: number) {
-    if (!hasStoredAllocation) setHouseholdAllocation({ mode, monthlyBudget, allocation: { ...allocation, [groupNo]: value } });
-    else setAllocationValue(groupNo, value);
+    setEconomicProfile({ householdAllocation: { mode, monthlyBudget, allocation: { ...allocation, [groupNo]: value } } });
   }
 
   function handleModeChange(nextMode: InputMode) {
-    setHouseholdAllocation({ mode: nextMode, monthlyBudget, allocation });
+    setEconomicProfile({ householdAllocation: { mode: nextMode, monthlyBudget, allocation } });
   }
 
   function handleBudgetChange(nextBudget: number) {
-    setHouseholdAllocation({ mode, monthlyBudget: nextBudget, allocation });
+    setEconomicProfile({ householdAllocation: { mode, monthlyBudget: nextBudget, allocation } });
   }
 
   function handleLoadPreset(allocationPct: Record<number, number>) {
-    replaceAllocation(allocationPct, "percent");
-    setHouseholdAllocation({ monthlyBudget: monthlyBudget || DEFAULT_MONTHLY_BUDGET });
+    setEconomicProfile({ householdAllocation: { mode: "percent", monthlyBudget: monthlyBudget || DEFAULT_MONTHLY_BUDGET, allocation: allocationPct } });
   }
 
   function handleLoadSaved(scenario: SavedScenario) {
-    replaceAllocation(scenario.allocation, scenario.mode);
-    if (scenario.mode === "spending") {
-      const total = Object.values(scenario.allocation).reduce((s, v) => s + v, 0);
-      if (total > 0) setHouseholdAllocation({ monthlyBudget: total });
-    }
+    const total = scenario.mode === "spending" ? Object.values(scenario.allocation).reduce((s, v) => s + v, 0) : 0;
+    setEconomicProfile({ householdAllocation: { mode: scenario.mode, monthlyBudget: total > 0 ? total : monthlyBudget, allocation: scenario.allocation } });
   }
 
   function handleSaveCurrent(name: string) {
@@ -111,7 +105,7 @@ export default function PersonalInflationCalculator({ breakdown }: Props) {
   }
 
   function handleReset() {
-    setHouseholdAllocation({ mode: "percent", monthlyBudget: DEFAULT_MONTHLY_BUDGET, allocation: DEFAULT_ALLOCATION_PCT });
+    setEconomicProfile({ householdAllocation: { mode: "percent", monthlyBudget: DEFAULT_MONTHLY_BUDGET, allocation: DEFAULT_ALLOCATION_PCT } });
   }
 
   // Memoized so typing in one input doesn't re-run the weighted-average
@@ -146,7 +140,7 @@ export default function PersonalInflationCalculator({ breakdown }: Props) {
           totalAllocated={totalAllocated}
           monthlyBudget={monthlyBudget}
           onBudgetChange={handleBudgetChange}
-          identitySuggestion={hasIdentitySpending ? { amount: identity.monthlySpending, onApply: () => handleBudgetChange(identity.monthlySpending) } : undefined}
+          identitySuggestion={hasIdentitySpending ? { amount: profile.monthlySpending, onApply: () => handleBudgetChange(profile.monthlySpending) } : undefined}
         />
         <ScenarioPicker
           onLoadPreset={handleLoadPreset}

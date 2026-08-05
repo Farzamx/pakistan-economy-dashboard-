@@ -2,8 +2,10 @@
 
 import { useMemo, useState } from "react";
 import { useLanguage } from "@/components/LanguageProvider";
-import RaiseRealityCheckForm from "@/components/raiseRealityCheck/RaiseRealityCheckForm";
 import InflationRateField from "@/components/decisionSupportLab/InflationRateField";
+import WhatIfToggle from "@/components/decisionSupportLab/WhatIfToggle";
+import ConfidenceBadge from "@/components/decisionSupportLab/ConfidenceBadge";
+import DataFreshnessBadge from "@/components/decisionSupportLab/DataFreshnessBadge";
 import RaiseRealityCheckResults from "@/components/raiseRealityCheck/RaiseRealityCheckResults";
 import RaiseRealityCheckCharts from "@/components/raiseRealityCheck/RaiseRealityCheckCharts";
 import ToolShareCard from "@/components/decisionSupportLab/ToolShareCard";
@@ -14,8 +16,10 @@ import EducationalPanel from "@/components/decisionSupportLab/EducationalPanel";
 import ReportDownloadButton from "@/components/decisionSupportLab/ReportDownloadButton";
 import { computeRaiseRealityCheck } from "@/lib/decisionSupportLab/salaryEngine";
 import { computeOfficialCpiPct } from "@/lib/personalInflation/engine";
+import { calculateConfidenceScore } from "@/lib/decisionSupportLab/confidenceEngine";
 import { generatePersonalInsights } from "@/lib/decisionSupportLab/insightEngine";
-import { useIncomeWealthState, setIncomeWealthState } from "@/lib/decisionSupportLab/incomeWealthState";
+import { getOverallCompletionPct } from "@/lib/decisionSupportLab/profileCompletion";
+import { useEconomicProfile, setEconomicProfile, getEffectiveSalary } from "@/lib/decisionSupportLab/economicProfile";
 import type { ReportDefinition } from "@/lib/decisionSupportLab/reportFramework";
 import type { CpiCategoryBreakdown } from "@/lib/data/cpiCategoryBreakdown";
 
@@ -25,28 +29,23 @@ interface Props {
 
 export default function RaiseRealityCheckCalculator({ breakdown }: Props) {
   const { t } = useLanguage();
-  const shared = useIncomeWealthState();
+  const { profile } = useEconomicProfile();
 
   const officialInflationPct = useMemo(() => (breakdown ? computeOfficialCpiPct(breakdown.groups) : null), [breakdown]);
 
-  // officialInflationPct comes from a server-fetched prop (already resolved
-  // before this component's first render), so it's safe to use directly as
-  // a lazy initial value rather than seeding it via a useEffect — the
-  // latter is exactly the set-state-in-effect anti-pattern this repo's
-  // lint rule flags (see economicIdentity.ts's header comment).
-  const [currentSalary, setCurrentSalaryState] = useState(() => shared.currentSalary);
-  const [nominalRaisePct, setNominalRaisePctState] = useState(() => shared.lastRaisePct);
+  const salaryFromProfile = getEffectiveSalary(profile);
+  const [isWhatIfSalary, setIsWhatIfSalary] = useState(false);
+  const [whatIfSalary, setWhatIfSalary] = useState(0);
+  const currentSalary = isWhatIfSalary ? whatIfSalary : salaryFromProfile;
+
+  const [nominalRaisePct, setNominalRaisePctState] = useState(() => profile.lastRaisePct);
   const [useCustomInflation, setUseCustomInflation] = useState(false);
   const [customInflationPct, setCustomInflationPct] = useState(0);
   const inflationPct = useCustomInflation ? customInflationPct : (officialInflationPct ?? 0);
 
-  function setCurrentSalary(value: number) {
-    setCurrentSalaryState(value);
-    setIncomeWealthState({ currentSalary: value });
-  }
   function setNominalRaisePct(value: number) {
     setNominalRaisePctState(value);
-    setIncomeWealthState({ lastRaisePct: value });
+    setEconomicProfile({ lastRaisePct: value });
   }
 
   const result = useMemo(() => {
@@ -55,6 +54,18 @@ export default function RaiseRealityCheckCalculator({ breakdown }: Props) {
   }, [currentSalary, nominalRaisePct, inflationPct]);
 
   const insights = useMemo(() => (result ? generatePersonalInsights({ realRaiseChangePct: result.realChangePct }) : []), [result]);
+
+  const confidence = useMemo(
+    () =>
+      calculateConfidenceScore({
+        profileCompletenessPct: getOverallCompletionPct(profile),
+        usesOfficialData: !useCustomInflation,
+        hasHistoricalCoverage: breakdown !== null,
+        manualEstimateCount: isWhatIfSalary ? 1 : 0,
+        assumptionCount: useCustomInflation ? 1 : 0,
+      }),
+    [profile, useCustomInflation, breakdown, isWhatIfSalary],
+  );
 
   function buildReport(): ReportDefinition {
     if (!result) {
@@ -84,14 +95,75 @@ export default function RaiseRealityCheckCalculator({ breakdown }: Props) {
     };
   }
 
+  // Part 3 of the Phase 5.5 brief: if the profile already has a salary
+  // figure, skip straight to results with a WhatIfToggle for testing a
+  // hypothetical one — no form first. Only when neither currentSalary nor
+  // monthlyIncome exists yet does this tool ask for anything.
+  if (salaryFromProfile <= 0 && !isWhatIfSalary) {
+    return (
+      <div id="calculator-input" className="flex flex-col gap-6">
+        <div className="glass-card rounded-xl border border-neon-blue/20 p-4 sm:p-5">
+          <p className="text-sm font-semibold text-white light:text-slate-900">We need one more value.</p>
+          <p className="mt-1 text-xs text-white/50 light:text-slate-500">This saves to your Economic Profile, so you won&apos;t be asked again.</p>
+          <div className="mt-3 max-w-xs">
+            <label htmlFor="rrc-salary-gate" className="text-label text-white/40 light:text-slate-400">
+              Current Salary
+            </label>
+            <div className="mt-1.5 flex items-center gap-2 rounded-lg border border-[var(--border-subtle)] px-3 py-2.5">
+              <span className="text-sm text-white/40 light:text-slate-400">Rs</span>
+              <input
+                id="rrc-salary-gate"
+                type="number"
+                inputMode="decimal"
+                step={1000}
+                placeholder="Enter current salary"
+                onChange={(e) => {
+                  const parsed = parseFloat(e.target.value);
+                  if (!isNaN(parsed) && parsed > 0) setEconomicProfile({ currentSalary: parsed });
+                }}
+                className="text-mono-num w-full bg-transparent text-sm font-semibold tabular-nums text-white outline-none light:text-slate-900"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div id="calculator-input" className="flex flex-col gap-6">
-      <RaiseRealityCheckForm
-        currentSalary={currentSalary}
-        onCurrentSalaryChange={setCurrentSalary}
-        nominalRaisePct={nominalRaisePct}
-        onNominalRaisePctChange={setNominalRaisePct}
+      <WhatIfToggle
+        label="Current Salary"
+        currentValue={salaryFromProfile}
+        whatIfValue={whatIfSalary}
+        onWhatIfValueChange={setWhatIfSalary}
+        isWhatIf={isWhatIfSalary}
+        onToggle={setIsWhatIfSalary}
+        formatValue={(v) => `Rs ${Math.round(v).toLocaleString("en-US")}`}
+        step={1000}
       />
+
+      <div className="glass-card rounded-xl p-4 sm:p-5">
+        <label htmlFor="rrc-raise" className="text-label text-white/40 light:text-slate-400">
+          Nominal Raise
+        </label>
+        <div className="mt-1.5 flex items-center gap-2 rounded-lg border border-[var(--border-subtle)] px-3 py-2.5">
+          <input
+            id="rrc-raise"
+            type="number"
+            inputMode="decimal"
+            step={0.5}
+            value={nominalRaisePct === 0 ? "" : nominalRaisePct}
+            placeholder="Enter percentage"
+            onChange={(e) => {
+              const parsed = parseFloat(e.target.value);
+              setNominalRaisePct(isNaN(parsed) ? 0 : parsed);
+            }}
+            className="text-mono-num w-full bg-transparent text-lg font-semibold tabular-nums text-white outline-none light:text-slate-900"
+          />
+          <span className="text-sm text-white/40 light:text-slate-400">%</span>
+        </div>
+      </div>
 
       <div className="glass-card rounded-xl p-4 sm:p-5">
         <InflationRateField
@@ -105,9 +177,8 @@ export default function RaiseRealityCheckCalculator({ breakdown }: Props) {
         />
       </div>
 
-      {currentSalary <= 0 && (
-        <div className="rounded-lg border border-amber-400/25 bg-amber-500/10 px-4 py-3 text-sm text-amber-300">{t("decisionSupportLab.validationEnterAmount")}</div>
-      )}
+      {result && <ConfidenceBadge result={confidence} toolId="raise-reality-check" />}
+      {result && <DataFreshnessBadge sourceName="Pakistan Bureau of Statistics" lastUpdated={breakdown?.observationDate ?? ""} dataFrequency="Monthly" />}
 
       {result && <RaiseRealityCheckResults result={result} />}
 

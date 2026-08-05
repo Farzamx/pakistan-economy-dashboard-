@@ -10,6 +10,7 @@ import DecisionSupportPanel from "@/components/decisionSupportLab/DecisionSuppor
 import ExplainTheMath from "@/components/decisionSupportLab/ExplainTheMath";
 import EducationalPanel from "@/components/decisionSupportLab/EducationalPanel";
 import ReportDownloadButton from "@/components/decisionSupportLab/ReportDownloadButton";
+import RequiredInputsGate from "@/components/decisionSupportLab/RequiredInputsGate";
 import { annuityPresentValue, annuityFutureValue, type AnnuityType } from "@/lib/decisionSupportLab/timeValueEngine";
 import type { ReportDefinition } from "@/lib/decisionSupportLab/reportFramework";
 
@@ -36,10 +37,17 @@ export default function AnnuityCalculator() {
     return factor > 0 ? targetValue / factor : 0;
   }, [mode, payment, targetValue, ratePct, periods, type]);
 
-  const presentValueAmount = useMemo(() => (effectivePayment > 0 ? annuityPresentValue(effectivePayment, ratePct, periods, type) : 0), [effectivePayment, ratePct, periods, type]);
-  const futureValueAmount = useMemo(() => (effectivePayment > 0 ? annuityFutureValue(effectivePayment, ratePct, periods, type) : 0), [effectivePayment, ratePct, periods, type]);
+  const hasRate = ratePct !== 0;
+  const presentValueAmount = useMemo(
+    () => (effectivePayment > 0 && hasRate ? annuityPresentValue(effectivePayment, ratePct, periods, type) : 0),
+    [effectivePayment, hasRate, ratePct, periods, type],
+  );
+  const futureValueAmount = useMemo(
+    () => (effectivePayment > 0 && hasRate ? annuityFutureValue(effectivePayment, ratePct, periods, type) : 0),
+    [effectivePayment, hasRate, ratePct, periods, type],
+  );
 
-  const hasInput = mode === "contribution" ? payment > 0 : targetValue > 0;
+  const hasInput = (mode === "contribution" ? payment > 0 : targetValue > 0) && hasRate;
 
   function buildReport(): ReportDefinition {
     return {
@@ -85,15 +93,14 @@ export default function AnnuityCalculator() {
         onPeriodsChange={setPeriods}
       />
 
-      {!hasInput && (
-        <div className="rounded-lg border border-amber-400/25 bg-amber-500/10 px-4 py-3 text-sm text-amber-300">{t("decisionSupportLab.validationEnterAmount")}</div>
-      )}
-
-      {hasInput && (
+      <RequiredInputsGate
+        requiredInputs={[
+          { id: mode === "contribution" ? "an-payment" : "an-target", label: mode === "contribution" ? "Payment per Period" : "Target Value", filled: mode === "contribution" ? payment > 0 : targetValue > 0 },
+          { id: "an-rate", label: "Rate per Period", filled: hasRate },
+        ]}
+      >
         <AnnuityResults mode={mode} presentValueAmount={presentValueAmount} futureValueAmount={futureValueAmount} requiredContribution={mode === "target" ? effectivePayment : null} />
-      )}
 
-      {hasInput && (
         <ToolShareCard
           title="My Annuity"
           headlineValue={`Rs ${Math.round(futureValueAmount).toLocaleString("en-US")}`}
@@ -108,13 +115,11 @@ export default function AnnuityCalculator() {
           shareSummary={`A ${type} annuity of Rs ${Math.round(effectivePayment).toLocaleString("en-US")} per period at ${ratePct.toFixed(2)}% for ${periods} periods grows to Rs ${Math.round(futureValueAmount).toLocaleString("en-US")}.`}
           filenameBase="my-annuity"
         />
-      )}
 
-      {hasInput && (
         <ReportDownloadButton buildDefinition={buildReport} filename="annuity-report.pdf" label={t("decisionSupportLab.downloadReport")} generatingLabel={t("decisionSupportLab.generatingReport")} />
-      )}
 
-      {hasInput && <AnnuityCharts payment={effectivePayment} ratePct={ratePct} periods={periods} type={type} />}
+        <AnnuityCharts payment={effectivePayment} ratePct={ratePct} periods={periods} type={type} />
+      </RequiredInputsGate>
 
       <ExplainTheMath
         formula="PV = Payment × (1 − (1 + r)^−n) ÷ r;  FV = Payment × ((1 + r)^n − 1) ÷ r  [× (1+r) for annuity due]"

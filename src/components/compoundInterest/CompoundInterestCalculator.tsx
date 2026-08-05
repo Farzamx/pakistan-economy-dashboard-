@@ -11,6 +11,7 @@ import DecisionSupportPanel from "@/components/decisionSupportLab/DecisionSuppor
 import ExplainTheMath from "@/components/decisionSupportLab/ExplainTheMath";
 import EducationalPanel from "@/components/decisionSupportLab/EducationalPanel";
 import ReportDownloadButton from "@/components/decisionSupportLab/ReportDownloadButton";
+import RequiredInputsGate from "@/components/decisionSupportLab/RequiredInputsGate";
 import {
   compoundInterest,
   continuousCompounding,
@@ -30,15 +31,17 @@ export default function CompoundInterestCalculator() {
   const [years, setYears] = useState(10);
   const [frequency, setFrequency] = useState<CompoundingFrequency>("annual");
 
+  const hasRate = ratePct !== 0;
+  const canCompute = principal > 0 && hasRate;
   const { endingValue, interestEarned } = useMemo(() => {
-    if (principal <= 0) return { endingValue: 0, interestEarned: 0 };
+    if (!canCompute) return { endingValue: 0, interestEarned: 0 };
     if (frequency === "continuous") {
       const ev = continuousCompounding(principal, ratePct, years);
       return { endingValue: ev, interestEarned: ev - principal };
     }
     const result = compoundInterest(principal, ratePct, years, COMPOUNDING_PERIODS_PER_YEAR[frequency]);
     return { endingValue: result.endingValue, interestEarned: result.interestEarned };
-  }, [principal, ratePct, years, frequency]);
+  }, [canCompute, principal, ratePct, years, frequency]);
 
   // Continuous compounding's EAR is the limit of effectiveAnnualRate() as
   // compoundingsPerYear → ∞ — approximated by reusing continuousCompounding()
@@ -50,11 +53,11 @@ export default function CompoundInterestCalculator() {
   const simple = useMemo(() => simpleInterest(principal, ratePct, years), [principal, ratePct, years]);
 
   const insights = useMemo(() => {
-    if (principal <= 0) return [];
+    if (!canCompute) return [];
     return generatePersonalInsights({
       contributionFrequency: { currentEffectiveAnnualRatePct: effectiveAnnualRatePct, monthlyEffectiveAnnualRatePct },
     });
-  }, [principal, effectiveAnnualRatePct, monthlyEffectiveAnnualRatePct]);
+  }, [canCompute, effectiveAnnualRatePct, monthlyEffectiveAnnualRatePct]);
 
   function buildReport(): ReportDefinition {
     return {
@@ -96,23 +99,20 @@ export default function CompoundInterestCalculator() {
         onFrequencyChange={setFrequency}
       />
 
-      {principal <= 0 && (
-        <div className="rounded-lg border border-amber-400/25 bg-amber-500/10 px-4 py-3 text-sm text-amber-300">{t("decisionSupportLab.validationEnterAmount")}</div>
-      )}
-
-      {principal > 0 && (
+      <RequiredInputsGate
+        requiredInputs={[
+          { id: "ci-principal", label: "Principal", filled: principal > 0 },
+          { id: "ci-rate", label: "Annual Rate", filled: hasRate },
+        ]}
+      >
         <CompoundInterestResults principal={principal} interestEarned={interestEarned} endingValue={endingValue} effectiveAnnualRatePct={effectiveAnnualRatePct} />
-      )}
 
-      {principal > 0 && (
         <div className="glass-card rounded-xl p-4 text-sm leading-relaxed text-white/70 sm:p-5 light:text-slate-600">
           <p>
             Compounding earned you Rs {Math.round(interestEarned - simple.interestEarned).toLocaleString("en-US")} more than simple interest would have over the same {years} years — the gap grows every additional year you stay invested.
           </p>
         </div>
-      )}
 
-      {principal > 0 && (
         <ToolShareCard
           title="My Compound Interest"
           headlineValue={`Rs ${Math.round(interestEarned).toLocaleString("en-US")}`}
@@ -127,15 +127,13 @@ export default function CompoundInterestCalculator() {
           shareSummary={`Rs ${Math.round(principal).toLocaleString("en-US")} at ${ratePct.toFixed(1)}% compounded ${frequency} for ${years} years grows to Rs ${Math.round(endingValue).toLocaleString("en-US")}.`}
           filenameBase="my-compound-interest"
         />
-      )}
 
-      {principal > 0 && (
         <ReportDownloadButton buildDefinition={buildReport} filename="compound-interest-report.pdf" label={t("decisionSupportLab.downloadReport")} generatingLabel={t("decisionSupportLab.generatingReport")} />
-      )}
 
-      <PersonalInsightsPanel insights={insights} />
+        <PersonalInsightsPanel insights={insights} />
 
-      {principal > 0 && <CompoundInterestCharts principal={principal} ratePct={ratePct} years={years} frequency={frequency} />}
+        <CompoundInterestCharts principal={principal} ratePct={ratePct} years={years} frequency={frequency} />
+      </RequiredInputsGate>
 
       <ExplainTheMath
         formula="Ending Value = Principal × (1 + Rate ÷ m)^(m × Years)  [continuous: P × e^(Rate × Years)]"

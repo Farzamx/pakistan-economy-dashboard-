@@ -3,8 +3,6 @@
 import { useLanguage } from "@/components/LanguageProvider";
 
 interface Props {
-  investmentAmount: number;
-  onInvestmentAmountChange: (value: number) => void;
   entryYear: number;
   onEntryYearChange: (value: number) => void;
   exitYear: number;
@@ -13,43 +11,11 @@ interface Props {
   onNominalReturnPctChange: (value: number) => void;
 }
 
-export default function RealReturnCalculatorForm({
-  investmentAmount,
-  onInvestmentAmountChange,
-  entryYear,
-  onEntryYearChange,
-  exitYear,
-  onExitYearChange,
-  nominalReturnPct,
-  onNominalReturnPctChange,
-}: Props) {
+export default function RealReturnCalculatorForm({ entryYear, onEntryYearChange, exitYear, onExitYearChange, nominalReturnPct, onNominalReturnPctChange }: Props) {
   const { t } = useLanguage();
 
   return (
-    <div className="glass-card grid grid-cols-1 gap-4 rounded-xl p-4 sm:grid-cols-2 sm:p-5 lg:grid-cols-4">
-      <div>
-        <label htmlFor="rrc-amount" className="text-label text-white/40 light:text-slate-400">
-          {t("realReturnCalculator.investmentAmountLabel")}
-        </label>
-        <div className="mt-1.5 flex items-center gap-2 rounded-lg border border-[var(--border-subtle)] px-3 py-2.5">
-          <span className="text-sm text-white/40 light:text-slate-400">Rs</span>
-          <input
-            id="rrc-amount"
-            type="number"
-            inputMode="decimal"
-            min={0}
-            step={1000}
-            value={investmentAmount === 0 ? "" : investmentAmount}
-            placeholder={t("decisionSupportLab.placeholderInvestmentAmount")}
-            onChange={(e) => {
-              const parsed = parseFloat(e.target.value);
-              onInvestmentAmountChange(isNaN(parsed) ? 0 : Math.max(0, parsed));
-            }}
-            className="text-mono-num w-full bg-transparent text-lg font-semibold tabular-nums text-white outline-none light:text-slate-900"
-          />
-        </div>
-      </div>
-
+    <div className="glass-card grid grid-cols-1 gap-4 rounded-xl p-4 sm:grid-cols-3 sm:p-5">
       <div>
         <label htmlFor="rrc-entry" className="text-label text-white/40 light:text-slate-400">
           {t("realReturnCalculator.entryYearLabel")}

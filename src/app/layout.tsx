@@ -15,6 +15,8 @@ import MobileNav from "@/components/MobileNav";
 import TopNav from "@/components/TopNav";
 import MobileStickyCta from "@/components/MobileStickyCta";
 import BfcacheGuard from "@/components/BfcacheGuard";
+import ProfileCompletionDrawer from "@/components/decisionSupportLab/ProfileCompletionDrawer";
+import RecentToolsTracker from "@/components/decisionSupportLab/RecentToolsTracker";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -160,6 +162,8 @@ export default function RootLayout({
                   {children}
                   <CreatorBadge />
                   <MobileStickyCta />
+                  <ProfileCompletionDrawer />
+                  <RecentToolsTracker />
                 </MotionProvider>
               </SidebarProvider>
             </PreferencesProvider>

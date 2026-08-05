@@ -43,13 +43,17 @@ export default function ToolCard({ tool, isAuthenticated }: Props) {
         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-neon-blue/30 bg-neon-blue/10 text-neon-blue">
           <ToolIcon toolId={tool.id} className="h-5 w-5" />
         </span>
-        {isAvailable ? (
-          <span className="rounded-full border border-emerald-400/30 bg-emerald-500/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-emerald-400">
-            <T tKey="decisionSupportLab.statusAvailable" />
-          </span>
-        ) : (
+        {!isAvailable && (
           <span className="rounded-full border border-[var(--border-subtle)] bg-[var(--surface-2)] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-white/40 light:text-slate-400">
             <T tKey="decisionSupportLab.statusComingSoon" />
+          </span>
+        )}
+        {isAvailable && !showLock && (
+          <span
+            aria-hidden="true"
+            className="mt-1 text-neon-blue/70 transition-transform group-hover:translate-x-1 group-focus-visible:translate-x-1 motion-reduce:transition-none motion-reduce:group-hover:translate-x-0 motion-reduce:group-focus-visible:translate-x-0"
+          >
+            →
           </span>
         )}
       </div>
@@ -57,19 +61,14 @@ export default function ToolCard({ tool, isAuthenticated }: Props) {
       <h3 className="mt-4 text-base font-semibold text-white light:text-slate-900">
         <T tKey={tool.titleKey} />
       </h3>
-      <p className="mt-1.5 text-sm leading-relaxed text-white/55 light:text-slate-500">
+      <p className="mt-1.5 line-clamp-2 text-sm leading-relaxed text-white/55 light:text-slate-500">
         <T tKey={tool.descriptionKey} />
       </p>
 
       {!isAvailable && tool.estimatedReleaseKey && (
-        <p className="mt-4 text-xs font-medium text-white/35 light:text-slate-400">
+        <p className="mt-4 text-xs font-medium text-white/55 light:text-slate-400">
           <T tKey={tool.estimatedReleaseKey} />
         </p>
-      )}
-      {isAvailable && !showLock && (
-        <span className="mt-4 inline-flex items-center gap-1 text-xs font-medium text-neon-blue">
-          <T tKey="decisionSupportLab.openTool" /> <span aria-hidden="true">→</span>
-        </span>
       )}
       {showLock && (
         <span className="mt-4 inline-flex items-center gap-1.5 text-xs font-medium text-amber-400">
@@ -84,7 +83,8 @@ export default function ToolCard({ tool, isAuthenticated }: Props) {
     return (
       <ProtectedLink
         href={tool.href}
-        className="glass-card flex flex-col rounded-xl p-5 transition-all hover:-translate-y-0.5 hover:border-neon-blue/40 focus-visible:-translate-y-0.5 focus-visible:border-neon-blue/40"
+        data-tool-card={tool.id}
+        className="glass-card group flex h-full flex-col rounded-xl p-4 transition-all hover:-translate-y-0.5 hover:border-neon-blue/40 focus-visible:-translate-y-0.5 focus-visible:border-neon-blue/40 motion-reduce:transition-colors motion-reduce:hover:translate-y-0 motion-reduce:focus-visible:translate-y-0"
       >
         {body}
       </ProtectedLink>
@@ -92,7 +92,7 @@ export default function ToolCard({ tool, isAuthenticated }: Props) {
   }
 
   return (
-    <div className="glass-card flex flex-col rounded-xl p-5 opacity-80" aria-disabled="true">
+    <div className="glass-card flex h-full flex-col rounded-xl p-4 opacity-80" aria-disabled="true">
       {body}
     </div>
   );

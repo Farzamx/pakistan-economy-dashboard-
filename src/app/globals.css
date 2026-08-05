@@ -256,6 +256,26 @@ body {
   0%   { background-color: rgba(251, 113, 133, 0.22); }
   100% { background-color: transparent; }
 }
+/* ProfileCompletionDrawer (Section A3/B5): slide-over panel entrance +
+   the temporary highlight ring on a field it's been told to scroll to. */
+@keyframes profile-drawer-slide-in {
+  from { transform: translateX(24px); opacity: 0; }
+  to   { transform: translateX(0); opacity: 1; }
+}
+.profile-drawer-panel {
+  animation: profile-drawer-slide-in 0.2s ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .profile-drawer-panel {
+    animation: none;
+  }
+}
+.profile-field-highlight {
+  outline: 2px solid var(--neon-blue);
+  outline-offset: 2px;
+  border-radius: 0.5rem;
+  transition: outline-color 2s ease-out;
+}
 .value-flash-up {
   animation: value-flash-up 1.6s ease-out forwards;
   border-radius: 4px;

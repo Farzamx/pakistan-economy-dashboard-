@@ -3,8 +3,6 @@
 import { useLanguage } from "@/components/LanguageProvider";
 
 interface Props {
-  currentSalary: number;
-  onCurrentSalaryChange: (value: number) => void;
   annualRaisePct: number;
   onAnnualRaisePctChange: (value: number) => void;
   years: number;
@@ -65,19 +63,11 @@ function Field({
   );
 }
 
-export default function FutureSalaryProjectionForm({
-  currentSalary,
-  onCurrentSalaryChange,
-  annualRaisePct,
-  onAnnualRaisePctChange,
-  years,
-  onYearsChange,
-}: Props) {
+export default function FutureSalaryProjectionForm({ annualRaisePct, onAnnualRaisePctChange, years, onYearsChange }: Props) {
   const { t } = useLanguage();
 
   return (
-    <div className="glass-card grid grid-cols-1 gap-4 rounded-xl p-4 sm:grid-cols-2 sm:p-5 lg:grid-cols-3">
-      <Field id="fsp-salary" label={t("futureSalaryProjection.currentSalaryLabel")} value={currentSalary} onChange={onCurrentSalaryChange} prefix="Rs" step={1000} placeholder={t("decisionSupportLab.placeholderSalary")} />
+    <div className="glass-card grid grid-cols-1 gap-4 rounded-xl p-4 sm:grid-cols-2 sm:p-5">
       <Field id="fsp-raise" label={t("futureSalaryProjection.annualRaiseLabel")} value={annualRaisePct} onChange={onAnnualRaisePctChange} suffix="%" step={0.5} placeholder={t("decisionSupportLab.placeholderPercentage")} />
       <Field id="fsp-years" label={t("futureSalaryProjection.yearsLabel")} value={years} onChange={onYearsChange} step={1} min={1} max={40} />
     </div>

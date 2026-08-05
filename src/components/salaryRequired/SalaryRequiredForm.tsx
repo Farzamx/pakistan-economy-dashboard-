@@ -4,8 +4,6 @@ import { useLanguage } from "@/components/LanguageProvider";
 import type { InflationSource } from "@/lib/decisionSupportLab/salaryEngine";
 
 interface Props {
-  currentSalary: number;
-  onCurrentSalaryChange: (value: number) => void;
   years: number;
   onYearsChange: (value: number) => void;
   assumedRaisePct: number;
@@ -15,44 +13,11 @@ interface Props {
   personalCpiAvailable: boolean;
 }
 
-export default function SalaryRequiredForm({
-  currentSalary,
-  onCurrentSalaryChange,
-  years,
-  onYearsChange,
-  assumedRaisePct,
-  onAssumedRaisePctChange,
-  inflationSource,
-  onInflationSourceChange,
-  personalCpiAvailable,
-}: Props) {
+export default function SalaryRequiredForm({ years, onYearsChange, assumedRaisePct, onAssumedRaisePctChange, inflationSource, onInflationSourceChange, personalCpiAvailable }: Props) {
   const { t } = useLanguage();
 
   return (
-    <div className="glass-card grid grid-cols-1 gap-4 rounded-xl p-4 sm:grid-cols-2 sm:p-5 lg:grid-cols-4">
-      <div>
-        <label htmlFor="sr-salary" className="text-label text-white/40 light:text-slate-400">
-          {t("salaryRequired.currentSalaryLabel")}
-        </label>
-        <div className="mt-1.5 flex items-center gap-2 rounded-lg border border-[var(--border-subtle)] px-3 py-2.5">
-          <span className="text-sm text-white/40 light:text-slate-400">Rs</span>
-          <input
-            id="sr-salary"
-            type="number"
-            inputMode="decimal"
-            min={0}
-            step={1000}
-            value={currentSalary === 0 ? "" : currentSalary}
-            placeholder={t("decisionSupportLab.placeholderSalary")}
-            onChange={(e) => {
-              const parsed = parseFloat(e.target.value);
-              onCurrentSalaryChange(isNaN(parsed) ? 0 : Math.max(0, parsed));
-            }}
-            className="text-mono-num w-full bg-transparent text-lg font-semibold tabular-nums text-white outline-none light:text-slate-900"
-          />
-        </div>
-      </div>
-
+    <div className="glass-card grid grid-cols-1 gap-4 rounded-xl p-4 sm:grid-cols-3 sm:p-5">
       <div>
         <label htmlFor="sr-years" className="text-label text-white/40 light:text-slate-400">
           {t("salaryRequired.yearsLabel")}

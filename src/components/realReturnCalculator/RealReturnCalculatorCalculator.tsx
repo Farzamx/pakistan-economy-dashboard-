@@ -12,10 +12,17 @@ import ExplainTheMath from "@/components/decisionSupportLab/ExplainTheMath";
 import EducationalPanel from "@/components/decisionSupportLab/EducationalPanel";
 import ReportDownloadButton from "@/components/decisionSupportLab/ReportDownloadButton";
 import InflationRateField from "@/components/decisionSupportLab/InflationRateField";
+import WhatIfToggle from "@/components/decisionSupportLab/WhatIfToggle";
+import ConfidenceBadge from "@/components/decisionSupportLab/ConfidenceBadge";
+import DataFreshnessBadge from "@/components/decisionSupportLab/DataFreshnessBadge";
+import RequiredInputsGate from "@/components/decisionSupportLab/RequiredInputsGate";
 import { calculateInflationAdjustedGrowth, calculatePurchasingPowerPreservation, buildRealReturnSeries } from "@/lib/decisionSupportLab/investmentEngine";
 import { calculateAverageAnnualInflation, getAvailableYears } from "@/lib/decisionSupportLab/purchasingPowerEngine";
 import { computeOfficialCpiPct } from "@/lib/personalInflation/engine";
+import { calculateConfidenceScore } from "@/lib/decisionSupportLab/confidenceEngine";
 import { generatePersonalInsights } from "@/lib/decisionSupportLab/insightEngine";
+import { getOverallCompletionPct } from "@/lib/decisionSupportLab/profileCompletion";
+import { useEconomicProfile, setEconomicProfile } from "@/lib/decisionSupportLab/economicProfile";
 import type { ReportDefinition } from "@/lib/decisionSupportLab/reportFramework";
 import type { CpiCategoryBreakdown } from "@/lib/data/cpiCategoryBreakdown";
 import type { CpiIndexPoint } from "@/lib/data/cpiMonthlyIndex";
@@ -29,10 +36,13 @@ const CURRENT_YEAR = new Date().getFullYear();
 
 export default function RealReturnCalculatorCalculator({ breakdown, cpiSeries }: Props) {
   const { t } = useLanguage();
+  const { profile } = useEconomicProfile();
   const officialInflationPct = useMemo(() => (breakdown ? computeOfficialCpiPct(breakdown.groups) : 0), [breakdown]);
   const availableYears = useMemo(() => (cpiSeries ? getAvailableYears(cpiSeries) : []), [cpiSeries]);
 
-  const [investmentAmount, setInvestmentAmount] = useState(0);
+  const [isWhatIfAmount, setIsWhatIfAmount] = useState(false);
+  const [whatIfAmount, setWhatIfAmount] = useState(0);
+  const investmentAmount = isWhatIfAmount ? whatIfAmount : profile.currentInvestmentAmount;
   const [entryYear, setEntryYear] = useState(CURRENT_YEAR - 5);
   const [exitYear, setExitYear] = useState(CURRENT_YEAR);
   const [nominalReturnPct, setNominalReturnPct] = useState(0);
@@ -56,12 +66,19 @@ export default function RealReturnCalculatorCalculator({ breakdown, cpiSeries }:
   const autoInflationPct = historicalInflationPct ?? officialInflationPct;
   const inflationPct = useCustomInflation ? customInflationPct : autoInflationPct;
 
+  // A1 fix: nominalReturnPct must be a real entry, not a silent zero — a
+  // blank return field previously still produced a fully-formed (and
+  // misleading) negative-gain result.
+  const hasNominalReturn = nominalReturnPct !== 0;
   const result = useMemo(
-    () => (investmentAmount > 0 ? calculateInflationAdjustedGrowth(investmentAmount, nominalReturnPct, inflationPct, years) : null),
-    [investmentAmount, nominalReturnPct, inflationPct, years],
+    () => (investmentAmount > 0 && hasNominalReturn ? calculateInflationAdjustedGrowth(investmentAmount, nominalReturnPct, inflationPct, years) : null),
+    [investmentAmount, hasNominalReturn, nominalReturnPct, inflationPct, years],
   );
 
-  const series = useMemo(() => (investmentAmount > 0 ? buildRealReturnSeries(investmentAmount, nominalReturnPct, inflationPct, years) : []), [investmentAmount, nominalReturnPct, inflationPct, years]);
+  const series = useMemo(
+    () => (investmentAmount > 0 && hasNominalReturn ? buildRealReturnSeries(investmentAmount, nominalReturnPct, inflationPct, years) : []),
+    [investmentAmount, hasNominalReturn, nominalReturnPct, inflationPct, years],
+  );
 
   const nominalGain = result ? result.nominalEndValue - investmentAmount : 0;
   const realGain = result ? result.realEndValue - investmentAmount : 0;
@@ -69,6 +86,18 @@ export default function RealReturnCalculatorCalculator({ breakdown, cpiSeries }:
   const purchasingPowerChangePct = result ? calculatePurchasingPowerPreservation(investmentAmount, result.realEndValue) - 100 : 0;
 
   const insights = useMemo(() => (result ? generatePersonalInsights({ inflationGainElimination: { nominalGainAmount: nominalGain, realGainAmount: realGain } }) : []), [result, nominalGain, realGain]);
+
+  const confidence = useMemo(
+    () =>
+      calculateConfidenceScore({
+        profileCompletenessPct: getOverallCompletionPct(profile),
+        usesOfficialData: !useCustomInflation,
+        hasHistoricalCoverage: historicalInflationPct !== null,
+        manualEstimateCount: (isWhatIfAmount ? 1 : 0) + 1,
+        assumptionCount: useCustomInflation ? 1 : 0,
+      }),
+    [profile, useCustomInflation, historicalInflationPct, isWhatIfAmount],
+  );
 
   function buildReport(): ReportDefinition {
     if (!result) {
@@ -101,11 +130,51 @@ export default function RealReturnCalculatorCalculator({ breakdown, cpiSeries }:
     };
   }
 
+  if (profile.currentInvestmentAmount <= 0 && !isWhatIfAmount) {
+    return (
+      <div id="calculator-input" className="flex flex-col gap-6">
+        <div className="glass-card rounded-xl border border-neon-blue/20 p-4 sm:p-5">
+          <p className="text-sm font-semibold text-white light:text-slate-900">We need one more value.</p>
+          <p className="mt-1 text-xs text-white/50 light:text-slate-500">This saves to your Economic Profile, so you won&apos;t be asked again.</p>
+          <div className="mt-3 max-w-xs">
+            <label htmlFor="rrc-amount-gate" className="text-label text-white/40 light:text-slate-400">
+              Investment Amount
+            </label>
+            <div className="mt-1.5 flex items-center gap-2 rounded-lg border border-[var(--border-subtle)] px-3 py-2.5">
+              <span className="text-sm text-white/40 light:text-slate-400">Rs</span>
+              <input
+                id="rrc-amount-gate"
+                type="number"
+                inputMode="decimal"
+                step={1000}
+                placeholder="Enter investment amount"
+                onChange={(e) => {
+                  const parsed = parseFloat(e.target.value);
+                  if (!isNaN(parsed) && parsed > 0) setEconomicProfile({ currentInvestmentAmount: parsed });
+                }}
+                className="text-mono-num w-full bg-transparent text-sm font-semibold tabular-nums text-white outline-none light:text-slate-900"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div id="calculator-input" className="flex flex-col gap-6">
+      <WhatIfToggle
+        label="Investment Amount"
+        currentValue={profile.currentInvestmentAmount}
+        whatIfValue={whatIfAmount}
+        onWhatIfValueChange={setWhatIfAmount}
+        isWhatIf={isWhatIfAmount}
+        onToggle={setIsWhatIfAmount}
+        formatValue={(v) => `Rs ${Math.round(v).toLocaleString("en-US")}`}
+        step={1000}
+      />
+
       <RealReturnCalculatorForm
-        investmentAmount={investmentAmount}
-        onInvestmentAmountChange={setInvestmentAmount}
         entryYear={entryYear}
         onEntryYearChange={setEntryYear}
         exitYear={exitYear}
@@ -130,37 +199,38 @@ export default function RealReturnCalculatorCalculator({ breakdown, cpiSeries }:
         />
       </div>
 
-      {investmentAmount <= 0 && (
-        <div className="rounded-lg border border-amber-400/25 bg-amber-500/10 px-4 py-3 text-sm text-amber-300">{t("decisionSupportLab.validationEnterAmount")}</div>
-      )}
+      <RequiredInputsGate requiredInputs={[{ id: "rrc-nominal", label: "Nominal Return", filled: hasNominalReturn }]}>
+        {result && <ConfidenceBadge result={confidence} toolId="real-return-calculator" />}
+        {result && <DataFreshnessBadge sourceName="PEIC Investment Intelligence Engine" lastUpdated={breakdown?.observationDate ?? ""} dataFrequency="Monthly" />}
 
-      {result && <RealReturnCalculatorResults nominalGain={nominalGain} realGain={realGain} purchasingPowerChangePct={purchasingPowerChangePct} inflationCost={inflationCost} />}
+        {result && <RealReturnCalculatorResults nominalGain={nominalGain} realGain={realGain} purchasingPowerChangePct={purchasingPowerChangePct} inflationCost={inflationCost} />}
 
-      {result && (
-        <ToolShareCard
-          title="My Real Return"
-          headlineValue={`Rs ${Math.round(realGain).toLocaleString("en-US")}`}
-          headlineTone={realGain >= 0 ? "down" : "up"}
-          comparisonLine={`Rs ${Math.round(investmentAmount).toLocaleString("en-US")} invested ${entryYear}–${exitYear} at ${nominalReturnPct.toFixed(1)}% nominal`}
-          deltaLine={`vs. Rs ${Math.round(nominalGain).toLocaleString("en-US")} nominal gain`}
-          bars={[
-            { label: "Nominal Gain", value: Math.max(0, nominalGain), color: "#4d8df7" },
-            { label: "Real Gain", value: Math.max(0, realGain), color: "#fb7185" },
-          ]}
-          badgeLines={["PEIC Investment Intelligence", `${entryYear}–${exitYear}`]}
-          shareUrl="https://www.pakeconintel.com/decision-support-lab/real-return-calculator"
-          shareSummary={`My Rs ${Math.round(investmentAmount).toLocaleString("en-US")} investment's nominal gain was Rs ${Math.round(nominalGain).toLocaleString("en-US")}, but after ${inflationPct.toFixed(1)}% inflation my real gain was only Rs ${Math.round(realGain).toLocaleString("en-US")}.`}
-          filenameBase="my-real-return"
-        />
-      )}
+        {result && (
+          <ToolShareCard
+            title="My Real Return"
+            headlineValue={`Rs ${Math.round(realGain).toLocaleString("en-US")}`}
+            headlineTone={realGain >= 0 ? "down" : "up"}
+            comparisonLine={`Rs ${Math.round(investmentAmount).toLocaleString("en-US")} invested ${entryYear}–${exitYear} at ${nominalReturnPct.toFixed(1)}% nominal`}
+            deltaLine={`vs. Rs ${Math.round(nominalGain).toLocaleString("en-US")} nominal gain`}
+            bars={[
+              { label: "Nominal Gain", value: Math.max(0, nominalGain), color: "#4d8df7" },
+              { label: "Real Gain", value: Math.max(0, realGain), color: "#fb7185" },
+            ]}
+            badgeLines={["PEIC Investment Intelligence", `${entryYear}–${exitYear}`]}
+            shareUrl="https://www.pakeconintel.com/decision-support-lab/real-return-calculator"
+            shareSummary={`My Rs ${Math.round(investmentAmount).toLocaleString("en-US")} investment's nominal gain was Rs ${Math.round(nominalGain).toLocaleString("en-US")}, but after ${inflationPct.toFixed(1)}% inflation my real gain was only Rs ${Math.round(realGain).toLocaleString("en-US")}.`}
+            filenameBase="my-real-return"
+          />
+        )}
 
-      {result && (
-        <ReportDownloadButton buildDefinition={buildReport} filename="real-return-report.pdf" label={t("decisionSupportLab.downloadReport")} generatingLabel={t("decisionSupportLab.generatingReport")} />
-      )}
+        {result && (
+          <ReportDownloadButton buildDefinition={buildReport} filename="real-return-report.pdf" label={t("decisionSupportLab.downloadReport")} generatingLabel={t("decisionSupportLab.generatingReport")} />
+        )}
 
-      <PersonalInsightsPanel insights={insights} />
+        <PersonalInsightsPanel insights={insights} />
 
-      {series.length > 0 && <RealReturnCalculatorCharts series={series} />}
+        {series.length > 0 && <RealReturnCalculatorCharts series={series} />}
+      </RequiredInputsGate>
 
       <ExplainTheMath
         formula="Nominal Value = Amount × (1 + Nominal Return ÷ 100)^Years; Real Value = Nominal Value ÷ (1 + Inflation ÷ 100)^Years"
@@ -197,6 +267,16 @@ export default function RealReturnCalculatorCalculator({ breakdown, cpiSeries }:
           href: "/decision-support-lab/real-return-dashboard",
           reason: "See nominal wealth, inflation, taxes and real wealth together in one professional dashboard.",
         }}
+        snapshotPayload={
+          result
+            ? () => ({
+                toolId: "real-return-calculator",
+                inputs: { investmentAmount, entryYear, exitYear, nominalReturnPct },
+                assumptions: { inflationPct, useCustomInflation, isWhatIfAmount },
+                outputs: { nominalGain, realGain, inflationCost, purchasingPowerChangePct },
+              })
+            : undefined
+        }
       />
     </div>
   );

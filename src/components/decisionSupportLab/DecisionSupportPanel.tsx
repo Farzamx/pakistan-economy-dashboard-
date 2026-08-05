@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { T } from "@/components/T";
+import SaveToSnapshotButton from "@/components/decisionSupportLab/SaveToSnapshotButton";
+import type { CalculationSnapshotPayload } from "@/lib/supabase/calculationSnapshots";
 
 export interface RelatedTool {
   title: string;
@@ -18,6 +20,8 @@ export interface DecisionSupportPanelProps {
   whatToUnderstand: string;
   relatedTools: RelatedTool[];
   suggestedNext?: SuggestedNext;
+  /** Optional — when provided, a "Save this result to my snapshot" button renders alongside Related Tools (Section D3). Opt-in per tool, same convention as ReportDownloadButton's snapshotPayload. */
+  snapshotPayload?: () => CalculationSnapshotPayload;
 }
 
 /**
@@ -29,7 +33,7 @@ export interface DecisionSupportPanelProps {
  * a sequence of small, clear invitations instead of picking blindly from
  * the landing page's tool grid every time.
  */
-export default function DecisionSupportPanel({ whatHappened, whyItHappened, whatToUnderstand, relatedTools, suggestedNext }: DecisionSupportPanelProps) {
+export default function DecisionSupportPanel({ whatHappened, whyItHappened, whatToUnderstand, relatedTools, suggestedNext, snapshotPayload }: DecisionSupportPanelProps) {
   return (
     <section className="glass-card flex flex-col gap-5 rounded-xl p-5 sm:p-6">
       <h2 className="text-base font-semibold text-white light:text-slate-900">
@@ -75,6 +79,8 @@ export default function DecisionSupportPanel({ whatHappened, whyItHappened, what
           </div>
         </div>
       )}
+
+      {snapshotPayload && <SaveToSnapshotButton snapshotPayload={snapshotPayload} />}
 
       {suggestedNext && (
         <Link

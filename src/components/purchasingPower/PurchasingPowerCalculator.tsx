@@ -5,6 +5,10 @@ import { useLanguage } from "@/components/LanguageProvider";
 import PurchasingPowerForm from "@/components/purchasingPower/PurchasingPowerForm";
 import PurchasingPowerResults from "@/components/purchasingPower/PurchasingPowerResults";
 import PurchasingPowerCharts from "@/components/purchasingPower/PurchasingPowerCharts";
+import ConfidenceBadge from "@/components/decisionSupportLab/ConfidenceBadge";
+import DataFreshnessBadge from "@/components/decisionSupportLab/DataFreshnessBadge";
+import { calculateConfidenceScore } from "@/lib/decisionSupportLab/confidenceEngine";
+import { getOverallCompletionPct } from "@/lib/decisionSupportLab/profileCompletion";
 import ToolShareCard from "@/components/decisionSupportLab/ToolShareCard";
 import PersonalInsightsPanel from "@/components/decisionSupportLab/PersonalInsightsPanel";
 import DecisionSupportPanel from "@/components/decisionSupportLab/DecisionSupportPanel";
@@ -18,7 +22,7 @@ import {
   getAvailableYears,
 } from "@/lib/decisionSupportLab/purchasingPowerEngine";
 import { generatePersonalInsights } from "@/lib/decisionSupportLab/insightEngine";
-import { useEconomicIdentity } from "@/lib/decisionSupportLab/economicIdentity";
+import { useEconomicProfile } from "@/lib/decisionSupportLab/economicProfile";
 import type { ReportDefinition } from "@/lib/decisionSupportLab/reportFramework";
 import type { CpiIndexPoint } from "@/lib/data/cpiMonthlyIndex";
 
@@ -30,7 +34,7 @@ const DEFAULT_AMOUNT = 0;
 
 export default function PurchasingPowerCalculator({ series }: Props) {
   const { t } = useLanguage();
-  const identity = useEconomicIdentity();
+  const { profile } = useEconomicProfile();
   const years = useMemo(() => (series ? getAvailableYears(series) : []), [series]);
 
   const [amount, setAmount] = useState(DEFAULT_AMOUNT);
@@ -65,16 +69,28 @@ export default function PurchasingPowerCalculator({ series }: Props) {
   // computePurchasingPower() math, just anchored to "12 months ago →
   // latest" instead of the user's own base/target selection.
   const incomeErosion = useMemo(() => {
-    if (!series || series.length < 2 || identity.monthlyIncome <= 0) return null;
+    if (!series || series.length < 2 || profile.monthlyIncome <= 0) return null;
     const latest = series[series.length - 1];
     const yearAgoDate = `${parseInt(latest.observationDate.slice(0, 4), 10) - 1}${latest.observationDate.slice(4)}`;
     const anchor = findNearestIndexPoint(series, yearAgoDate);
     if (!anchor || anchor.observationDate === latest.observationDate) return null;
-    const erosion = computePurchasingPower(identity.monthlyIncome, anchor, latest);
+    const erosion = computePurchasingPower(profile.monthlyIncome, anchor, latest);
     return { realValueLossPct: erosion.purchasingPowerLostPct, periodLabel: "the past year" };
-  }, [series, identity.monthlyIncome]);
+  }, [series, profile.monthlyIncome]);
 
   const insights = useMemo(() => generatePersonalInsights({ incomeErosion: incomeErosion ?? undefined }), [incomeErosion]);
+
+  const confidence = useMemo(
+    () =>
+      calculateConfidenceScore({
+        profileCompletenessPct: getOverallCompletionPct(profile),
+        usesOfficialData: true,
+        hasHistoricalCoverage: series !== null,
+        manualEstimateCount: 0,
+        assumptionCount: 1,
+      }),
+    [profile, series],
+  );
 
   function buildReport(): ReportDefinition {
     if (!result) {
@@ -127,6 +143,9 @@ export default function PurchasingPowerCalculator({ series }: Props) {
       {amount <= 0 && (
         <div className="rounded-lg border border-amber-400/25 bg-amber-500/10 px-4 py-3 text-sm text-amber-300">{t("decisionSupportLab.validationEnterAmount")}</div>
       )}
+
+      {result && <ConfidenceBadge result={confidence} toolId="purchasing-power" />}
+      {result && <DataFreshnessBadge sourceName="Pakistan Bureau of Statistics" lastUpdated={series[series.length - 1]?.observationDate ?? ""} dataFrequency="Monthly" />}
 
       {result && <PurchasingPowerResults result={result} />}
 

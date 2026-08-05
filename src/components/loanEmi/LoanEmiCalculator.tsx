@@ -10,22 +10,37 @@ import DecisionSupportPanel from "@/components/decisionSupportLab/DecisionSuppor
 import ExplainTheMath from "@/components/decisionSupportLab/ExplainTheMath";
 import EducationalPanel from "@/components/decisionSupportLab/EducationalPanel";
 import ReportDownloadButton from "@/components/decisionSupportLab/ReportDownloadButton";
+import RequiredInputsGate from "@/components/decisionSupportLab/RequiredInputsGate";
 import { buildAmortizationSchedule } from "@/lib/decisionSupportLab/timeValueEngine";
+import { useEconomicProfile, setEconomicProfile } from "@/lib/decisionSupportLab/economicProfile";
 import type { ReportDefinition } from "@/lib/decisionSupportLab/reportFramework";
 
 export default function LoanEmiCalculator() {
   const { t } = useLanguage();
+  const { profile } = useEconomicProfile();
 
-  const [loanAmount, setLoanAmount] = useState(0);
-  const [ratePct, setRatePct] = useState(0);
+  // Prefilled from and synced back to the profile's own debt fields — this
+  // is the same real-world figure (not a loosely-related default like
+  // Present/Future Value's savings prefill), so it stays a genuine sync.
+  const [loanAmount, setLoanAmountState] = useState(() => profile.debtAmount);
+  const [ratePct, setRatePctState] = useState(() => profile.debtInterestRate);
+  function setLoanAmount(value: number) {
+    setLoanAmountState(value);
+    setEconomicProfile({ debtAmount: value, hasDebt: value > 0 });
+  }
+  function setRatePct(value: number) {
+    setRatePctState(value);
+    setEconomicProfile({ debtInterestRate: value });
+  }
   const [termYears, setTermYears] = useState(20);
   const [frequency, setFrequency] = useState<LoanPaymentFrequency>("monthly");
 
+  const hasRate = ratePct !== 0;
   const schedule = useMemo(() => {
-    if (loanAmount <= 0) return null;
+    if (loanAmount <= 0 || !hasRate) return null;
     const paymentsPerYear = LOAN_PAYMENTS_PER_YEAR[frequency];
     return buildAmortizationSchedule(loanAmount, ratePct / paymentsPerYear, termYears * paymentsPerYear);
-  }, [loanAmount, ratePct, termYears, frequency]);
+  }, [loanAmount, hasRate, ratePct, termYears, frequency]);
 
   function buildReport(): ReportDefinition {
     if (!schedule) {
@@ -69,35 +84,38 @@ export default function LoanEmiCalculator() {
         onFrequencyChange={setFrequency}
       />
 
-      {loanAmount <= 0 && (
-        <div className="rounded-lg border border-amber-400/25 bg-amber-500/10 px-4 py-3 text-sm text-amber-300">{t("decisionSupportLab.validationEnterAmount")}</div>
-      )}
+      <RequiredInputsGate
+        requiredInputs={[
+          { id: "le-amount", label: "Loan Amount", filled: loanAmount > 0 },
+          { id: "le-rate", label: "Annual Rate", filled: hasRate },
+        ]}
+      >
+        {schedule && <LoanEmiResults schedule={schedule} />}
 
-      {schedule && <LoanEmiResults schedule={schedule} />}
+        {schedule && (
+          <ToolShareCard
+            title="My Loan Payment"
+            headlineValue={`Rs ${Math.round(schedule.payment).toLocaleString("en-US")}`}
+            headlineTone="neutral"
+            comparisonLine={`Rs ${Math.round(loanAmount).toLocaleString("en-US")} loan at ${ratePct.toFixed(1)}% over ${termYears} years`}
+            deltaLine={`Total interest: Rs ${Math.round(schedule.totalInterest).toLocaleString("en-US")}`}
+            bars={[
+              { label: "Total Principal", value: schedule.totalPrincipal, color: "#4d8df7" },
+              { label: "Total Interest", value: schedule.totalInterest, color: "#fb7185" },
+            ]}
+            badgeLines={["PEIC Time Value Engine", `${frequency} payments`]}
+            shareUrl="https://www.pakeconintel.com/decision-support-lab/loan-emi"
+            shareSummary={`A Rs ${Math.round(loanAmount).toLocaleString("en-US")} loan at ${ratePct.toFixed(1)}% over ${termYears} years costs Rs ${Math.round(schedule.payment).toLocaleString("en-US")} per payment, Rs ${Math.round(schedule.totalInterest).toLocaleString("en-US")} in total interest.`}
+            filenameBase="my-loan-payment"
+          />
+        )}
 
-      {schedule && (
-        <ToolShareCard
-          title="My Loan Payment"
-          headlineValue={`Rs ${Math.round(schedule.payment).toLocaleString("en-US")}`}
-          headlineTone="neutral"
-          comparisonLine={`Rs ${Math.round(loanAmount).toLocaleString("en-US")} loan at ${ratePct.toFixed(1)}% over ${termYears} years`}
-          deltaLine={`Total interest: Rs ${Math.round(schedule.totalInterest).toLocaleString("en-US")}`}
-          bars={[
-            { label: "Total Principal", value: schedule.totalPrincipal, color: "#4d8df7" },
-            { label: "Total Interest", value: schedule.totalInterest, color: "#fb7185" },
-          ]}
-          badgeLines={["PEIC Time Value Engine", `${frequency} payments`]}
-          shareUrl="https://www.pakeconintel.com/decision-support-lab/loan-emi"
-          shareSummary={`A Rs ${Math.round(loanAmount).toLocaleString("en-US")} loan at ${ratePct.toFixed(1)}% over ${termYears} years costs Rs ${Math.round(schedule.payment).toLocaleString("en-US")} per payment, Rs ${Math.round(schedule.totalInterest).toLocaleString("en-US")} in total interest.`}
-          filenameBase="my-loan-payment"
-        />
-      )}
+        {schedule && (
+          <ReportDownloadButton buildDefinition={buildReport} filename="loan-emi-report.pdf" label={t("decisionSupportLab.downloadReport")} generatingLabel={t("decisionSupportLab.generatingReport")} />
+        )}
 
-      {schedule && (
-        <ReportDownloadButton buildDefinition={buildReport} filename="loan-emi-report.pdf" label={t("decisionSupportLab.downloadReport")} generatingLabel={t("decisionSupportLab.generatingReport")} />
-      )}
-
-      {schedule && <LoanEmiCharts schedule={schedule} />}
+        {schedule && <LoanEmiCharts schedule={schedule} />}
+      </RequiredInputsGate>
 
       <ExplainTheMath
         formula="Payment = (Principal × r) ÷ (1 − (1 + r)^−n)"

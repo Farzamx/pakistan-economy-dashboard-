@@ -1198,7 +1198,7 @@ export const en: Translations = {
     riskColumn: "Risk (Volatility)",
     purchasingPowerColumn: "Purchasing Power",
     rankColumn: "Rank",
-    manualInputNote: "No official PEIC data source exists for this asset — enter your own estimate.",
+    manualInputNote: "Historical estimate unavailable — enter your realised annual return",
     liveDataNote: "Live PEIC data",
     chartTitle: "Nominal vs. Real Return by Asset",
   },

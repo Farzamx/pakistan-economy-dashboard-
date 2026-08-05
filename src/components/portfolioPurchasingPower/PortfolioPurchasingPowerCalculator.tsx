@@ -4,6 +4,9 @@ import { useMemo, useState } from "react";
 import { useLanguage } from "@/components/LanguageProvider";
 import PortfolioPurchasingPowerTable from "@/components/portfolioPurchasingPower/PortfolioPurchasingPowerTable";
 import InflationRateField from "@/components/decisionSupportLab/InflationRateField";
+import WhatIfToggle from "@/components/decisionSupportLab/WhatIfToggle";
+import ConfidenceBadge from "@/components/decisionSupportLab/ConfidenceBadge";
+import DataFreshnessBadge from "@/components/decisionSupportLab/DataFreshnessBadge";
 import PortfolioPurchasingPowerResults from "@/components/portfolioPurchasingPower/PortfolioPurchasingPowerResults";
 import PortfolioPurchasingPowerCharts from "@/components/portfolioPurchasingPower/PortfolioPurchasingPowerCharts";
 import PersonalInsightsPanel from "@/components/decisionSupportLab/PersonalInsightsPanel";
@@ -13,7 +16,10 @@ import EducationalPanel from "@/components/decisionSupportLab/EducationalPanel";
 import ReportDownloadButton from "@/components/decisionSupportLab/ReportDownloadButton";
 import { calculatePortfolioReturn, compareAssets } from "@/lib/decisionSupportLab/investmentEngine";
 import { computeOfficialCpiPct } from "@/lib/personalInflation/engine";
+import { calculateConfidenceScore } from "@/lib/decisionSupportLab/confidenceEngine";
 import { generatePersonalInsights } from "@/lib/decisionSupportLab/insightEngine";
+import { getOverallCompletionPct } from "@/lib/decisionSupportLab/profileCompletion";
+import { useEconomicProfile, setEconomicProfile, setInvestmentAllocationValue } from "@/lib/decisionSupportLab/economicProfile";
 import type { ReportDefinition } from "@/lib/decisionSupportLab/reportFramework";
 import type { CpiCategoryBreakdown } from "@/lib/data/cpiCategoryBreakdown";
 import type { LiveAssetData } from "@/lib/decisionSupportLab/liveAssetData";
@@ -47,31 +53,39 @@ const DEFAULT_WEIGHTS: Record<string, number> = { gold: 15, usd: 10, savings: 20
 
 export default function PortfolioPurchasingPowerCalculator({ breakdown, liveData }: Props) {
   const { t } = useLanguage();
+  const { profile } = useEconomicProfile();
   const officialInflationPct = useMemo(() => (breakdown ? computeOfficialCpiPct(breakdown.groups) : 0), [breakdown]);
 
-  const [portfolioValue, setPortfolioValue] = useState(0);
+  const [isWhatIfValue, setIsWhatIfValue] = useState(false);
+  const [whatIfValue, setWhatIfValue] = useState(0);
+  const portfolioValue = isWhatIfValue ? whatIfValue : profile.currentInvestmentAmount;
   const [useCustomInflation, setUseCustomInflation] = useState(false);
   const [customInflationPct, setCustomInflationPct] = useState(0);
   const inflationPct = useCustomInflation ? customInflationPct : officialInflationPct;
 
+  // Weights seed from the profile's saved investment_allocation (once the
+  // visitor has set one, e.g. from Asset Allocation Explorer) and fall back
+  // to a balanced starter split otherwise — never a second, un-synced copy.
+  const allocation = profile.investmentAllocation;
   const initialRows: PortfolioAssetRow[] = useMemo(
     () => [
-      { id: "gold", name: t("decisionSupportLab.assetGold"), weightPct: DEFAULT_WEIGHTS.gold, nominalReturnPct: liveData.gold.nominalReturnPct ?? 0, isEstimate: liveData.gold.nominalReturnPct === null, color: ASSET_COLORS.gold },
-      { id: "usd", name: t("decisionSupportLab.assetUsd"), weightPct: DEFAULT_WEIGHTS.usd, nominalReturnPct: liveData.usd.nominalReturnPct ?? 0, isEstimate: liveData.usd.nominalReturnPct === null, color: ASSET_COLORS.usd },
-      { id: "savings", name: t("decisionSupportLab.assetSavingsAccount"), weightPct: DEFAULT_WEIGHTS.savings, nominalReturnPct: liveData.savings.nominalReturnPct ?? 0, isEstimate: liveData.savings.nominalReturnPct === null, color: ASSET_COLORS.savings },
-      { id: "moneyMarket", name: t("decisionSupportLab.assetMoneyMarketFund"), weightPct: DEFAULT_WEIGHTS.moneyMarket, nominalReturnPct: 0, isEstimate: true, color: ASSET_COLORS.moneyMarket },
-      { id: "tbill", name: t("decisionSupportLab.assetTreasuryBills"), weightPct: DEFAULT_WEIGHTS.tbill, nominalReturnPct: liveData.tbill.nominalReturnPct ?? 0, isEstimate: liveData.tbill.nominalReturnPct === null, color: ASSET_COLORS.tbill },
-      { id: "pib", name: t("decisionSupportLab.assetPib"), weightPct: DEFAULT_WEIGHTS.pib, nominalReturnPct: liveData.pib.nominalReturnPct ?? 0, isEstimate: liveData.pib.nominalReturnPct === null, color: ASSET_COLORS.pib },
-      { id: "psx", name: t("decisionSupportLab.assetPsxIndex"), weightPct: DEFAULT_WEIGHTS.psx, nominalReturnPct: liveData.psx.nominalReturnPct ?? 0, isEstimate: liveData.psx.nominalReturnPct === null, color: ASSET_COLORS.psx },
-      { id: "property", name: t("decisionSupportLab.assetProperty"), weightPct: DEFAULT_WEIGHTS.property, nominalReturnPct: 0, isEstimate: true, color: ASSET_COLORS.property },
+      { id: "gold", name: t("decisionSupportLab.assetGold"), weightPct: allocation.gold ?? DEFAULT_WEIGHTS.gold, nominalReturnPct: liveData.gold.nominalReturnPct ?? 0, isEstimate: liveData.gold.nominalReturnPct === null, color: ASSET_COLORS.gold },
+      { id: "usd", name: t("decisionSupportLab.assetUsd"), weightPct: allocation.usd ?? DEFAULT_WEIGHTS.usd, nominalReturnPct: liveData.usd.nominalReturnPct ?? 0, isEstimate: liveData.usd.nominalReturnPct === null, color: ASSET_COLORS.usd },
+      { id: "savings", name: t("decisionSupportLab.assetSavingsAccount"), weightPct: allocation.savings ?? DEFAULT_WEIGHTS.savings, nominalReturnPct: liveData.savings.nominalReturnPct ?? 0, isEstimate: liveData.savings.nominalReturnPct === null, color: ASSET_COLORS.savings },
+      { id: "moneyMarket", name: t("decisionSupportLab.assetMoneyMarketFund"), weightPct: allocation.moneyMarket ?? DEFAULT_WEIGHTS.moneyMarket, nominalReturnPct: 0, isEstimate: true, color: ASSET_COLORS.moneyMarket },
+      { id: "tbill", name: t("decisionSupportLab.assetTreasuryBills"), weightPct: allocation.tbill ?? DEFAULT_WEIGHTS.tbill, nominalReturnPct: liveData.tbill.nominalReturnPct ?? 0, isEstimate: liveData.tbill.nominalReturnPct === null, color: ASSET_COLORS.tbill },
+      { id: "pib", name: t("decisionSupportLab.assetPib"), weightPct: allocation.pib ?? DEFAULT_WEIGHTS.pib, nominalReturnPct: liveData.pib.nominalReturnPct ?? 0, isEstimate: liveData.pib.nominalReturnPct === null, color: ASSET_COLORS.pib },
+      { id: "psx", name: t("decisionSupportLab.assetPsxIndex"), weightPct: allocation.psx ?? DEFAULT_WEIGHTS.psx, nominalReturnPct: liveData.psx.nominalReturnPct ?? 0, isEstimate: liveData.psx.nominalReturnPct === null, color: ASSET_COLORS.psx },
+      { id: "property", name: t("decisionSupportLab.assetProperty"), weightPct: allocation.property ?? DEFAULT_WEIGHTS.property, nominalReturnPct: 0, isEstimate: true, color: ASSET_COLORS.property },
     ],
-    [liveData, t],
+    [liveData, t, allocation],
   );
 
   const [rows, setRows] = useState(initialRows);
 
   function handleWeightChange(id: string, value: number) {
     setRows((prev) => prev.map((r) => (r.id === id ? { ...r, weightPct: value } : r)));
+    setInvestmentAllocationValue(id, value);
   }
   function handleNominalReturnChange(id: string, value: number) {
     setRows((prev) => prev.map((r) => (r.id === id ? { ...r, nominalReturnPct: value } : r)));
@@ -97,6 +111,18 @@ export default function PortfolioPurchasingPowerCalculator({ breakdown, liveData
       assetProtection: { strongerAssetName: strongest.name, strongerRealReturnPct: strongest.realReturnPct, weakerAssetName: weakest.name, weakerRealReturnPct: weakest.realReturnPct },
     });
   }, [rows, inflationPct]);
+
+  const confidence = useMemo(
+    () =>
+      calculateConfidenceScore({
+        profileCompletenessPct: getOverallCompletionPct(profile),
+        usesOfficialData: !useCustomInflation,
+        hasHistoricalCoverage: breakdown !== null,
+        manualEstimateCount: (isWhatIfValue ? 1 : 0) + rows.filter((r) => r.isEstimate).length,
+        assumptionCount: useCustomInflation ? 1 : 0,
+      }),
+    [profile, useCustomInflation, breakdown, isWhatIfValue, rows],
+  );
 
   function buildReport(): ReportDefinition {
     return {
@@ -124,32 +150,49 @@ export default function PortfolioPurchasingPowerCalculator({ breakdown, liveData
     };
   }
 
-  return (
-    <div id="calculator-input" className="flex flex-col gap-6">
-      <div className="glass-card grid grid-cols-1 gap-4 rounded-xl p-4 sm:grid-cols-2 sm:p-5">
-        <div>
-          <label htmlFor="ppp-value" className="text-label text-white/40 light:text-slate-400">
-            Portfolio Value (PKR)
-          </label>
-          <div className="mt-1.5 flex items-center gap-2 rounded-lg border border-[var(--border-subtle)] px-3 py-2.5">
-            <span className="text-sm text-white/40 light:text-slate-400">Rs</span>
-            <input
-              id="ppp-value"
-              type="number"
-              inputMode="decimal"
-              min={0}
-              step={10000}
-              value={portfolioValue === 0 ? "" : portfolioValue}
-              placeholder={t("decisionSupportLab.placeholderPortfolioValue")}
-              onChange={(e) => {
-                const parsed = parseFloat(e.target.value);
-                setPortfolioValue(isNaN(parsed) ? 0 : Math.max(0, parsed));
-              }}
-              className="text-mono-num w-full bg-transparent text-lg font-semibold tabular-nums text-white outline-none light:text-slate-900"
-            />
+  if (profile.currentInvestmentAmount <= 0 && !isWhatIfValue) {
+    return (
+      <div id="calculator-input" className="flex flex-col gap-6">
+        <div className="glass-card rounded-xl border border-neon-blue/20 p-4 sm:p-5">
+          <p className="text-sm font-semibold text-white light:text-slate-900">We need one more value.</p>
+          <p className="mt-1 text-xs text-white/50 light:text-slate-500">This saves to your Economic Profile, so you won&apos;t be asked again.</p>
+          <div className="mt-3 max-w-xs">
+            <label htmlFor="ppp-value-gate" className="text-label text-white/40 light:text-slate-400">
+              Portfolio Value
+            </label>
+            <div className="mt-1.5 flex items-center gap-2 rounded-lg border border-[var(--border-subtle)] px-3 py-2.5">
+              <span className="text-sm text-white/40 light:text-slate-400">Rs</span>
+              <input
+                id="ppp-value-gate"
+                type="number"
+                inputMode="decimal"
+                step={10000}
+                placeholder="Enter portfolio value"
+                onChange={(e) => {
+                  const parsed = parseFloat(e.target.value);
+                  if (!isNaN(parsed) && parsed > 0) setEconomicProfile({ currentInvestmentAmount: parsed });
+                }}
+                className="text-mono-num w-full bg-transparent text-sm font-semibold tabular-nums text-white outline-none light:text-slate-900"
+              />
+            </div>
           </div>
         </div>
       </div>
+    );
+  }
+
+  return (
+    <div id="calculator-input" className="flex flex-col gap-6">
+      <WhatIfToggle
+        label="Portfolio Value"
+        currentValue={profile.currentInvestmentAmount}
+        whatIfValue={whatIfValue}
+        onWhatIfValueChange={setWhatIfValue}
+        isWhatIf={isWhatIfValue}
+        onToggle={setIsWhatIfValue}
+        formatValue={(v) => `Rs ${Math.round(v).toLocaleString("en-US")}`}
+        step={10000}
+      />
 
       <div className="glass-card rounded-xl p-4 sm:p-5">
         <InflationRateField
@@ -163,9 +206,8 @@ export default function PortfolioPurchasingPowerCalculator({ breakdown, liveData
         />
       </div>
 
-      {portfolioValue <= 0 && (
-        <div className="rounded-lg border border-amber-400/25 bg-amber-500/10 px-4 py-3 text-sm text-amber-300">{t("decisionSupportLab.validationEnterAmount")}</div>
-      )}
+      <ConfidenceBadge result={confidence} toolId="portfolio-purchasing-power" />
+      <DataFreshnessBadge sourceName="PEIC Investment Intelligence Engine" lastUpdated={liveData.asOfDate} dataFrequency="Daily (market data) / As published (SBP rates)" />
 
       <PortfolioPurchasingPowerTable rows={rows} contributions={portfolioResult.contributions} onWeightChange={handleWeightChange} onNominalReturnChange={handleNominalReturnChange} />
 
@@ -192,7 +234,7 @@ export default function PortfolioPurchasingPowerCalculator({ breakdown, liveData
         sourceName="PEIC Investment Intelligence Engine"
         lastUpdated={liveData.asOfDate}
         assumptions={["Assumes each asset's return applies for the whole period at your stated weight — no rebalancing modeled.", "Weights should sum to 100% for the return figures to represent your actual portfolio; the table shows your current total."]}
-        limitations={["Money Market Fund and Property returns are visitor-entered estimates — no official PEIC data source exists for either."]}
+        limitations={["Historical return data isn't yet available for Money Market Fund and Property — enter your own realised annual return for these, clearly marked as a manual estimate rather than official data."]}
       />
 
       <EducationalPanel

@@ -51,7 +51,7 @@ export default function RealReturnDashboardChartsInner({ startingWealth, nominal
           </BarChart>
         </ResponsiveContainer>
       )}
-      <p className="mt-2 text-xs text-white/35 light:text-slate-400">Starting wealth: Rs {Math.round(startingWealth).toLocaleString("en-US")}</p>
+      <p className="mt-2 text-xs text-white/55 light:text-slate-400">Starting wealth: Rs {Math.round(startingWealth).toLocaleString("en-US")}</p>
     </div>
   );
 }

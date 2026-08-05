@@ -1198,7 +1198,7 @@ export const ur: Translations = {
     riskColumn: "خطرہ (اتار چڑھاؤ)",
     purchasingPowerColumn: "قوت خرید",
     rankColumn: "درجہ",
-    manualInputNote: "اس اثاثے کے لیے کوئی سرکاری PEIC ڈیٹا ذریعہ موجود نہیں — اپنا تخمینہ درج کریں۔",
+    manualInputNote: "تاریخی تخمینہ دستیاب نہیں — اپنا حاصل شدہ سالانہ منافع درج کریں",
     liveDataNote: "لائیو PEIC ڈیٹا",
     chartTitle: "اثاثے کے مطابق برائے نام بمقابلہ حقیقی منافع",
   },

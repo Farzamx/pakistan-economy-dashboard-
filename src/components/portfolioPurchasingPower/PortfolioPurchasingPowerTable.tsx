@@ -37,9 +37,14 @@ export default function PortfolioPurchasingPowerTable({ rows, contributions, onW
             return (
               <tr key={row.id} className="border-t border-[var(--border-subtle)]">
                 <td className="py-2 pr-4">
-                  <div className="flex items-center gap-2">
-                    <span aria-hidden="true" className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: row.color }} />
-                    <span className="font-semibold text-white light:text-slate-900">{row.name}</span>
+                  <div className="flex flex-col">
+                    <div className="flex items-center gap-2">
+                      <span aria-hidden="true" className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: row.color }} />
+                      <span className="font-semibold text-white light:text-slate-900">{row.name}</span>
+                    </div>
+                    <span className={`text-xs ${row.isEstimate ? "text-amber-400" : "text-emerald-400"}`}>
+                      {row.isEstimate ? t("assetComparisonLab.manualInputNote") : t("assetComparisonLab.liveDataNote")}
+                    </span>
                   </div>
                 </td>
                 <td className="py-2 pr-4">
@@ -70,7 +75,7 @@ export default function PortfolioPurchasingPowerTable({ rows, contributions, onW
                         inputMode="decimal"
                         step={0.1}
                         value={row.nominalReturnPct === 0 ? "" : row.nominalReturnPct}
-                        placeholder="0"
+                        placeholder="Enter return"
                         aria-label={`${row.name} nominal return`}
                         onChange={(e) => {
                           const parsed = parseFloat(e.target.value);

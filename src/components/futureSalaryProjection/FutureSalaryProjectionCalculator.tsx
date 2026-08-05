@@ -4,6 +4,9 @@ import { useMemo, useState } from "react";
 import { useLanguage } from "@/components/LanguageProvider";
 import FutureSalaryProjectionForm from "@/components/futureSalaryProjection/FutureSalaryProjectionForm";
 import InflationRateField from "@/components/decisionSupportLab/InflationRateField";
+import WhatIfToggle from "@/components/decisionSupportLab/WhatIfToggle";
+import ConfidenceBadge from "@/components/decisionSupportLab/ConfidenceBadge";
+import DataFreshnessBadge from "@/components/decisionSupportLab/DataFreshnessBadge";
 import FutureSalaryProjectionResults from "@/components/futureSalaryProjection/FutureSalaryProjectionResults";
 import FutureSalaryProjectionCharts from "@/components/futureSalaryProjection/FutureSalaryProjectionCharts";
 import ToolShareCard from "@/components/decisionSupportLab/ToolShareCard";
@@ -14,8 +17,10 @@ import EducationalPanel from "@/components/decisionSupportLab/EducationalPanel";
 import ReportDownloadButton from "@/components/decisionSupportLab/ReportDownloadButton";
 import { buildProjectionSeries } from "@/lib/decisionSupportLab/purchasingPowerEngine";
 import { computeOfficialCpiPct } from "@/lib/personalInflation/engine";
+import { calculateConfidenceScore } from "@/lib/decisionSupportLab/confidenceEngine";
 import { generatePersonalInsights } from "@/lib/decisionSupportLab/insightEngine";
-import { useIncomeWealthState, setIncomeWealthState } from "@/lib/decisionSupportLab/incomeWealthState";
+import { getOverallCompletionPct } from "@/lib/decisionSupportLab/profileCompletion";
+import { useEconomicProfile, setEconomicProfile, getEffectiveSalary } from "@/lib/decisionSupportLab/economicProfile";
 import type { ReportDefinition } from "@/lib/decisionSupportLab/reportFramework";
 import type { CpiCategoryBreakdown } from "@/lib/data/cpiCategoryBreakdown";
 
@@ -36,27 +41,23 @@ interface Props {
 
 export default function FutureSalaryProjectionCalculator({ breakdown }: Props) {
   const { t } = useLanguage();
-  const shared = useIncomeWealthState();
+  const { profile } = useEconomicProfile();
   const officialInflationPct = useMemo(() => (breakdown ? computeOfficialCpiPct(breakdown.groups) : 0), [breakdown]);
 
-  const [currentSalary, setCurrentSalaryState] = useState(() => shared.currentSalary);
-  const [annualRaisePct, setAnnualRaisePctState] = useState(() => shared.annualRaisePct);
+  const salaryFromProfile = getEffectiveSalary(profile);
+  const [isWhatIfSalary, setIsWhatIfSalary] = useState(false);
+  const [whatIfSalary, setWhatIfSalary] = useState(0);
+  const currentSalary = isWhatIfSalary ? whatIfSalary : salaryFromProfile;
+
+  const [annualRaisePct, setAnnualRaisePctState] = useState(() => profile.expectedAnnualRaisePct);
   const [useCustomInflation, setUseCustomInflation] = useState(false);
   const [customInflationPct, setCustomInflationPct] = useState(0);
   const inflationPct = useCustomInflation ? customInflationPct : officialInflationPct;
-  const [years, setYearsState] = useState(() => shared.projectionYears);
+  const [years, setYears] = useState(5);
 
-  function setCurrentSalary(value: number) {
-    setCurrentSalaryState(value);
-    setIncomeWealthState({ currentSalary: value });
-  }
   function setAnnualRaisePct(value: number) {
     setAnnualRaisePctState(value);
-    setIncomeWealthState({ annualRaisePct: value });
-  }
-  function setYears(value: number) {
-    setYearsState(value);
-    setIncomeWealthState({ projectionYears: value });
+    setEconomicProfile({ expectedAnnualRaisePct: value });
   }
 
   const series = useMemo(() => (currentSalary > 0 ? buildProjectionSeries(currentSalary, annualRaisePct, inflationPct, years) : []), [currentSalary, annualRaisePct, inflationPct, years]);
@@ -80,6 +81,18 @@ export default function FutureSalaryProjectionCalculator({ breakdown }: Props) {
     const realChangePct = result.purchasingPowerPct - 100;
     return generatePersonalInsights({ realRaiseChangePct: realChangePct });
   }, [result]);
+
+  const confidence = useMemo(
+    () =>
+      calculateConfidenceScore({
+        profileCompletenessPct: getOverallCompletionPct(profile),
+        usesOfficialData: !useCustomInflation,
+        hasHistoricalCoverage: breakdown !== null,
+        manualEstimateCount: isWhatIfSalary ? 1 : 0,
+        assumptionCount: useCustomInflation ? 1 : 0,
+      }),
+    [profile, useCustomInflation, breakdown, isWhatIfSalary],
+  );
 
   function buildReport(): ReportDefinition {
     if (!result) {
@@ -110,16 +123,51 @@ export default function FutureSalaryProjectionCalculator({ breakdown }: Props) {
     };
   }
 
+  if (salaryFromProfile <= 0 && !isWhatIfSalary) {
+    return (
+      <div id="calculator-input" className="flex flex-col gap-6">
+        <div className="glass-card rounded-xl border border-neon-blue/20 p-4 sm:p-5">
+          <p className="text-sm font-semibold text-white light:text-slate-900">We need one more value.</p>
+          <p className="mt-1 text-xs text-white/50 light:text-slate-500">This saves to your Economic Profile, so you won&apos;t be asked again.</p>
+          <div className="mt-3 max-w-xs">
+            <label htmlFor="fsp-salary-gate" className="text-label text-white/40 light:text-slate-400">
+              Current Salary
+            </label>
+            <div className="mt-1.5 flex items-center gap-2 rounded-lg border border-[var(--border-subtle)] px-3 py-2.5">
+              <span className="text-sm text-white/40 light:text-slate-400">Rs</span>
+              <input
+                id="fsp-salary-gate"
+                type="number"
+                inputMode="decimal"
+                step={1000}
+                placeholder="Enter current salary"
+                onChange={(e) => {
+                  const parsed = parseFloat(e.target.value);
+                  if (!isNaN(parsed) && parsed > 0) setEconomicProfile({ currentSalary: parsed });
+                }}
+                className="text-mono-num w-full bg-transparent text-sm font-semibold tabular-nums text-white outline-none light:text-slate-900"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div id="calculator-input" className="flex flex-col gap-6">
-      <FutureSalaryProjectionForm
-        currentSalary={currentSalary}
-        onCurrentSalaryChange={setCurrentSalary}
-        annualRaisePct={annualRaisePct}
-        onAnnualRaisePctChange={setAnnualRaisePct}
-        years={years}
-        onYearsChange={setYears}
+      <WhatIfToggle
+        label="Current Salary"
+        currentValue={salaryFromProfile}
+        whatIfValue={whatIfSalary}
+        onWhatIfValueChange={setWhatIfSalary}
+        isWhatIf={isWhatIfSalary}
+        onToggle={setIsWhatIfSalary}
+        formatValue={(v) => `Rs ${Math.round(v).toLocaleString("en-US")}`}
+        step={1000}
       />
+
+      <FutureSalaryProjectionForm annualRaisePct={annualRaisePct} onAnnualRaisePctChange={setAnnualRaisePct} years={years} onYearsChange={setYears} />
 
       <div className="glass-card rounded-xl p-4 sm:p-5">
         <InflationRateField
@@ -133,9 +181,8 @@ export default function FutureSalaryProjectionCalculator({ breakdown }: Props) {
         />
       </div>
 
-      {currentSalary <= 0 && (
-        <div className="rounded-lg border border-amber-400/25 bg-amber-500/10 px-4 py-3 text-sm text-amber-300">{t("decisionSupportLab.validationEnterAmount")}</div>
-      )}
+      {result && <ConfidenceBadge result={confidence} toolId="future-salary-projection" />}
+      {result && <DataFreshnessBadge sourceName="Pakistan Bureau of Statistics" lastUpdated={breakdown?.observationDate ?? ""} dataFrequency="Monthly" />}
 
       {result && <FutureSalaryProjectionResults result={result} />}
 

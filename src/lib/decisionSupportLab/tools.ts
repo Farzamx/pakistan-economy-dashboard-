@@ -8,6 +8,9 @@
 // Phase 3 added `category` — the landing page now renders one section per
 // category (ToolGrid.tsx), so "Income & Wealth Intelligence" reads as its
 // own part of the Lab rather than getting mixed into the original grid.
+import { isToolReady } from "@/lib/decisionSupportLab/toolFieldRegistry";
+import type { EconomicProfile } from "@/lib/decisionSupportLab/economicProfile";
+
 export type ToolStatus = "available" | "coming-soon";
 export type ToolCategoryId = "core" | "income-wealth" | "time-value" | "investment-intelligence";
 
@@ -240,3 +243,13 @@ export const DECISION_SUPPORT_TOOLS: ToolDefinition[] = [
     href: "/decision-support-lab/investment-scenario-simulator",
   },
 ];
+
+/** Section C4's "Start Here" row — exactly `count` available tools the user's current profile can already support (isToolReady), preferring registry order; pads with any remaining available tools if fewer than `count` are ready yet (e.g. a brand-new guest profile). */
+export function getStartHereTools(profile: EconomicProfile, count = 3): ToolDefinition[] {
+  const available = DECISION_SUPPORT_TOOLS.filter((t) => t.status === "available");
+  const ready = available.filter((t) => isToolReady(t.id, profile));
+  if (ready.length >= count) return ready.slice(0, count);
+  const readyIds = new Set(ready.map((t) => t.id));
+  const padding = available.filter((t) => !readyIds.has(t.id));
+  return [...ready, ...padding].slice(0, count);
+}

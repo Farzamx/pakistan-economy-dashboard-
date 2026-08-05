@@ -90,7 +90,7 @@ export default function SalaryPurchasingPowerForm({ salary, onSalaryChange, year
           placeholder={t("salaryPurchasingPower.cityPlaceholder")}
           className="mt-1.5 w-full rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-2)] px-3 py-2.5 text-sm text-white/70 outline-none light:text-slate-600"
         />
-        <p className="mt-1 text-xs text-white/35 light:text-slate-400">{t("salaryPurchasingPower.cityDisclosureNote")}</p>
+        <p className="mt-1 text-xs text-white/55 light:text-slate-400">{t("salaryPurchasingPower.cityDisclosureNote")}</p>
       </div>
     </div>
   );

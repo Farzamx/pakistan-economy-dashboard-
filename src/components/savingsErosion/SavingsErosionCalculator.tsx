@@ -2,8 +2,11 @@
 
 import { useMemo, useState } from "react";
 import { useLanguage } from "@/components/LanguageProvider";
-import SavingsErosionForm from "@/components/savingsErosion/SavingsErosionForm";
 import InflationRateField from "@/components/decisionSupportLab/InflationRateField";
+import WhatIfToggle from "@/components/decisionSupportLab/WhatIfToggle";
+import MissingFieldPrompt from "@/components/decisionSupportLab/MissingFieldPrompt";
+import ConfidenceBadge from "@/components/decisionSupportLab/ConfidenceBadge";
+import DataFreshnessBadge from "@/components/decisionSupportLab/DataFreshnessBadge";
 import SavingsErosionResults from "@/components/savingsErosion/SavingsErosionResults";
 import SavingsErosionCharts from "@/components/savingsErosion/SavingsErosionCharts";
 import ToolShareCard from "@/components/decisionSupportLab/ToolShareCard";
@@ -14,8 +17,10 @@ import EducationalPanel from "@/components/decisionSupportLab/EducationalPanel";
 import ReportDownloadButton from "@/components/decisionSupportLab/ReportDownloadButton";
 import { buildProjectionSeries, deflateCompounding } from "@/lib/decisionSupportLab/purchasingPowerEngine";
 import { computeOfficialCpiPct } from "@/lib/personalInflation/engine";
+import { calculateConfidenceScore } from "@/lib/decisionSupportLab/confidenceEngine";
 import { generatePersonalInsights } from "@/lib/decisionSupportLab/insightEngine";
-import { useIncomeWealthState, setIncomeWealthState } from "@/lib/decisionSupportLab/incomeWealthState";
+import { getOverallCompletionPct } from "@/lib/decisionSupportLab/profileCompletion";
+import { useEconomicProfile, setEconomicProfile } from "@/lib/decisionSupportLab/economicProfile";
 import type { ReportDefinition } from "@/lib/decisionSupportLab/reportFramework";
 import type { CpiCategoryBreakdown } from "@/lib/data/cpiCategoryBreakdown";
 
@@ -35,23 +40,17 @@ interface Props {
 
 export default function SavingsErosionCalculator({ breakdown }: Props) {
   const { t } = useLanguage();
-  const shared = useIncomeWealthState();
+  const { profile } = useEconomicProfile();
   const officialInflationPct = useMemo(() => (breakdown ? computeOfficialCpiPct(breakdown.groups) : 0), [breakdown]);
 
-  const [savingsAmount, setSavingsAmountState] = useState(() => shared.savingsAmount);
+  const [isWhatIfSavings, setIsWhatIfSavings] = useState(false);
+  const [whatIfSavings, setWhatIfSavings] = useState(0);
+  const savingsAmount = isWhatIfSavings ? whatIfSavings : profile.currentSavings;
+
   const [useCustomInflation, setUseCustomInflation] = useState(false);
   const [customInflationPct, setCustomInflationPct] = useState(0);
   const inflationPct = useCustomInflation ? customInflationPct : officialInflationPct;
-  const [years, setYearsState] = useState(() => shared.projectionYears);
-
-  function setSavingsAmount(value: number) {
-    setSavingsAmountState(value);
-    setIncomeWealthState({ savingsAmount: value });
-  }
-  function setYears(value: number) {
-    setYearsState(value);
-    setIncomeWealthState({ projectionYears: value });
-  }
+  const [years, setYears] = useState(5);
 
   const result = useMemo<SavingsErosionResult | null>(() => {
     if (savingsAmount <= 0) return null;
@@ -73,6 +72,18 @@ export default function SavingsErosionCalculator({ breakdown }: Props) {
   const insights = useMemo(
     () => (result ? generatePersonalInsights({ savingsErosion: { erosionPct: result.percentErosion, years: result.years } }) : []),
     [result],
+  );
+
+  const confidence = useMemo(
+    () =>
+      calculateConfidenceScore({
+        profileCompletenessPct: getOverallCompletionPct(profile),
+        usesOfficialData: !useCustomInflation,
+        hasHistoricalCoverage: breakdown !== null,
+        manualEstimateCount: isWhatIfSavings ? 1 : 0,
+        assumptionCount: useCustomInflation ? 1 : 0,
+      }),
+    [profile, useCustomInflation, breakdown, isWhatIfSavings],
   );
 
   function buildReport(): ReportDefinition {
@@ -102,14 +113,53 @@ export default function SavingsErosionCalculator({ breakdown }: Props) {
     };
   }
 
+  if (profile.currentSavings <= 0 && !isWhatIfSavings) {
+    return (
+      <div id="calculator-input" className="flex flex-col gap-6">
+        <MissingFieldPrompt
+          toolId="savings-erosion"
+          profile={profile}
+          fieldDescriptors={[{ field: "currentSavings", label: "Current Savings", placeholder: "Enter current savings", prefix: "Rs", step: 1000 }]}
+          onSave={(patch) => setEconomicProfile(patch)}
+        />
+      </div>
+    );
+  }
+
   return (
     <div id="calculator-input" className="flex flex-col gap-6">
-      <SavingsErosionForm
-        savingsAmount={savingsAmount}
-        onSavingsAmountChange={setSavingsAmount}
-        years={years}
-        onYearsChange={setYears}
+      <WhatIfToggle
+        label="Current Savings"
+        currentValue={profile.currentSavings}
+        whatIfValue={whatIfSavings}
+        onWhatIfValueChange={setWhatIfSavings}
+        isWhatIf={isWhatIfSavings}
+        onToggle={setIsWhatIfSavings}
+        formatValue={(v) => `Rs ${Math.round(v).toLocaleString("en-US")}`}
+        step={1000}
       />
+
+      <div className="glass-card rounded-xl p-4 sm:p-5">
+        <label htmlFor="se-years" className="text-label text-white/40 light:text-slate-400">
+          Years
+        </label>
+        <div className="mt-1.5 flex items-center gap-2 rounded-lg border border-[var(--border-subtle)] px-3 py-2.5">
+          <input
+            id="se-years"
+            type="number"
+            inputMode="numeric"
+            min={1}
+            max={40}
+            step={1}
+            value={years}
+            onChange={(e) => {
+              const parsed = parseInt(e.target.value, 10);
+              setYears(isNaN(parsed) ? 1 : Math.min(40, Math.max(1, parsed)));
+            }}
+            className="text-mono-num w-full bg-transparent text-lg font-semibold tabular-nums text-white outline-none light:text-slate-900"
+          />
+        </div>
+      </div>
 
       <div className="glass-card rounded-xl p-4 sm:p-5">
         <InflationRateField
@@ -123,9 +173,8 @@ export default function SavingsErosionCalculator({ breakdown }: Props) {
         />
       </div>
 
-      {savingsAmount <= 0 && (
-        <div className="rounded-lg border border-amber-400/25 bg-amber-500/10 px-4 py-3 text-sm text-amber-300">{t("decisionSupportLab.validationEnterAmount")}</div>
-      )}
+      {result && <ConfidenceBadge result={confidence} toolId="savings-erosion" />}
+      {result && <DataFreshnessBadge sourceName="Pakistan Bureau of Statistics" lastUpdated={breakdown?.observationDate ?? ""} dataFrequency="Monthly" />}
 
       {result && <SavingsErosionResults result={result} />}
 

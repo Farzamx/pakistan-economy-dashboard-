@@ -12,10 +12,12 @@ import DecisionSupportPanel from "@/components/decisionSupportLab/DecisionSuppor
 import ExplainTheMath from "@/components/decisionSupportLab/ExplainTheMath";
 import EducationalPanel from "@/components/decisionSupportLab/EducationalPanel";
 import ReportDownloadButton from "@/components/decisionSupportLab/ReportDownloadButton";
+import RequiredInputsGate from "@/components/decisionSupportLab/RequiredInputsGate";
 import { presentValueWithFrequency, type CompoundingFrequency } from "@/lib/decisionSupportLab/timeValueEngine";
 import { deflateCompounding } from "@/lib/decisionSupportLab/purchasingPowerEngine";
 import { computeOfficialCpiPct } from "@/lib/personalInflation/engine";
 import { generatePersonalInsights } from "@/lib/decisionSupportLab/insightEngine";
+import { useEconomicProfile } from "@/lib/decisionSupportLab/economicProfile";
 import type { ReportDefinition } from "@/lib/decisionSupportLab/reportFramework";
 import type { CpiCategoryBreakdown } from "@/lib/data/cpiCategoryBreakdown";
 
@@ -25,9 +27,14 @@ interface Props {
 
 export default function PresentValueCalculator({ breakdown }: Props) {
   const { t } = useLanguage();
+  const { profile } = useEconomicProfile();
   const officialInflationPct = useMemo(() => (breakdown ? computeOfficialCpiPct(breakdown.groups) : 0), [breakdown]);
 
-  const [futureValueAmount, setFutureValueAmount] = useState(0);
+  // Prefilled (not synced) from the profile's current savings — a sensible
+  // starting point for "what's a future sum worth today," not itself a
+  // profile field, so no write-back here (distinct from the WhatIfToggle
+  // tools' gate/toggle pattern).
+  const [futureValueAmount, setFutureValueAmount] = useState(() => profile.currentSavings);
   const [discountRatePct, setDiscountRatePct] = useState(0);
   const [years, setYears] = useState(10);
   const [frequency, setFrequency] = useState<CompoundingFrequency>("annual");
@@ -35,12 +42,14 @@ export default function PresentValueCalculator({ breakdown }: Props) {
   const [customInflationPct, setCustomInflationPct] = useState(0);
   const realValueInflationPct = useCustomInflation ? customInflationPct : officialInflationPct;
 
+  const hasDiscountRate = discountRatePct !== 0;
+  const canCompute = futureValueAmount > 0 && hasDiscountRate;
   const presentValueAmount = useMemo(
-    () => (futureValueAmount > 0 ? presentValueWithFrequency(futureValueAmount, discountRatePct, years, frequency) : 0),
-    [futureValueAmount, discountRatePct, years, frequency],
+    () => (canCompute ? presentValueWithFrequency(futureValueAmount, discountRatePct, years, frequency) : 0),
+    [canCompute, futureValueAmount, discountRatePct, years, frequency],
   );
-  const discountFactorValue = futureValueAmount > 0 ? presentValueAmount / futureValueAmount : 0;
-  const realValueAmount = useMemo(() => (futureValueAmount > 0 ? deflateCompounding(futureValueAmount, realValueInflationPct, years) : 0), [futureValueAmount, realValueInflationPct, years]);
+  const discountFactorValue = canCompute ? presentValueAmount / futureValueAmount : 0;
+  const realValueAmount = useMemo(() => (canCompute ? deflateCompounding(futureValueAmount, realValueInflationPct, years) : 0), [canCompute, futureValueAmount, realValueInflationPct, years]);
 
   const insights = useMemo(() => generatePersonalInsights({ discountRateImpact: { discountRatePct, years } }), [discountRatePct, years]);
 
@@ -95,11 +104,12 @@ export default function PresentValueCalculator({ breakdown }: Props) {
         />
       </div>
 
-      {futureValueAmount <= 0 && (
-        <div className="rounded-lg border border-amber-400/25 bg-amber-500/10 px-4 py-3 text-sm text-amber-300">{t("decisionSupportLab.validationEnterAmount")}</div>
-      )}
-
-      {futureValueAmount > 0 && (
+      <RequiredInputsGate
+        requiredInputs={[
+          { id: "pv-fv", label: "Future Value", filled: futureValueAmount > 0 },
+          { id: "pv-rate", label: "Discount Rate", filled: hasDiscountRate },
+        ]}
+      >
         <PresentValueResults
           presentValueAmount={presentValueAmount}
           discountFactorValue={discountFactorValue}
@@ -109,9 +119,7 @@ export default function PresentValueCalculator({ breakdown }: Props) {
           years={years}
           frequency={frequency}
         />
-      )}
 
-      {futureValueAmount > 0 && (
         <ToolShareCard
           title="My Present Value"
           headlineValue={`Rs ${Math.round(presentValueAmount).toLocaleString("en-US")}`}
@@ -126,15 +134,13 @@ export default function PresentValueCalculator({ breakdown }: Props) {
           shareSummary={`Rs ${Math.round(futureValueAmount).toLocaleString("en-US")} in ${years} years is worth Rs ${Math.round(presentValueAmount).toLocaleString("en-US")} today at a ${discountRatePct.toFixed(1)}% discount rate.`}
           filenameBase="my-present-value"
         />
-      )}
 
-      {futureValueAmount > 0 && (
         <ReportDownloadButton buildDefinition={buildReport} filename="present-value-report.pdf" label={t("decisionSupportLab.downloadReport")} generatingLabel={t("decisionSupportLab.generatingReport")} />
-      )}
 
-      <PersonalInsightsPanel insights={insights} />
+        <PersonalInsightsPanel insights={insights} />
 
-      {futureValueAmount > 0 && <PresentValueCharts presentValueAmount={presentValueAmount} discountRatePct={discountRatePct} years={years} frequency={frequency} />}
+        <PresentValueCharts presentValueAmount={presentValueAmount} discountRatePct={discountRatePct} years={years} frequency={frequency} />
+      </RequiredInputsGate>
 
       <ExplainTheMath
         formula="Present Value = Future Value ÷ (1 + Rate ÷ m)^(m × Years)  [continuous: FV × e^(−Rate × Years)]"

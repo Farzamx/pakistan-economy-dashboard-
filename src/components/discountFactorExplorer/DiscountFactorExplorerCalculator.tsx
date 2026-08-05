@@ -8,26 +8,30 @@ import PersonalInsightsPanel from "@/components/decisionSupportLab/PersonalInsig
 import DecisionSupportPanel from "@/components/decisionSupportLab/DecisionSupportPanel";
 import ExplainTheMath from "@/components/decisionSupportLab/ExplainTheMath";
 import EducationalPanel from "@/components/decisionSupportLab/EducationalPanel";
+import RequiredInputsGate from "@/components/decisionSupportLab/RequiredInputsGate";
 import { discountFactor, buildDiscountSeries } from "@/lib/decisionSupportLab/timeValueEngine";
 import { generatePersonalInsights } from "@/lib/decisionSupportLab/insightEngine";
 
 export default function DiscountFactorExplorerCalculator() {
-  const [ratePct, setRatePct] = useState(10);
+  const [ratePct, setRatePct] = useState(0);
   const [years, setYears] = useState(20);
 
-  const discountFactorValue = useMemo(() => discountFactor(ratePct, years), [ratePct, years]);
-  const series = useMemo(() => buildDiscountSeries(ratePct, years), [ratePct, years]);
-  const insights = useMemo(() => generatePersonalInsights({ discountRateImpact: { discountRatePct: ratePct, years } }), [ratePct, years]);
+  const hasRate = ratePct !== 0;
+  const discountFactorValue = useMemo(() => (hasRate ? discountFactor(ratePct, years) : 0), [hasRate, ratePct, years]);
+  const series = useMemo(() => (hasRate ? buildDiscountSeries(ratePct, years) : []), [hasRate, ratePct, years]);
+  const insights = useMemo(() => (hasRate ? generatePersonalInsights({ discountRateImpact: { discountRatePct: ratePct, years } }) : []), [hasRate, ratePct, years]);
 
   return (
     <div id="calculator-input" className="flex flex-col gap-6">
       <DiscountFactorExplorerForm ratePct={ratePct} onRatePctChange={setRatePct} years={years} onYearsChange={setYears} />
 
-      <DiscountFactorExplorerResults discountFactorValue={discountFactorValue} ratePct={ratePct} years={years} />
+      <RequiredInputsGate requiredInputs={[{ id: "dfe-rate", label: "Discount Rate", filled: hasRate }]}>
+        <DiscountFactorExplorerResults discountFactorValue={discountFactorValue} ratePct={ratePct} years={years} />
 
-      <PersonalInsightsPanel insights={insights} />
+        <PersonalInsightsPanel insights={insights} />
 
-      <DiscountFactorExplorerCharts series={series} selectedYears={years} />
+        <DiscountFactorExplorerCharts series={series} selectedYears={years} />
+      </RequiredInputsGate>
 
       <ExplainTheMath
         formula="Discount Factor = 1 ÷ (1 + Rate)^Years"
@@ -50,7 +54,11 @@ export default function DiscountFactorExplorerCalculator() {
       />
 
       <DecisionSupportPanel
-        whatHappened={`You explored a ${ratePct.toFixed(1)}% discount rate over ${years} years, where the discount factor is ${discountFactorValue.toFixed(4)}.`}
+        whatHappened={
+          hasRate
+            ? `You explored a ${ratePct.toFixed(1)}% discount rate over ${years} years, where the discount factor is ${discountFactorValue.toFixed(4)}.`
+            : "Enter a discount rate to see the multiplier that converts a future amount into today's value."
+        }
         whyItHappened="Higher rates and longer horizons both push the discount factor toward zero — rate and time compound against each other, not just against the amount."
         whatToUnderstand="This exact multiplier is what every Present Value, Salary Required, and future DCF or Bond Valuation calculation in this Lab applies to a real amount — understanding it here makes every other tool's output easier to reason about."
         relatedTools={[{ title: "Present Value Calculator", href: "/decision-support-lab/present-value" }, { title: "Financial Formula Explorer", href: "/decision-support-lab/formula-explorer" }]}
@@ -59,6 +67,16 @@ export default function DiscountFactorExplorerCalculator() {
           href: "/decision-support-lab/present-value",
           reason: "See what a specific future sum of money is worth today, using the exact rate and horizon you just explored.",
         }}
+        snapshotPayload={
+          hasRate
+            ? () => ({
+                toolId: "discount-factor-explorer",
+                inputs: { ratePct, years },
+                assumptions: {},
+                outputs: { discountFactorValue },
+              })
+            : undefined
+        }
       />
     </div>
   );

@@ -22,8 +22,7 @@ import { SCENARIO_PRESETS } from "@/lib/personalInflation/scenarios";
 // math computePersonalInflation already does.
 import { computePersonalInflation } from "@/lib/personalInflation/engine";
 import { useSavedScenarios, saveScenario, deleteScenario, type SavedScenario } from "@/lib/personalInflation/localScenarios";
-import { useEconomicIdentity } from "@/lib/decisionSupportLab/economicIdentity";
-import { useHouseholdAllocation, setHouseholdAllocation, setAllocationValue, replaceAllocation } from "@/lib/decisionSupportLab/householdAllocation";
+import { useEconomicProfile, setEconomicProfile } from "@/lib/decisionSupportLab/economicProfile";
 import { generatePersonalInsights } from "@/lib/decisionSupportLab/insightEngine";
 import type { CpiCategoryBreakdown } from "@/lib/data/cpiCategoryBreakdown";
 
@@ -36,45 +35,40 @@ const DEFAULT_MONTHLY_BUDGET = 60_000;
 
 export default function BudgetAllocationCalculator({ breakdown }: Props) {
   const { t } = useLanguage();
-  const shared = useHouseholdAllocation();
+  const { profile } = useEconomicProfile();
+  const shared = profile.householdAllocation;
   const savedScenarios = useSavedScenarios();
-  const identity = useEconomicIdentity();
 
-  // First-ever visit: the shared store is empty (allocation = {}). Seed it
-  // from the Family preset + Economic Identity's income (if set) so the
-  // tool never opens on a blank grid — but only as a fallback for
-  // *reading*, never by writing to the store during render.
+  // First-ever visit: the shared allocation is empty ({}). Seed it from the
+  // Family preset + the profile's monthly income (if set) so the tool
+  // never opens on a blank grid — but only as a fallback for *reading*,
+  // never by writing to the profile during render.
   const hasStoredAllocation = Object.keys(shared.allocation).length > 0;
   const mode: InputMode = hasStoredAllocation ? shared.mode : "percent";
-  const monthlyBudget = shared.monthlyBudget > 0 ? shared.monthlyBudget : identity.monthlyIncome > 0 ? identity.monthlyIncome : DEFAULT_MONTHLY_BUDGET;
+  const monthlyBudget = shared.monthlyBudget > 0 ? shared.monthlyBudget : profile.monthlyIncome > 0 ? profile.monthlyIncome : DEFAULT_MONTHLY_BUDGET;
   const allocation = hasStoredAllocation ? shared.allocation : DEFAULT_ALLOCATION_PCT;
 
   const totalAllocated = useMemo(() => CPI_GROUPS.reduce((s, g) => s + (allocation[g.groupNo] || 0), 0), [allocation]);
 
   function handleAllocationChange(groupNo: number, value: number) {
-    if (!hasStoredAllocation) setHouseholdAllocation({ mode, monthlyBudget, allocation: { ...allocation, [groupNo]: value } });
-    else setAllocationValue(groupNo, value);
+    setEconomicProfile({ householdAllocation: { mode, monthlyBudget, allocation: { ...allocation, [groupNo]: value } } });
   }
 
   function handleModeChange(nextMode: InputMode) {
-    setHouseholdAllocation({ mode: nextMode, monthlyBudget, allocation });
+    setEconomicProfile({ householdAllocation: { mode: nextMode, monthlyBudget, allocation } });
   }
 
   function handleBudgetChange(nextBudget: number) {
-    setHouseholdAllocation({ mode, monthlyBudget: nextBudget, allocation });
+    setEconomicProfile({ householdAllocation: { mode, monthlyBudget: nextBudget, allocation } });
   }
 
   function handleLoadPreset(allocationPct: Record<number, number>) {
-    replaceAllocation(allocationPct, "percent");
-    setHouseholdAllocation({ monthlyBudget: monthlyBudget || DEFAULT_MONTHLY_BUDGET });
+    setEconomicProfile({ householdAllocation: { mode: "percent", monthlyBudget: monthlyBudget || DEFAULT_MONTHLY_BUDGET, allocation: allocationPct } });
   }
 
   function handleLoadSaved(scenario: SavedScenario) {
-    replaceAllocation(scenario.allocation, scenario.mode);
-    if (scenario.mode === "spending") {
-      const total = Object.values(scenario.allocation).reduce((s, v) => s + v, 0);
-      if (total > 0) setHouseholdAllocation({ monthlyBudget: total });
-    }
+    const total = scenario.mode === "spending" ? Object.values(scenario.allocation).reduce((s, v) => s + v, 0) : 0;
+    setEconomicProfile({ householdAllocation: { mode: scenario.mode, monthlyBudget: total > 0 ? total : monthlyBudget, allocation: scenario.allocation } });
   }
 
   function handleSaveCurrent(name: string) {
@@ -82,7 +76,7 @@ export default function BudgetAllocationCalculator({ breakdown }: Props) {
   }
 
   function handleReset() {
-    setHouseholdAllocation({ mode: "percent", monthlyBudget: DEFAULT_MONTHLY_BUDGET, allocation: DEFAULT_ALLOCATION_PCT });
+    setEconomicProfile({ householdAllocation: { mode: "percent", monthlyBudget: DEFAULT_MONTHLY_BUDGET, allocation: DEFAULT_ALLOCATION_PCT } });
   }
 
   const result = useMemo(() => {

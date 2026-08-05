@@ -12,10 +12,12 @@ import DecisionSupportPanel from "@/components/decisionSupportLab/DecisionSuppor
 import ExplainTheMath from "@/components/decisionSupportLab/ExplainTheMath";
 import EducationalPanel from "@/components/decisionSupportLab/EducationalPanel";
 import ReportDownloadButton from "@/components/decisionSupportLab/ReportDownloadButton";
+import RequiredInputsGate from "@/components/decisionSupportLab/RequiredInputsGate";
 import { futureValueWithFrequency, type CompoundingFrequency } from "@/lib/decisionSupportLab/timeValueEngine";
 import { deflateCompounding } from "@/lib/decisionSupportLab/purchasingPowerEngine";
 import { computeOfficialCpiPct } from "@/lib/personalInflation/engine";
 import { generatePersonalInsights } from "@/lib/decisionSupportLab/insightEngine";
+import { useEconomicProfile } from "@/lib/decisionSupportLab/economicProfile";
 import type { ReportDefinition } from "@/lib/decisionSupportLab/reportFramework";
 import type { CpiCategoryBreakdown } from "@/lib/data/cpiCategoryBreakdown";
 
@@ -25,9 +27,12 @@ interface Props {
 
 export default function FutureValueCalculator({ breakdown }: Props) {
   const { t } = useLanguage();
+  const { profile } = useEconomicProfile();
   const officialInflationPct = useMemo(() => (breakdown ? computeOfficialCpiPct(breakdown.groups) : 0), [breakdown]);
 
-  const [presentValueAmount, setPresentValueAmount] = useState(0);
+  // Prefilled (not synced) from the profile's current savings — same
+  // light-touch pattern as the Present Value Calculator.
+  const [presentValueAmount, setPresentValueAmount] = useState(() => profile.currentSavings);
   const [annualReturnPct, setAnnualReturnPct] = useState(0);
   const [years, setYears] = useState(10);
   const [frequency, setFrequency] = useState<CompoundingFrequency>("annual");
@@ -35,20 +40,22 @@ export default function FutureValueCalculator({ breakdown }: Props) {
   const [customInflationPct, setCustomInflationPct] = useState(0);
   const realValueInflationPct = useCustomInflation ? customInflationPct : officialInflationPct;
 
+  const hasAnnualReturn = annualReturnPct !== 0;
+  const canCompute = presentValueAmount > 0 && hasAnnualReturn;
   const futureValueAmount = useMemo(
-    () => (presentValueAmount > 0 ? futureValueWithFrequency(presentValueAmount, annualReturnPct, years, frequency) : 0),
-    [presentValueAmount, annualReturnPct, years, frequency],
+    () => (canCompute ? futureValueWithFrequency(presentValueAmount, annualReturnPct, years, frequency) : 0),
+    [canCompute, presentValueAmount, annualReturnPct, years, frequency],
   );
-  const realFutureValueAmount = useMemo(() => (futureValueAmount > 0 ? deflateCompounding(futureValueAmount, realValueInflationPct, years) : 0), [futureValueAmount, realValueInflationPct, years]);
+  const realFutureValueAmount = useMemo(() => (canCompute ? deflateCompounding(futureValueAmount, realValueInflationPct, years) : 0), [canCompute, futureValueAmount, realValueInflationPct, years]);
 
   const insights = useMemo(() => {
-    if (presentValueAmount <= 0) return [];
+    if (!canCompute) return [];
     const half = Math.max(1, Math.floor(years / 2));
     const halfYearValue = futureValueWithFrequency(presentValueAmount, annualReturnPct, half, frequency);
     return generatePersonalInsights({
       compoundingAcceleration: { firstHalfGrowth: halfYearValue - presentValueAmount, secondHalfGrowth: futureValueAmount - halfYearValue },
     });
-  }, [presentValueAmount, annualReturnPct, years, frequency, futureValueAmount]);
+  }, [canCompute, presentValueAmount, annualReturnPct, years, frequency, futureValueAmount]);
 
   function buildReport(): ReportDefinition {
     return {
@@ -101,13 +108,14 @@ export default function FutureValueCalculator({ breakdown }: Props) {
         />
       </div>
 
-      {presentValueAmount <= 0 && (
-        <div className="rounded-lg border border-amber-400/25 bg-amber-500/10 px-4 py-3 text-sm text-amber-300">{t("decisionSupportLab.validationEnterAmount")}</div>
-      )}
+      <RequiredInputsGate
+        requiredInputs={[
+          { id: "fv-pv", label: "Present Value", filled: presentValueAmount > 0 },
+          { id: "fv-return", label: "Annual Return", filled: hasAnnualReturn },
+        ]}
+      >
+        <FutureValueResults futureValueAmount={futureValueAmount} presentValueAmount={presentValueAmount} realFutureValueAmount={realFutureValueAmount} />
 
-      {presentValueAmount > 0 && <FutureValueResults futureValueAmount={futureValueAmount} presentValueAmount={presentValueAmount} realFutureValueAmount={realFutureValueAmount} />}
-
-      {presentValueAmount > 0 && (
         <ToolShareCard
           title="My Future Value"
           headlineValue={`Rs ${Math.round(futureValueAmount).toLocaleString("en-US")}`}
@@ -122,15 +130,13 @@ export default function FutureValueCalculator({ breakdown }: Props) {
           shareSummary={`Rs ${Math.round(presentValueAmount).toLocaleString("en-US")} growing at ${annualReturnPct.toFixed(1)}% for ${years} years reaches Rs ${Math.round(futureValueAmount).toLocaleString("en-US")}.`}
           filenameBase="my-future-value"
         />
-      )}
 
-      {presentValueAmount > 0 && (
         <ReportDownloadButton buildDefinition={buildReport} filename="future-value-report.pdf" label={t("decisionSupportLab.downloadReport")} generatingLabel={t("decisionSupportLab.generatingReport")} />
-      )}
 
-      <PersonalInsightsPanel insights={insights} />
+        <PersonalInsightsPanel insights={insights} />
 
-      {presentValueAmount > 0 && <FutureValueCharts presentValueAmount={presentValueAmount} annualReturnPct={annualReturnPct} years={years} frequency={frequency} />}
+        <FutureValueCharts presentValueAmount={presentValueAmount} annualReturnPct={annualReturnPct} years={years} frequency={frequency} />
+      </RequiredInputsGate>
 
       <ExplainTheMath
         formula="Future Value = Present Value × (1 + Rate ÷ m)^(m × Years)  [continuous: PV × e^(Rate × Years)]"

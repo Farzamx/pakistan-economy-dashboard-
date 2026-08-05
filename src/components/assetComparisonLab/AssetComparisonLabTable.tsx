@@ -51,7 +51,7 @@ export default function AssetComparisonLabTable({ rows, results, onNominalReturn
                           inputMode="decimal"
                           step={0.1}
                           value={row.nominalReturnPct === 0 ? "" : row.nominalReturnPct}
-                          placeholder="0"
+                          placeholder="Enter return"
                           aria-label={`${row.name} nominal return`}
                           onChange={(e) => {
                             const parsed = parseFloat(e.target.value);

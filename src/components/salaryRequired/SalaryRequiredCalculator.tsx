@@ -4,6 +4,9 @@ import { useMemo, useState } from "react";
 import { useLanguage } from "@/components/LanguageProvider";
 import SalaryRequiredForm from "@/components/salaryRequired/SalaryRequiredForm";
 import SalaryRequiredResults from "@/components/salaryRequired/SalaryRequiredResults";
+import WhatIfToggle from "@/components/decisionSupportLab/WhatIfToggle";
+import ConfidenceBadge from "@/components/decisionSupportLab/ConfidenceBadge";
+import DataFreshnessBadge from "@/components/decisionSupportLab/DataFreshnessBadge";
 import ToolShareCard from "@/components/decisionSupportLab/ToolShareCard";
 import PersonalInsightsPanel from "@/components/decisionSupportLab/PersonalInsightsPanel";
 import DecisionSupportPanel from "@/components/decisionSupportLab/DecisionSupportPanel";
@@ -12,9 +15,10 @@ import EducationalPanel from "@/components/decisionSupportLab/EducationalPanel";
 import ReportDownloadButton from "@/components/decisionSupportLab/ReportDownloadButton";
 import { computeSalaryRequired, type InflationSource } from "@/lib/decisionSupportLab/salaryEngine";
 import { computeOfficialCpiPct, computePersonalInflation } from "@/lib/personalInflation/engine";
+import { calculateConfidenceScore } from "@/lib/decisionSupportLab/confidenceEngine";
 import { generatePersonalInsights } from "@/lib/decisionSupportLab/insightEngine";
-import { useIncomeWealthState, setIncomeWealthState } from "@/lib/decisionSupportLab/incomeWealthState";
-import { useHouseholdAllocation } from "@/lib/decisionSupportLab/householdAllocation";
+import { getOverallCompletionPct } from "@/lib/decisionSupportLab/profileCompletion";
+import { useEconomicProfile, setEconomicProfile, getEffectiveSalary } from "@/lib/decisionSupportLab/economicProfile";
 import type { ReportDefinition } from "@/lib/decisionSupportLab/reportFramework";
 import type { CpiCategoryBreakdown } from "@/lib/data/cpiCategoryBreakdown";
 
@@ -24,8 +28,8 @@ interface Props {
 
 export default function SalaryRequiredCalculator({ breakdown }: Props) {
   const { t } = useLanguage();
-  const shared = useIncomeWealthState();
-  const allocation = useHouseholdAllocation();
+  const { profile } = useEconomicProfile();
+  const allocation = profile.householdAllocation;
 
   const officialCpiPct = useMemo(() => (breakdown ? computeOfficialCpiPct(breakdown.groups) : 0), [breakdown]);
   const personalCpiAvailable = useMemo(() => Object.values(allocation.allocation).some((v) => v > 0), [allocation]);
@@ -34,18 +38,18 @@ export default function SalaryRequiredCalculator({ breakdown }: Props) {
     return computePersonalInflation(allocation.allocation, breakdown.groups).personalCpiPct;
   }, [breakdown, personalCpiAvailable, allocation]);
 
-  const [currentSalary, setCurrentSalaryState] = useState(() => shared.currentSalary);
+  const salaryFromProfile = getEffectiveSalary(profile);
+  const [isWhatIfSalary, setIsWhatIfSalary] = useState(false);
+  const [whatIfSalary, setWhatIfSalary] = useState(0);
+  const currentSalary = isWhatIfSalary ? whatIfSalary : salaryFromProfile;
+
   const [years, setYears] = useState(1);
-  const [assumedRaisePct, setAssumedRaisePctState] = useState(() => shared.annualRaisePct);
+  const [assumedRaisePct, setAssumedRaisePctState] = useState(() => profile.expectedAnnualRaisePct);
   const [inflationSource, setInflationSource] = useState<InflationSource>("official");
 
-  function setCurrentSalary(value: number) {
-    setCurrentSalaryState(value);
-    setIncomeWealthState({ currentSalary: value });
-  }
   function setAssumedRaisePct(value: number) {
     setAssumedRaisePctState(value);
-    setIncomeWealthState({ annualRaisePct: value });
+    setEconomicProfile({ expectedAnnualRaisePct: value });
   }
 
   const effectiveInflationSource: InflationSource = inflationSource === "personal" && personalCpiAvailable ? "personal" : "official";
@@ -57,6 +61,18 @@ export default function SalaryRequiredCalculator({ breakdown }: Props) {
   }, [currentSalary, inflationPct, effectiveInflationSource, years, assumedRaisePct]);
 
   const insights = useMemo(() => (result ? generatePersonalInsights({ realRaiseChangePct: result.realIncomeGapPct }) : []), [result]);
+
+  const confidence = useMemo(
+    () =>
+      calculateConfidenceScore({
+        profileCompletenessPct: getOverallCompletionPct(profile),
+        usesOfficialData: effectiveInflationSource === "official",
+        hasHistoricalCoverage: breakdown !== null,
+        manualEstimateCount: isWhatIfSalary ? 1 : 0,
+        assumptionCount: 1,
+      }),
+    [profile, effectiveInflationSource, breakdown, isWhatIfSalary],
+  );
 
   function buildReport(): ReportDefinition {
     if (!result) {
@@ -86,11 +102,51 @@ export default function SalaryRequiredCalculator({ breakdown }: Props) {
     };
   }
 
+  if (salaryFromProfile <= 0 && !isWhatIfSalary) {
+    return (
+      <div id="calculator-input" className="flex flex-col gap-6">
+        <div className="glass-card rounded-xl border border-neon-blue/20 p-4 sm:p-5">
+          <p className="text-sm font-semibold text-white light:text-slate-900">We need one more value.</p>
+          <p className="mt-1 text-xs text-white/50 light:text-slate-500">This saves to your Economic Profile, so you won&apos;t be asked again.</p>
+          <div className="mt-3 max-w-xs">
+            <label htmlFor="sr-salary-gate" className="text-label text-white/40 light:text-slate-400">
+              Current Salary
+            </label>
+            <div className="mt-1.5 flex items-center gap-2 rounded-lg border border-[var(--border-subtle)] px-3 py-2.5">
+              <span className="text-sm text-white/40 light:text-slate-400">Rs</span>
+              <input
+                id="sr-salary-gate"
+                type="number"
+                inputMode="decimal"
+                step={1000}
+                placeholder="Enter current salary"
+                onChange={(e) => {
+                  const parsed = parseFloat(e.target.value);
+                  if (!isNaN(parsed) && parsed > 0) setEconomicProfile({ currentSalary: parsed });
+                }}
+                className="text-mono-num w-full bg-transparent text-sm font-semibold tabular-nums text-white outline-none light:text-slate-900"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div id="calculator-input" className="flex flex-col gap-6">
+      <WhatIfToggle
+        label="Current Salary"
+        currentValue={salaryFromProfile}
+        whatIfValue={whatIfSalary}
+        onWhatIfValueChange={setWhatIfSalary}
+        isWhatIf={isWhatIfSalary}
+        onToggle={setIsWhatIfSalary}
+        formatValue={(v) => `Rs ${Math.round(v).toLocaleString("en-US")}`}
+        step={1000}
+      />
+
       <SalaryRequiredForm
-        currentSalary={currentSalary}
-        onCurrentSalaryChange={setCurrentSalary}
         years={years}
         onYearsChange={setYears}
         assumedRaisePct={assumedRaisePct}
@@ -100,9 +156,8 @@ export default function SalaryRequiredCalculator({ breakdown }: Props) {
         personalCpiAvailable={personalCpiAvailable}
       />
 
-      {currentSalary <= 0 && (
-        <div className="rounded-lg border border-amber-400/25 bg-amber-500/10 px-4 py-3 text-sm text-amber-300">{t("decisionSupportLab.validationEnterAmount")}</div>
-      )}
+      {result && <ConfidenceBadge result={confidence} toolId="salary-required" />}
+      {result && <DataFreshnessBadge sourceName="Pakistan Bureau of Statistics" lastUpdated={breakdown?.observationDate ?? ""} dataFrequency="Monthly" />}
 
       {result && <SalaryRequiredResults result={result} />}
 

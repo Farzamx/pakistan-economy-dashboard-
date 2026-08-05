@@ -4,6 +4,8 @@ import { useMemo, useState } from "react";
 import { useLanguage } from "@/components/LanguageProvider";
 import InvestmentScenarioSimulatorForm from "@/components/investmentScenarioSimulator/InvestmentScenarioSimulatorForm";
 import InflationRateField from "@/components/decisionSupportLab/InflationRateField";
+import ConfidenceBadge from "@/components/decisionSupportLab/ConfidenceBadge";
+import DataFreshnessBadge from "@/components/decisionSupportLab/DataFreshnessBadge";
 import InvestmentScenarioSimulatorResults from "@/components/investmentScenarioSimulator/InvestmentScenarioSimulatorResults";
 import InvestmentScenarioSimulatorCharts from "@/components/investmentScenarioSimulator/InvestmentScenarioSimulatorCharts";
 import ToolShareCard from "@/components/decisionSupportLab/ToolShareCard";
@@ -11,9 +13,12 @@ import DecisionSupportPanel from "@/components/decisionSupportLab/DecisionSuppor
 import ExplainTheMath from "@/components/decisionSupportLab/ExplainTheMath";
 import EducationalPanel from "@/components/decisionSupportLab/EducationalPanel";
 import ReportDownloadButton from "@/components/decisionSupportLab/ReportDownloadButton";
-import { SCENARIOS, type ScenarioId, type ScenarioDefinition } from "@/components/investmentScenarioSimulator/scenarios";
-import { calculatePortfolioReturn, type PortfolioAllocationEntry } from "@/lib/decisionSupportLab/investmentEngine";
+import { SCENARIOS, type ScenarioId } from "@/components/investmentScenarioSimulator/scenarios";
+import { runInvestmentScenario, type PortfolioAllocationEntry } from "@/lib/decisionSupportLab/investmentEngine";
 import { computeOfficialCpiPct } from "@/lib/personalInflation/engine";
+import { calculateConfidenceScore } from "@/lib/decisionSupportLab/confidenceEngine";
+import { getOverallCompletionPct } from "@/lib/decisionSupportLab/profileCompletion";
+import { useEconomicProfile, setEconomicProfile } from "@/lib/decisionSupportLab/economicProfile";
 import type { ReportDefinition } from "@/lib/decisionSupportLab/reportFramework";
 import type { CpiCategoryBreakdown } from "@/lib/data/cpiCategoryBreakdown";
 import type { LiveAssetData } from "@/lib/decisionSupportLab/liveAssetData";
@@ -31,22 +36,16 @@ const BASE_WEIGHTS: Record<"cash" | "gold" | "equities" | "govtSecurities" | "fo
   foreignCurrency: 10,
 };
 
-function runScenario(
-  baseAllocations: PortfolioAllocationEntry[],
-  baseInflationPct: number,
-  scenario: ScenarioDefinition,
-): { portfolioNominalReturnPct: number; portfolioRealReturnPct: number } {
-  const adjustedAllocations = baseAllocations.map((a) => ({ ...a, nominalReturnPct: a.nominalReturnPct + (scenario.assetReturnDeltasPp[a.assetId as keyof typeof scenario.assetReturnDeltasPp] ?? 0) }));
-  const adjustedInflation = baseInflationPct + scenario.inflationDeltaPp;
-  const result = calculatePortfolioReturn(adjustedAllocations, adjustedInflation);
-  return { portfolioNominalReturnPct: result.portfolioNominalReturnPct, portfolioRealReturnPct: result.portfolioRealReturnPct };
-}
-
 export default function InvestmentScenarioSimulatorCalculator({ breakdown, liveData }: Props) {
   const { t } = useLanguage();
+  const { profile } = useEconomicProfile();
   const officialInflationPct = useMemo(() => (breakdown ? computeOfficialCpiPct(breakdown.groups) : 0), [breakdown]);
 
-  const [portfolioValue, setPortfolioValue] = useState(0);
+  const [portfolioValue, setPortfolioValueState] = useState(() => profile.currentInvestmentAmount);
+  function setPortfolioValue(value: number) {
+    setPortfolioValueState(value);
+    setEconomicProfile({ currentInvestmentAmount: value });
+  }
   const [useCustomInflation, setUseCustomInflation] = useState(false);
   const [customInflationPct, setCustomInflationPct] = useState(0);
   const inflationPct = useCustomInflation ? customInflationPct : officialInflationPct;
@@ -64,17 +63,29 @@ export default function InvestmentScenarioSimulatorCalculator({ breakdown, liveD
   );
 
   const scenario = SCENARIOS.find((s) => s.id === scenarioId) ?? SCENARIOS[0];
-  const result = useMemo(() => runScenario(baseAllocations, inflationPct, scenario), [baseAllocations, inflationPct, scenario]);
+  const result = useMemo(() => runInvestmentScenario(baseAllocations, inflationPct, scenario), [baseAllocations, inflationPct, scenario]);
   const realValue = portfolioValue * (1 + result.portfolioRealReturnPct / 100);
   const portfolioImpact = realValue - portfolioValue;
 
   const chartData = useMemo(
     () =>
       SCENARIOS.map((s) => {
-        const r = runScenario(baseAllocations, inflationPct, s);
+        const r = runInvestmentScenario(baseAllocations, inflationPct, s);
         return { name: t(s.labelKey), realReturnPct: r.portfolioRealReturnPct, isSelected: s.id === scenarioId };
       }),
     [baseAllocations, inflationPct, scenarioId, t],
+  );
+
+  const confidence = useMemo(
+    () =>
+      calculateConfidenceScore({
+        profileCompletenessPct: getOverallCompletionPct(profile),
+        usesOfficialData: !useCustomInflation,
+        hasHistoricalCoverage: breakdown !== null,
+        manualEstimateCount: 0,
+        assumptionCount: useCustomInflation ? 1 : 0,
+      }),
+    [profile, useCustomInflation, breakdown],
   );
 
   function buildReport(): ReportDefinition {
@@ -128,6 +139,9 @@ export default function InvestmentScenarioSimulatorCalculator({ breakdown, liveD
       {portfolioValue <= 0 && (
         <div className="rounded-lg border border-amber-400/25 bg-amber-500/10 px-4 py-3 text-sm text-amber-300">{t("decisionSupportLab.validationEnterAmount")}</div>
       )}
+
+      {portfolioValue > 0 && <ConfidenceBadge result={confidence} toolId="investment-scenario-simulator" />}
+      {portfolioValue > 0 && <DataFreshnessBadge sourceName="PEIC Investment Intelligence Engine" lastUpdated={liveData.asOfDate} dataFrequency="Daily (market data) / As published (SBP rates)" />}
 
       <InvestmentScenarioSimulatorResults portfolioImpact={portfolioImpact} realReturnPct={result.portfolioRealReturnPct} realValue={realValue} />
 

@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
-import { T } from "@/components/T";
+import ToolBreadcrumb from "@/components/decisionSupportLab/ToolBreadcrumb";
 import SalaryRequiredHero from "@/components/salaryRequired/SalaryRequiredHero";
 import SalaryRequiredCalculator from "@/components/salaryRequired/SalaryRequiredCalculator";
 import { getLatestCpiCategoryBreakdown } from "@/lib/data/cpiCategoryBreakdown";
@@ -29,9 +28,7 @@ export default async function SalaryRequiredPage() {
       <Sidebar />
       <main className="min-w-0 flex-1 px-6 py-8 sm:px-10 lg:px-16">
         <div className="flex flex-col gap-10">
-          <Link href="/decision-support-lab" className="w-fit text-xs font-medium text-white/40 hover:text-neon-blue light:text-slate-400">
-            ← <T tKey="decisionSupportLab.title" />
-          </Link>
+          <ToolBreadcrumb toolId="salary-required" />
 
           <SalaryRequiredHero />
 

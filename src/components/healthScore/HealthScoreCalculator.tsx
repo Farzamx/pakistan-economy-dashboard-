@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useLanguage } from "@/components/LanguageProvider";
 import HealthScoreResults from "@/components/healthScore/HealthScoreResults";
 import ToolShareCard from "@/components/decisionSupportLab/ToolShareCard";
@@ -10,9 +10,9 @@ import ReportDownloadButton from "@/components/decisionSupportLab/ReportDownload
 import { computeHealthScore } from "@/lib/decisionSupportLab/healthScoreEngine";
 import { computeOfficialCpiPct, computePersonalInflation } from "@/lib/personalInflation/engine";
 import { computePurchasingPower, findNearestIndexPoint } from "@/lib/decisionSupportLab/purchasingPowerEngine";
-import { useEconomicIdentity } from "@/lib/decisionSupportLab/economicIdentity";
-import { useHouseholdAllocation } from "@/lib/decisionSupportLab/householdAllocation";
-import { useIncomeWealthState } from "@/lib/decisionSupportLab/incomeWealthState";
+import { useEconomicProfile } from "@/lib/decisionSupportLab/economicProfile";
+import { useAuth } from "@/components/AuthProvider";
+import { hasSnapshotToday, saveCalculationSnapshot } from "@/lib/supabase/calculationSnapshots";
 import type { ReportDefinition } from "@/lib/decisionSupportLab/reportFramework";
 import type { CpiCategoryBreakdown } from "@/lib/data/cpiCategoryBreakdown";
 import type { CpiIndexPoint } from "@/lib/data/cpiMonthlyIndex";
@@ -24,9 +24,9 @@ interface Props {
 
 export default function HealthScoreCalculator({ breakdown, series }: Props) {
   const { t } = useLanguage();
-  const identity = useEconomicIdentity();
-  const allocation = useHouseholdAllocation();
-  const wealth = useIncomeWealthState();
+  const { profile } = useEconomicProfile();
+  const allocation = profile.householdAllocation;
+  const wealth = profile;
 
   const officialCpiPct = useMemo(() => (breakdown ? computeOfficialCpiPct(breakdown.groups) : undefined), [breakdown]);
 
@@ -39,15 +39,15 @@ export default function HealthScoreCalculator({ breakdown, series }: Props) {
 
   // Reuses the exact same "trailing ~12 months" income-erosion calculation
   // PurchasingPowerCalculator.tsx uses for its own income-erosion insight —
-  // anchored to Economic Identity's monthly income instead of a scenario amount.
+  // anchored to the profile's monthly income instead of a scenario amount.
   const incomeErosionPct = useMemo(() => {
-    if (!series || series.length < 2 || identity.monthlyIncome <= 0) return undefined;
+    if (!series || series.length < 2 || profile.monthlyIncome <= 0) return undefined;
     const latest = series[series.length - 1];
     const yearAgoDate = `${parseInt(latest.observationDate.slice(0, 4), 10) - 1}${latest.observationDate.slice(4)}`;
     const anchor = findNearestIndexPoint(series, yearAgoDate);
     if (!anchor || anchor.observationDate === latest.observationDate) return undefined;
-    return computePurchasingPower(identity.monthlyIncome, anchor, latest).purchasingPowerLostPct;
-  }, [series, identity.monthlyIncome]);
+    return computePurchasingPower(profile.monthlyIncome, anchor, latest).purchasingPowerLostPct;
+  }, [series, profile.monthlyIncome]);
 
   const result = useMemo(
     () =>
@@ -55,14 +55,37 @@ export default function HealthScoreCalculator({ breakdown, series }: Props) {
         personalCpiPct,
         hasPersonalAllocation,
         officialCpiPct,
-        monthlyIncome: identity.monthlyIncome > 0 ? identity.monthlyIncome : undefined,
-        monthlySpending: identity.monthlySpending > 0 ? identity.monthlySpending : undefined,
+        monthlyIncome: profile.monthlyIncome > 0 ? profile.monthlyIncome : undefined,
+        monthlySpending: profile.monthlySpending > 0 ? profile.monthlySpending : undefined,
         incomeErosionPct,
         lastRaisePct: wealth.lastRaisePct > 0 ? wealth.lastRaisePct : undefined,
-        savingsAmount: wealth.savingsAmount > 0 ? wealth.savingsAmount : undefined,
+        savingsAmount: wealth.currentSavings > 0 ? wealth.currentSavings : undefined,
       }),
-    [personalCpiPct, hasPersonalAllocation, officialCpiPct, identity.monthlyIncome, identity.monthlySpending, incomeErosionPct, wealth.lastRaisePct, wealth.savingsAmount],
+    [personalCpiPct, hasPersonalAllocation, officialCpiPct, profile.monthlyIncome, profile.monthlySpending, incomeErosionPct, wealth.lastRaisePct, wealth.currentSavings],
   );
+
+  // Automatic daily history capture (Phase 5.5, plan §1b) — a genuine side
+  // effect (a network write), not React state derivation, so this is a
+  // legitimate useEffect use, unlike deriving component state from a prop.
+  // Throttled to at most once per UTC calendar day via hasSnapshotToday(),
+  // and guarded by a ref so a re-render mid-check can't fire it twice.
+  const { user } = useAuth();
+  const snapshotAttempted = useRef(false);
+  useEffect(() => {
+    if (!user || snapshotAttempted.current || result.categories.filter((c) => c.available).length === 0) return;
+    snapshotAttempted.current = true;
+    hasSnapshotToday("health-score").then((already) => {
+      if (already) return;
+      saveCalculationSnapshot(user.id, {
+        toolId: "health-score",
+        inputs: { monthlyIncome: profile.monthlyIncome, monthlySpending: profile.monthlySpending, lastRaisePct: profile.lastRaisePct, currentSavings: profile.currentSavings },
+        assumptions: {},
+        outputs: { overallScore: result.overallScore, categories: result.categories },
+      }).catch(() => {
+        // best-effort — a missed daily snapshot just means one fewer history point, not a functional failure
+      });
+    });
+  }, [user, result, profile]);
 
   // The Lab's one "full Personal Economic Report" — per the brief, this
   // combines every domain the visitor has actually used (Inflation,
@@ -91,14 +114,14 @@ export default function HealthScoreCalculator({ breakdown, series }: Props) {
       });
     }
 
-    if (identity.monthlyIncome > 0 && identity.monthlySpending > 0) {
-      const savingsRatePct = ((identity.monthlyIncome - identity.monthlySpending) / identity.monthlyIncome) * 100;
+    if (profile.monthlyIncome > 0 && profile.monthlySpending > 0) {
+      const savingsRatePct = ((profile.monthlyIncome - profile.monthlySpending) / profile.monthlyIncome) * 100;
       sections.push({
         heading: "Budget",
         paragraphs: [`You save ${savingsRatePct.toFixed(1)}% of your monthly income.`],
         facts: [
-          { label: "Monthly Income", value: `Rs ${Math.round(identity.monthlyIncome).toLocaleString("en-US")}` },
-          { label: "Monthly Spending", value: `Rs ${Math.round(identity.monthlySpending).toLocaleString("en-US")}` },
+          { label: "Monthly Income", value: `Rs ${Math.round(profile.monthlyIncome).toLocaleString("en-US")}` },
+          { label: "Monthly Spending", value: `Rs ${Math.round(profile.monthlySpending).toLocaleString("en-US")}` },
           { label: "Savings Rate", value: `${savingsRatePct.toFixed(1)}%` },
         ],
       });
@@ -123,11 +146,11 @@ export default function HealthScoreCalculator({ breakdown, series }: Props) {
       });
     }
 
-    if (wealth.savingsAmount > 0) {
+    if (wealth.currentSavings > 0) {
       sections.push({
         heading: "Savings",
-        paragraphs: [`You have Rs ${Math.round(wealth.savingsAmount).toLocaleString("en-US")} in recorded savings.`],
-        facts: [{ label: "Savings Amount", value: `Rs ${Math.round(wealth.savingsAmount).toLocaleString("en-US")}` }],
+        paragraphs: [`You have Rs ${Math.round(wealth.currentSavings).toLocaleString("en-US")} in recorded savings.`],
+        facts: [{ label: "Savings Amount", value: `Rs ${Math.round(wealth.currentSavings).toLocaleString("en-US")}` }],
       });
     }
 

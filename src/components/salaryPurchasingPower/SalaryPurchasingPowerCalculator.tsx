@@ -5,6 +5,10 @@ import { useLanguage } from "@/components/LanguageProvider";
 import SalaryPurchasingPowerForm from "@/components/salaryPurchasingPower/SalaryPurchasingPowerForm";
 import SalaryPurchasingPowerResults from "@/components/salaryPurchasingPower/SalaryPurchasingPowerResults";
 import PurchasingPowerCharts from "@/components/purchasingPower/PurchasingPowerCharts";
+import ConfidenceBadge from "@/components/decisionSupportLab/ConfidenceBadge";
+import DataFreshnessBadge from "@/components/decisionSupportLab/DataFreshnessBadge";
+import { calculateConfidenceScore } from "@/lib/decisionSupportLab/confidenceEngine";
+import { getOverallCompletionPct } from "@/lib/decisionSupportLab/profileCompletion";
 import ToolShareCard from "@/components/decisionSupportLab/ToolShareCard";
 import PersonalInsightsPanel from "@/components/decisionSupportLab/PersonalInsightsPanel";
 import DecisionSupportPanel from "@/components/decisionSupportLab/DecisionSupportPanel";
@@ -13,8 +17,7 @@ import EducationalPanel from "@/components/decisionSupportLab/EducationalPanel";
 import ReportDownloadButton from "@/components/decisionSupportLab/ReportDownloadButton";
 import { computePurchasingPower, buildPurchasingPowerTimeline, getAvailableYears } from "@/lib/decisionSupportLab/purchasingPowerEngine";
 import { generatePersonalInsights } from "@/lib/decisionSupportLab/insightEngine";
-import { useEconomicIdentity } from "@/lib/decisionSupportLab/economicIdentity";
-import { useIncomeWealthState, setIncomeWealthState } from "@/lib/decisionSupportLab/incomeWealthState";
+import { useEconomicProfile, setEconomicProfile, getEffectiveSalary } from "@/lib/decisionSupportLab/economicProfile";
 import type { ReportDefinition } from "@/lib/decisionSupportLab/reportFramework";
 import type { CpiIndexPoint } from "@/lib/data/cpiMonthlyIndex";
 
@@ -24,17 +27,16 @@ interface Props {
 
 export default function SalaryPurchasingPowerCalculator({ series }: Props) {
   const { t } = useLanguage();
-  const identity = useEconomicIdentity();
-  const shared = useIncomeWealthState();
+  const { profile } = useEconomicProfile();
   const years = useMemo(() => (series ? getAvailableYears(series) : []), [series]);
 
-  const [salary, setSalaryState] = useState(() => shared.currentSalary);
+  const [salary, setSalaryState] = useState(() => getEffectiveSalary(profile));
   const [baseYear, setBaseYear] = useState<number | null>(null);
   const [targetYear, setTargetYear] = useState<number | null>(null);
 
   function setSalary(value: number) {
     setSalaryState(value);
-    setIncomeWealthState({ currentSalary: value });
+    setEconomicProfile({ currentSalary: value });
   }
 
   const effectiveBaseYear = baseYear ?? years[0]?.year ?? 0;
@@ -60,6 +62,18 @@ export default function SalaryPurchasingPowerCalculator({ series }: Props) {
     if (!result) return [];
     return generatePersonalInsights({});
   }, [result]);
+
+  const confidence = useMemo(
+    () =>
+      calculateConfidenceScore({
+        profileCompletenessPct: getOverallCompletionPct(profile),
+        usesOfficialData: true,
+        hasHistoricalCoverage: series !== null,
+        manualEstimateCount: 0,
+        assumptionCount: 1,
+      }),
+    [profile, series],
+  );
 
   function buildReport(): ReportDefinition {
     if (!result) {
@@ -107,8 +121,11 @@ export default function SalaryPurchasingPowerCalculator({ series }: Props) {
         onBaseYearChange={setBaseYear}
         targetYear={effectiveTargetYear}
         onTargetYearChange={setTargetYear}
-        city={identity.city}
+        city={profile.city}
       />
+
+      {result && <ConfidenceBadge result={confidence} toolId="salary-purchasing-power" />}
+      {result && <DataFreshnessBadge sourceName="Pakistan Bureau of Statistics" lastUpdated={series[series.length - 1]?.observationDate ?? ""} dataFrequency="Monthly" />}
 
       {result && <SalaryPurchasingPowerResults result={result} />}
 

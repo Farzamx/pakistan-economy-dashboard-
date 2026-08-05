@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
-import { T } from "@/components/T";
+import ToolBreadcrumb from "@/components/decisionSupportLab/ToolBreadcrumb";
 import DiscountFactorExplorerHero from "@/components/discountFactorExplorer/DiscountFactorExplorerHero";
 import DiscountFactorExplorerCalculator from "@/components/discountFactorExplorer/DiscountFactorExplorerCalculator";
 import { SITE_URL, SITE_NAME } from "@/lib/seoConfig";
@@ -26,9 +25,7 @@ export default function DiscountFactorExplorerPage() {
       <Sidebar />
       <main className="min-w-0 flex-1 px-6 py-8 sm:px-10 lg:px-16">
         <div className="flex flex-col gap-10">
-          <Link href="/decision-support-lab" className="w-fit text-xs font-medium text-white/40 hover:text-neon-blue light:text-slate-400">
-            ← <T tKey="decisionSupportLab.title" />
-          </Link>
+          <ToolBreadcrumb toolId="discount-factor-explorer" />
 
           <DiscountFactorExplorerHero />
 

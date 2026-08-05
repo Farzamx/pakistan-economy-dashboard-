@@ -7,6 +7,7 @@ interface Props {
   blendedRealReturnPct: number;
   inflationProtectionScore: number;
   diversificationScore: number;
+  volatilityPct: number;
 }
 
 function ScoreTile({ label, value, tone }: { label: string; value: string; tone: "good" | "warning" | "poor" }) {
@@ -25,14 +26,21 @@ function scoreTone(score: number): "good" | "warning" | "poor" {
   return "poor";
 }
 
-export default function AssetAllocationExplorerResults({ blendedReturnPct, blendedRealReturnPct, inflationProtectionScore, diversificationScore }: Props) {
+/** Inverted vs. scoreTone — for volatility, lower is better. Bands chosen so a typical 5-bucket balanced mix (roughly 8-14%) reads as "warning," not "poor." */
+function riskTone(volatilityPct: number): "good" | "warning" | "poor" {
+  if (volatilityPct <= 6) return "good";
+  if (volatilityPct <= 14) return "warning";
+  return "poor";
+}
+
+export default function AssetAllocationExplorerResults({ blendedReturnPct, blendedRealReturnPct, inflationProtectionScore, diversificationScore, volatilityPct }: Props) {
   const { t } = useLanguage();
 
   return (
     <div className="flex flex-col gap-4">
       <h2 className="text-headline text-white light:text-slate-900">{t("assetAllocationExplorer.resultsTitle")}</h2>
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
         <div className="glass-card-raised flex flex-col gap-1.5 rounded-xl p-4 sm:p-5">
           <span className="text-label text-white/40 light:text-slate-400">{t("assetAllocationExplorer.blendedReturnLabel")}</span>
           <span className="text-metric text-mono-num tabular-nums text-white light:text-slate-900">{blendedReturnPct.toFixed(1)}%</span>
@@ -46,6 +54,7 @@ export default function AssetAllocationExplorerResults({ blendedReturnPct, blend
         </div>
         <ScoreTile label={t("assetAllocationExplorer.inflationProtectionLabel")} value={`${inflationProtectionScore.toFixed(0)}/100`} tone={scoreTone(inflationProtectionScore)} />
         <ScoreTile label={t("assetAllocationExplorer.diversificationScoreLabel")} value={`${diversificationScore.toFixed(0)}/100`} tone={scoreTone(diversificationScore)} />
+        <ScoreTile label="Risk (Volatility)" value={`${volatilityPct.toFixed(1)}%`} tone={riskTone(volatilityPct)} />
       </div>
     </div>
   );
