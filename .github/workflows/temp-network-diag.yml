@@ -1,4 +1,4 @@
-name: TEMP - SBP network reachability diagnostic (delete after use)
+name: TEMP - SBP network reachability diagnostic (delete after use) (retrigger 1)
 
 # Phase 6A.5 fetch-origin validation — tests whether THIS runner's network
 # can reach easydata.sbp.org.pk without hitting Cloudflare's bot challenge
