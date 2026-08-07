@@ -68,8 +68,8 @@ export default async function ExternalDebtPage() {
       secondaryStats={
         latest && coverageRatio !== null
           ? [
-              { label: "Foreign Exchange Reserves", value: `$${reservesB.toFixed(1)}B` },
-              { label: "Debt-to-Reserves Ratio", value: `${coverageRatio.toFixed(1)}x` },
+              { label: reserves.kpi.title, value: `$${reservesB.toFixed(1)}B` },
+              { label: "Debt-to-Reserves Ratio (vs Total SBP Reserves)", value: `${coverageRatio.toFixed(1)}x` },
             ]
           : undefined
       }

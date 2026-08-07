@@ -35,7 +35,7 @@ export default async function BondYieldsPage() {
       kpiTrend={tbill.kpi.trend}
       kpiSourceNote={`Source: ${tbill.kpi.source ?? "State Bank of Pakistan"}${tbill.kpi.latestDate ? ` · ${tbill.kpi.latestDate}` : ""}`}
       kpiQuality={tbill.kpi}
-      chartTitle="3-Month T-Bill Yield — 24-Month Trend"
+      chartTitle="3-Month T-Bill Yield — Recent Trend"
       chartData={tbill.trend}
       chartColor="#38bdf8"
       chartUnit="%"

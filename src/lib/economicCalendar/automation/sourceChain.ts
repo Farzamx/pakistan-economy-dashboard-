@@ -26,8 +26,9 @@
 // buildAdapter() below. No changes to the sync loop or period validator needed.
 
 import { getSbpIndicator, type SbpIndicatorKey } from "@/lib/data/sbp";
-import { getSpiHistory } from "@/lib/data/spi";
+import { getSpiHistory, formatSpiWowActual } from "@/lib/data/spi";
 import { getSbpIndicatorHistory } from "@/lib/data/sbp";
+import { computeLsmYoY } from "@/lib/economicCalendar/automation/lsmSync";
 import type { SourceHierarchyEntry } from "@/lib/economicCalendar/seriesPublicationConfig";
 
 // ─── Core types ──────────────────────────────────────────────────────────────
@@ -182,11 +183,10 @@ export function getPbsSpiAdapter(eventDate: string): SourceAdapter {
           error: `No PBS SPI point matching event date ${eventDate} (latest: ${spi.points.at(-1)?.date ?? "none"})`,
         };
       }
-      const sign = point.wowPct >= 0 ? "+" : "";
       return {
         success: true,
         observationDate: eventDate,
-        actualValue: `${sign}${point.wowPct.toFixed(2)}% WoW`,
+        actualValue: formatSpiWowActual(point.wowPct),
         sourceName: "PBS SPI Weekly Report",
         sourceType: "pbs-web",
         isFallback: false,
@@ -235,24 +235,27 @@ export function getLsmYoYAdapter(): SourceAdapter {
         };
       }
 
-      const latest = points[points.length - 1];
-      const priorYearPrefix = `${parseInt(latest.date.slice(0, 4), 10) - 1}-${latest.date.slice(5, 7)}`;
-      const prior = points.find((p) => p.date.startsWith(priorYearPrefix));
-      if (!prior || prior.value === 0) {
+      // Same canonical computation lsmSync.ts's sync path and
+      // postReleaseVerification.ts's re-check use (src/lib/economicCalendar/
+      // automation/lsmSync.ts's computeLsmYoY) — this adapter previously
+      // reimplemented the identical date-matching/division logic inline,
+      // which is exactly the "no single implementation" risk that
+      // function's own doc comment says it was written to prevent
+      // (Phase 6A.2 consistency audit: nothing was actually calling it).
+      const computation = computeLsmYoY(points);
+      if (!computation.ok) {
         return {
           success: false,
           sourceName: "SBP EasyData — LSM Index",
           sourceType: "sbp-easydata",
-          error: `No prior-year point found for ${priorYearPrefix}`,
+          error: computation.error,
         };
       }
 
-      const yoyPct = ((latest.value / prior.value) - 1) * 100;
-      const sign = yoyPct >= 0 ? "+" : "";
       return {
         success: true,
-        observationDate: latest.date,
-        actualValue: `${sign}${yoyPct.toFixed(1)}% YoY`,
+        observationDate: computation.obsDate,
+        actualValue: computation.actualValue,
         sourceName: "SBP EasyData — LSM Quantum Index (YoY derived)",
         sourceType: "sbp-easydata",
         isFallback: false,

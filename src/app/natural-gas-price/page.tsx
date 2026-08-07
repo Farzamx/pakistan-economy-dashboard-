@@ -63,6 +63,10 @@ export default async function NaturalGasPage() {
           answer: `Henry Hub natural gas is currently trading at $${natGasKpi.value} per MMBtu, according to ${natGasKpi.source ?? "Yahoo Finance"}.`,
         },
         {
+          question: "Why might the chart below not match the live price at the top?",
+          answer: "The price at the top refreshes live throughout the day. The historical chart plots monthly closing prices from Yahoo Finance futures data, so its most recent point can be up to several weeks old — it's built for viewing the long-term trend, not for reading today's price.",
+        },
+        {
           question: "Why does Pakistan care about a US gas benchmark like Henry Hub?",
           answer: "While Pakistan's imported LNG is typically priced against Asian regional benchmarks rather than Henry Hub directly, Henry Hub remains one of the most widely watched global natural gas price signals and correlates with broader global gas market conditions that also shape Asian LNG pricing.",
         },

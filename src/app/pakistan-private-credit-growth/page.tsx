@@ -30,7 +30,7 @@ export default async function PrivateCreditGrowthPage() {
       kpiChange={credit.kpi.change}
       kpiTrend={credit.kpi.trend}
       kpiQuality={credit.kpi}
-      chartTitle="Private Sector Credit Growth — 24-Month Trend"
+      chartTitle="Private Sector Credit Growth — 24-Week Trend"
       chartData={credit.trend}
       chartColor="#38bdf8"
       chartUnit="%"

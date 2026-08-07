@@ -81,6 +81,10 @@ export default async function SilverPricePage() {
           answer: "Silver has meaningful industrial demand (electronics, solar panels) on top of its precious-metal/hedge role, which gold largely lacks. That dual demand source, combined with a smaller overall market size than gold, tends to make silver's price swing more sharply in both directions.",
         },
         {
+          question: "Why might the chart below not match the live price at the top?",
+          answer: "The price at the top refreshes live throughout the day. The historical chart plots monthly closing prices from Yahoo Finance, so its most recent point can be up to several weeks old — it's built for viewing the long-term trend, not for reading today's price.",
+        },
+        {
           question: "Why does the local silver price in Pakistani markets differ from this figure?",
           answer: "As with gold, local jewelers add making charges, import duties, and dealer premiums on top of the raw international silver value, and rates can vary slightly by city. This page shows the underlying international price converted at the live exchange rate.",
         },

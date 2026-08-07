@@ -30,7 +30,7 @@ export default async function MoneySupplyPage() {
       kpiChange={m2.kpi.change}
       kpiTrend={m2.kpi.trend}
       kpiQuality={m2.kpi}
-      chartTitle="Money Supply (M2) — 24-Month Trend"
+      chartTitle="Money Supply (M2) — 24-Week Trend"
       chartData={m2.trend}
       chartColor="#38bdf8"
       chartUnit="T"

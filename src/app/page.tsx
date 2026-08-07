@@ -36,7 +36,8 @@ import type { AiRiskIntelligence } from "@/lib/data/aiRiskIntelligence";
 import { getLatestWeeklyIntelligenceSnapshot } from "@/lib/data/weeklyIntelligence";
 import { getAllSbpIndicators } from "@/lib/data/sbpServer";
 import { getNetLiquidReserves, getFxReservesWeeklySnapshot } from "@/lib/data/fxReserves";
-import { getGdpKpi } from "@/lib/data/worldBank";
+import { getGdpKpi, getGdpSectorComposition } from "@/lib/data/worldBank";
+import { getLatestCpiCategoryBreakdown } from "@/lib/data/cpiCategoryBreakdown";
 import { getQuarterlyGdpKpi } from "@/lib/data/quarterlyGdp";
 import {
   getBrentKpi,
@@ -102,7 +103,7 @@ function getSection(id: string) {
 }
 
 export default async function Home() {
-  const [gdpKpi, sbp, netLiquidReserves, fxReservesWeekly, goldKpi, silverKpi, brentKpi, wtiKpi, naturalGasKpi, dxyKpi, us10yKpi, fedFundsKpi, newsItems, fxRates, pakEtfKpi, quarterlyGdp, spi, scheduledCalendarEvents, historicalCalendarEvents] =
+  const [gdpKpi, sbp, netLiquidReserves, fxReservesWeekly, goldKpi, silverKpi, brentKpi, wtiKpi, naturalGasKpi, dxyKpi, us10yKpi, fedFundsKpi, newsItems, fxRates, pakEtfKpi, quarterlyGdp, spi, scheduledCalendarEvents, historicalCalendarEvents, gdpSectorComposition, cpiCategoryBreakdown] =
     await Promise.all([
       getGdpKpi(),
       getAllSbpIndicators(),
@@ -123,6 +124,16 @@ export default async function Home() {
       getSpiHistory(),
       getAllScheduledEvents(),
       getHistoricalEvents(),
+      // These two close a real gap found in the final density audit: the
+      // "gdp" and "inflation" sections' sector/category breakdown stats
+      // were still the original "Phase 1.5" mock data from sectionData.ts
+      // (its own header comment says so) — never live-wired the way
+      // reserves/exchange-rate/external-sector already were. Both reuse
+      // existing, already-built fetchers (getGdpSectorComposition backs
+      // the Comparisons feature; getLatestCpiCategoryBreakdown backs the
+      // Personal Inflation Calculator) rather than adding a new pipeline.
+      getGdpSectorComposition(),
+      getLatestCpiCategoryBreakdown(),
     ]);
 
   // Weekly SPI has no static fallback (see spi.ts) — the card simply
@@ -377,11 +388,15 @@ export default async function Home() {
   // only to Policy Rate/T-Bill 3M/PIB; Production Audit Part 4/Part 2
   // (data lineage) traced the SPI staleness incident to exactly this gap
   // for every *other* eligible indicator, and confirmed the calendar's
-  // actual_value for FX Reserves/Current Account/Trade Balance/Remittances/
-  // CPI/Core/LSM is synced from this exact same SBP EasyData call
-  // (syncFromSbpEasyData.ts's SYNC_TARGETS) — not a different vintage as an
-  // earlier version of this comment assumed — so cross-referencing them is
-  // safe, not riskier than not doing so.
+  // actual_value for Current Account/Trade Balance/Remittances/CPI/Core/LSM
+  // is synced from this exact same SBP EasyData call (syncFromSbpEasyData.ts's
+  // SYNC_TARGETS) — not a different vintage as an earlier version of this
+  // comment assumed — so cross-referencing them is safe, not riskier than
+  // not doing so. FX Reserves is the one exception: it's deliberately
+  // excluded from SYNC_TARGETS (measure/frequency mismatch — see that
+  // file's own comment) and synced instead by syncFxReservesFromSbpExcel.ts,
+  // the same weekly Forex_Arch.xlsx source netLiquidReserves itself reads,
+  // so the cross-reference below is still same-source, just a different function.
   //
   // releaseAlreadyReflected matters most for Policy Rate (a "hold" produces
   // no new SBP EasyData observation at all, so an old latestDate isn't
@@ -666,7 +681,16 @@ export default async function Home() {
           </div>
 
           <div id="research" className="section-divider scroll-mt-[60px] px-5 py-6 sm:scroll-mt-[120px] sm:px-8 sm:py-8">
-            <ResearchTeaser />
+            {/* Phase 6A.1 — this section had no heading at all, just three
+                unlabeled teaser cards, so landing here via the sidebar's
+                "Research Library" nav item gave no visual confirmation of
+                having arrived at the right place (violates "first visible
+                element must be the section heading"). Matches Intelligence
+                Feed's own eyebrow-label convention immediately above. */}
+            <span className="text-label text-white/40 light:text-slate-400">Research Library</span>
+            <div className="mt-3">
+              <ResearchTeaser />
+            </div>
           </div>
         </div>
 
@@ -709,12 +733,24 @@ export default async function Home() {
         )}
 
         <HideableSection id="gdp">
-        <DashboardSection {...getSection("gdp")}>
+        <DashboardSection
+          {...getSection("gdp")}
+          stats={
+            gdpSectorComposition
+              ? [
+                  { label: "Agriculture (% of GDP)", value: `${gdpSectorComposition.agriculture.latestValue.toFixed(1)}%` },
+                  { label: "Industry (% of GDP)", value: `${gdpSectorComposition.industry.latestValue.toFixed(1)}%` },
+                  { label: "Services (% of GDP)", value: `${gdpSectorComposition.services.latestValue.toFixed(1)}%` },
+                  { label: `Overall Growth (${gdpKpi.latestDate ?? "FY"})`, value: `${gdpKpi.value}${gdpKpi.unit}` },
+                ]
+              : getSection("gdp").stats
+          }
+        >
           <div className="mt-6 glass-card-raised p-4">
             <div className="mb-2 flex items-center gap-1.5">
               <p className="text-xs font-medium text-white/40 light:text-slate-500">
                 Quarterly GDP Growth &mdash; Real GVA
-                <span className="text-white/25 light:text-slate-400"> &middot; SBP EasyData, quarterly</span>
+                <span className="text-white/25 light:text-slate-400"> &middot; {quarterlyGdp.kpi.source ?? "SBP / PBS"}, quarterly</span>
               </p>
               <InfoTooltip termKey="Quarterly GDP Growth (YoY)" size="xs" />
             </div>
@@ -813,7 +849,14 @@ export default async function Home() {
         </HideableSection>
 
         <HideableSection id="remittances">
-        <DashboardSection {...getSection("remittances")}>
+        <DashboardSection
+          {...getSection("remittances")}
+          stats={[
+            { label: "Total Remittances", value: `$${sbp.remittances.kpi.value}B` },
+            { label: "vs Prior Month", value: sbp.remittances.kpi.change },
+            { label: "Latest Release", value: sbp.remittances.meta.observationDate },
+          ]}
+        >
           <div className="mt-6 glass-card-raised p-4">
             <p className="mb-2 text-xs font-medium text-white/40 light:text-slate-500">
               24-Month Trend <span className="text-white/25 light:text-slate-400">· SBP EasyData, monthly</span>
@@ -865,7 +908,37 @@ export default async function Home() {
         </HideableSection>
 
         <HideableSection id="inflation">
-        <DashboardSection {...getSection("inflation")}>
+        <DashboardSection
+          {...getSection("inflation")}
+          stats={(() => {
+            // On breakdown-fetch failure, show honest "—" placeholders
+            // instead of the old frozen Phase 1.5 mock (Food 12.4%,
+            // Housing 10.8%, Transport 9.6%, Core Inflation 9.1%) — that
+            // mock's "Core Inflation" figure could silently contradict the
+            // live sbp.coreInflation value shown in the Prices section
+            // just below, with no visual sign either number was stale
+            // (Phase 6A.2 consistency audit). Core Inflation still comes
+            // from the always-live sbp object either way.
+            const unavailable = [
+              { label: "Food", value: "—" },
+              { label: "Housing & Utilities", value: "—" },
+              { label: "Transport", value: "—" },
+              { label: "Core Inflation", value: `${sbp.coreInflation.kpi.value}%`, kpiTitle: "Core Inflation" },
+            ];
+            if (!cpiCategoryBreakdown) return unavailable;
+            const byGroup = new Map(cpiCategoryBreakdown.groups.map((g) => [g.groupNo, g]));
+            const food = byGroup.get(1);
+            const housing = byGroup.get(4);
+            const transport = byGroup.get(7);
+            if (!food || !housing || !transport) return unavailable;
+            return [
+              { label: "Food", value: `${food.yoyPctChange.toFixed(1)}%` },
+              { label: "Housing & Utilities", value: `${housing.yoyPctChange.toFixed(1)}%` },
+              { label: "Transport", value: `${transport.yoyPctChange.toFixed(1)}%` },
+              { label: "Core Inflation", value: `${sbp.coreInflation.kpi.value}%`, kpiTitle: "Core Inflation" },
+            ];
+          })()}
+        >
           <div className="mt-6 glass-card-raised p-4">
             <p className="mb-2 text-xs font-medium text-white/40 light:text-slate-500">
               24-Month Trend <span className="text-white/25 light:text-slate-400">· SBP EasyData, monthly</span>
@@ -907,10 +980,18 @@ export default async function Home() {
             scroll depth by default. Fully expanded on desktop, unchanged. */}
         <MobileCollapsibleGroup label="View more indicators">
         <HideableSection id="price-indices">
-        <DashboardSection {...getSection("price-indices")}>
+        <DashboardSection
+          {...getSection("price-indices")}
+          stats={[
+            { label: "CPI Inflation (YoY)", value: `${sbp.cpiInflation.kpi.value}%`, kpiTitle: "CPI Inflation" },
+            { label: "Core Inflation (Urban NFNE)", value: `${sbp.coreInflation.kpi.value}%`, kpiTitle: "Core Inflation" },
+            { label: "WPI Inflation (YoY)", value: `${sbp.wpiInflation.kpi.value}%`, kpiTitle: "WPI Inflation" },
+            { label: "SBP Policy Rate", value: `${sbp.policyRate.kpi.value}%`, kpiTitle: "Policy Rate" },
+          ]}
+        >
           <div className="mt-6 glass-card-raised p-4">
             <p className="mb-2 text-xs font-medium text-white/40 light:text-slate-500">
-              24-Month Trend <span className="text-white/25 light:text-slate-400">· SBP EasyData, monthly</span>
+              Core Inflation — 24-Month Trend <span className="text-white/25 light:text-slate-400">· SBP EasyData, monthly</span>
             </p>
             <TrendLineChart
               data={sbp.coreInflation.trend}
@@ -923,10 +1004,23 @@ export default async function Home() {
         </HideableSection>
 
         <HideableSection id="monetary-policy">
-        <DashboardSection {...getSection("monetary-policy")}>
+        <DashboardSection
+          {...getSection("monetary-policy")}
+          stats={(() => {
+            const tbill = parseFloat(sbp.tbillYield3m.kpi.value);
+            const pib = parseFloat(sbp.pibYield3y.kpi.value);
+            const spread = pib - tbill;
+            return [
+              { label: "SBP Policy Rate", value: `${sbp.policyRate.kpi.value}%`, kpiTitle: "Policy Rate" },
+              { label: "3M T-Bill Yield", value: `${sbp.tbillYield3m.kpi.value}%` },
+              { label: "3Y PIB Yield", value: `${sbp.pibYield3y.kpi.value}%` },
+              { label: "3Y - 3M Spread", value: `${spread >= 0 ? "+" : ""}${spread.toFixed(2)} pp` },
+            ];
+          })()}
+        >
           <div className="mt-6 glass-card-raised p-4">
             <p className="mb-2 text-xs font-medium text-white/40 light:text-slate-500">
-              Recent Trend <span className="text-white/25 light:text-slate-400">· SBP EasyData, as-needed</span>
+              SBP Policy Rate — Recent Trend <span className="text-white/25 light:text-slate-400">· SBP EasyData, as-needed</span>
             </p>
             <TrendLineChart
               data={sbp.policyRate.trend}

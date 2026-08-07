@@ -106,11 +106,11 @@ const EMERALD = "#34d399";
 export const COMPARISONS: ComparisonDef[] = [
   {
     slug: "usd-pkr-vs-forex-reserves",
-    title: "USD/PKR Exchange Rate vs Foreign Exchange Reserves",
-    shortTitle: "USD/PKR vs Forex Reserves",
+    title: "USD/PKR Exchange Rate vs Total SBP Reserves",
+    shortTitle: "USD/PKR vs Total SBP Reserves",
     group: "external-sector",
     seriesA: { id: "sbp:usdPkr", label: "USD / PKR", shortLabel: "USD/PKR", unit: "PKR", color: NEON_BLUE },
-    seriesB: { id: "sbp:foreignReserves", label: "Foreign Exchange Reserves", shortLabel: "Reserves", unit: "B USD", color: NEON_PURPLE },
+    seriesB: { id: "sbp:foreignReserves", label: "Total SBP Reserves (Monthly, incl. gold/SDR)", shortLabel: "Total SBP Reserves", unit: "B USD", color: NEON_PURPLE },
     description: "Tracks the Rupee's exchange rate against the US Dollar alongside the State Bank's total foreign exchange reserves.",
     whyItMatters: "Reserves are the buffer that lets SBP defend the Rupee during external pressure — when reserves fall, the Rupee has historically come under more depreciation pressure, and vice versa when reserves are rebuilt.",
     faq: [
@@ -119,11 +119,11 @@ export const COMPARISONS: ComparisonDef[] = [
   },
   {
     slug: "current-account-vs-forex-reserves",
-    title: "Current Account Balance vs Foreign Exchange Reserves",
-    shortTitle: "Current Account vs Forex Reserves",
+    title: "Current Account Balance vs Total SBP Reserves",
+    shortTitle: "Current Account vs Total SBP Reserves",
     group: "external-sector",
     seriesA: { id: "sbp:currentAccount", label: "Current Account Balance", shortLabel: "Current Account", unit: "B USD", color: NEON_PURPLE },
-    seriesB: { id: "sbp:foreignReserves", label: "Foreign Exchange Reserves", shortLabel: "Reserves", unit: "B USD", color: NEON_BLUE },
+    seriesB: { id: "sbp:foreignReserves", label: "Total SBP Reserves (Monthly, incl. gold/SDR)", shortLabel: "Total SBP Reserves", unit: "B USD", color: NEON_BLUE },
     description: "Compares Pakistan's monthly current account balance (money flowing in vs out internationally) with the level of foreign exchange reserves it leaves behind.",
     whyItMatters: "A persistent current account deficit drains reserves over time unless offset by financial inflows (loans, FDI, remittances) — this comparison shows how directly the two have moved together historically.",
     faq: [
@@ -132,11 +132,11 @@ export const COMPARISONS: ComparisonDef[] = [
   },
   {
     slug: "external-debt-vs-forex-reserves",
-    title: "External Debt and Liabilities vs Foreign Exchange Reserves",
-    shortTitle: "External Debt vs Forex Reserves",
+    title: "External Debt and Liabilities vs Total SBP Reserves",
+    shortTitle: "External Debt vs Total SBP Reserves",
     group: "external-sector",
     seriesA: { id: "sbp:externalDebt", label: "Total External Debt & Liabilities", shortLabel: "External Debt", unit: "B USD", color: AMBER },
-    seriesB: { id: "sbp:foreignReserves", label: "Foreign Exchange Reserves", shortLabel: "Reserves", unit: "B USD", color: NEON_BLUE },
+    seriesB: { id: "sbp:foreignReserves", label: "Total SBP Reserves (Monthly, incl. gold/SDR)", shortLabel: "Total SBP Reserves", unit: "B USD", color: NEON_BLUE },
     description: "Pakistan's total outstanding external debt and liabilities against the level of foreign exchange reserves available to service it.",
     whyItMatters: "A rising debt stock against flat or falling reserves signals growing repayment pressure relative to the buffer available to meet it — one of the most closely watched solvency signals for an emerging-market economy.",
     faq: [

@@ -31,7 +31,7 @@ export default async function EurPkrPage() {
       kpiTrend={fxRates.eurPkr.trend}
       kpiSourceNote={`Source: ${fxRates.eurPkr.source ?? "Yahoo Finance"} — interbank market rate, refreshed intraday`}
       kpiQuality={fxRates.eurPkr}
-      chartTitle="EUR / PKR — Historical Trend"
+      chartTitle="EUR / PKR — Historical Trend (Not Available)"
       chartData={null}
       chartUnavailableNote="No historical EUR/PKR trend chart is available — SBP does not publish a dedicated EUR/PKR historical series; only the live cross-rate above is available."
       chartColor="#38bdf8"

@@ -27,12 +27,16 @@ export const sectionData: SectionContent[] = [
     id: "gdp",
     title: "GDP Growth",
     description:
-      "Pakistan's overall GDP growth is driven by three core sectors. FY24 estimates show a moderate recovery led by agriculture, while industry remains under pressure from high input costs.",
+      "Pakistan's economy is composed of three core sectors, each contributing a different share of overall output. Services dominates, followed by agriculture and industry.",
+    // Live-overridden in page.tsx with World Bank sector-composition data
+    // (share of GDP, not growth rate — see getGdpSectorComposition in
+    // worldBank.ts) plus the live annual GDP growth KPI for "Overall".
+    // These placeholders are never rendered.
     stats: [
-      { label: "Agriculture", value: "6.0%" },
-      { label: "Industry", value: "-0.2%" },
-      { label: "Services", value: "2.2%" },
-      { label: "Overall (FY24)", value: "2.5%" },
+      { label: "Agriculture (% of GDP)", value: "—" },
+      { label: "Industry (% of GDP)", value: "—" },
+      { label: "Services (% of GDP)", value: "—" },
+      { label: "Overall Growth", value: "—" },
     ],
   },
   {
@@ -104,12 +108,19 @@ export const sectionData: SectionContent[] = [
     id: "remittances",
     title: "Worker Remittances",
     description:
-      "Remittances from overseas Pakistani workers remain a key source of foreign exchange, led by the Gulf region (top corridors shown).",
+      "Remittances from overseas Pakistani workers remain a key source of foreign exchange, led by the Gulf region.",
+    // Live-overridden in page.tsx (total, change, latest release date).
+    // A prior version of this section fabricated a per-country corridor
+    // breakdown (Saudi Arabia/UAE/UK/US) as static "Phase 1.5" mock
+    // numbers that were never live — no per-country remittance data
+    // source exists in this codebase — and they were never migrated,
+    // silently contradicting the live total shown elsewhere on the same
+    // page (Phase 6A.2 consistency audit). Removed rather than faked.
+    // This placeholder is never rendered.
     stats: [
-      { label: "Saudi Arabia", value: "$0.78B" },
-      { label: "UAE", value: "$0.62B" },
-      { label: "United Kingdom", value: "$0.45B" },
-      { label: "United States", value: "$0.41B" },
+      { label: "Total Remittances", value: "—" },
+      { label: "vs Prior Month", value: "—" },
+      { label: "Latest Release", value: "—" },
     ],
   },
   {

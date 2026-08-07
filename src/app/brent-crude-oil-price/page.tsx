@@ -63,6 +63,10 @@ export default async function BrentPage() {
           answer: `Brent crude oil is currently trading at $${brentKpi.value} per barrel, according to ${brentKpi.source ?? "Yahoo Finance"}.`,
         },
         {
+          question: "Why might the chart below not match the live price at the top?",
+          answer: "The price at the top refreshes live throughout the day. The historical chart plots monthly closing prices from Yahoo Finance futures data, so its most recent point can be up to several weeks old — it's built for viewing the long-term trend, not for reading today's price.",
+        },
+        {
           question: "Why is Brent more relevant to Pakistan than WTI?",
           answer: "Pakistan's crude and refined product imports, largely sourced from the Gulf, are typically priced using formulas that reference Brent rather than WTI, making Brent the more directly applicable benchmark for the country's actual energy import costs.",
         },

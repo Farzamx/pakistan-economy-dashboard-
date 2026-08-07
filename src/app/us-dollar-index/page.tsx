@@ -63,6 +63,10 @@ export default async function DxyPage() {
           answer: `The US Dollar Index currently stands at ${dxyKpi.value}, according to ${dxyKpi.source ?? "Yahoo Finance"}.`,
         },
         {
+          question: "Why might the chart below not match the live price at the top?",
+          answer: "The value at the top refreshes live throughout the day. The historical chart plots monthly closing values from Yahoo Finance, so its most recent point can be up to several weeks old — it's built for viewing the long-term trend, not for reading today's value.",
+        },
+        {
           question: "Does DXY include the Pakistani Rupee?",
           answer: "No. DXY tracks the Dollar against six major developed-market currencies (the Euro carries the largest weight), not emerging-market currencies like the Rupee. It's a gauge of overall Dollar strength, not a direct USD/PKR measure.",
         },

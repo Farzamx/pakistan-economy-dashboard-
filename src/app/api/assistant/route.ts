@@ -356,12 +356,28 @@ function buildSystemPrompt(
     blocks.push("");
   } else if (freshness.pakEtfFallback) {
     const etf = freshness.pakEtfFallback;
+    // getPakEtfKpi() throws (falling through to the static snapshot) once
+    // its live quote is >30 days old, which usually means the fund has
+    // stopped trading, not a transient fetch failure — confirmed live
+    // against Yahoo Finance during the Phase 6A.2 consistency audit (its
+    // last real quote is over a year old). Saying "is currently X" for
+    // that case would assert a stale, possibly permanently-frozen price as
+    // present-tense fact — src/data/knowledgeBase.ts and toolkitTranslations.ts
+    // already tell users this ETF appears delisted; this prompt previously
+    // contradicted them.
+    const isStaleOrFallback = etf.sourceStatus === "fallback" || etf.sourceStatus === "cache-stale";
     blocks.push(
-      `NOTE: A live KSE-100 index quote is not available (PSX requires a commercial data license that ` +
-      `this assistant does not have). As a correlated proxy, the Global X MSCI Pakistan ETF (NYSE: PAK) ` +
-      `is currently ${etf.value} ${etf.unit} (${etf.change}). Present this clearly AS A PROXY, not as the ` +
-      `KSE-100 value itself — explain that it tracks the same index and moves similarly, but is not the ` +
-      `index itself.`,
+      isStaleOrFallback
+        ? `NOTE: A live KSE-100 index quote is not available (PSX requires a commercial data license that ` +
+          `this assistant does not have). The usual correlated proxy, the Global X MSCI Pakistan ETF ` +
+          `(NYSE: PAK), has not returned a fresh quote in some time — its last known price was ${etf.value} ` +
+          `${etf.unit}, but this fund may have stopped actively trading. Present this as a LAST-KNOWN, ` +
+          `possibly-outdated figure, not a current price, and mention the fund may be delisted or illiquid.`
+        : `NOTE: A live KSE-100 index quote is not available (PSX requires a commercial data license that ` +
+          `this assistant does not have). As a correlated proxy, the Global X MSCI Pakistan ETF (NYSE: PAK) ` +
+          `is currently ${etf.value} ${etf.unit} (${etf.change}). Present this clearly AS A PROXY, not as the ` +
+          `KSE-100 value itself — explain that it tracks the same index and moves similarly, but is not the ` +
+          `index itself.`,
     );
     blocks.push("");
   } else if (routerResult.needsSearch) {

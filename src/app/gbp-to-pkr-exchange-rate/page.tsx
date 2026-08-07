@@ -31,7 +31,7 @@ export default async function GbpPkrPage() {
       kpiTrend={fxRates.gbpPkr.trend}
       kpiSourceNote={`Source: ${fxRates.gbpPkr.source ?? "Yahoo Finance"} — interbank market rate, refreshed intraday`}
       kpiQuality={fxRates.gbpPkr}
-      chartTitle="GBP / PKR — Historical Trend"
+      chartTitle="GBP / PKR — Historical Trend (Not Available)"
       chartData={null}
       chartUnavailableNote="No historical GBP/PKR trend chart is available — SBP does not publish a dedicated GBP/PKR historical series; only the live cross-rate above is available."
       chartColor="#fb7185"

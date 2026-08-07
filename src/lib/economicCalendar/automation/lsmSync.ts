@@ -1,4 +1,5 @@
 import { getSbpIndicatorHistoryFresh } from "@/lib/data/sbp";
+import { findSamePeriodPriorYear } from "@/lib/yoyMath";
 import { createPublicDataClient } from "@/lib/supabase/publicDataClient";
 import { validateObservationPeriod } from "@/lib/economicCalendar/observationPeriodValidator";
 import { SERIES_PUBLICATION_META } from "@/lib/economicCalendar/seriesPublicationConfig";
@@ -59,14 +60,13 @@ export function computeLsmYoY(points: readonly LsmYoyPoint[]): LsmYoyComputation
   }
   const latest = points[points.length - 1];
   const obsDate = latest.date;
-  const obsYear = parseInt(obsDate.slice(0, 4), 10);
-  const obsMonth = obsDate.slice(5, 7);
-  const priorYearPrefix = `${obsYear - 1}-${obsMonth}`;
-  const priorYearPoint = points.find((p) => p.date.startsWith(priorYearPrefix));
+  const priorYearPoint = findSamePeriodPriorYear(points, obsDate);
   if (!priorYearPoint) {
+    const obsYear = parseInt(obsDate.slice(0, 4), 10);
+    const obsMonth = obsDate.slice(5, 7);
     return {
       ok: false,
-      error: `No prior-year LSM observation found for ${priorYearPrefix} — history starts at ${points[0]?.date ?? "unknown"}.`,
+      error: `No prior-year LSM observation found for ${obsYear - 1}-${obsMonth} — history starts at ${points[0]?.date ?? "unknown"}.`,
     };
   }
   if (priorYearPoint.value === 0) {

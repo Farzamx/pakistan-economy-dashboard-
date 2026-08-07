@@ -63,6 +63,10 @@ export default async function WtiPage() {
           answer: `WTI crude oil is currently trading at $${wtiKpi.value} per barrel, according to ${wtiKpi.source ?? "Yahoo Finance"}.`,
         },
         {
+          question: "Why might the chart below not match the live price at the top?",
+          answer: "The price at the top refreshes live throughout the day. The historical chart plots monthly closing prices from Yahoo Finance futures data, so its most recent point can be up to several weeks old — it's built for viewing the long-term trend, not for reading today's price.",
+        },
+        {
           question: "What's the difference between WTI and Brent crude?",
           answer: "WTI is a US-produced benchmark grade; Brent is sourced from the North Sea and is the more widely used pricing reference for oil traded internationally, including cargoes imported into South Asia. The two typically move together but can diverge due to regional supply and transport factors.",
         },

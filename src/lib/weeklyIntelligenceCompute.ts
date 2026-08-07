@@ -6,8 +6,11 @@
 // called from one weekly job instead of every render.
 
 import { getAllSbpIndicators, getMoneySupplyM2YoyGrowth } from "@/lib/data/sbpServer";
+import { getSbpIndicatorHistory } from "@/lib/data/sbp";
 import { getGdpKpi } from "@/lib/data/worldBank";
 import { getQuarterlyGdpKpi } from "@/lib/data/quarterlyGdp";
+import { getFxReservesWeeklySnapshot } from "@/lib/data/fxReserves";
+import { computeYoYPercent } from "@/lib/yoyMath";
 import { getNews } from "@/lib/data/news";
 import { calculateEconomicHealth } from "@/lib/economicHealth";
 import { calculateRecessionRisk, calculateDefaultRisk } from "@/lib/riskModels";
@@ -21,25 +24,38 @@ import {
 } from "@/lib/data/weeklyIntelligence";
 
 export async function computeWeeklyIntelligence(): Promise<StoreWeeklyIntelligencePayload> {
-  const [gdpKpi, sbp, quarterlyGdp, newsItems, m2YoyOfficial] = await Promise.all([
+  const [gdpKpi, sbp, quarterlyGdp, newsItems, m2YoyOfficial, fxReservesWeekly, usdPkrHistory] = await Promise.all([
     getGdpKpi(),
     getAllSbpIndicators(),
     getQuarterlyGdpKpi(),
     getNews(),
     getMoneySupplyM2YoyGrowth(),
+    getFxReservesWeeklySnapshot(),
+    // Raw dated history (not sbp.usdPkr.trend, which holds display-formatted
+    // "month" labels like "Jul '26", not comparable ISO dates) — needed for
+    // a real same-month-last-year YoY lookup instead of the fixed
+    // "13 points back" array-index assumption this replaced. That fixed
+    // offset already silently broke once for M2 when its series migrated
+    // from monthly to weekly cadence (see sbp.ts's SERIES_KEYS.moneySupplyM2
+    // comment) — USD/PKR had no equivalent protection (Phase 6A.2 audit).
+    getSbpIndicatorHistory("usdPkr"),
   ]);
 
   // Same derived-input logic page.tsx used to run inline — see that file's
   // git history (pre-Part-2) for the original, unchanged math.
-  const usdPkrTrend = sbp.usdPkr.trend;
   const currentUsdPkr = parseFloat(sbp.usdPkr.kpi.value);
-  const yearAgoUsdPkr = usdPkrTrend[Math.max(0, usdPkrTrend.length - 13)]?.value ?? currentUsdPkr;
-  const usdPkrYoyPct = yearAgoUsdPkr > 0 ? ((currentUsdPkr - yearAgoUsdPkr) / yearAgoUsdPkr) * 100 : 0;
+  const usdPkrYoyPct = computeYoYPercent(usdPkrHistory.points, sbp.usdPkr.kpi.latestDate ?? usdPkrHistory.points.at(-1)?.date ?? "", currentUsdPkr) ?? 0;
 
-  const sbpReservesB = parseFloat(sbp.foreignReserves.kpi.value);
-  const bankReservesB = parseFloat(sbp.netBankReserves.kpi.value);
+  // Phase 6A.2 consistency audit: this previously summed sbp.foreignReserves
+  // (monthly Total SBP Reserves, EasyData Z00020) + sbp.netBankReserves —
+  // the OLD, pre-fix reserves figure, still in use here even after the
+  // dashboard's "Foreign Reserves"/"Import Cover" cards switched to the
+  // weekly net-liquid measure (see fxReserves.ts). Left unfixed, the
+  // Economic Health Score / Recession / Default risk models below would
+  // silently diverge from the "Import Cover" figure a reader sees on the
+  // dashboard for the exact same week. Now the same canonical source.
   const monthlyImportsB = parseFloat(sbp.imports.kpi.value);
-  const importCoverMonths = monthlyImportsB > 0 ? (sbpReservesB + bankReservesB) / monthlyImportsB : 3.0;
+  const importCoverMonths = monthlyImportsB > 0 ? fxReservesWeekly.totalLiquidB / monthlyImportsB : 3.0;
 
   const privateCreditGrowthPct = parseFloat(sbp.privateCreditGrowth.kpi.value);
 
@@ -57,10 +73,16 @@ export async function computeWeeklyIntelligence(): Promise<StoreWeeklyIntelligen
   if (m2YoyOfficial) {
     m2YoyPct = m2YoyOfficial.value;
   } else {
-    const m2Trend = sbp.moneySupplyM2.trend;
+    // Fetched on-demand (not in the main Promise.all above) since this
+    // branch only runs when the official series fetch just failed — no
+    // point paying for it on every normal run. Real dated history (not
+    // sbp.moneySupplyM2.trend's display-formatted month labels), same
+    // date-prefix matching as the USD/PKR fix above — this is exactly the
+    // "fixed array index" fragility this fallback's own comment already
+    // flagged, now actually fixed rather than just documented.
     const currentM2 = parseFloat(sbp.moneySupplyM2.kpi.value);
-    const yearAgoM2 = m2Trend[Math.max(0, m2Trend.length - 13)]?.value ?? currentM2;
-    m2YoyPct = yearAgoM2 > 0 ? ((currentM2 - yearAgoM2) / yearAgoM2) * 100 : 0;
+    const m2History = await getSbpIndicatorHistory("moneySupplyM2");
+    m2YoyPct = computeYoYPercent(m2History.points, sbp.moneySupplyM2.kpi.latestDate ?? m2History.points.at(-1)?.date ?? "", currentM2) ?? 0;
   }
 
   const healthResult = calculateEconomicHealth({

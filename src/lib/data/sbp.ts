@@ -3,6 +3,7 @@ import type { Kpi } from "@/data/kpiData";
 import type { DataFrequency } from "@/lib/dataFreshness";
 import type { SourceStatus } from "@/lib/dataQuality";
 import { getTrendDirection } from "@/lib/trendDirection";
+import { findSamePeriodPriorYear } from "@/lib/yoyMath";
 import { dedupeInFlight, getFresh, getStale, setCache } from "@/lib/memoryCache";
 import {
   fallbackCoreInflation,
@@ -564,13 +565,12 @@ function buildReerKpi(series: SbpSeries): Kpi {
 
 function buildLsmKpi(series: SbpSeries): Kpi {
   // EasyData LSM series (LSM000160000) returns a quantum index (base FY2015-16=100),
-  // not YoY growth. Compute deterministic YoY: (current / same_month_prior_year − 1) × 100.
-  // Matches the methodology used by syncLsmYoYFromEasyData.ts and PBS official releases.
+  // not YoY growth. Compute deterministic YoY: (current / same_month_prior_year − 1) × 100,
+  // via the same canonical lookup lsmSync.ts's computeLsmYoY() and
+  // sourceChain.ts's LSM adapter now also use (src/lib/yoyMath.ts) — matches
+  // the methodology used by syncLsmYoYFromEasyData.ts and PBS official releases.
   const latestDate    = series.latestDate;
-  const latestYear    = parseInt(latestDate.slice(0, 4), 10);
-  const latestMonth   = latestDate.slice(5, 7);
-  const priorYrPrefix = `${latestYear - 1}-${latestMonth}`;
-  const priorYrPoint  = series.history.find((p) => p.date.startsWith(priorYrPrefix));
+  const priorYrPoint  = findSamePeriodPriorYear(series.history, latestDate);
 
   if (!priorYrPoint || priorYrPoint.value === 0) {
     // No prior-year observation available — show raw quantum index with honest label.
@@ -596,10 +596,7 @@ function buildLsmKpi(series: SbpSeries): Kpi {
   let change = "no prior data";
   let yoyDiff: number | null = null;
   if (series.previousDate && series.previousValue !== null) {
-    const prevYear    = parseInt(series.previousDate.slice(0, 4), 10);
-    const prevMonth   = series.previousDate.slice(5, 7);
-    const prevPriorPfx = `${prevYear - 1}-${prevMonth}`;
-    const prevPriorPt  = series.history.find((p) => p.date.startsWith(prevPriorPfx));
+    const prevPriorPt = findSamePeriodPriorYear(series.history, series.previousDate);
     if (prevPriorPt && prevPriorPt.value !== 0) {
       const prevYoY = ((series.previousValue / prevPriorPt.value) - 1) * 100;
       yoyDiff       = yoyPct - prevYoY;

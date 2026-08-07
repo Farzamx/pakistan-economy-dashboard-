@@ -47,7 +47,7 @@ export default async function GdpGrowthPage() {
       chartColor="#38bdf8"
       chartUnit="%"
       chartGradientId="seoGdpGradient"
-      chartCaption="Source: Pakistan Bureau of Statistics (PBS), real GVA growth, year-over-year — updated roughly six weeks after each quarter ends."
+      chartCaption={`Source: ${quarterlyGdp.kpi.source ?? "SBP / PBS"}, real GVA growth, year-over-year — updated roughly six weeks after each quarter ends.`}
       secondaryStats={[
         { label: "Latest Quarter", value: `${quarterlyGdp.kpi.value}%` },
         { label: "Data Status", value: quarterlyGdp.isFallback ? "Fallback estimate" : "Live" },
