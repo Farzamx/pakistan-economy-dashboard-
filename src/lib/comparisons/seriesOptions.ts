@@ -7,7 +7,7 @@ import type { ComparisonSeriesConfig, SeriesProviderId } from "./comparisonRegis
 
 export const ALL_SERIES_OPTIONS: ComparisonSeriesConfig[] = [
   { id: "sbp:usdPkr", label: "USD / PKR Exchange Rate", shortLabel: "USD/PKR", unit: "PKR", color: "#38bdf8" },
-  { id: "sbp:foreignReserves", label: "Foreign Exchange Reserves", shortLabel: "Forex Reserves", unit: "B USD", color: "#a855f7" },
+  { id: "sbp:foreignReserves", label: "Total SBP Reserves (Monthly, incl. gold/SDR)", shortLabel: "Total SBP Reserves", unit: "B USD", color: "#a855f7" },
   { id: "sbp:currentAccount", label: "Current Account Balance", shortLabel: "Current Account", unit: "B USD", color: "#a855f7" },
   { id: "sbp:exports", label: "Exports (Goods, FOB)", shortLabel: "Exports", unit: "B USD", color: "#34d399" },
   { id: "sbp:imports", label: "Imports (Goods, FOB)", shortLabel: "Imports", unit: "B USD", color: "#f59e0b" },

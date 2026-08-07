@@ -1,6 +1,6 @@
 import type { TrendPoint } from "@/components/charts/TrendLineChart";
 import { fallbackGdpKpi, type Kpi } from "@/data/kpiData";
-import { dedupeInFlight, getFresh, setCache } from "@/lib/memoryCache";
+import { dedupeInFlight, getFresh, getStale, setCache } from "@/lib/memoryCache";
 import { getTrendDirection } from "@/lib/trendDirection";
 
 // All indicators are read from the free, keyless World Bank API:
@@ -112,15 +112,29 @@ function buildGdpKpi(series: IndicatorSeries): Kpi {
   };
 }
 
+const GDP_KPI_CACHE_KEY = "worldbank-gdp-kpi";
+
 /**
  * Fetches the GDP growth KPI (the only headline indicator still sourced from
  * the World Bank — the rest come from SBP EasyData, see src/lib/data/sbp.ts).
+ *
+ * Three-tier resolution (Phase 6A — this previously jumped straight from a
+ * live fetch to the static, dateless fallbackGdpKpi on any failure, unlike
+ * every other data source in this codebase, which serves the last-known-good
+ * live value first): live fetch -> last-known-good cache regardless of age
+ * -> only then the static fallback. World Bank updates a few times a year,
+ * so a single transient failure would otherwise visibly regress a live 2025
+ * figure to the hardcoded "2.5% (2023)" snapshot.
  */
 export async function getGdpKpi(): Promise<Kpi> {
   try {
     const series = await fetchIndicator(INDICATORS.gdpGrowth);
-    return buildGdpKpi(series);
+    const kpi = buildGdpKpi(series);
+    setCache(GDP_KPI_CACHE_KEY, kpi);
+    return kpi;
   } catch {
+    const stale = getStale<Kpi>(GDP_KPI_CACHE_KEY);
+    if (stale) return { ...stale.data, sourceStatus: "cache-stale" };
     return fallbackGdpKpi;
   }
 }

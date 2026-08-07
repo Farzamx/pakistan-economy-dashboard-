@@ -35,6 +35,7 @@ import type { AiEconomicAnalysis } from "@/lib/data/aiEconomicAnalysis";
 import type { AiRiskIntelligence } from "@/lib/data/aiRiskIntelligence";
 import { getLatestWeeklyIntelligenceSnapshot } from "@/lib/data/weeklyIntelligence";
 import { getAllSbpIndicators } from "@/lib/data/sbpServer";
+import { getNetLiquidReserves, getFxReservesWeeklySnapshot } from "@/lib/data/fxReserves";
 import { getGdpKpi } from "@/lib/data/worldBank";
 import { getQuarterlyGdpKpi } from "@/lib/data/quarterlyGdp";
 import {
@@ -101,10 +102,12 @@ function getSection(id: string) {
 }
 
 export default async function Home() {
-  const [gdpKpi, sbp, goldKpi, silverKpi, brentKpi, wtiKpi, naturalGasKpi, dxyKpi, us10yKpi, fedFundsKpi, newsItems, fxRates, pakEtfKpi, quarterlyGdp, spi, scheduledCalendarEvents, historicalCalendarEvents] =
+  const [gdpKpi, sbp, netLiquidReserves, fxReservesWeekly, goldKpi, silverKpi, brentKpi, wtiKpi, naturalGasKpi, dxyKpi, us10yKpi, fedFundsKpi, newsItems, fxRates, pakEtfKpi, quarterlyGdp, spi, scheduledCalendarEvents, historicalCalendarEvents] =
     await Promise.all([
       getGdpKpi(),
       getAllSbpIndicators(),
+      getNetLiquidReserves(),
+      getFxReservesWeeklySnapshot(),
       getGoldKpi(),
       getSilverKpi(),
       getBrentKpi(),
@@ -172,7 +175,13 @@ export default async function Home() {
     const days = daysSince(meta.observationDate);
     if (meta.frequency === "Annual") return days > 730;
     if (meta.frequency === "As-Needed") return days > 45;
-    return days > 50; // Monthly / Weekly
+    // Weekly previously shared Monthly's 50-day threshold — a weekly series
+    // (moneySupplyM2, privateCreditGrowth, and now netLiquidReserves) that
+    // hasn't updated in 6+ weeks was still reported "not stale." SBP
+    // publishes a new weekly observation every ~7 days, so 2 weeks of grace
+    // is the appropriate threshold, not the monthly one (Phase 6A finding).
+    if (meta.frequency === "Weekly") return days > 14;
+    return days > 50; // Monthly
   }
 
   const pktTimestamp = (() => {
@@ -191,7 +200,7 @@ export default async function Home() {
     { label: "GDP Growth (Quarterly)",isFallback: quarterlyGdp.isFallback,           isStale: !quarterlyGdp.isFallback && daysSince(quarterlyGdp.kpi.latestDate ?? "2026-03-31") > 130 },
     { label: "CPI Inflation",     isFallback: isFallback(sbp.cpiInflation.meta),  isStale: isStale(sbp.cpiInflation.meta,  isFallback(sbp.cpiInflation.meta))  },
     { label: "Policy Rate",       isFallback: isFallback(sbp.policyRate.meta),    isStale: isStale(sbp.policyRate.meta,    isFallback(sbp.policyRate.meta))    },
-    { label: "SBP Reserves",      isFallback: isFallback(sbp.foreignReserves.meta), isStale: isStale(sbp.foreignReserves.meta, isFallback(sbp.foreignReserves.meta)) },
+    { label: "SBP Reserves",      isFallback: isFallback(netLiquidReserves.meta), isStale: isStale(netLiquidReserves.meta, isFallback(netLiquidReserves.meta)) },
     { label: "Bank Reserves",     isFallback: isFallback(sbp.netBankReserves.meta), isStale: isStale(sbp.netBankReserves.meta, isFallback(sbp.netBankReserves.meta)) },
     { label: "Monthly Imports",   isFallback: isFallback(sbp.imports.meta),       isStale: isStale(sbp.imports.meta,       isFallback(sbp.imports.meta))       },
     { label: "Current Account",   isFallback: isFallback(sbp.currentAccount.meta),isStale: isStale(sbp.currentAccount.meta,isFallback(sbp.currentAccount.meta)) },
@@ -202,7 +211,7 @@ export default async function Home() {
 
   // Default model — 7 raw data inputs
   const defaultIndicators: IndicatorStatus[] = [
-    { label: "SBP Reserves",      isFallback: isFallback(sbp.foreignReserves.meta), isStale: isStale(sbp.foreignReserves.meta, isFallback(sbp.foreignReserves.meta)) },
+    { label: "SBP Reserves",      isFallback: isFallback(netLiquidReserves.meta), isStale: isStale(netLiquidReserves.meta, isFallback(netLiquidReserves.meta)) },
     { label: "Bank Reserves",     isFallback: isFallback(sbp.netBankReserves.meta), isStale: isStale(sbp.netBankReserves.meta, isFallback(sbp.netBankReserves.meta)) },
     { label: "Monthly Imports",   isFallback: isFallback(sbp.imports.meta),       isStale: isStale(sbp.imports.meta,       isFallback(sbp.imports.meta))       },
     { label: "Fiscal Balance",    isFallback: isFallback(sbp.fiscalBalance.meta), isStale: isStale(sbp.fiscalBalance.meta, isFallback(sbp.fiscalBalance.meta)) },
@@ -239,7 +248,7 @@ export default async function Home() {
     makeTickerItem(dxyKpi,                 "DXY",       "",    "US Dollar Index"),
     makeTickerItem(us10yKpi,               "US 10Y",    "%",   "US 10Y Treasury"),
     makeTickerItem(fedFundsKpi,            "Fed Funds", "%",   "Fed Funds Rate"),
-    makeTickerItem(sbp.foreignReserves.kpi,"Reserves",  "B",   "Foreign Reserves"),
+    makeTickerItem(netLiquidReserves.kpi, "Reserves",  "B",   "Foreign Reserves"),
     makeTickerItem(sbp.policyRate.kpi,     "SBP Rate",  "%",   "Policy Rate"),
     makeTickerItem(sbp.pibYield3y.kpi,     "PK Bond 3Y","%",   "3Y PIB Yield"),
     makeTickerItem(sbp.tbillYield3m.kpi,   "T-Bill 3M", "%",   "3M T-Bill Yield"),
@@ -340,7 +349,7 @@ export default async function Home() {
     quarterlyGdpGrowth: `${quarterlyGdp.kpi.value}${quarterlyGdp.kpi.unit} YoY (${quarterlyGdp.kpi.change}), as of ${quarterlyGdp.kpi.latestDate}`,
     cpiInflation: `${sbp.cpiInflation.kpi.value}${sbp.cpiInflation.kpi.unit} (${sbp.cpiInflation.kpi.change})`,
     policyRate: `${sbp.policyRate.kpi.value}${sbp.policyRate.kpi.unit} (${sbp.policyRate.kpi.change})`,
-    foreignReserves: `$${sbp.foreignReserves.kpi.value}B (${sbp.foreignReserves.kpi.change})`,
+    foreignReserves: `$${netLiquidReserves.kpi.value}B (${netLiquidReserves.kpi.change})`,
     usdPkr: `${sbp.usdPkr.kpi.value} PKR (${sbp.usdPkr.kpi.change})`,
     tradeBalance: `${sbp.tradeBalance.kpi.value}${sbp.tradeBalance.kpi.unit} (${sbp.tradeBalance.kpi.change})`,
     currentAccount: `${sbp.currentAccount.kpi.value}${sbp.currentAccount.kpi.unit} (${sbp.currentAccount.kpi.change})`,
@@ -425,7 +434,7 @@ export default async function Home() {
   // design (see spi.ts) — a null result means the live fetch failed, not
   // that a snapshot was substituted.
   const heroDataStatus: { name: string; label: string; live: boolean }[] = [
-    { name: "SBP EasyData", live: !isFallback(sbp.foreignReserves.meta), label: !isFallback(sbp.foreignReserves.meta) ? "Live" : "Fallback" },
+    { name: "SBP", live: !isFallback(netLiquidReserves.meta), label: !isFallback(netLiquidReserves.meta) ? "Live" : "Fallback" },
     { name: "PBS",          live: spi !== null,                          label: spi !== null ? "Latest Release" : "Unavailable" },
     { name: "World Bank",   live: gdpKpi.sourceStatus !== "fallback",    label: gdpKpi.sourceStatus !== "fallback" ? "Verified" : "Fallback" },
   ];
@@ -437,7 +446,7 @@ export default async function Home() {
       text: e.actual ? `${e.title} released — ${e.actual}` : `${e.title} released`,
     })),
     ...[
-      sbp.foreignReserves.kpi,
+      netLiquidReserves.kpi,
       sbp.tradeBalance.kpi,
       sbp.moneySupplyM2.kpi,
       sbp.lsm.kpi,
@@ -491,7 +500,7 @@ export default async function Home() {
     gdpKpi,
     { ...quarterlyGdp.kpi, sparkline: quarterlyGdp.trend.slice(-12).map((p) => p.value) },
     withCalendarFreshness({ ...sbp.cpiInflation.kpi, sparkline: sbp.cpiInflation.trend.slice(-12).map((p) => p.value) }, cpiEvent),
-    withCalendarFreshness({ ...sbp.foreignReserves.kpi, sparkline: sbp.foreignReserves.trend.slice(-12).map((p) => p.value) }, fxReservesEvent),
+    withCalendarFreshness({ ...netLiquidReserves.kpi, sparkline: netLiquidReserves.trend.slice(-12).map((p) => p.value) }, fxReservesEvent),
     withCalendarFreshness({ ...sbp.remittances.kpi, sparkline: sbp.remittances.trend.slice(-12).map((p) => p.value) }, remittancesEvent),
     ...(spiKpi
       ? [{
@@ -725,32 +734,37 @@ export default async function Home() {
         <DashboardSection
           {...getSection("reserves")}
           stats={(() => {
-            const sbpB = parseFloat(sbp.foreignReserves.kpi.value);
-            const bankB = parseFloat(sbp.netBankReserves.kpi.value);
-            const totalB = sbpB + bankB;
+            // Import Cover uses fxReservesWeekly's own "Total Liquid" column
+            // (Forex_Arch), not a sum of two different-frequency EasyData
+            // series — single source, single frequency, no monthly/weekly
+            // mixing (Phase 6A). Total SBP Reserves (EasyData Z00020,
+            // monthly, includes gold/SDR) is shown as an explicitly separate
+            // reference figure, never added into the weekly total.
             const monthlyImportsB = parseFloat(sbp.imports.kpi.value);
-            const importCoverMonths = monthlyImportsB > 0 ? totalB / monthlyImportsB : 0;
-            const obsDate = sbp.foreignReserves.meta.observationDate.slice(0, 7);
+            const importCoverMonths = monthlyImportsB > 0 ? fxReservesWeekly.totalLiquidB / monthlyImportsB : 0;
             return [
-              { label: "SBP Reserves", value: `$${sbpB.toFixed(1)}B`, kpiTitle: "Foreign Reserves" },
-              { label: "Commercial Banks", value: `$${bankB.toFixed(1)}B`, kpiTitle: "Bank Reserves" },
-              { label: "Total Reserves", value: `$${totalB.toFixed(1)}B` },
-              { label: "Import Cover", value: `${importCoverMonths.toFixed(1)} months · ${obsDate}` }, // stat labels are translated by KpiCard via InfoTooltip termKey lookup
+              { label: "Net Liquid (SBP)", value: `$${fxReservesWeekly.netSbpB.toFixed(1)}B`, kpiTitle: "Foreign Reserves" },
+              { label: "Commercial Banks", value: `$${fxReservesWeekly.netBanksB.toFixed(1)}B` },
+              { label: "Total Liquid Reserves", value: `$${fxReservesWeekly.totalLiquidB.toFixed(1)}B` },
+              { label: "Import Cover", value: `${importCoverMonths.toFixed(1)} months · ${fxReservesWeekly.observationDate}` }, // stat labels are translated by KpiCard via InfoTooltip termKey lookup
             ];
           })()}
         >
           <div className="mt-6 glass-card-raised p-4">
             <p className="mb-2 text-xs font-medium text-white/40 light:text-slate-500">
-              24-Month Trend <span className="text-white/25 light:text-slate-400">· SBP EasyData, monthly</span>
+              24-Week Trend <span className="text-white/25 light:text-slate-400">· SBP Forex_Arch.xlsx, weekly, net liquid</span>
             </p>
-            <ChartExpandButton title="Foreign Reserves — 24-Month Trend">
+            <ChartExpandButton title="Net Liquid SBP Reserves — 24-Week Trend">
               <TrendLineChart
-                data={sbp.foreignReserves.trend}
+                data={netLiquidReserves.trend}
                 color="#38bdf8"
                 unit="B"
                 gradientId="reservesGradient"
               />
             </ChartExpandButton>
+            <p className="mt-2 text-[11px] text-white/30 light:text-slate-400">
+              A separate, broader monthly measure — Total SBP Reserves (incl. gold/SDR/IMF position) — is ${parseFloat(sbp.foreignReserves.kpi.value).toFixed(1)}B as of {sbp.foreignReserves.meta.observationDate.slice(0, 7)}. See the Foreign Reserves page for both figures side by side.
+            </p>
           </div>
         </DashboardSection>
         </HideableSection>
@@ -831,7 +845,7 @@ export default async function Home() {
             return [
               { label: "Current Account", value: formatSignedB(sbp.currentAccount.kpi.value) },
               { label: "Trade Balance (Goods)", value: formatSignedB(sbp.tradeBalance.kpi.value), kpiTitle: "Trade Balance" },
-              { label: "Foreign Reserves (SBP)", value: `$${sbp.foreignReserves.kpi.value}B`, kpiTitle: "Foreign Reserves" },
+              { label: "Foreign Reserves (SBP)", value: `$${netLiquidReserves.kpi.value}B`, kpiTitle: "Foreign Reserves" },
               { label: "Money Supply (M2)", value: `Rs ${sbp.moneySupplyM2.kpi.value}T` },
             ];
           })()}

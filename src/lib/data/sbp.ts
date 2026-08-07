@@ -180,7 +180,12 @@ export interface SbpSeries {
 }
 
 export interface SbpMeta {
-  source: "SBP EasyData" | "SBP EasyData (fallback)";
+  // Widened for fxReserves.ts (Phase 6A) — a second, non-EasyData source
+  // (SBP's own Forex_Arch.xlsx) reuses this same result shape rather than
+  // inventing a parallel one, since every consumer (KpiCard, SeoPageLayout,
+  // DataQualityBadge) only cares about the shape, not which literal source
+  // string it carries.
+  source: "SBP EasyData" | "SBP EasyData (fallback)" | "SBP Forex_Arch.xlsx" | "SBP Forex_Arch.xlsx (fallback)";
   seriesKey: string;
   seriesName: string;
   /** Unit as reported by SBP EasyData (e.g. "Million USD", "Percent"). */
@@ -313,12 +318,19 @@ async function fetchSbpSeries(seriesKey: string, revalidateSeconds: number, cach
 // KpiGrid/KpiCard, including unit conversion and a human-readable change
 // label relative to the previous observation.
 
+// Renamed from "Foreign Reserves" (Phase 6A) — this is EasyData Z00020,
+// "Total SBP Reserves," a broader monthly IMF-template figure (includes
+// gold/SDR/IMF reserve position) that is NOT the same measure as the
+// weekly net-liquid figure most financial media/markets mean by "Pakistan's
+// foreign reserves" (see fxReserves.ts's getNetLiquidReserves(), now the
+// homepage's primary "Foreign Reserves" card). Kept here as a distinct,
+// honestly-labeled secondary metric — never blended with the weekly figure.
 function buildForeignReservesKpi(series: SbpSeries): Kpi {
   const latestB = series.latestValue / 1000;
   const diffB = series.previousValue !== null ? (series.latestValue - series.previousValue) / 1000 : null;
   const prevLabel = series.previousDate ? formatMonthLabel(series.previousDate) : null;
   return {
-    title: "Foreign Reserves",
+    title: "Total SBP Reserves",
     value: latestB.toFixed(1),
     unit: "B USD",
     change: changeLabel(diffB, prevLabel, (d) => `${d.toFixed(1)}B`),

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { getAllSbpIndicators } from "@/lib/data/sbpServer";
+import { getNetLiquidReserves } from "@/lib/data/fxReserves";
 import { getGdpKpi } from "@/lib/data/worldBank";
 import SeoPageLayout from "@/components/seo/SeoPageLayout";
 import { SITE_URL, SITE_NAME, getRelatedLinks } from "@/lib/seoConfig";
@@ -19,7 +20,7 @@ export const metadata: Metadata = {
 };
 
 export default async function EconomicIndicatorsPage() {
-  const [sbp, gdpKpi] = await Promise.all([getAllSbpIndicators(), getGdpKpi()]);
+  const [sbp, gdpKpi, netLiquidReserves] = await Promise.all([getAllSbpIndicators(), getGdpKpi(), getNetLiquidReserves()]);
 
   return (
     <SeoPageLayout
@@ -42,7 +43,7 @@ export default async function EconomicIndicatorsPage() {
         { label: "GDP Growth (Annual)", value: `${gdpKpi.value}%` },
         { label: "SBP Policy Rate", value: `${sbp.policyRate.kpi.value}%` },
         { label: "USD / PKR", value: sbp.usdPkr.kpi.value },
-        { label: "Foreign Reserves (SBP)", value: `$${parseFloat(sbp.foreignReserves.kpi.value).toFixed(1)}B` },
+        { label: "Foreign Reserves (SBP)", value: `$${parseFloat(netLiquidReserves.kpi.value).toFixed(1)}B` },
         { label: "Current Account", value: `${sbp.currentAccount.kpi.value} ${sbp.currentAccount.kpi.unit}` },
         { label: "Remittances", value: `${sbp.remittances.kpi.value} ${sbp.remittances.kpi.unit}` },
       ]}

@@ -451,7 +451,7 @@ export default function AssistantChat({ context, onClose }: Props) {
 
   return (
     <div
-      className="flex flex-col w-[340px] bg-[#07101f] light:bg-white border border-[#38bdf8]/25 light:border-slate-200 rounded-2xl shadow-2xl overflow-hidden"
+      className="flex flex-col w-[340px] max-w-[calc(100vw-2rem)] bg-[#07101f] light:bg-white border border-[#38bdf8]/25 light:border-slate-200 rounded-2xl shadow-2xl overflow-hidden"
       style={{ boxShadow: "0 8px 40px rgba(0,0,0,0.6), 0 0 0 1px rgba(56,189,248,0.12)" }}
     >
       {/* Header */}

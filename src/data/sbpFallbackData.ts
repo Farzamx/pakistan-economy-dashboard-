@@ -505,7 +505,7 @@ const fiscalBalanceTrend: TrendPoint[] = [
 
 export const fallbackForeignReserves: SbpIndicatorResult = {
   kpi: {
-    title: "Foreign Reserves",
+    title: "Total SBP Reserves",
     value: "16.0",
     unit: "B USD",
     change: "-0.5B vs Mar 2026",
@@ -521,6 +521,61 @@ export const fallbackForeignReserves: SbpIndicatorResult = {
     frequency: "Monthly",
     observationDate: "2026-04-30",
     lastUpdated: FALLBACK_LAST_UPDATED,
+  },
+};
+
+// Net Liquid SBP Reserves (Phase 6A) — the weekly figure from SBP's own
+// Forex_Arch.xlsx (see src/lib/data/fxReserves.ts), NOT the same series as
+// fallbackForeignReserves above. Snapshot captured live 2026-08-07 (the
+// live production file itself, not a hand-estimated figure) — 24 real
+// weekly observations, week-ending dates.
+const NET_LIQUID_RESERVES_LAST_UPDATED = "2026-08-07T00:00:00.000Z";
+
+const netLiquidReservesTrend: TrendPoint[] = [
+  { month: "23 Jan '26", value: 16.10 },
+  { month: "30 Jan '26", value: 16.16 },
+  { month: "6 Feb '26", value: 16.18 },
+  { month: "13 Feb '26", value: 16.20 },
+  { month: "20 Feb '26", value: 16.21 },
+  { month: "6 Mar '26", value: 16.34 },
+  { month: "13 Mar '26", value: 16.35 },
+  { month: "27 Mar '26", value: 16.38 },
+  { month: "3 Apr '26", value: 16.40 },
+  { month: "10 Apr '26", value: 15.08 },
+  { month: "17 Apr '26", value: 15.10 },
+  { month: "24 Apr '26", value: 15.83 },
+  { month: "8 May '26", value: 15.87 },
+  { month: "15 May '26", value: 17.08 },
+  { month: "22 May '26", value: 17.15 },
+  { month: "29 May '26", value: 17.19 },
+  { month: "5 Jun '26", value: 17.22 },
+  { month: "12 Jun '26", value: 17.22 },
+  { month: "19 Jun '26", value: 15.92 },
+  { month: "3 Jul '26", value: 18.47 },
+  { month: "10 Jul '26", value: 17.23 },
+  { month: "17 Jul '26", value: 17.26 },
+  { month: "24 Jul '26", value: 17.03 },
+  { month: "31 Jul '26", value: 17.04 },
+];
+
+export const fallbackNetLiquidReserves: SbpIndicatorResult = {
+  kpi: {
+    title: "Foreign Reserves",
+    value: "17.0",
+    unit: "B USD",
+    change: "+0.0B vs 24 Jul '26",
+    trend: "up",
+    glow: "blue",
+  },
+  trend: netLiquidReservesTrend,
+  meta: {
+    source: "SBP Forex_Arch.xlsx (fallback)",
+    seriesKey: "Forex_Arch.xlsx:NET RESERVES WITH SBP",
+    seriesName: "Net Liquid SBP Reserves",
+    unit: "Million USD",
+    frequency: "Weekly",
+    observationDate: "2026-07-31",
+    lastUpdated: NET_LIQUID_RESERVES_LAST_UPDATED,
   },
 };
 
