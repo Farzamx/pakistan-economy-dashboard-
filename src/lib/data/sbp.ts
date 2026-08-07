@@ -248,6 +248,21 @@ function changeLabel(diff: number | null, previousLabel: string | null, format: 
  */
 async function fetchSbpSeries(seriesKey: string, revalidateSeconds: number, cacheTag: string, noCache = false): Promise<SbpSeries> {
   const apiKey = process.env.SBP_EASYDATA_API_KEY;
+
+  // --- TEMPORARY DIAGNOSTIC LOGGING — Phase 6A.2 production 403 investigation.
+  // Remove this whole block (search "TEMPORARY DIAGNOSTIC") once the exact
+  // cause is confirmed from production logs. Never logs the full key.
+  const keyPreview = apiKey
+    ? apiKey.length >= 8
+      ? `${apiKey.slice(0, 4)}...${apiKey.slice(-4)}`
+      : "(present, too short to preview safely)"
+    : "(missing)";
+  console.log(
+    `[SBP-DIAG] key check — present=${!!apiKey} length=${apiKey?.length ?? 0} preview=${keyPreview} ` +
+    `VERCEL=${process.env.VERCEL ?? "unset"} VERCEL_ENV=${process.env.VERCEL_ENV ?? "unset"}`,
+  );
+  // --- end temporary block (1/3) ---
+
   if (!apiKey) {
     throw new Error("SBP_EASYDATA_API_KEY is not set");
   }
@@ -266,10 +281,25 @@ async function fetchSbpSeries(seriesKey: string, revalidateSeconds: number, cach
     ? { cache: "no-store" }
     : { next: { revalidate: revalidateSeconds, tags: [cacheTag] } };
 
-  const response = await fetch(`${SBP_API_BASE}/${seriesKey}/data?${params.toString()}`, {
+  const requestUrl = `${SBP_API_BASE}/${seriesKey}/data?${params.toString()}`;
+
+  // --- TEMPORARY DIAGNOSTIC LOGGING (2/3) — key redacted via a masked param set, never a string-replace on the real URL. ---
+  const redactedUrl = `${SBP_API_BASE}/${seriesKey}/data?${new URLSearchParams({ api_key: keyPreview, start_date: HISTORY_START_DATE, format: "json" }).toString()}`;
+  console.log(`[SBP-DIAG] requesting — seriesKey=${seriesKey} url=${redactedUrl}`);
+  // --- end temporary block (2/3) ---
+
+  const response = await fetch(requestUrl, {
     ...cacheOptions,
     signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
   });
+
+  // --- TEMPORARY DIAGNOSTIC LOGGING (3/3) — status always logged; body only read (and only ever logged) on a non-OK response, so the success path's json() parsing below is never affected by a consumed body. ---
+  console.log(`[SBP-DIAG] response — seriesKey=${seriesKey} status=${response.status} statusText=${response.statusText}`);
+  if (!response.ok) {
+    const bodyText = await response.text().catch((e) => `(could not read body: ${e instanceof Error ? e.message : String(e)})`);
+    console.log(`[SBP-DIAG] error body — seriesKey=${seriesKey} status=${response.status} body(first 500 chars)=${bodyText.slice(0, 500)}`);
+  }
+  // --- end temporary block (3/3) ---
 
   if (!response.ok) {
     throw new Error(`SBP EasyData API returned ${response.status} for ${seriesKey}`);
