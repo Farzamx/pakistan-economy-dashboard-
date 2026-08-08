@@ -29,7 +29,7 @@
 // to maintain.
 
 import { createPublicDataClient } from "@/lib/supabase/publicDataClient";
-import { getSbpIndicatorFresh, getSbpIndicatorHistoryFresh } from "@/lib/data/sbp";
+import { getSbpIndicator, getSbpIndicatorHistory } from "@/lib/data/sbp";
 import { getSpiHistoryFresh, formatSpiWowActual } from "@/lib/data/spi";
 import { fetchFxReservesRowFresh } from "@/lib/economicCalendar/automation/syncFxReservesFromSbpExcel";
 import { computeLsmYoY } from "@/lib/economicCalendar/automation/lsmSync";
@@ -71,11 +71,19 @@ async function reverifyValue(
   seriesSlug: string,
 ): Promise<{ freshValue: string; freshObservationDate: string | null } | { unverifiable: string } | null> {
   // ── SBP EasyData family (7 series) ────────────────────────────────────────
+  // Reads canonical_observations (migration 0050) instead of calling SBP
+  // EasyData live — Production Readiness Audit (Phase 6A.3/post-deployment
+  // hardening) found this always failed from Vercel/GitHub Actions
+  // (Cloudflare-blocked) and silently returned "unverifiable" on every
+  // pass. The canonical DB is the same data this verification pass is
+  // trying to re-derive from anyway; a 48h re-check window doesn't need
+  // sub-daily freshness, only correctness, which canonical_observations
+  // already has (see the Phase 6A.3 audit's per-indicator correctness check).
   const target = SYNC_TARGETS[seriesSlug];
   if (target) {
-    const indicator = await getSbpIndicatorFresh(target.indicatorKey);
+    const indicator = await getSbpIndicator(target.indicatorKey);
     if (indicator.meta.source !== "SBP EasyData") {
-      return { unverifiable: "Live SBP EasyData call failed on re-check — serving fallback, cannot verify this pass." };
+      return { unverifiable: "Canonical SBP data unavailable on re-check — serving fallback, cannot verify this pass." };
     }
     const freshValue = target.format(indicator.kpi.value, event.previous_value);
     return { freshValue, freshObservationDate: indicator.meta.observationDate };
@@ -98,7 +106,7 @@ async function reverifyValue(
 
   // ── LSM (EasyData-derived YoY) ─────────────────────────────────────────────
   if (seriesSlug === "large-scale-manufacturing-lsm-growth") {
-    const history = await getSbpIndicatorHistoryFresh("lsm");
+    const history = await getSbpIndicatorHistory("lsm");
     if (history.meta.sourceStatus === "fallback") {
       return { unverifiable: "SBP EasyData LSM series is serving a fallback snapshot on re-check." };
     }

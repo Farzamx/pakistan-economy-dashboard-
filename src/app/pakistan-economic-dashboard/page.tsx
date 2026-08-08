@@ -24,12 +24,20 @@ export default async function PakistanEconomicDashboardPage() {
     getSbpIndicator("cpiInflation"),
   ]);
 
+  // Post-deployment hardening audit finding: this label used to say "Live
+  // Preview" unconditionally, regardless of cpiInflation.kpi.sourceStatus —
+  // the DataQualityBadge below it (via kpiQuality) already shows the honest
+  // status, but a static "Live" headline label next to a "Fallback" badge
+  // is a direct, same-page contradiction. Only claim "Live" when the data
+  // actually is.
+  const isLiveCpi = cpiInflation.kpi.sourceStatus === "live" || cpiInflation.kpi.sourceStatus === "cache-fresh";
+
   return (
     <SeoPageLayout
       canonicalPath={`/${SLUG}`}
       title="Pakistan Economic Dashboard"
       subtitle={`${SITE_NAME} is a free, real-time dashboard tracking Pakistan's economy — GDP, inflation, exchange rates, reserves, remittances, financial markets, and monetary policy, all in one place.`}
-      kpiLabel="CPI Inflation (YoY) — Live Preview"
+      kpiLabel={isLiveCpi ? "CPI Inflation (YoY) — Live Preview" : "CPI Inflation (YoY)"}
       kpiValue={`${cpiInflation.kpi.value}%`}
       kpiChange={cpiInflation.kpi.change}
       kpiTrend={cpiInflation.kpi.trend}

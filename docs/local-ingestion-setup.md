@@ -80,7 +80,14 @@ dialog gives you the working-directory field you need).
 
 **Settings tab**
 - Check "Run task as soon as possible after a scheduled start is missed" —
-  covers the laptop being off/asleep at the scheduled time.
+  this is `StartWhenAvailable` (see the exported XML below) — covers the
+  laptop being fully off at the scheduled time; Windows runs the task the
+  next time it's on, once.
+- Optionally check "Wake the computer to run this task" if the laptop is
+  merely asleep (not off) at 8am and you want it to actually wake for this
+  — free, built into Windows, no extra software. Leave unchecked if you'd
+  rather it just run `StartWhenAvailable`-style whenever you next wake it
+  yourself.
 - "If the task fails, restart every" → 10 minutes, up to 3 attempts — a
   reasonable outer retry layer on top of the script's own internal
   per-indicator retries.
@@ -89,6 +96,20 @@ Save, then right-click the task → **Run** once to confirm it executes
 outside of an interactive terminal (output won't be visible, but you can
 verify via `/admin/system-health`'s Cron History section afterward, or by
 checking `canonical_observations` directly).
+
+## Handling missed runs — what's already covered, and by what
+
+| Scenario | What happens | Mechanism |
+|---|---|---|
+| Laptop fully off at scheduled time | Runs once, automatically, the next time the laptop is on | Task Scheduler's `StartWhenAvailable` (Settings tab above) — no code involved |
+| Laptop asleep at scheduled time | Either wakes and runs (if "Wake the computer" is checked), or runs `StartWhenAvailable`-style on next wake | Task Scheduler |
+| Internet down for part of the run | Each indicator retries twice with backoff before giving up; a genuinely offline run fails cleanly and is retried in full on the next scheduled run — nothing is left half-written (see Idempotency below) | `scripts/ingestSbp.ts`'s `fetchWithRetry` |
+| SBP EasyData itself down/erroring (5xx, timeout) | Same retry-then-isolate behavior — that one indicator is marked `failed` for this run, everything else still completes, and it's picked up again next run | `scripts/ingestSbp.ts`'s per-indicator try/catch |
+| Ingestion never runs for several days | Nothing breaks — the next successful run's incremental fetch window (last 60 days) still covers the gap, and `/admin/system-health`'s Canonical SBP Freshness section will honestly show each affected indicator as overdue in the meantime, never silently "fresh" | `INCREMENTAL_LOOKBACK_DAYS` + the freshness SLA view |
+
+None of this requires a background service or daemon — it's Task
+Scheduler's own built-in missed-run handling plus the script's existing
+retry/isolation logic, both already free and already in place.
 
 ## Example scheduler configuration (exported)
 
@@ -103,7 +124,18 @@ right-click menu) for backup/version reference. The action block looks like:
     <WorkingDirectory>C:\ECONOMY DASHBOARD\pakistan-economy-dashboard</WorkingDirectory>
   </Exec>
 </Actions>
+<Settings>
+  <StartWhenAvailable>true</StartWhenAvailable>
+  <RestartOnFailure>
+    <Interval>PT10M</Interval>
+    <Count>3</Count>
+  </RestartOnFailure>
+</Settings>
 ```
+
+`StartWhenAvailable` is the actual missed-run setting from the checkbox
+above — if it's `true` here, the "ran while the laptop was off" scenario
+is genuinely configured, not just assumed.
 
 ## Example output
 
@@ -111,7 +143,7 @@ A normal, mostly-quiet day:
 
 ```
 [ingest:sbp] Started — run 4f3a1c9e-... — 2026-08-08T03:00:01.204Z
-[ingest:sbp] Fetching 21 indicators from SBP EasyData...
+[ingest:sbp] Fetching 22 indicators from SBP EasyData...
 
   · foreignReserves: no change (latest=2026-07-31)
   · netBankReserves: no change (latest=2026-07-31)
@@ -122,12 +154,13 @@ A normal, mostly-quiet day:
   ✓ remittances: updated — 1 period(s) written, latest=2026-07-31)
   ...
 
-[ingest:sbp] Fetched 21 indicators | 19 unchanged | 2 updated | 0 failed | Finished in 11.8s | Updated: moneySupplyM2, remittances
+[ingest:sbp] Fetched 22 indicators | 20 unchanged | 2 updated | 0 failed | Finished in 11.8s | Updated: moneySupplyM2, remittances
 ```
 
-(21, not 20 — the 20 homepage KPI indicators plus Urban Food Inflation,
-which feeds `/pakistan-food-inflation` and is ingested the same way even
-though it isn't one of the `SbpIndicatorKey` union members. Log order can
+(22, not 20 — the 20 homepage KPI indicators, plus Urban Food Inflation
+(feeds `/pakistan-food-inflation`) and Money Supply M2 YoY Growth (feeds
+`weeklyIntelligenceCompute.ts`'s Health Score input), ingested the same way
+even though neither is a `SbpIndicatorKey` union member. Log order can
 vary between runs — up to 5 indicators are fetched concurrently.)
 
 A day with a transient failure (retried, then given up on just that one

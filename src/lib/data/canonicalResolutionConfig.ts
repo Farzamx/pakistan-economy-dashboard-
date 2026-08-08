@@ -55,3 +55,16 @@ export function canonicalIndicatorKey(key: SbpIndicatorKey): string {
  */
 export const FOOD_INFLATION_URBAN_INDICATOR_KEY = "sbp:foodInflationUrban";
 export const FOOD_INFLATION_URBAN_PROVIDER_ID = SBP_EASYDATA_PROVIDER_ID;
+
+/**
+ * Money Supply M2 YoY growth (src/lib/data/sbp.ts's M2_YOY_GROWTH_SERIES_KEY)
+ * — SBP's own precomputed weekly YoY growth series, used only by
+ * weeklyIntelligenceCompute.ts's Health Score input. Post-deployment
+ * hardening audit finding: this was still a live SBP EasyData call from the
+ * weekly-intelligence cron (Vercel + GitHub Actions — both Cloudflare-
+ * blocked), silently falling back to a stale trend-index estimate every
+ * run. Same fix as Urban Food Inflation: one more indicator_key in the same
+ * ledger, ingested by the same runner.
+ */
+export const M2_YOY_GROWTH_INDICATOR_KEY = "sbp:moneySupplyM2YoyGrowth";
+export const M2_YOY_GROWTH_PROVIDER_ID = SBP_EASYDATA_PROVIDER_ID;

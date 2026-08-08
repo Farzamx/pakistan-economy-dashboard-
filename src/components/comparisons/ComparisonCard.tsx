@@ -11,7 +11,7 @@ import {
   type ChartMode,
   type MergedPoint,
   type TimeRange,
-} from "@/lib/comparisons/comparisonData";
+} from "@/lib/comparisons/comparisonTransforms";
 import type { ComparisonDef } from "@/lib/comparisons/comparisonRegistry";
 
 interface ComparisonCardProps {

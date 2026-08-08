@@ -7,8 +7,8 @@ import { useLanguage } from "@/components/LanguageProvider";
 import CustomComparisonBuilder from "./CustomComparisonBuilder";
 import PerformanceCalculator from "./PerformanceCalculator";
 import SectorCompositionChart, { type SectorCompositionPoint } from "./SectorCompositionChart";
-import type { ChartMode, ComparisonChartBundle, TimeRange } from "@/lib/comparisons/comparisonData";
-import { applyTimeRange } from "@/lib/comparisons/comparisonData";
+import type { ChartMode, ComparisonChartBundle, TimeRange } from "@/lib/comparisons/comparisonTransforms";
+import { applyTimeRange } from "@/lib/comparisons/comparisonTransforms";
 import {
   COMPARISON_GROUPS,
   SECTOR_COMPOSITION,

@@ -160,6 +160,7 @@ export default async function SystemHealthPage() {
                 <tr>
                   <th className="px-4 py-2">Indicator</th>
                   <th className="px-4 py-2">Status</th>
+                  <th className="px-4 py-2">Why</th>
                   <th className="px-4 py-2">Latest Period</th>
                   <th className="px-4 py-2">Age</th>
                   <th className="px-4 py-2">SLA Grace</th>
@@ -175,6 +176,17 @@ export default async function SystemHealthPage() {
                         <span className={`h-2 w-2 rounded-full ${STATUS_DOT[f.status === "fresh" ? "ok" : f.status === "overdue" ? "overdue" : "never-run"]}`} />
                         {f.status}
                       </span>
+                    </td>
+                    <td className="px-4 py-2.5 text-xs">
+                      {f.status !== "overdue" ? (
+                        <span className="text-slate-500">—</span>
+                      ) : f.ingestionStatus === "failing" ? (
+                        <span className="text-rose-400" title={f.lastIngestionError ?? undefined}>ingestion failing</span>
+                      ) : f.ingestionStatus === "ok" ? (
+                        <span className="text-amber-400">SBP hasn&apos;t published newer data</span>
+                      ) : (
+                        <span className="text-slate-500">no recent ingestion attempt recorded</span>
+                      )}
                     </td>
                     <td className="px-4 py-2.5 text-slate-400">{f.latestObservationPeriod ?? "—"}</td>
                     <td className="px-4 py-2.5 text-slate-400">{f.ageDays !== null ? `${f.ageDays}d` : "—"}</td>

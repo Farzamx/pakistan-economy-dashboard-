@@ -1,9 +1,9 @@
 // Server-only wrapper around src/lib/data/sbp.ts.
 //
-// sbp.ts must stay client-safe because comparisonData.ts imports it, and
-// comparisonData.ts is consumed by ComparisonWorkspace.tsx (a Client Component).
-// Any import of `server-only` (or of any server-only module such as
-// canonicalObservation.ts) inside sbp.ts therefore breaks the client bundle.
+// sbp.ts stays client-safe on principle — a data-fetching module with no
+// server-only/SBP-credential-adjacent imports, safe for any future code to
+// depend on from either side of the boundary. This file is where anything
+// that needs the PBS canonical override actually lives.
 //
 // This module solves that split cleanly:
 //   - sbp.ts        → client-safe, SBP EasyData only, imported by both server
@@ -20,16 +20,27 @@
 // resolves. For all other indicators it is a fast no-op. The SBP trend/sparkline
 // is always preserved — PBS does not publish long time-series.
 //
+// Phase 6A.1 (2026-08-08) — Comparisons Consistency: getSbpIndicatorHistory is
+// now ALSO override-aware (previously only the single-latest-value functions
+// were), so /comparisons' charts show the same latest point for these 6
+// indicators as the homepage/SEO pages' KPI cards. Before this, the exact
+// same indicator could show two different "latest" values depending which
+// page you were on — not because of two data sources, but because only one
+// of the two consumer functions ever applied the override. src/lib/comparisons/
+// comparisonData.ts now imports getSbpIndicatorHistory from here instead of
+// from sbp.ts directly (see that file's own header for how it stayed
+// server-only-safe to do that).
+//
 // Re-exports: every public export from sbp.ts is re-exported here (except
-// getSbpIndicator and getAllSbpIndicators which are overridden) so callers
-// can change `@/lib/data/sbp` → `@/lib/data/sbpServer` without splitting imports.
+// getSbpIndicator, getAllSbpIndicators, and getSbpIndicatorHistory, which are
+// overridden) so callers can change `@/lib/data/sbp` → `@/lib/data/sbpServer`
+// without splitting imports.
 
 import "server-only";
 
 // --- Pass-through re-exports from sbp.ts -----------------------------------
 export {
   getSbpIndicatorFresh,
-  getSbpIndicatorHistory,
   getFoodInflationUrbanHistory,
   getMoneySupplyM2YoyGrowth,
   sbpCacheTag,
@@ -47,8 +58,10 @@ export {
 import {
   getSbpIndicator as _getSbpIndicator,
   getAllSbpIndicators as _getAllSbpIndicators,
+  getSbpIndicatorHistory as _getSbpIndicatorHistory,
   type SbpIndicatorKey,
   type SbpIndicatorResult,
+  type SbpIndicatorHistory,
 } from "@/lib/data/sbp";
 
 import { getLatestCanonicalObservation } from "@/lib/data/canonicalObservation";
@@ -175,6 +188,60 @@ async function applyCanonicalOverride(
     );
     return sbpResult;
   }
+}
+
+/**
+ * History-shape counterpart to applyCanonicalOverride() — same "PBS covers a
+ * newer period than SBP EasyData has published yet" check, but appends a
+ * point to the history array instead of rewriting a single KPI value.
+ * Returns history unchanged on any failure, when SBP is already current, or
+ * for the 14 non-PBS-primary indicators (immediate no-op).
+ */
+async function applyCanonicalOverrideToHistory(
+  key: SbpIndicatorKey,
+  history: SbpIndicatorHistory,
+): Promise<SbpIndicatorHistory> {
+  const seriesSlug = CANONICAL_SERIES_SLUGS[key];
+  if (!seriesSlug) return history;
+
+  try {
+    const canonical = await getLatestCanonicalObservation(seriesSlug);
+    if (!canonical) return history;
+
+    const lastPoint = history.points[history.points.length - 1];
+    if (lastPoint && canonical.observationDate <= lastPoint.date) return history;
+
+    console.log(
+      `[SBP/canonical] ${INDICATOR_LABELS[key]} history override: appending PBS obs=${canonical.observationDate} ` +
+      `(SBP EasyData history's latest point: ${lastPoint?.date ?? "none"}) | value=${canonical.value} (${canonical.sourceName})`,
+    );
+
+    return {
+      points: [...history.points, { date: canonical.observationDate, value: canonical.value }],
+      meta: {
+        ...history.meta,
+        observationDate: canonical.observationDate,
+        sourceStatus: "live" as const,
+      },
+    };
+  } catch (err) {
+    console.error(
+      `[SBP/canonical] ${INDICATOR_LABELS[key] ?? key} history override check failed: ` +
+      (err instanceof Error ? err.message : String(err)),
+    );
+    return history;
+  }
+}
+
+/**
+ * Full-history fetch with PBS canonical override applied for the 6
+ * PBS-primary indicators — drop-in replacement for sbp.getSbpIndicatorHistory()
+ * for server components/lib modules that need the SAME latest-value
+ * resolution the homepage's KPI cards use (Comparisons feature).
+ */
+export async function getSbpIndicatorHistory(key: SbpIndicatorKey): Promise<SbpIndicatorHistory> {
+  const base = await _getSbpIndicatorHistory(key);
+  return applyCanonicalOverrideToHistory(key, base);
 }
 
 // --- Public API (canonical-aware) ------------------------------------------

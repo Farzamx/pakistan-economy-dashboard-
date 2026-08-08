@@ -1,4 +1,4 @@
-import { getSbpIndicatorFresh, type SbpIndicatorKey } from "@/lib/data/sbp";
+import { getSbpIndicator, type SbpIndicatorKey } from "@/lib/data/sbp";
 import { invalidateSbpIndicatorCache } from "@/lib/data/sbpCacheInvalidation";
 import { getSpiHistoryFresh, invalidateSpiCache, formatSpiWowActual } from "@/lib/data/spi";
 import { createPublicDataClient } from "@/lib/supabase/publicDataClient";
@@ -7,10 +7,21 @@ import { SERIES_PUBLICATION_META } from "@/lib/economicCalendar/seriesPublicatio
 import { recordSourceAttempt } from "@/lib/economicCalendar/sourceHealthTracker";
 
 // Phase 2B Priority 1 automation — syncs `actual_value` on already-scheduled
-// economic_events rows from SBP EasyData, the same live, already-integrated
-// data source this dashboard's homepage and indicator pages use (see
-// src/lib/data/sbp.ts). Reuses that module's existing caching/fallback
-// logic entirely rather than re-implementing a second SBP client.
+// economic_events rows from SBP data, the same canonical-DB-backed source
+// this dashboard's homepage and indicator pages use (see src/lib/data/sbp.ts).
+//
+// Phase 6A.1 (2026-08-08): switched from getSbpIndicatorFresh() (a live SBP
+// EasyData call) to getSbpIndicator() (reads canonical_observations,
+// migration 0050) — this cron runs from Vercel/GitHub Actions, both
+// Cloudflare-blocked from reaching easydata.sbp.org.pk, so the live variant
+// always failed here and every write in this file was silently dead in
+// production. Safety of this switch was proven, not assumed, with
+// scripts/calendarCanonicalDryRun.ts against real production data before
+// this change: 0 of 8 currently-stuck due events would release, because
+// validateObservationPeriod() below is data-source-agnostic — it already
+// only permits a write when the observation's own period genuinely matches
+// what the event represents, so switching data sources changes nothing
+// about which writes are allowed, only whether the read can succeed at all.
 //
 // Write path: economic_events has no public INSERT/UPDATE policy (see
 // 0002's RLS) and this project has no service-role key, so this calls the
@@ -216,7 +227,7 @@ export async function syncAllFromSbpEasyData(): Promise<SyncResult[]> {
       }
 
       const indicatorFetchStart = new Date();
-      const indicator = await getSbpIndicatorFresh(target.indicatorKey);
+      const indicator = await getSbpIndicator(target.indicatorKey);
       const isFallback = indicator.meta.source !== "SBP EasyData";
       // Record source health for every fetch — tracks whether the data source
       // itself is healthy independent of whether there was an event to write.
@@ -237,7 +248,7 @@ export async function syncAllFromSbpEasyData(): Promise<SyncResult[]> {
         results.push({
           seriesSlug,
           status: "skipped-fallback-data",
-          detail: "Live SBP EasyData call failed; serving fallback — not safe to mark as confirmed actual.",
+          detail: "No canonical observation available for this indicator (never ingested, or Supabase read failed); serving fallback — not safe to mark as confirmed actual.",
           durationMs: Date.now() - entryMs,
         });
         continue;

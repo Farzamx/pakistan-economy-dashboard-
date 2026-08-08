@@ -1,4 +1,4 @@
-import { getSbpIndicatorHistoryFresh } from "@/lib/data/sbp";
+import { getSbpIndicatorHistory } from "@/lib/data/sbp";
 import { findSamePeriodPriorYear } from "@/lib/yoyMath";
 import { createPublicDataClient } from "@/lib/supabase/publicDataClient";
 import { validateObservationPeriod } from "@/lib/economicCalendar/observationPeriodValidator";
@@ -35,6 +35,15 @@ import { canonicalObsCacheKey } from "@/lib/data/canonicalObservation";
 //
 // Security: writes via sync_event_actual() SECURITY DEFINER RPC, gated by
 // NOTIFICATION_WORKER_SECRET (migration 0027 hardening). No service-role key.
+//
+// Phase 6A.1 (2026-08-08): switched from getSbpIndicatorHistoryFresh() (live
+// SBP EasyData) to getSbpIndicatorHistory() (canonical_observations,
+// migration 0050) — same reasoning as syncFromSbpEasyData.ts's header
+// comment: this cron always failed here (Cloudflare block), and the period
+// validator's data-source-agnostic guard means switching sources cannot
+// cause an incorrect release — proven with scripts/calendarCanonicalDryRun.ts
+// against real production data (0 of 8 series, including LSM, would have
+// released on the first canonical-DB run).
 
 const SERIES_SLUG = "large-scale-manufacturing-lsm-growth";
 
@@ -114,9 +123,10 @@ export async function syncLsmYoYFromEasyData(): Promise<SyncResult> {
     // getSbpIndicator('lsm') so no extra SBP EasyData call is made when the
     // cron also runs other SBP syncs in the same invocation.
     const lsmFetchStart = new Date();
-    const history = await getSbpIndicatorHistoryFresh("lsm");
+    const history = await getSbpIndicatorHistory("lsm");
 
-    // Guard: if the underlying live fetch failed, we're serving a fallback
+    // Guard: if canonical_observations has no ingested LSM history (never
+    // ingested, or the Supabase read failed), this falls back to the static
     // snapshot from sbpFallbackData.ts. Fallback dates are approximate
     // (last day of each displayed month) and the history might be too short
     // for a reliable prior-year lookup. Never write estimated data.

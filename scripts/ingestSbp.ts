@@ -39,9 +39,16 @@ import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
-import { getAllSbpIndicatorKeys, fetchSbpSeriesForIngestion, fetchFoodInflationUrbanForIngestion, type SbpSeries } from "@/lib/data/sbp";
+import { getAllSbpIndicatorKeys, fetchSbpSeriesForIngestion, fetchFoodInflationUrbanForIngestion, fetchM2YoyGrowthForIngestion, type SbpSeries } from "@/lib/data/sbp";
 import { getCanonicalSbpHistory } from "@/lib/data/sbpCanonicalStore";
-import { canonicalIndicatorKey, primaryProviderFor, FOOD_INFLATION_URBAN_INDICATOR_KEY, FOOD_INFLATION_URBAN_PROVIDER_ID } from "@/lib/data/canonicalResolutionConfig";
+import {
+  canonicalIndicatorKey,
+  primaryProviderFor,
+  FOOD_INFLATION_URBAN_INDICATOR_KEY,
+  FOOD_INFLATION_URBAN_PROVIDER_ID,
+  M2_YOY_GROWTH_INDICATOR_KEY,
+  M2_YOY_GROWTH_PROVIDER_ID,
+} from "@/lib/data/canonicalResolutionConfig";
 import { logCronRun } from "@/lib/cronLogging";
 
 // The 20 homepage KPI indicators, plus any extra series that are real SBP
@@ -86,6 +93,12 @@ function extraSeries(): IngestibleSeries[] {
       indicatorKey: FOOD_INFLATION_URBAN_INDICATOR_KEY,
       provider: FOOD_INFLATION_URBAN_PROVIDER_ID,
       fetch: fetchFoodInflationUrbanForIngestion,
+    },
+    {
+      label: "moneySupplyM2YoyGrowth",
+      indicatorKey: M2_YOY_GROWTH_INDICATOR_KEY,
+      provider: M2_YOY_GROWTH_PROVIDER_ID,
+      fetch: fetchM2YoyGrowthForIngestion,
     },
   ];
 }

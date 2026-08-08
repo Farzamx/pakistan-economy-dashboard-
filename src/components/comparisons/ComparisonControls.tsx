@@ -1,6 +1,6 @@
 "use client";
 
-import type { ChartMode, TimeRange } from "@/lib/comparisons/comparisonData";
+import type { ChartMode, TimeRange } from "@/lib/comparisons/comparisonTransforms";
 import { useLanguage } from "@/components/LanguageProvider";
 
 interface ComparisonControlsProps {

@@ -201,20 +201,46 @@ export interface CanonicalIndicatorFreshness {
   frequency: Frequency;
   slaGraceDays: number;
   status: "fresh" | "overdue" | "never-ingested";
+  /**
+   * Post-deployment hardening audit finding: an "overdue" status alone
+   * doesn't tell an operator WHY — "SBP genuinely hasn't published a newer
+   * observation yet" (ingestion is running fine, there's just nothing new)
+   * and "our ingestion pipeline is broken" look identical from
+   * canonical_observations alone. This cross-references source_health_log
+   * (already recorded per-indicator by scripts/ingestSbp.ts) so the two
+   * cases render differently instead of requiring an operator to manually
+   * check a separate table.
+   */
+  ingestionStatus: "ok" | "failing" | "unknown";
+  lastIngestionError: string | null;
 }
 
 async function getCanonicalSbpFreshness(): Promise<CanonicalIndicatorFreshness[]> {
-  const [summary, keys] = await Promise.all([getCanonicalFreshnessSummary(), Promise.resolve(getAllSbpIndicatorKeys())]);
+  const [summary, keys, sourceHealth] = await Promise.all([
+    getCanonicalFreshnessSummary(),
+    Promise.resolve(getAllSbpIndicatorKeys()),
+    getSourceHealthSummary(72), // last 3 days — enough margin for a once-daily local runner
+  ]);
   const byKey = new Map(summary.map((s) => [s.indicatorKey, s]));
+  const healthByKey = new Map(
+    sourceHealth.filter((h) => h.sourceName === "sbp-easydata").map((h) => [h.seriesSlug, h]),
+  );
   const now = Date.now();
 
   return keys.map((key): CanonicalIndicatorFreshness => {
     const frequency = getSbpIndicatorFrequency(key);
     const slaGraceDays = SLA_GRACE_OVERRIDE_DAYS[key] ?? SLA_GRACE_DAYS[frequency];
     const row = byKey.get(canonicalIndicatorKey(key));
+    const health = healthByKey.get(key);
+    const ingestionStatus: CanonicalIndicatorFreshness["ingestionStatus"] = !health
+      ? "unknown"
+      : health.consecutiveFailures > 0
+        ? "failing"
+        : "ok";
+    const lastIngestionError = health?.consecutiveFailures ? health.lastError : null;
 
     if (!row) {
-      return { indicatorKey: key, latestObservationPeriod: null, vintage: null, ageDays: null, frequency, slaGraceDays, status: "never-ingested" };
+      return { indicatorKey: key, latestObservationPeriod: null, vintage: null, ageDays: null, frequency, slaGraceDays, status: "never-ingested", ingestionStatus, lastIngestionError };
     }
 
     const ageDays = Math.floor((now - new Date(row.latestObservationPeriod).getTime()) / 86_400_000);
@@ -226,6 +252,8 @@ async function getCanonicalSbpFreshness(): Promise<CanonicalIndicatorFreshness[]
       frequency,
       slaGraceDays,
       status: ageDays > slaGraceDays ? "overdue" : "fresh",
+      ingestionStatus,
+      lastIngestionError,
     };
   });
 }

@@ -5,7 +5,7 @@ import type { SourceStatus } from "@/lib/dataQuality";
 import { getTrendDirection } from "@/lib/trendDirection";
 import { findSamePeriodPriorYear } from "@/lib/yoyMath";
 import { dedupeInFlight, getFresh, getStale, setCache } from "@/lib/memoryCache";
-import { canonicalIndicatorKey, FOOD_INFLATION_URBAN_INDICATOR_KEY } from "@/lib/data/canonicalResolutionConfig";
+import { canonicalIndicatorKey, FOOD_INFLATION_URBAN_INDICATOR_KEY, M2_YOY_GROWTH_INDICATOR_KEY } from "@/lib/data/canonicalResolutionConfig";
 import { getCanonicalSbpHistory } from "@/lib/data/sbpCanonicalStore";
 import {
   fallbackCoreInflation,
@@ -1067,10 +1067,12 @@ export async function getSbpIndicatorFresh(key: SbpIndicatorKey): Promise<SbpInd
 // invalidateSbpIndicatorCache() lives in sbpCacheInvalidation.ts, a
 // separate module — NOT here — specifically because it needs
 // revalidateTag() from "next/cache", which Next.js refuses to bundle into
-// any client-reachable module. This file is imported by
-// comparisonData.ts -> ComparisonWorkspace.tsx (a Client Component), so a
-// "next/cache" import here breaks the production build entirely (confirmed
-// live: Turbopack build error, not a lint nitpick).
+// any client-reachable module. This file is imported (for types and the
+// plain live-fetch functions) by client-safe code such as
+// comparisonTransforms.ts's neighbors — see this file's header — so a
+// "next/cache" import here would break the production build entirely
+// (confirmed live: Turbopack build error, not a lint nitpick) the moment
+// anything client-reachable pulled it in again.
 
 /**
  * Fetches all 20 SBP indicators in parallel. Each indicator falls back
@@ -1341,26 +1343,46 @@ export interface MoneySupplyM2YoyResult {
   source: "SBP EasyData";
 }
 
+/**
+ * Live full-history fetch for scripts/ingestSbp.ts only — post-deployment
+ * hardening audit finding: getMoneySupplyM2YoyGrowth() below used to call
+ * SBP EasyData directly from weeklyIntelligenceCompute.ts's cron job
+ * (Vercel + GitHub Actions — both Cloudflare-blocked), silently falling
+ * back to a stale trend-index estimate every run. Same fix as Urban Food
+ * Inflation: this indicator isn't part of CONFIGS/SbpIndicatorKey, so it
+ * gets its own thin ingestion wrapper.
+ */
+export async function fetchM2YoyGrowthForIngestion(sinceDate?: string): Promise<SbpSeries> {
+  return fetchSbpSeries(M2_YOY_GROWTH_SERIES_KEY, REVALIDATE_AS_NEEDED, "sbp-m2-yoy-growth", true, sinceDate);
+}
+
+/**
+ * Reads canonical_observations (migration 0050, indicator_key
+ * "sbp:moneySupplyM2YoyGrowth") — never calls SBP EasyData during the
+ * weekly-intelligence cron run. Returns null when nothing has been
+ * ingested yet, same as the original live-fetch-failure contract (the
+ * caller already falls back to a trend-derived estimate on null).
+ */
 export async function getMoneySupplyM2YoyGrowth(): Promise<MoneySupplyM2YoyResult | null> {
   const cacheKey = "sbp-m2-yoy-growth";
   const cached = getFresh<MoneySupplyM2YoyResult>(cacheKey, REVALIDATE_AS_NEEDED * 1000);
   if (cached) return cached.data;
 
-  try {
-    return await dedupeInFlight(cacheKey, async () => {
-      const series = await fetchSbpSeries(M2_YOY_GROWTH_SERIES_KEY, REVALIDATE_AS_NEEDED, "sbp-m2-yoy-growth");
-      const result: MoneySupplyM2YoyResult = {
-        value: series.latestValue,
-        date: series.latestDate,
-        source: "SBP EasyData",
-      };
-      setCache(cacheKey, result);
-      return result;
-    });
-  } catch (err) {
-    console.error(
-      `[SBP] M2 YoY Growth fetch failed\nReason: ${err instanceof Error ? err.message : String(err)}\nServing: none (caller falls back to trend-derived estimate)\nTimestamp: ${new Date().toISOString()}`,
-    );
-    return null;
-  }
+  return dedupeInFlight(cacheKey, async () => {
+    const rows = await getCanonicalSbpHistory(M2_YOY_GROWTH_INDICATOR_KEY, 3);
+    if (rows.length === 0) {
+      console.error(
+        `[SBP] M2 YoY Growth — no canonical observations ingested yet\nServing: none (caller falls back to trend-derived estimate)\nTimestamp: ${new Date().toISOString()}`,
+      );
+      return null;
+    }
+    const latest = rows[rows.length - 1];
+    const result: MoneySupplyM2YoyResult = {
+      value: latest.value,
+      date: latest.observationPeriod,
+      source: "SBP EasyData",
+    };
+    setCache(cacheKey, result);
+    return result;
+  });
 }

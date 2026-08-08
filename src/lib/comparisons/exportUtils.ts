@@ -3,7 +3,7 @@
 // PNG/CSV export for comparison charts — native browser APIs only
 // (XMLSerializer, Canvas, Blob), no new dependency.
 
-import type { ChartPoint } from "./comparisonData";
+import type { ChartPoint } from "./comparisonTransforms";
 import type { ComparisonSeriesConfig } from "./comparisonRegistry";
 
 export function exportChartAsPng(container: HTMLElement, filename: string, backgroundColor: string): void {

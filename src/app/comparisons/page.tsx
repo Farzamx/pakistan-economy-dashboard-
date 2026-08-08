@@ -5,7 +5,7 @@ import { COMPARISONS } from "@/lib/comparisons/comparisonRegistry";
 import { getComparisonBundle } from "@/lib/comparisons/comparisonData";
 import { getGdpSectorComposition } from "@/lib/data/worldBank";
 import { getGoldHistory } from "@/lib/data/yfinance";
-import { getSbpIndicatorHistory } from "@/lib/data/sbp";
+import { getSbpIndicatorHistory } from "@/lib/data/sbpServer";
 import { buildAssetTimeline } from "@/lib/comparisons/performanceCalculator";
 import { SITE_URL, SITE_NAME } from "@/lib/seoConfig";
 

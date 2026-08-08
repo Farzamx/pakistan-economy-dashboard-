@@ -3,7 +3,7 @@
 import { useState } from "react";
 import ComparisonCard from "./ComparisonCard";
 import ComparisonControls from "./ComparisonControls";
-import type { ChartMode, ComparisonChartBundle, TimeRange } from "@/lib/comparisons/comparisonData";
+import type { ChartMode, ComparisonChartBundle, TimeRange } from "@/lib/comparisons/comparisonTransforms";
 
 interface ComparisonDetailViewProps {
   bundle: ComparisonChartBundle;

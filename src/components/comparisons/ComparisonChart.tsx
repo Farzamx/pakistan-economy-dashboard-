@@ -14,9 +14,9 @@ import {
   YAxis,
 } from "recharts";
 import { useTheme } from "@/components/ThemeProvider";
-import type { ChartPoint } from "@/lib/comparisons/comparisonData";
+import type { ChartPoint } from "@/lib/comparisons/comparisonTransforms";
 import type { ComparisonSeriesConfig } from "@/lib/comparisons/comparisonRegistry";
-import type { ChartMode } from "@/lib/comparisons/comparisonData";
+import type { ChartMode } from "@/lib/comparisons/comparisonTransforms";
 
 interface ComparisonChartProps {
   data: ChartPoint[];
