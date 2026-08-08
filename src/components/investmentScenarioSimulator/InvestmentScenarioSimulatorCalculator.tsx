@@ -20,6 +20,7 @@ import { calculateConfidenceScore } from "@/lib/decisionSupportLab/confidenceEng
 import { getOverallCompletionPct } from "@/lib/decisionSupportLab/profileCompletion";
 import { useEconomicProfile, setEconomicProfile } from "@/lib/decisionSupportLab/economicProfile";
 import type { ReportDefinition } from "@/lib/decisionSupportLab/reportFramework";
+import type { CalculationSnapshotPayload } from "@/lib/supabase/calculationSnapshots";
 import type { CpiCategoryBreakdown } from "@/lib/data/cpiCategoryBreakdown";
 import type { LiveAssetData } from "@/lib/decisionSupportLab/liveAssetData";
 
@@ -191,6 +192,16 @@ export default function InvestmentScenarioSimulatorCalculator({ breakdown, liveD
           href: "/decision-support-lab/real-return-dashboard",
           reason: "Bring together nominal wealth, inflation, taxes and real wealth in one professional dashboard.",
         }}
+        snapshotPayload={
+          portfolioValue > 0
+            ? (): CalculationSnapshotPayload => ({
+                toolId: "investment-scenario-simulator",
+                inputs: { portfolioValue, inflationPct, scenarioId },
+                assumptions: {},
+                outputs: { portfolioNominalReturnPct: result.portfolioNominalReturnPct, portfolioRealReturnPct: result.portfolioRealReturnPct, realValue, portfolioImpact },
+              })
+            : undefined
+        }
       />
     </div>
   );

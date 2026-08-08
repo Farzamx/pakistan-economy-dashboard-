@@ -26,6 +26,7 @@ import { computeOfficialCpiPct } from "@/lib/personalInflation/engine";
 import { calculateConfidenceScore } from "@/lib/decisionSupportLab/confidenceEngine";
 import { getOverallCompletionPct } from "@/lib/decisionSupportLab/profileCompletion";
 import { useEconomicProfile, setInvestmentAllocationValue, replaceInvestmentAllocation } from "@/lib/decisionSupportLab/economicProfile";
+import type { CalculationSnapshotPayload } from "@/lib/supabase/calculationSnapshots";
 import type { CpiCategoryBreakdown } from "@/lib/data/cpiCategoryBreakdown";
 import type { LiveAssetData } from "@/lib/decisionSupportLab/liveAssetData";
 
@@ -364,6 +365,12 @@ export default function AssetAllocationExplorerCalculator({ breakdown, liveData 
           href: "/decision-support-lab/investment-scenario-simulator",
           reason: "See how a market crash, inflation spike or rate change would affect a portfolio like this one.",
         }}
+        snapshotPayload={(): CalculationSnapshotPayload => ({
+          toolId: "asset-allocation-explorer",
+          inputs: { inflationPct, buckets: buckets.map((b) => ({ id: b.id, weightPct: b.weightPct })) },
+          assumptions: {},
+          outputs: { blendedReturnPct: current.portfolioResult.portfolioNominalReturnPct, blendedRealReturnPct: current.portfolioResult.portfolioRealReturnPct, diversificationScore: current.diversificationScore, volatilityPct: current.volatilityPct },
+        })}
       />
     </div>
   );

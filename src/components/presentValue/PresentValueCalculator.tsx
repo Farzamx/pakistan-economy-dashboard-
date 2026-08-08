@@ -19,6 +19,7 @@ import { computeOfficialCpiPct } from "@/lib/personalInflation/engine";
 import { generatePersonalInsights } from "@/lib/decisionSupportLab/insightEngine";
 import { useEconomicProfile } from "@/lib/decisionSupportLab/economicProfile";
 import type { ReportDefinition } from "@/lib/decisionSupportLab/reportFramework";
+import type { CalculationSnapshotPayload } from "@/lib/supabase/calculationSnapshots";
 import type { CpiCategoryBreakdown } from "@/lib/data/cpiCategoryBreakdown";
 
 interface Props {
@@ -177,6 +178,16 @@ export default function PresentValueCalculator({ breakdown }: Props) {
           href: "/decision-support-lab/discount-factor-explorer",
           reason: "Explore how the discount factor changes across rates and horizons, independent of any specific amount.",
         }}
+        snapshotPayload={
+          canCompute
+            ? (): CalculationSnapshotPayload => ({
+                toolId: "present-value",
+                inputs: { futureValueAmount, discountRatePct, years, frequency },
+                assumptions: {},
+                outputs: { presentValueAmount, discountFactorValue, realValueAmount },
+              })
+            : undefined
+        }
       />
     </div>
   );

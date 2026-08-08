@@ -22,6 +22,7 @@ import { generatePersonalInsights } from "@/lib/decisionSupportLab/insightEngine
 import { getOverallCompletionPct } from "@/lib/decisionSupportLab/profileCompletion";
 import { useEconomicProfile, setEconomicProfile } from "@/lib/decisionSupportLab/economicProfile";
 import type { ReportDefinition } from "@/lib/decisionSupportLab/reportFramework";
+import type { CalculationSnapshotPayload } from "@/lib/supabase/calculationSnapshots";
 import type { CpiCategoryBreakdown } from "@/lib/data/cpiCategoryBreakdown";
 
 export interface SavingsErosionResult {
@@ -237,6 +238,16 @@ export default function SavingsErosionCalculator({ breakdown }: Props) {
           href: "/decision-support-lab/health-score",
           reason: "Combine this with your budget, salary and inflation results for one composite picture of your financial health.",
         }}
+        snapshotPayload={
+          result
+            ? (): CalculationSnapshotPayload => ({
+                toolId: "savings-erosion",
+                inputs: { savingsAmount: result.savingsAmount, inflationPct: result.inflationPct, years: result.years },
+                assumptions: {},
+                outputs: { realValue: result.realValue, purchasingPowerLost: result.purchasingPowerLost, percentErosion: result.percentErosion },
+              })
+            : undefined
+        }
       />
     </div>
   );

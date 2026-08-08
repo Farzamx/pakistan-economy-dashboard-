@@ -23,12 +23,19 @@ export default function SnapshotPage() {
       <Sidebar />
       <main className="min-w-0 flex-1 px-6 py-8 sm:px-10 lg:px-16">
         <div className="flex flex-col gap-8">
-          <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-xs font-medium text-white/40 light:text-slate-400">
-            <Link href="/decision-support-lab" className="hover:text-neon-blue">
-              ← Decision Support Lab
+          <nav aria-label="Breadcrumb" className="flex flex-wrap items-center gap-1 pt-16 text-sm font-medium min-[800px]:pt-0">
+            <Link
+              href="/decision-support-lab"
+              aria-label="Back to Decision Support Lab"
+              className="-ml-2.5 flex items-center gap-1.5 rounded-lg px-2.5 py-3 text-white/80 transition-colors hover:bg-white/5 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neon-blue light:text-slate-700 light:hover:bg-slate-900/5 light:hover:text-slate-900"
+            >
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true" className="shrink-0">
+                <path d="M13 8H3M3 8L7.5 3.5M3 8L7.5 12.5" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              Decision Support Lab
             </Link>
-            <span aria-hidden="true">/</span>
-            <span className="text-white/70 light:text-slate-600">My Snapshot</span>
+            <span aria-hidden="true" className="text-white/25 light:text-slate-300">/</span>
+            <span aria-current="page" className="text-white light:text-slate-900">My Snapshot</span>
           </nav>
 
           <div>

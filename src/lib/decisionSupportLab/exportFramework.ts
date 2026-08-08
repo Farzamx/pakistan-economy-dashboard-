@@ -3,16 +3,27 @@
 // functions rather than re-implementing toBlob/jsPDF wiring per tool.
 "use client";
 
-export function exportCanvasAsPng(canvas: HTMLCanvasElement, filename: string): void {
-  canvas.toBlob((blob) => {
-    if (!blob) return;
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename;
-    a.click();
-    URL.revokeObjectURL(url);
-  }, "image/png");
+/** Resolves false (never rejects) if the canvas couldn't be encoded — callers surface that as a visible error rather than a silent no-op. */
+export function exportCanvasAsPng(canvas: HTMLCanvasElement, filename: string): Promise<boolean> {
+  return new Promise((resolve) => {
+    try {
+      canvas.toBlob((blob) => {
+        if (!blob) {
+          resolve(false);
+          return;
+        }
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(url);
+        resolve(true);
+      }, "image/png");
+    } catch {
+      resolve(false);
+    }
+  });
 }
 
 // jsPDF is dynamically imported so it never enters a tool's initial

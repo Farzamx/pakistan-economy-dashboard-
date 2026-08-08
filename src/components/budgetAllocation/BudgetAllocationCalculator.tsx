@@ -24,6 +24,7 @@ import { computePersonalInflation } from "@/lib/personalInflation/engine";
 import { useSavedScenarios, saveScenario, deleteScenario, type SavedScenario } from "@/lib/personalInflation/localScenarios";
 import { useEconomicProfile, setEconomicProfile } from "@/lib/decisionSupportLab/economicProfile";
 import { generatePersonalInsights } from "@/lib/decisionSupportLab/insightEngine";
+import type { CalculationSnapshotPayload } from "@/lib/supabase/calculationSnapshots";
 import type { CpiCategoryBreakdown } from "@/lib/data/cpiCategoryBreakdown";
 
 interface Props {
@@ -184,6 +185,16 @@ export default function BudgetAllocationCalculator({ breakdown }: Props) {
           href: "/decision-support-lab/personal-inflation",
           reason: "Your budget allocation is already saved — Personal Inflation will use it automatically.",
         }}
+        snapshotPayload={
+          result
+            ? (): CalculationSnapshotPayload => ({
+                toolId: "budget-allocation",
+                inputs: { allocation, monthlyBudget, mode },
+                assumptions: {},
+                outputs: { totalAllocated, topCategory: topCategory?.groupName ?? null, topCategoryWeightPct: topCategory?.yourWeightPct ?? null },
+              })
+            : undefined
+        }
       />
     </div>
   );

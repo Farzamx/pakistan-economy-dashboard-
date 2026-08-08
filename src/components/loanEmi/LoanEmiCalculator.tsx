@@ -14,6 +14,7 @@ import RequiredInputsGate from "@/components/decisionSupportLab/RequiredInputsGa
 import { buildAmortizationSchedule } from "@/lib/decisionSupportLab/timeValueEngine";
 import { useEconomicProfile, setEconomicProfile } from "@/lib/decisionSupportLab/economicProfile";
 import type { ReportDefinition } from "@/lib/decisionSupportLab/reportFramework";
+import type { CalculationSnapshotPayload } from "@/lib/supabase/calculationSnapshots";
 
 export default function LoanEmiCalculator() {
   const { t } = useLanguage();
@@ -152,6 +153,16 @@ export default function LoanEmiCalculator() {
           href: "/decision-support-lab/annuity",
           reason: "A loan is mathematically identical to an annuity — see how a stream of equal payments is valued.",
         }}
+        snapshotPayload={
+          schedule
+            ? (): CalculationSnapshotPayload => ({
+                toolId: "loan-emi",
+                inputs: { loanAmount, ratePct, termYears, frequency },
+                assumptions: {},
+                outputs: { payment: schedule.payment, totalInterest: schedule.totalInterest, totalPrincipal: schedule.totalPrincipal },
+              })
+            : undefined
+        }
       />
     </div>
   );

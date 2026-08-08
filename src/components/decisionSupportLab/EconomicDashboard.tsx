@@ -12,7 +12,8 @@ import { useScenarioProfiles, getEffectiveProfile } from "@/lib/decisionSupportL
 import ScenarioProfileSwitcher from "@/components/decisionSupportLab/ScenarioProfileSwitcher";
 import { getOverallCompletionPct, getProfileHealthChecklist } from "@/lib/decisionSupportLab/profileCompletion";
 import { calculateEconomicIdentityConfidence } from "@/lib/decisionSupportLab/confidenceEngine";
-import { generateRecommendations } from "@/lib/decisionSupportLab/recommendationEngine";
+import { generateRecommendations, type GoalRecommendationInput } from "@/lib/decisionSupportLab/recommendationEngine";
+import { projectGoalProgress } from "@/lib/decisionSupportLab/goalEngine";
 import { computeOfficialCpiPct } from "@/lib/personalInflation/engine";
 import { computeRaiseRealityCheck } from "@/lib/decisionSupportLab/salaryEngine";
 import { deflateCompounding } from "@/lib/decisionSupportLab/purchasingPowerEngine";
@@ -105,14 +106,24 @@ export default function EconomicDashboard({ breakdown, liveData }: Props) {
     [profile, officialCpiPct],
   );
 
+  const goalRecommendationInputs: GoalRecommendationInput[] = useMemo(
+    () =>
+      profile.goals.map((goal) => {
+        const progress = projectGoalProgress(goal, { inflationPct: officialCpiPct });
+        return { goal, fundingGapAmount: progress.fundingGapAmount, fundingGapPct: progress.fundingGapPct, requiredMonthlyContributionValue: progress.requiredMonthlyContributionValue };
+      }),
+    [profile.goals, officialCpiPct],
+  );
+
   const recommendations = useMemo(
     () =>
       generateRecommendations(profile, {
         healthScorePct: healthScore.overallScore,
         portfolioRealReturnPct: portfolioResult?.portfolioRealReturnPct,
         officialInflationPct: officialCpiPct,
+        goals: goalRecommendationInputs,
       }),
-    [profile, healthScore, portfolioResult, officialCpiPct],
+    [profile, healthScore, portfolioResult, officialCpiPct, goalRecommendationInputs],
   );
 
   const topRisk = recommendations.find((r) => r.frame === "risk");

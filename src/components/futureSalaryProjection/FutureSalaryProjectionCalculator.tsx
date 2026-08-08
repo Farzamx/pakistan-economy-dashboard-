@@ -22,6 +22,7 @@ import { generatePersonalInsights } from "@/lib/decisionSupportLab/insightEngine
 import { getOverallCompletionPct } from "@/lib/decisionSupportLab/profileCompletion";
 import { useEconomicProfile, setEconomicProfile, getEffectiveSalary } from "@/lib/decisionSupportLab/economicProfile";
 import type { ReportDefinition } from "@/lib/decisionSupportLab/reportFramework";
+import type { CalculationSnapshotPayload } from "@/lib/supabase/calculationSnapshots";
 import type { CpiCategoryBreakdown } from "@/lib/data/cpiCategoryBreakdown";
 
 export interface FutureSalaryProjectionResult {
@@ -245,6 +246,16 @@ export default function FutureSalaryProjectionCalculator({ breakdown }: Props) {
           href: "/decision-support-lab/health-score",
           reason: "Combine this projection with your budget, inflation and savings results for one composite picture of your financial health.",
         }}
+        snapshotPayload={
+          result
+            ? (): CalculationSnapshotPayload => ({
+                toolId: "future-salary-projection",
+                inputs: { currentSalary, annualRaisePct, inflationPct, years },
+                assumptions: {},
+                outputs: { nominalSalary: result.nominalSalary, realSalary: result.realSalary, purchasingPowerPct: result.purchasingPowerPct },
+              })
+            : undefined
+        }
       />
     </div>
   );

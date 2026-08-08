@@ -19,6 +19,7 @@ import { calculateConfidenceScore } from "@/lib/decisionSupportLab/confidenceEng
 import { getOverallCompletionPct } from "@/lib/decisionSupportLab/profileCompletion";
 import { useEconomicProfile, setEconomicProfile } from "@/lib/decisionSupportLab/economicProfile";
 import type { ReportDefinition } from "@/lib/decisionSupportLab/reportFramework";
+import type { CalculationSnapshotPayload } from "@/lib/supabase/calculationSnapshots";
 import type { CpiCategoryBreakdown } from "@/lib/data/cpiCategoryBreakdown";
 
 interface Props {
@@ -188,6 +189,16 @@ export default function InvestmentGrowthExplorerCalculator({ breakdown }: Props)
           href: "/decision-support-lab/asset-comparison-lab",
           reason: "Compare real assets — gold, T-Bills, PIBs, PSX and more — ranked by real return, using live official data where available.",
         }}
+        snapshotPayload={
+          results.length > 0
+            ? (): CalculationSnapshotPayload => ({
+                toolId: "investment-growth-explorer",
+                inputs: { startingAmount, years, inflationPct, investments },
+                assumptions: {},
+                outputs: { results: results.map((r) => ({ id: r.id, name: r.name, nominalEndValue: r.nominalEndValue, realEndValue: r.realEndValue })) },
+              })
+            : undefined
+        }
       />
     </div>
   );

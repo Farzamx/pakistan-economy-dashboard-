@@ -21,6 +21,7 @@ import { useSavedScenarios, saveScenario, deleteScenario, type SavedScenario } f
 import { useEconomicProfile, setEconomicProfile } from "@/lib/decisionSupportLab/economicProfile";
 import { generatePersonalInsights } from "@/lib/decisionSupportLab/insightEngine";
 import type { ReportDefinition } from "@/lib/decisionSupportLab/reportFramework";
+import type { CalculationSnapshotPayload } from "@/lib/supabase/calculationSnapshots";
 import type { CpiCategoryBreakdown } from "@/lib/data/cpiCategoryBreakdown";
 
 function buildPersonalInflationReport(result: PersonalInflationResult, observationDate: string): ReportDefinition {
@@ -219,6 +220,16 @@ export default function PersonalInflationCalculator({ breakdown }: Props) {
           href: "/decision-support-lab/purchasing-power",
           reason: "Now that you know your personal inflation rate, see what it means for the real value of your money over time.",
         }}
+        snapshotPayload={
+          result
+            ? (): CalculationSnapshotPayload => ({
+                toolId: "personal-inflation",
+                inputs: { allocation, monthlyBudget, mode },
+                assumptions: {},
+                outputs: { personalCpiPct: result.personalCpiPct, officialCpiPct: result.officialCpiPct, differencePct: result.differencePct },
+              })
+            : undefined
+        }
       />
     </div>
   );

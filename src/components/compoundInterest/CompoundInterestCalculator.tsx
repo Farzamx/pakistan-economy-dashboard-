@@ -22,6 +22,7 @@ import {
 } from "@/lib/decisionSupportLab/timeValueEngine";
 import { generatePersonalInsights } from "@/lib/decisionSupportLab/insightEngine";
 import type { ReportDefinition } from "@/lib/decisionSupportLab/reportFramework";
+import type { CalculationSnapshotPayload } from "@/lib/supabase/calculationSnapshots";
 
 export default function CompoundInterestCalculator() {
   const { t } = useLanguage();
@@ -170,6 +171,16 @@ export default function CompoundInterestCalculator() {
           href: "/decision-support-lab/loan-emi",
           reason: "The same interest-on-balance logic determines how much of every loan payment goes to interest versus principal.",
         }}
+        snapshotPayload={
+          canCompute
+            ? (): CalculationSnapshotPayload => ({
+                toolId: "compound-interest",
+                inputs: { principal, ratePct, years, frequency },
+                assumptions: {},
+                outputs: { endingValue, interestEarned, effectiveAnnualRatePct },
+              })
+            : undefined
+        }
       />
     </div>
   );

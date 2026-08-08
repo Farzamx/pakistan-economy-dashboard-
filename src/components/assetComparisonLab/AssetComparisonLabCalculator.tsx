@@ -19,6 +19,7 @@ import { generatePersonalInsights } from "@/lib/decisionSupportLab/insightEngine
 import { getOverallCompletionPct } from "@/lib/decisionSupportLab/profileCompletion";
 import { useEconomicProfile } from "@/lib/decisionSupportLab/economicProfile";
 import type { ReportDefinition } from "@/lib/decisionSupportLab/reportFramework";
+import type { CalculationSnapshotPayload } from "@/lib/supabase/calculationSnapshots";
 import type { CpiCategoryBreakdown } from "@/lib/data/cpiCategoryBreakdown";
 import type { LiveAssetData } from "@/lib/decisionSupportLab/liveAssetData";
 
@@ -161,6 +162,16 @@ export default function AssetComparisonLabCalculator({ breakdown, liveData }: Pr
           href: "/decision-support-lab/portfolio-purchasing-power",
           reason: "Weight these same assets by your real allocation to see your whole portfolio's real return.",
         }}
+        snapshotPayload={
+          results.length > 0
+            ? (): CalculationSnapshotPayload => ({
+                toolId: "asset-comparison-lab",
+                inputs: { inflationPct, assets: assetInputs },
+                assumptions: {},
+                outputs: { ranking: results.map((r) => ({ id: r.id, name: r.name, realReturnPct: r.realReturnPct, rank: r.rank })) },
+              })
+            : undefined
+        }
       />
     </div>
   );

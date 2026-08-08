@@ -228,8 +228,14 @@ export default function EmergencyFundPlannerCalculator({ breakdown }: Props) {
 
       <PersonalInsightsPanel insights={insights} />
 
+      {/* snapshotPayload deliberately omitted here — Production Polish
+          audit found this created a second, silent calculation_snapshots
+          row on every PDF download in addition to the explicit "Save this
+          result to my snapshot" button below. Saving now happens only
+          through that one clearly-labeled action, consistent with every
+          other tool in the Lab. */}
       {progress && (
-        <ReportDownloadButton buildDefinition={buildReport} filename="emergency-fund-planner-report.pdf" label="Download Full Report (PDF)" generatingLabel="Generating…" snapshotPayload={snapshotPayload} />
+        <ReportDownloadButton buildDefinition={buildReport} filename="emergency-fund-planner-report.pdf" label="Download Full Report (PDF)" generatingLabel="Generating…" />
       )}
 
       <ExplainTheMath

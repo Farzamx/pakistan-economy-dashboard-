@@ -13,6 +13,7 @@ import ReportDownloadButton from "@/components/decisionSupportLab/ReportDownload
 import RequiredInputsGate from "@/components/decisionSupportLab/RequiredInputsGate";
 import { annuityPresentValue, annuityFutureValue, type AnnuityType } from "@/lib/decisionSupportLab/timeValueEngine";
 import type { ReportDefinition } from "@/lib/decisionSupportLab/reportFramework";
+import type { CalculationSnapshotPayload } from "@/lib/supabase/calculationSnapshots";
 
 export default function AnnuityCalculator() {
   const { t } = useLanguage();
@@ -158,6 +159,16 @@ export default function AnnuityCalculator() {
           href: "/decision-support-lab/formula-explorer",
           reason: "Compare the annuity formulas against every other Time Value of Money formula in one place.",
         }}
+        snapshotPayload={
+          hasInput
+            ? (): CalculationSnapshotPayload => ({
+                toolId: "annuity",
+                inputs: { type, mode, payment: effectivePayment, ratePct, periods },
+                assumptions: {},
+                outputs: { presentValueAmount, futureValueAmount },
+              })
+            : undefined
+        }
       />
     </div>
   );

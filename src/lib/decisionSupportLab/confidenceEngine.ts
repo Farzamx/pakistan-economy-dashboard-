@@ -54,7 +54,7 @@ export function calculateConfidenceScore(input: ConfidenceInput): ConfidenceResu
   const factors: ConfidenceFactor[] = [
     { label: usesOfficialData ? "Official data" : "Manual assumptions", positive: usesOfficialData },
     { label: input.hasHistoricalCoverage ? "Historical CPI available" : "No historical coverage", positive: input.hasHistoricalCoverage },
-    { label: input.profileCompletenessPct >= 100 ? "Complete profile" : input.profileCompletenessPct >= 50 ? "Partial profile" : "Incomplete profile", positive: input.profileCompletenessPct >= 50 },
+    { label: input.profileCompletenessPct >= 100 ? "Complete profile" : input.profileCompletenessPct >= 50 ? "Partial profile" : "Incomplete profile", positive: input.profileCompletenessPct >= 100 },
   ];
   if (manualEstimateCount > 0) factors.push({ label: `${manualEstimateCount} manual estimate${manualEstimateCount === 1 ? "" : "s"} used`, positive: false });
   if (input.assumptionCount > 0) factors.push({ label: `${input.assumptionCount} assumption${input.assumptionCount === 1 ? "" : "s"} applied`, positive: false });
@@ -81,7 +81,7 @@ export function calculateEconomicIdentityConfidence(profile: EconomicProfile, su
   const completenessPct = getOverallCompletionPct(profile);
   const factors: ConfidenceFactor[] = [
     { label: summary.officialFieldCount > summary.manualFieldCount ? "Mostly official/verified data" : "Mostly self-reported data", positive: summary.officialFieldCount >= summary.manualFieldCount },
-    { label: summary.missingFieldCount === 0 ? "No missing fields" : `${summary.missingFieldCount} field${summary.missingFieldCount === 1 ? "" : "s"} missing`, positive: summary.missingFieldCount === 0 },
+    { label: summary.missingFieldCount === 0 ? "No missing fields" : `Missing ${summary.missingFieldCount} field${summary.missingFieldCount === 1 ? "" : "s"}`, positive: summary.missingFieldCount === 0 },
     { label: summary.hasHistoricalCoverage ? "Historical CPI available" : "No historical coverage", positive: summary.hasHistoricalCoverage },
     { label: completenessPct >= 100 ? "Complete profile" : "Incomplete profile", positive: completenessPct >= 100 },
   ];

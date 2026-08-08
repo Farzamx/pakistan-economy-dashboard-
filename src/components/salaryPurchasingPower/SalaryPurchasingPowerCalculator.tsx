@@ -19,6 +19,7 @@ import { computePurchasingPower, buildPurchasingPowerTimeline, getAvailableYears
 import { generatePersonalInsights } from "@/lib/decisionSupportLab/insightEngine";
 import { useEconomicProfile, setEconomicProfile, getEffectiveSalary } from "@/lib/decisionSupportLab/economicProfile";
 import type { ReportDefinition } from "@/lib/decisionSupportLab/reportFramework";
+import type { CalculationSnapshotPayload } from "@/lib/supabase/calculationSnapshots";
 import type { CpiIndexPoint } from "@/lib/data/cpiMonthlyIndex";
 
 interface Props {
@@ -191,6 +192,16 @@ export default function SalaryPurchasingPowerCalculator({ series }: Props) {
           href: "/decision-support-lab/raise-reality-check",
           reason: "See whether your most recent salary increase actually grew your real income or was cancelled out by inflation.",
         }}
+        snapshotPayload={
+          result
+            ? (): CalculationSnapshotPayload => ({
+                toolId: "salary-purchasing-power",
+                inputs: { salary, baseYear: effectiveBaseYear, targetYear: effectiveTargetYear },
+                assumptions: {},
+                outputs: { realValueToday: result.realValueToday, purchasingPowerLostPct: result.purchasingPowerLostPct, totalInflationPct: result.totalInflationPct },
+              })
+            : undefined
+        }
       />
     </div>
   );

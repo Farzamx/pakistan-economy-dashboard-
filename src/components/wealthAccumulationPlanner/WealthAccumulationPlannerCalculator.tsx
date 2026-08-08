@@ -227,8 +227,12 @@ export default function WealthAccumulationPlannerCalculator({ breakdown }: Props
 
       <PersonalInsightsPanel insights={insights} />
 
+      {/* snapshotPayload deliberately omitted here — see the identical
+          note in EmergencyFundPlannerCalculator.tsx: saving now happens
+          only through the explicit "Save this result to my snapshot"
+          button below, never as a silent side-effect of downloading. */}
       {progress && (
-        <ReportDownloadButton buildDefinition={buildReport} filename="wealth-accumulation-planner-report.pdf" label="Download Full Report (PDF)" generatingLabel="Generating…" snapshotPayload={snapshotPayload} />
+        <ReportDownloadButton buildDefinition={buildReport} filename="wealth-accumulation-planner-report.pdf" label="Download Full Report (PDF)" generatingLabel="Generating…" />
       )}
 
       <ExplainTheMath

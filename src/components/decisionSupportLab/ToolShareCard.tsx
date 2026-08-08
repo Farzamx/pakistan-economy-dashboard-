@@ -132,7 +132,14 @@ export default function ToolShareCard(props: ToolShareCardProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const { t } = useLanguage();
   const [copied, setCopied] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [pdfGenerating, setPdfGenerating] = useState(false);
   const canShareNative = useCanNativeShare();
+
+  function showError(message: string) {
+    setActionError(message);
+    window.setTimeout(() => setActionError(null), 4000);
+  }
 
   useEffect(() => {
     if (canvasRef.current) drawShareCard(canvasRef.current, props);
@@ -141,12 +148,22 @@ export default function ToolShareCard(props: ToolShareCardProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [props.title, props.headlineValue, props.headlineTone, props.comparisonLine, props.deltaLine, props.bars, props.badgeLines, props.shareUrl]);
 
-  function handleDownload() {
-    if (canvasRef.current) exportCanvasAsPng(canvasRef.current, `${props.filenameBase}.png`);
+  async function handleDownload() {
+    if (!canvasRef.current) return;
+    const ok = await exportCanvasAsPng(canvasRef.current, `${props.filenameBase}.png`);
+    if (!ok) showError("Couldn't download image — try again.");
   }
 
   async function handleDownloadPdf() {
-    if (canvasRef.current) await exportCanvasAsPdf(canvasRef.current, `${props.filenameBase}.pdf`);
+    if (!canvasRef.current) return;
+    setPdfGenerating(true);
+    try {
+      await exportCanvasAsPdf(canvasRef.current, `${props.filenameBase}.pdf`);
+    } catch {
+      showError("Couldn't generate PDF — try again.");
+    } finally {
+      setPdfGenerating(false);
+    }
   }
 
   async function handleCopyLink() {
@@ -154,6 +171,8 @@ export default function ToolShareCard(props: ToolShareCardProps) {
     if (ok) {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
+    } else {
+      showError("Couldn't copy link — try again.");
     }
   }
 
@@ -200,9 +219,10 @@ export default function ToolShareCard(props: ToolShareCardProps) {
         <button
           type="button"
           onClick={handleDownloadPdf}
-          className="rounded-lg border border-[var(--border-subtle)] px-4 py-2.5 text-sm font-medium text-white/80 transition-colors hover:border-neon-blue active:scale-95 light:text-slate-700"
+          disabled={pdfGenerating}
+          className="rounded-lg border border-[var(--border-subtle)] px-4 py-2.5 text-sm font-medium text-white/80 transition-colors hover:border-neon-blue active:scale-95 disabled:opacity-50 light:text-slate-700"
         >
-          {t("personalInflation.shareDownloadPdf")}
+          {pdfGenerating ? t("decisionSupportLab.generatingReport") : t("personalInflation.shareDownloadPdf")}
         </button>
         <button
           type="button"
@@ -242,6 +262,8 @@ export default function ToolShareCard(props: ToolShareCardProps) {
           {t("personalInflation.shareToLinkedIn")}
         </button>
       </div>
+
+      {actionError && <p className="text-sm font-medium text-rose-400" role="alert">{actionError}</p>}
     </div>
   );
 }

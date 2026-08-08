@@ -21,6 +21,7 @@ import { generatePersonalInsights } from "@/lib/decisionSupportLab/insightEngine
 import { getOverallCompletionPct } from "@/lib/decisionSupportLab/profileCompletion";
 import { useEconomicProfile, setEconomicProfile, setInvestmentAllocationValue } from "@/lib/decisionSupportLab/economicProfile";
 import type { ReportDefinition } from "@/lib/decisionSupportLab/reportFramework";
+import type { CalculationSnapshotPayload } from "@/lib/supabase/calculationSnapshots";
 import type { CpiCategoryBreakdown } from "@/lib/data/cpiCategoryBreakdown";
 import type { LiveAssetData } from "@/lib/decisionSupportLab/liveAssetData";
 
@@ -254,6 +255,12 @@ export default function PortfolioPurchasingPowerCalculator({ breakdown, liveData
           href: "/decision-support-lab/asset-allocation-explorer",
           reason: "See how shifting weight between cash, gold, equities and government securities changes your protection and diversification.",
         }}
+        snapshotPayload={(): CalculationSnapshotPayload => ({
+          toolId: "portfolio-purchasing-power",
+          inputs: { portfolioValue, inflationPct, rows },
+          assumptions: {},
+          outputs: { portfolioNominalReturnPct: portfolioResult.portfolioNominalReturnPct, portfolioRealReturnPct: portfolioResult.portfolioRealReturnPct, realValue },
+        })}
       />
     </div>
   );

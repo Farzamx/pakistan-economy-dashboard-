@@ -19,6 +19,7 @@ import { computeOfficialCpiPct } from "@/lib/personalInflation/engine";
 import { generatePersonalInsights } from "@/lib/decisionSupportLab/insightEngine";
 import { useEconomicProfile } from "@/lib/decisionSupportLab/economicProfile";
 import type { ReportDefinition } from "@/lib/decisionSupportLab/reportFramework";
+import type { CalculationSnapshotPayload } from "@/lib/supabase/calculationSnapshots";
 import type { CpiCategoryBreakdown } from "@/lib/data/cpiCategoryBreakdown";
 
 interface Props {
@@ -173,6 +174,16 @@ export default function FutureValueCalculator({ breakdown }: Props) {
           href: "/decision-support-lab/compound-interest",
           reason: "See exactly how much of your growth comes from interest earning interest, not just the total ending value.",
         }}
+        snapshotPayload={
+          canCompute
+            ? (): CalculationSnapshotPayload => ({
+                toolId: "future-value",
+                inputs: { presentValueAmount, annualReturnPct, years, frequency },
+                assumptions: {},
+                outputs: { futureValueAmount, realFutureValueAmount },
+              })
+            : undefined
+        }
       />
     </div>
   );

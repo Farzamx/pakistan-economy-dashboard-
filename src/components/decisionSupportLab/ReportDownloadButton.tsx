@@ -24,12 +24,12 @@ interface Props {
  * button or the jsPDF wiring.
  */
 export default function ReportDownloadButton({ buildDefinition, filename, label, generatingLabel, snapshotPayload }: Props) {
-  const [generating, setGenerating] = useState(false);
+  const [status, setStatus] = useState<"idle" | "generating" | "error">("idle");
   const { user } = useAuth();
   const { profile } = useEconomicProfile();
 
   async function handleClick() {
-    setGenerating(true);
+    setStatus("generating");
     try {
       await generateReportPdf(buildDefinition(), filename);
       if (snapshotPayload && user) {
@@ -37,8 +37,10 @@ export default function ReportDownloadButton({ buildDefinition, filename, label,
           // Best-effort — a failed snapshot save never blocks or retries against the report the user already has.
         });
       }
-    } finally {
-      setGenerating(false);
+      setStatus("idle");
+    } catch {
+      setStatus("error");
+      window.setTimeout(() => setStatus("idle"), 3000);
     }
   }
 
@@ -46,10 +48,10 @@ export default function ReportDownloadButton({ buildDefinition, filename, label,
     <button
       type="button"
       onClick={handleClick}
-      disabled={generating}
+      disabled={status === "generating"}
       className="self-start rounded-lg border border-[var(--border-subtle)] px-4 py-2.5 text-sm font-medium text-white/80 transition-colors hover:border-neon-blue disabled:opacity-50 light:text-slate-700"
     >
-      {generating ? generatingLabel : label}
+      {status === "generating" ? generatingLabel : status === "error" ? "Couldn't generate — try again" : label}
     </button>
   );
 }

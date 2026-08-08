@@ -7,6 +7,7 @@ import ToolShareCard from "@/components/decisionSupportLab/ToolShareCard";
 import ExplainTheMath from "@/components/decisionSupportLab/ExplainTheMath";
 import EducationalPanel from "@/components/decisionSupportLab/EducationalPanel";
 import ReportDownloadButton from "@/components/decisionSupportLab/ReportDownloadButton";
+import SaveToSnapshotButton from "@/components/decisionSupportLab/SaveToSnapshotButton";
 import { computeHealthScore } from "@/lib/decisionSupportLab/healthScoreEngine";
 import { computeOfficialCpiPct, computePersonalInflation } from "@/lib/personalInflation/engine";
 import { computePurchasingPower, findNearestIndexPoint } from "@/lib/decisionSupportLab/purchasingPowerEngine";
@@ -186,6 +187,17 @@ export default function HealthScoreCalculator({ breakdown, series }: Props) {
       />
 
       <ReportDownloadButton buildDefinition={buildReport} filename="personal-economic-report.pdf" label={t("decisionSupportLab.downloadReport")} generatingLabel={t("decisionSupportLab.generatingReport")} />
+
+      {result.categories.filter((c) => c.available).length > 0 && (
+        <SaveToSnapshotButton
+          snapshotPayload={() => ({
+            toolId: "health-score",
+            inputs: { monthlyIncome: profile.monthlyIncome, monthlySpending: profile.monthlySpending, lastRaisePct: profile.lastRaisePct, currentSavings: profile.currentSavings },
+            assumptions: {},
+            outputs: { overallScore: result.overallScore, categories: result.categories },
+          })}
+        />
+      )}
 
       <ExplainTheMath
         formula="Overall Score = average of all AVAILABLE category scores (0-100 each)"

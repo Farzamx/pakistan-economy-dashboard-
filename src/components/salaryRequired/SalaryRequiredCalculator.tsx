@@ -20,6 +20,7 @@ import { generatePersonalInsights } from "@/lib/decisionSupportLab/insightEngine
 import { getOverallCompletionPct } from "@/lib/decisionSupportLab/profileCompletion";
 import { useEconomicProfile, setEconomicProfile, getEffectiveSalary } from "@/lib/decisionSupportLab/economicProfile";
 import type { ReportDefinition } from "@/lib/decisionSupportLab/reportFramework";
+import type { CalculationSnapshotPayload } from "@/lib/supabase/calculationSnapshots";
 import type { CpiCategoryBreakdown } from "@/lib/data/cpiCategoryBreakdown";
 
 interface Props {
@@ -222,6 +223,16 @@ export default function SalaryRequiredCalculator({ breakdown }: Props) {
           href: "/decision-support-lab/health-score",
           reason: "Combine this with your budget, inflation and savings results for one composite picture of your financial health.",
         }}
+        snapshotPayload={
+          result
+            ? (): CalculationSnapshotPayload => ({
+                toolId: "salary-required",
+                inputs: { currentSalary, inflationPct, years, assumedRaisePct, inflationSource: effectiveInflationSource },
+                assumptions: {},
+                outputs: { requiredSalary: result.requiredSalary, difference: result.difference, realIncomeGapPct: result.realIncomeGapPct },
+              })
+            : undefined
+        }
       />
     </div>
   );

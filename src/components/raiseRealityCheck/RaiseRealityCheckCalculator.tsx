@@ -21,6 +21,7 @@ import { generatePersonalInsights } from "@/lib/decisionSupportLab/insightEngine
 import { getOverallCompletionPct } from "@/lib/decisionSupportLab/profileCompletion";
 import { useEconomicProfile, setEconomicProfile, getEffectiveSalary } from "@/lib/decisionSupportLab/economicProfile";
 import type { ReportDefinition } from "@/lib/decisionSupportLab/reportFramework";
+import type { CalculationSnapshotPayload } from "@/lib/supabase/calculationSnapshots";
 import type { CpiCategoryBreakdown } from "@/lib/data/cpiCategoryBreakdown";
 
 interface Props {
@@ -240,6 +241,16 @@ export default function RaiseRealityCheckCalculator({ breakdown }: Props) {
           href: "/decision-support-lab/salary-required",
           reason: "Now that you know your real change, see exactly what raise you'd need to stay ahead of inflation next year.",
         }}
+        snapshotPayload={
+          result
+            ? (): CalculationSnapshotPayload => ({
+                toolId: "raise-reality-check",
+                inputs: { currentSalary, nominalRaisePct, inflationPct },
+                assumptions: {},
+                outputs: { realChangePct: result.realChangePct, newNominalSalary: result.newNominalSalary, realEquivalentSalary: result.realEquivalentSalary },
+              })
+            : undefined
+        }
       />
     </div>
   );

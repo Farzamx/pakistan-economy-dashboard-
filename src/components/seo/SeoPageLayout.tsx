@@ -108,14 +108,22 @@ export default function SeoPageLayout({
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredDataJsonLd).replace(/</g, "\\u003c") }}
       />
 
-      {/* Minimal header — not the dashboard sidebar, just a way back to it */}
-      <div className="mx-auto max-w-4xl">
+      {/* Minimal header — not the dashboard sidebar, just a way back to it.
+          Production polish pass: matches ToolBreadcrumb.tsx's back-link
+          treatment (real icon, larger touch target, focus ring, higher
+          contrast, mobile clearance under MobileNav's fixed hamburger)
+          rather than the previous bare text-xs "←" glyph. */}
+      <div className="mx-auto max-w-4xl pt-16 min-[800px]:pt-0">
         <div className="flex items-center justify-between">
           <Link
             href="/"
-            className="flex items-center gap-2 text-xs font-medium text-white/50 light:text-slate-500 transition-colors hover:text-white light:hover:text-slate-900"
+            aria-label={`Back to ${SITE_NAME}`}
+            className="-ml-2.5 flex items-center gap-1.5 rounded-lg px-2.5 py-3 text-sm font-medium text-white/80 transition-colors hover:bg-white/5 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neon-blue light:text-slate-700 light:hover:bg-slate-900/5 light:hover:text-slate-900"
           >
-            <span aria-hidden="true">←</span> {SITE_NAME}
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true" className="shrink-0">
+              <path d="M13 8H3M3 8L7.5 3.5M3 8L7.5 12.5" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            {SITE_NAME}
           </Link>
           <span className="min-w-0 shrink break-all text-right text-[10px] uppercase tracking-widest text-white/25 light:text-slate-400">
             pakeconintel.com{canonicalPath}

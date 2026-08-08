@@ -104,7 +104,7 @@ export default function SnapshotDashboard() {
       <div className="glass-card rounded-xl p-6 text-center sm:p-8">
         <p className="text-sm font-semibold text-white light:text-slate-900">Your snapshot is empty</p>
         <p className="mt-1.5 max-w-md mx-auto text-sm text-white/55 light:text-slate-500">
-          Open any tool, compute a result, and click &ldquo;Save this result to my snapshot&rdquo; — it&apos;ll show up here, with a link back to where it came from.
+          Open a calculator, compute a result, and look for the &ldquo;Save this result to my snapshot&rdquo; button beneath it — it&apos;ll show up here, with a link back to where it came from.
         </p>
         <Link href="/decision-support-lab" className="mt-4 inline-flex rounded-lg border border-[var(--border-subtle)] px-5 py-2.5 text-sm font-medium text-white/80 transition-colors hover:border-neon-blue">
           Browse tools
