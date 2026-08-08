@@ -116,7 +116,7 @@ export default function SeoPageLayout({
       <div className="mx-auto max-w-4xl pt-16 min-[800px]:pt-0">
         <div className="flex items-center justify-between">
           <Link
-            href="/"
+            href="/overview"
             aria-label={`Back to ${SITE_NAME}`}
             className="-ml-2.5 flex items-center gap-1.5 rounded-lg px-2.5 py-3 text-sm font-medium text-white/80 transition-colors hover:bg-white/5 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neon-blue light:text-slate-700 light:hover:bg-slate-900/5 light:hover:text-slate-900"
           >
@@ -248,7 +248,7 @@ export default function SeoPageLayout({
 
         <div className="mt-10 mb-4 text-center">
           <Link
-            href="/"
+            href="/overview"
             className="inline-flex items-center gap-2 rounded-lg bg-neon-blue/10 border border-neon-blue/20 px-5 py-2.5 text-sm font-medium text-neon-blue transition-colors hover:bg-neon-blue/20"
           >
             Open the full live dashboard →

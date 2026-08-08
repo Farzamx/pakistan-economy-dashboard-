@@ -134,7 +134,7 @@ export default function TrendLineChart({
     <div ref={containerRef} style={{ minHeight: 240 }}>
       {shouldRender && (
         <ResponsiveContainer width="100%" height={240}>
-          <AreaChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+          <AreaChart data={data} margin={{ top: 8, right: 34, left: 0, bottom: 0 }}>
             <defs>
               <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor={color} stopOpacity={0.35} />
@@ -168,7 +168,16 @@ export default function TrendLineChart({
                 stroke={avgStroke}
                 strokeDasharray="4 4"
                 strokeWidth={1}
-                label={{ value: `Avg ${average.toFixed(1)}${unit}`, position: "insideTopRight", fill: avgLabelColor, fontSize: 10 }}
+                // "right" places this outside the plot, in the axis gutter
+                // (margin.right above is widened to fit it) — insideTopRight
+                // pinned it to a fixed corner of the plot regardless of
+                // where the trend line actually sits, which is exactly what
+                // let it land right on top of the line for series that peak
+                // near the right edge. Shortened to "Avg" alone rather than
+                // "Avg 13.6%": the exact figure is redundant with the Y-axis
+                // scale the dashed line already crosses, and a short label
+                // needs less gutter width to always clear the plot cleanly.
+                label={{ value: "Avg", position: "right", fill: avgLabelColor, fontSize: 10 }}
               />
             )}
             {markers?.map((marker) => {

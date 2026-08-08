@@ -1,55 +1,20 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Noto_Nastaliq_Urdu, Source_Serif_4 } from "next/font/google";
 import Script from "next/script";
-import { GoogleAnalytics } from "@next/third-parties/google";
 import "./globals.css";
-import CreatorBadge from "@/components/CreatorBadge";
-import GalaxyBackground from "@/components/GalaxyBackground";
-import MotionProvider from "@/components/MotionProvider";
-import { ThemeProvider } from "@/components/ThemeProvider";
-import { AuthProvider } from "@/components/AuthProvider";
-import { PreferencesProvider } from "@/components/PreferencesProvider";
-import { SidebarProvider } from "@/components/SidebarProvider";
-import { LanguageProvider } from "@/components/LanguageProvider";
-import MobileNav from "@/components/MobileNav";
-import TopNav from "@/components/TopNav";
-import MobileStickyCta from "@/components/MobileStickyCta";
-import ScrollToTopButton from "@/components/ScrollToTopButton";
-import MobileWelcomeDialog from "@/components/MobileWelcomeDialog";
 import BfcacheGuard from "@/components/BfcacheGuard";
-import ProfileCompletionDrawer from "@/components/decisionSupportLab/ProfileCompletionDrawer";
-import RecentToolsTracker from "@/components/decisionSupportLab/RecentToolsTracker";
+import ConditionalAppChrome from "@/components/ConditionalAppChrome";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-// Loaded at build time so the font is available immediately when Urdu is
-// selected — no layout shift or flash of unstyled Urdu text.
-const notoNastaliqUrdu = Noto_Nastaliq_Urdu({
-  variable: "--font-nastaliq",
-  subsets: ["arabic"],
-  weight: ["400", "700"],
-  display: "swap",
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
-// PEIC v2.1: an editorial serif, paired with Geist Sans, is what actually
-// separates "institutional research product" from "SaaS admin dashboard" —
-// every generic dashboard template ships one grotesk for everything. Used
-// sparingly: headline numbers and section titles only (see globals.css's
-// .text-display/.text-headline), never body copy or dense data.
-const sourceSerif = Source_Serif_4({
-  variable: "--font-source-serif",
-  subsets: ["latin"],
-  weight: ["500", "600", "700"],
-  display: "swap",
-});
+// Neither the app's own fonts (Geist Sans/Mono, Noto Nastaliq Urdu, Source
+// Serif — see AppShell.tsx) nor the marketing site's fonts (Archivo,
+// Public Sans, IBM Plex Mono — see lib/marketingFonts.ts) are declared
+// here anymore. Both used to live in this shared root layout, which meant
+// Next.js preloaded ALL of them on EVERY route — including preloading the
+// app's fonts on the marketing pages that never use them, and vice versa.
+// Moving each set into the code path that actually renders it (AppShell's
+// dynamic-import boundary for the app; each marketing page.tsx's own
+// route-level chunk for marketing) was the fix that brought the marketing
+// hero's mobile LCP back under budget — see AppShell.tsx's header comment
+// for the measured story.
 
 const SITE_URL = "https://www.pakeconintel.com";
 const SITE_NAME = "Pakistan Economic Intelligence Center";
@@ -59,7 +24,9 @@ const SOCIAL_DESCRIPTION = "Real-time dashboard tracking Pakistan's key economic
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: `${SITE_NAME} | Live Pakistan Economy Dashboard`,
+  // Leads with "PEIC —" (not the full SITE_NAME) so the abbreviation is
+  // still visible even when a narrow tab truncates the rest of the title.
+  title: `PEIC — ${SITE_NAME} | Live Pakistan Economy Dashboard`,
   description:
     "Real-time dashboard tracking Pakistan GDP, inflation, exchange rates, reserves, remittances, financial markets, monetary policy, and economic indicators in one place.",
   keywords: [
@@ -116,12 +83,6 @@ const jsonLd = {
 // (e.g. a value containing "</script>") — recommended by the Next.js docs.
 const jsonLdHtml = JSON.stringify(jsonLd).replace(/</g, "\\u003c");
 
-// Unset in environments that haven't configured analytics (e.g. a fresh
-// local checkout without NEXT_PUBLIC_GA_MEASUREMENT_ID) — guarded so
-// <GoogleAnalytics> is simply omitted rather than loading gtag.js with an
-// empty/invalid measurement ID.
-const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
-
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -133,7 +94,7 @@ export default function RootLayout({
       data-theme="dark"
       data-scroll-behavior="smooth"
       suppressHydrationWarning
-      className={`${geistSans.variable} ${geistMono.variable} ${notoNastaliqUrdu.variable} ${sourceSerif.variable} h-full scroll-smooth antialiased`}
+      className="h-full scroll-smooth antialiased"
     >
       <head>
         {/* Runs before hydration — reads localStorage and sets data-theme on
@@ -152,30 +113,8 @@ export default function RootLayout({
       </head>
       <body className="min-h-full flex flex-col">
         <BfcacheGuard />
-        <ThemeProvider>
-          <LanguageProvider>
-          <AuthProvider>
-            <PreferencesProvider>
-              <SidebarProvider>
-                <GalaxyBackground />
-                <MotionProvider>
-                  <MobileNav />
-                  <TopNav />
-                  {children}
-                  <CreatorBadge />
-                  <MobileStickyCta />
-                  <ScrollToTopButton />
-                  <MobileWelcomeDialog />
-                  <ProfileCompletionDrawer />
-                  <RecentToolsTracker />
-                </MotionProvider>
-              </SidebarProvider>
-            </PreferencesProvider>
-          </AuthProvider>
-          </LanguageProvider>
-        </ThemeProvider>
+        <ConditionalAppChrome>{children}</ConditionalAppChrome>
       </body>
-      {GA_MEASUREMENT_ID && <GoogleAnalytics gaId={GA_MEASUREMENT_ID} />}
     </html>
   );
 }

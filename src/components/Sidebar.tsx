@@ -15,7 +15,7 @@ import { useSidebar } from "@/components/SidebarProvider";
 import { SIDEBAR_NAV_GROUPS, SIDEBAR_ANCHOR_ORDER, type SidebarNavTarget } from "@/lib/sidebarNav";
 
 function targetHref(target: SidebarNavTarget): string {
-  return target.kind === "anchor" ? `/#${target.id}` : target.href;
+  return target.kind === "anchor" ? `/overview#${target.id}` : target.href;
 }
 
 function GroupChevron({ expanded }: { expanded: boolean }) {
@@ -96,7 +96,7 @@ export default function Sidebar() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [psxOpen, setPsxOpen] = useState(false);
   const [guestModalOpen, setGuestModalOpen] = useState(false);
-  const [guestDestination, setGuestDestination] = useState("/");
+  const [guestDestination, setGuestDestination] = useState("/overview");
   const [hash, setHash] = useState("");
   const [activeAnchorId, setActiveAnchorId] = useState("");
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
@@ -117,7 +117,7 @@ export default function Sidebar() {
   // sidebar's tree instead. Only meaningful on the homepage, where every one
   // of these anchor ids actually exists in the DOM.
   useEffect(() => {
-    if (pathname !== "/") return;
+    if (pathname !== "/overview") return;
     const sections = SIDEBAR_ANCHOR_ORDER
       .map((id) => document.getElementById(id))
       .filter((el): el is HTMLElement => el !== null);
@@ -149,12 +149,12 @@ export default function Sidebar() {
   // (same convention already used for Free Subscription's
   // /economic-calendar#email-alerts link).
   function handleAnchorClick(e: React.MouseEvent<HTMLAnchorElement>, id: string) {
-    if (pathname !== "/") return;
+    if (pathname !== "/overview") return;
     const el = document.getElementById(id);
     if (!el) return;
     e.preventDefault();
     el.scrollIntoView({ behavior: "smooth" });
-    window.history.replaceState(null, "", `/#${id}`);
+    window.history.replaceState(null, "", `/overview#${id}`);
     setActiveAnchorId(id);
   }
 
@@ -242,7 +242,7 @@ export default function Sidebar() {
                       const href = targetHref(target);
                       const isActive =
                         !isDataSources && target.kind === "anchor"
-                          ? pathname === "/" && activeAnchorId === target.id
+                          ? pathname === "/overview" && activeAnchorId === target.id
                           : target.kind === "route"
                             ? !!pathname?.startsWith(target.href)
                             : false;

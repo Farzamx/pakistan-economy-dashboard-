@@ -42,7 +42,7 @@ const GROUP_ORDER: DrawerGroup[] = ["explore", "track", "more"];
 const LINKS: DrawerLink[] = [
   {
     navKey: "overview",
-    href: "/#overview",
+    href: "/overview#overview",
     group: "explore",
     icon: (
       <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
@@ -145,7 +145,7 @@ const LINKS: DrawerLink[] = [
   },
   {
     navKey: "news",
-    href: "/#news-intelligence",
+    href: "/overview#news-intelligence",
     group: "more",
     icon: (
       <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
@@ -192,7 +192,7 @@ export default function MobileNav() {
   const { t } = useLanguage();
   const [open, setOpen] = useState(false);
   const [guestModalOpen, setGuestModalOpen] = useState(false);
-  const [guestDestination, setGuestDestination] = useState("/");
+  const [guestDestination, setGuestDestination] = useState("/overview");
   const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const [lastPathname, setLastPathname] = useState(pathname);
@@ -304,7 +304,7 @@ export default function MobileNav() {
       // instance's onAuthStateChange listener, which router.refresh() does
       // not touch.
       await Promise.all([signOutAction(), signOut()]);
-      router.push("/");
+      router.push("/overview");
       router.refresh();
     } finally {
       // Always runs — on success, on a rejected signOutAction()/signOut(),
