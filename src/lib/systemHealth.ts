@@ -11,6 +11,9 @@
 // cronLogging.ts). Nothing here is fabricated.
 
 import { getSbpIndicator } from "@/lib/data/sbpServer";
+import { getAllSbpIndicatorKeys, getSbpIndicatorFrequency, type SbpIndicatorKey, type Frequency } from "@/lib/data/sbp";
+import { getCanonicalFreshnessSummary } from "@/lib/data/sbpCanonicalStore";
+import { canonicalIndicatorKey } from "@/lib/data/canonicalResolutionConfig";
 import { getSpiHistory } from "@/lib/data/spi";
 import { getGoldKpi } from "@/lib/data/metals";
 import { getUs10yKpi } from "@/lib/data/fred";
@@ -150,6 +153,83 @@ async function checkResend(): Promise<DataSourceCheck> {
   return { name: "Resend", status: health.ok ? "ok" : "down", detail, latencyMs: health.latencyMs, checkedAt };
 }
 
+// ── Canonical SBP Freshness (Institutional Data Core, Wave 1) ──────────────
+//
+// Provider-independent by design: this NEVER re-queries SBP EasyData itself
+// (which is Cloudflare-blocked from every shared cloud/CI network tested —
+// sbpFreshnessAudit.ts's own /meta-based check is blind for exactly this
+// reason, confirmed reporting "meta-unavailable" for all 20 indicators). It
+// only reports what canonical_observations (migration 0050) actually has,
+// and how old that is relative to each indicator's own declared cadence —
+// so staleness is detectable even if SBP itself is completely unreachable
+// from every network this platform's own infrastructure touches.
+const SLA_GRACE_DAYS: Record<Frequency, number> = {
+  "Monthly": 40,     // one release cycle + ~10 day buffer
+  "Weekly": 14,       // a few days' post-week-end publication lag is normal, not a fault
+  "As-Needed": 45,    // fine for indicators whose real cadence is genuinely near-fortnightly (T-Bill auctions) — see per-indicator overrides below for the ones that aren't
+  "Annual": 450,      // >1 full cycle + a generous buffer for annual fiscal-year finalization lag
+};
+
+// Production Readiness Audit (Phase 6A.3) finding: a single "As-Needed"
+// grace period is wrong for this category — it lumps together indicators
+// with very different real cadences. Computed directly from this
+// project's own backfilled history (p95 gap between consecutive periods,
+// migration 0050's canonical_observations):
+//   policyRate:  p95 gap 452 days, max 616 — SBP holds rates unchanged for
+//                months at a time; that is normal monetary policy, not a
+//                pipeline failure. A flat 45-day grace would flag "overdue"
+//                during almost every ordinary hold period.
+//   lsm:         age 69 days when checked, well inside Pakistan's
+//                well-documented ~2-month LSM publication lag (this is a
+//                Monthly-frequency indicator, but 40 days is too tight for
+//                this specific series).
+//   pibYield3y:  p95 gap 56 days, max 294 — less frequent than T-Bill
+//                auctions; 45 days is too tight.
+// tbillYield3m (p95 gap 16, max 30) is NOT overridden — the "As-Needed"
+// default already covers it with room to spare.
+const SLA_GRACE_OVERRIDE_DAYS: Partial<Record<SbpIndicatorKey, number>> = {
+  policyRate: 120,
+  pibYield3y: 90,
+  lsm: 75,
+};
+
+export interface CanonicalIndicatorFreshness {
+  indicatorKey: SbpIndicatorKey;
+  latestObservationPeriod: string | null;
+  vintage: string | null;
+  ageDays: number | null;
+  frequency: Frequency;
+  slaGraceDays: number;
+  status: "fresh" | "overdue" | "never-ingested";
+}
+
+async function getCanonicalSbpFreshness(): Promise<CanonicalIndicatorFreshness[]> {
+  const [summary, keys] = await Promise.all([getCanonicalFreshnessSummary(), Promise.resolve(getAllSbpIndicatorKeys())]);
+  const byKey = new Map(summary.map((s) => [s.indicatorKey, s]));
+  const now = Date.now();
+
+  return keys.map((key): CanonicalIndicatorFreshness => {
+    const frequency = getSbpIndicatorFrequency(key);
+    const slaGraceDays = SLA_GRACE_OVERRIDE_DAYS[key] ?? SLA_GRACE_DAYS[frequency];
+    const row = byKey.get(canonicalIndicatorKey(key));
+
+    if (!row) {
+      return { indicatorKey: key, latestObservationPeriod: null, vintage: null, ageDays: null, frequency, slaGraceDays, status: "never-ingested" };
+    }
+
+    const ageDays = Math.floor((now - new Date(row.latestObservationPeriod).getTime()) / 86_400_000);
+    return {
+      indicatorKey: key,
+      latestObservationPeriod: row.latestObservationPeriod,
+      vintage: row.vintage,
+      ageDays,
+      frequency,
+      slaGraceDays,
+      status: ageDays > slaGraceDays ? "overdue" : "fresh",
+    };
+  });
+}
+
 export interface WeeklyIntelligenceHealth {
   status: "ok" | "overdue" | "never-run";
   lastComputedAt: string | null;
@@ -192,6 +272,7 @@ export const CRON_JOBS: CronJobInfo[] = [
   { jobNames: ["official-calendar-sync", "calendar-gap-detection", "sbp-actual-value-sync", "lsm-yoy-sync", "notification-worker"], path: "/api/cron/sync-economic-calendar", schedule: "*/15 * * * *  (every 15 min, GitHub Actions — primary) + 0 18 * * *  (daily safety net, Vercel)", description: "Scheduler-agnostic sync pipeline: official calendar reconciliation, gap detection, SBP EasyData + LSM YoY actual-value sync, notification drain. Primary trigger: GitHub Actions (.github/workflows/sync-economic-calendar.yml) every 15 minutes — detects new SBP/PBS data within ~15 min of publication. Vercel cron (18:00 UTC daily) is a safety net. Each trigger logs to sync_trigger_log with its scheduler identity." },
   { jobNames: ["notification-worker-safety-net"], path: "/api/cron/process-notification-jobs", schedule: "0 20 * * *  (daily, 20:00 UTC)", description: "Safety-net sweep for any notification job the calendar sync's inline drain missed." },
   { jobNames: ["weekly-intelligence"], path: "/api/cron/weekly-intelligence", schedule: "0 6 * * 1  (Mondays, 06:00 UTC, Vercel — primary) + 0 12 * * 1  (Mondays, 12:00 UTC, GitHub Actions — safety net)", description: "Computes Health Score + Recession/Default probabilities once, stores the snapshot the homepage reads. Idempotent — a duplicate invocation in the same ISO week is rejected by a DB constraint and logged as 'skipped', not an error. GitHub Actions safety net (.github/workflows/weekly-intelligence.yml) added by PEIC v2.3 after the audit found this was the only cron job without GitHub Actions redundancy." },
+  { jobNames: ["sbp-local-ingestion"], path: "npm run ingest:sbp (scripts/ingestSbp.ts)", schedule: "Local machine, Windows Task Scheduler — see docs/local-ingestion-setup.md", description: "Institutional Data Core Wave 1: SBP EasyData is Cloudflare-blocked from Vercel/GitHub Actions/Supabase Edge Functions (confirmed by direct testing), so ingestion runs from a machine that can actually reach it, writing to raw_observations/canonical_observations (migration 0050). The dashboard's render path reads only from canonical_observations — never SBP EasyData directly. Execution environment is explicitly temporary; the command and its logic are unchanged when it moves to a VPS/cron later." },
 ];
 
 export interface CronJobHistory extends CronJobInfo {
@@ -228,6 +309,7 @@ export interface SystemHealthSnapshot {
   publicationLeads: PublicationLeadEntry[];
   recommendations: Recommendation[];
   syncTriggers: SyncTriggerRecord[];
+  canonicalSbpFreshness: CanonicalIndicatorFreshness[];
   generatedAt: string;
 }
 
@@ -237,6 +319,7 @@ export async function getSystemHealthSnapshot(): Promise<SystemHealthSnapshot> {
     sbp, pbs, twelveData, fred, worldBank, yahoo, news, supabase, resend,
     weeklyIntelligence, cronJobs,
     sourceHealth, sourceBenchmarks, publicationLeads, syncTriggers,
+    canonicalSbpFreshness,
   ] = await Promise.all([
     checkSbp(),
     checkPbs(),
@@ -254,6 +337,7 @@ export async function getSystemHealthSnapshot(): Promise<SystemHealthSnapshot> {
     getSourceBenchmarkStats(720),         // last 30 days
     getPublicationLeadStats(90),          // last 90 days
     getSyncTriggerHistory(20),
+    getCanonicalSbpFreshness(),           // Institutional Data Core Wave 1
   ]);
 
   // Pure computations from DB data — no I/O
@@ -271,6 +355,7 @@ export async function getSystemHealthSnapshot(): Promise<SystemHealthSnapshot> {
     publicationLeads,
     recommendations,
     syncTriggers,
+    canonicalSbpFreshness,
     generatedAt: new Date().toISOString(),
   };
 }

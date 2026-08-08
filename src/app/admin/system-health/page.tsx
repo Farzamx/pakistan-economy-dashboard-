@@ -49,6 +49,23 @@ function fmtMs(ms: number | null): string {
   return `${Math.round(ms)}ms`;
 }
 
+/**
+ * Production Readiness Audit (Phase 6A.3) finding: a run where SOME
+ * indicators fail (e.g. "18 unchanged | 0 updated | 3 failed") still logs
+ * overall status "success" (see scripts/ingestSbp.ts — one bad indicator
+ * must never abort the others, so the JOB itself did succeed). But a green
+ * dot next to that run, with the failure count buried inside a detail
+ * string, is exactly the "misleading healthy status" this audit warned
+ * against. This parses the "N failed" count back out of that same detail
+ * string (no schema change) purely to pick the dot color — it never
+ * changes the underlying status value.
+ */
+function hasReportedFailures(detail: string | null): boolean {
+  if (!detail) return false;
+  const match = detail.match(/(\d+)\s+failed/);
+  return !!match && Number(match[1]) > 0;
+}
+
 function rankBadge(rank: number): string {
   if (rank === 1) return "text-emerald-400 font-bold";
   if (rank === 2) return "text-sky-400";
@@ -124,6 +141,45 @@ export default async function SystemHealthPage() {
                     <td className="px-4 py-2.5 text-slate-400">{s.detail}</td>
                     <td className="px-4 py-2.5 text-slate-400">{s.latencyMs >= 0 ? `${s.latencyMs}ms` : "—"}</td>
                     <td className="px-4 py-2.5 text-slate-400">{s.latestDate ?? "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        {/* ── Canonical SBP Freshness (Institutional Data Core Wave 1) ──── */}
+        <section>
+          <h2 className="text-lg font-semibold">Canonical SBP Freshness</h2>
+          <p className="mt-1 text-xs text-slate-500">
+            What canonical_observations actually has for each of the 20 SBP indicators, and how old that is vs. each indicator&apos;s own declared cadence — never a re-query of SBP itself (which is Cloudflare-blocked from every shared cloud/CI network this platform has tested). Populated by the local ingestion runner (<code>npm run ingest:sbp</code>).
+          </p>
+          <div className="mt-3 overflow-x-auto rounded-xl border border-white/10">
+            <table className="w-full text-left text-sm">
+              <thead className="bg-white/[0.03] text-xs uppercase tracking-wide text-slate-500">
+                <tr>
+                  <th className="px-4 py-2">Indicator</th>
+                  <th className="px-4 py-2">Status</th>
+                  <th className="px-4 py-2">Latest Period</th>
+                  <th className="px-4 py-2">Age</th>
+                  <th className="px-4 py-2">SLA Grace</th>
+                  <th className="px-4 py-2">Ingested</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {snapshot.canonicalSbpFreshness.map((f) => (
+                  <tr key={f.indicatorKey}>
+                    <td className="px-4 py-2.5 font-medium">{f.indicatorKey}</td>
+                    <td className="px-4 py-2.5">
+                      <span className="inline-flex items-center gap-1.5">
+                        <span className={`h-2 w-2 rounded-full ${STATUS_DOT[f.status === "fresh" ? "ok" : f.status === "overdue" ? "overdue" : "never-run"]}`} />
+                        {f.status}
+                      </span>
+                    </td>
+                    <td className="px-4 py-2.5 text-slate-400">{f.latestObservationPeriod ?? "—"}</td>
+                    <td className="px-4 py-2.5 text-slate-400">{f.ageDays !== null ? `${f.ageDays}d` : "—"}</td>
+                    <td className="px-4 py-2.5 text-slate-400">{f.slaGraceDays}d ({f.frequency})</td>
+                    <td className="px-4 py-2.5 text-slate-400 text-xs">{fmt(f.vintage)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -412,10 +468,14 @@ export default async function SystemHealthPage() {
 
                 <div className="mt-3 grid gap-3 sm:grid-cols-2">
                   <div className="rounded-lg bg-white/[0.02] p-3">
-                    <p className="text-[10px] uppercase tracking-wide text-slate-500">Last Success</p>
+                    <p className="text-[10px] uppercase tracking-wide text-slate-500">
+                      Last Success{job.lastSuccess && hasReportedFailures(job.lastSuccess.detail) && (
+                        <span className="ml-1.5 rounded-full bg-amber-500/20 px-1.5 py-0.5 text-amber-400 normal-case tracking-normal">partial failures</span>
+                      )}
+                    </p>
                     {job.lastSuccess ? (
                       <>
-                        <p className="mt-1 text-xs text-slate-300">{fmt(job.lastSuccess.startedAt)} · {job.lastSuccess.durationMs}ms</p>
+                        <p className={`mt-1 text-xs ${hasReportedFailures(job.lastSuccess.detail) ? "text-amber-300" : "text-slate-300"}`}>{fmt(job.lastSuccess.startedAt)} · {job.lastSuccess.durationMs}ms</p>
                         <p className="text-[11px] text-slate-500">{job.lastSuccess.jobName}{job.lastSuccess.detail ? ` — ${job.lastSuccess.detail}` : ""}</p>
                       </>
                     ) : (
@@ -441,7 +501,7 @@ export default async function SystemHealthPage() {
                     <div className="mt-2 space-y-1">
                       {job.recentRuns.slice(0, 10).map((run, i) => (
                         <div key={i} className="flex items-center gap-2 text-[11px] text-slate-400">
-                          <span className={`h-1.5 w-1.5 rounded-full ${run.status === "success" ? "bg-emerald-400" : run.status === "skipped" ? "bg-sky-400" : "bg-rose-400"}`} />
+                          <span className={`h-1.5 w-1.5 rounded-full ${run.status !== "success" ? (run.status === "skipped" ? "bg-sky-400" : "bg-rose-400") : hasReportedFailures(run.detail) ? "bg-amber-400" : "bg-emerald-400"}`} />
                           <span>{fmt(run.startedAt)}</span>
                           <span className="text-slate-600">·</span>
                           <span>{run.jobName}</span>

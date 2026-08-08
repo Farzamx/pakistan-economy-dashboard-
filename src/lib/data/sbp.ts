@@ -5,6 +5,8 @@ import type { SourceStatus } from "@/lib/dataQuality";
 import { getTrendDirection } from "@/lib/trendDirection";
 import { findSamePeriodPriorYear } from "@/lib/yoyMath";
 import { dedupeInFlight, getFresh, getStale, setCache } from "@/lib/memoryCache";
+import { canonicalIndicatorKey, FOOD_INFLATION_URBAN_INDICATOR_KEY } from "@/lib/data/canonicalResolutionConfig";
+import { getCanonicalSbpHistory } from "@/lib/data/sbpCanonicalStore";
 import {
   fallbackCoreInflation,
   fallbackCpiInflation,
@@ -111,7 +113,7 @@ function logSbpError(key: SbpIndicatorKey, reason: string, servedFrom: SbpSource
 // instead of falling through to the existing try/catch error handling.
 const FETCH_TIMEOUT_MS = 10_000;
 
-type Frequency = "Monthly" | "As-Needed" | "Weekly" | "Annual";
+export type Frequency = "Monthly" | "As-Needed" | "Weekly" | "Annual";
 
 const SBP_FREQ_MAP: Record<Frequency, DataFrequency> = {
   "Monthly": "Monthly",
@@ -122,7 +124,7 @@ const SBP_FREQ_MAP: Record<Frequency, DataFrequency> = {
 
 // Series keys discovered via the SBP EasyData /meta endpoints. Each key is
 // "{dataset_code}.{series_code}".
-const SERIES_KEYS = {
+export const SERIES_KEYS = {
   foreignReserves: "TS_GP_EXT_PAKRES_M.Z00020", // Total SBP Reserves
   netBankReserves: "TS_GP_EXT_PAKRES_M.Z00050", // Net Reserves With Banks (commercial bank FX reserves)
   usdPkr: "TS_GP_ER_FAERPKR_M.E00220", // Avg exchange rate, PKR per USD
@@ -246,7 +248,7 @@ function changeLabel(diff: number | null, previousLabel: string | null, format: 
  * Throws on a missing API key, non-200 response, or a series with no usable
  * numeric observations — callers are expected to catch and fall back.
  */
-async function fetchSbpSeries(seriesKey: string, revalidateSeconds: number, cacheTag: string, noCache = false): Promise<SbpSeries> {
+async function fetchSbpSeries(seriesKey: string, revalidateSeconds: number, cacheTag: string, noCache = false, startDate: string = HISTORY_START_DATE): Promise<SbpSeries> {
   const apiKey = process.env.SBP_EASYDATA_API_KEY;
   if (!apiKey) {
     throw new Error("SBP_EASYDATA_API_KEY is not set");
@@ -254,7 +256,7 @@ async function fetchSbpSeries(seriesKey: string, revalidateSeconds: number, cach
 
   const params = new URLSearchParams({
     api_key: apiKey,
-    start_date: HISTORY_START_DATE,
+    start_date: startDate,
     format: "json",
   });
 
@@ -824,8 +826,43 @@ export function sbpCacheTag(key: SbpIndicatorKey): string {
   return `sbp-${key}`;
 }
 
-async function buildIndicatorResult(key: SbpIndicatorKey, config: IndicatorConfig, noCache = false): Promise<SbpIndicatorResult> {
-  const series = await fetchSbpSeries(config.seriesKey, config.revalidate, sbpCacheTag(key), noCache);
+/** All 20 SbpIndicatorKey members — exported so scripts/ingestSbp.ts can iterate the exact same indicator set the homepage renders, without hand-maintaining a second copy of this list (see sbpFreshnessAudit.ts's ALL_INDICATOR_KEYS for the pre-existing hand-maintained alternative this deliberately avoids repeating). */
+export function getAllSbpIndicatorKeys(): SbpIndicatorKey[] {
+  return Object.keys(CONFIGS) as SbpIndicatorKey[];
+}
+
+/** This indicator's declared publication cadence — used by systemHealth.ts to compute a provider-independent freshness SLA (grace period past the expected next release) without re-querying SBP itself. */
+export function getSbpIndicatorFrequency(key: SbpIndicatorKey): Frequency {
+  return CONFIGS[key].frequency;
+}
+
+/**
+ * Full-history live fetch of one SBP indicator, bypassing every cache layer —
+ * for scripts/ingestSbp.ts (the local ingestion runner) only. Reuses the
+ * exact same fetch/parse logic as every other path in this file (no parallel
+ * implementation to drift out of sync); the only difference from
+ * getSbpIndicatorHistoryFresh is that this returns the raw SbpSeries shape
+ * (unit + seriesName included) rather than the already-unit-converted
+ * SbpIndicatorHistory shape, since the ingestion runner needs the former to
+ * write faithful raw_observations rows.
+ */
+/**
+ * @param sinceDate Optional "YYYY-MM-DD" override for SBP EasyData's
+ *   start_date param. scripts/ingestSbp.ts passes the existing latest
+ *   canonical period (minus a revision-safety buffer) on every run after
+ *   the first backfill, so a weekly series with 550+ historical points
+ *   downloads ~9 rows instead of 550+ on every ordinary run — the SBP
+ *   fetch itself becomes incremental, not just the DB write (Production
+ *   Readiness Audit, Phase 6A.3, section 15: the write was already
+ *   diff-based, but the fetch was re-downloading full 2016-present history
+ *   unconditionally every single run). Omit for a full backfill.
+ */
+export async function fetchSbpSeriesForIngestion(key: SbpIndicatorKey, sinceDate?: string): Promise<SbpSeries> {
+  const config = CONFIGS[key];
+  return fetchSbpSeries(config.seriesKey, config.revalidate, sbpCacheTag(key), true, sinceDate);
+}
+
+function seriesToIndicatorResult(config: IndicatorConfig, series: SbpSeries): SbpIndicatorResult {
   const formatLabel =
     config.frequency === "Monthly" || config.frequency === "Annual"
       ? formatMonthLabel
@@ -854,6 +891,50 @@ async function buildIndicatorResult(key: SbpIndicatorKey, config: IndicatorConfi
       lastUpdated: series.lastUpdated,
     },
   };
+}
+
+/**
+ * Live-fetch builder — calls SBP EasyData directly. Used ONLY by
+ * getSbpIndicatorFresh() now (the calendar-sync pipeline's LSM YoY /
+ * freshness-self-heal path — out of scope for this fix). The homepage/SEO/
+ * comparisons render path uses buildIndicatorResultFromCanonical() below
+ * instead, which never touches SBP EasyData at request time.
+ */
+async function buildIndicatorResult(key: SbpIndicatorKey, config: IndicatorConfig, noCache = false): Promise<SbpIndicatorResult> {
+  const series = await fetchSbpSeries(config.seriesKey, config.revalidate, sbpCacheTag(key), noCache);
+  return seriesToIndicatorResult(config, series);
+}
+
+/**
+ * DB-backed series builder — reads the canonical ledger (migration 0050,
+ * populated by scripts/ingestSbp.ts) instead of calling SBP EasyData.
+ * Throws when no canonical row has ever been ingested for this indicator
+ * yet; the caller (getSbpIndicator) treats that identically to a live-fetch
+ * failure — falls through to the L1 stale cache, then the static snapshot.
+ */
+async function fetchCanonicalSbpSeries(key: SbpIndicatorKey): Promise<SbpSeries> {
+  const rows = await getCanonicalSbpHistory(canonicalIndicatorKey(key), 500);
+  if (rows.length === 0) {
+    throw new Error(`No canonical observations ingested yet for ${key} — run scripts/ingestSbp.ts`);
+  }
+  const latest = rows[rows.length - 1];
+  const previous = rows.length > 1 ? rows[rows.length - 2] : null;
+  return {
+    seriesKey: SERIES_KEYS[key],
+    seriesName: latest.seriesName ?? INDICATOR_LABELS[key],
+    unit: latest.unit,
+    latestValue: latest.value,
+    latestDate: latest.observationPeriod,
+    previousValue: previous?.value ?? null,
+    previousDate: previous?.observationPeriod ?? null,
+    history: rows.map((r) => ({ date: r.observationPeriod, value: r.value })),
+    lastUpdated: latest.vintage,
+  };
+}
+
+async function buildIndicatorResultFromCanonical(key: SbpIndicatorKey, config: IndicatorConfig): Promise<SbpIndicatorResult> {
+  const series = await fetchCanonicalSbpSeries(key);
+  return seriesToIndicatorResult(config, series);
 }
 
 /**
@@ -890,9 +971,15 @@ function withSourceStatus(result: SbpIndicatorResult, status: SbpSourceStatus): 
  *     dedupeInFlight so a stampede of callers shares one upstream call.
  *     This is "cache-fresh" — a normal, healthy fast path, not a degraded
  *     state, since the value is exactly as trustworthy as a live call.
- *  2. A live upstream fetch (buildIndicatorResult -> fetchSbpSeries),
- *     subject to the existing L2 Next.js fetch-cache revalidate window.
- *  3. On any failure: the last-known-good L1 value regardless of age
+ *  2. A read from the canonical_observations ledger (buildIndicatorResultFromCanonical
+ *     -> fetchCanonicalSbpSeries — migration 0050), populated by the local
+ *     ingestion runner (scripts/ingestSbp.ts). This is a DB read, never a
+ *     live SBP EasyData call — that network path is Cloudflare-blocked from
+ *     every shared cloud/CI network tested (Vercel, GitHub Actions, Supabase
+ *     Edge Functions). Still logged/labeled "live" since it's exactly as
+ *     current as the ingestion runner's last successful run.
+ *  3. On any failure (Supabase unreachable, or no canonical row ever
+ *     ingested for this indicator yet): the last-known-good L1 value regardless of age
  *     ("cache-stale" — real SBP data, but the live refresh just failed, a
  *     genuinely degraded state worth disclosing), or — only if there is no
  *     cached value at all — the static snapshot in sbpFallbackData.ts
@@ -910,9 +997,9 @@ export async function getSbpIndicator(key: SbpIndicatorKey): Promise<SbpIndicato
 
   return dedupeInFlight(cacheKey, async () => {
     try {
-      const result = await buildIndicatorResult(key, config);
+      const result = await buildIndicatorResultFromCanonical(key, config);
       setCache(cacheKey, result);
-      logSbp(key, "live", `fetched OK, observation=${result.meta.observationDate}`);
+      logSbp(key, "live", `read from canonical DB, observation=${result.meta.observationDate}`);
       return withSourceStatus(result, "live");
     } catch (err) {
       const reason = err instanceof Error ? err.message : String(err);
@@ -1043,7 +1130,7 @@ export async function getSbpIndicatorHistory(key: SbpIndicatorKey): Promise<SbpI
   if (cached) return cached.data;
 
   return dedupeInFlight(cacheKey, async () => {
-    const result = await fetchSbpIndicatorHistoryUncached(key);
+    const result = await fetchCanonicalIndicatorHistoryUncached(key);
     setCache(cacheKey, result);
     return result;
   });
@@ -1128,34 +1215,41 @@ function parseFallbackMonthLabel(label: string): string {
   return label;
 }
 
-async function fetchSbpIndicatorHistoryUncached(key: SbpIndicatorKey): Promise<SbpIndicatorHistory> {
+/**
+ * DB-backed full-history builder — reads canonical_observations (migration
+ * 0050) instead of calling SBP EasyData live. Used by getSbpIndicatorHistory()
+ * for the Comparisons feature's render path. getSbpIndicatorHistoryFresh()
+ * (used by lsmSync.ts's YoY computation, a separate calendar-sync concern)
+ * is unchanged and still fetches SBP EasyData live.
+ */
+async function fetchCanonicalIndicatorHistoryUncached(key: SbpIndicatorKey): Promise<SbpIndicatorHistory> {
   const config = CONFIGS[key];
-  try {
-    const series = await fetchSbpSeries(config.seriesKey, config.revalidate, sbpCacheTag(key));
-    return {
-      points: series.history.map((p) => ({
-        date: p.date,
-        value: Number(config.toTrendValue(p.value).toFixed(4)),
-      })),
-      meta: {
-        source: "SBP EasyData",
-        seriesKey: series.seriesKey,
-        seriesName: series.seriesName,
-        unit: series.unit,
-        frequency: config.frequency,
-        observationDate: series.latestDate,
-        lastUpdated: series.lastUpdated,
-        sourceStatus: "live",
-      },
-    };
-  } catch (err) {
-    logSbpError(key, err instanceof Error ? err.message : String(err), "fallback");
+  const rows = await getCanonicalSbpHistory(canonicalIndicatorKey(key), 5000);
+  if (rows.length === 0) {
+    logSbpError(key, "No canonical observations ingested yet — run scripts/ingestSbp.ts", "fallback");
     const fb = config.fallback;
     return {
       points: fb.trend.map((p) => ({ date: parseFallbackMonthLabel(p.month), value: p.value })),
       meta: { ...fb.meta, source: "SBP EasyData", sourceStatus: "fallback" },
     };
   }
+  const latest = rows[rows.length - 1];
+  return {
+    points: rows.map((r) => ({
+      date: r.observationPeriod,
+      value: Number(config.toTrendValue(r.value).toFixed(4)),
+    })),
+    meta: {
+      source: "SBP EasyData",
+      seriesKey: SERIES_KEYS[key],
+      seriesName: latest.seriesName ?? INDICATOR_LABELS[key],
+      unit: latest.unit,
+      frequency: config.frequency,
+      observationDate: latest.observationPeriod,
+      lastUpdated: latest.vintage,
+      sourceStatus: "live",
+    },
+  };
 }
 
 // --- Comparisons feature: Urban Food CPI (standalone, not part of the ----
@@ -1180,28 +1274,47 @@ export interface FoodInflationUrbanResult {
   source: "SBP EasyData";
 }
 
-/** Urban Food CPI, year-over-year %. Returns null on failure rather than a static fallback — there's no pre-vetted snapshot for this series. */
+/**
+ * Live full-history fetch for scripts/ingestSbp.ts only — Production
+ * Readiness Audit (Phase 6A.3) finding: getFoodInflationUrbanHistory() below
+ * used to call SBP EasyData directly from the /pakistan-food-inflation page's
+ * render path, the one confirmed remaining violation of "no page performs a
+ * live SBP EasyData fetch during rendering." This indicator isn't part of
+ * CONFIGS/SbpIndicatorKey (deliberately — see FOOD_INFLATION_URBAN_SERIES_KEY's
+ * own comment), so it needs its own thin ingestion wrapper rather than reusing
+ * fetchSbpSeriesForIngestion, which is keyed by SbpIndicatorKey.
+ */
+export async function fetchFoodInflationUrbanForIngestion(sinceDate?: string): Promise<SbpSeries> {
+  return fetchSbpSeries(FOOD_INFLATION_URBAN_SERIES_KEY, REVALIDATE_MONTHLY, "sbp-food-inflation-urban", true, sinceDate);
+}
+
+/**
+ * Urban Food CPI, year-over-year %. Reads canonical_observations (migration
+ * 0050, indicator_key "sbp:foodInflationUrban") — never calls SBP EasyData
+ * during rendering. Returns null when nothing has been ingested yet, same
+ * as the original live-fetch-failure contract (no static fallback exists
+ * for this series, so callers already handle null).
+ */
 export async function getFoodInflationUrbanHistory(): Promise<FoodInflationUrbanResult | null> {
   const cacheKey = "sbp-food-inflation-urban-history";
   const cached = getFresh<FoodInflationUrbanResult>(cacheKey, REVALIDATE_MONTHLY * 1000);
   if (cached) return cached.data;
 
-  try {
-    return await dedupeInFlight(cacheKey, async () => {
-      const series = await fetchSbpSeries(FOOD_INFLATION_URBAN_SERIES_KEY, REVALIDATE_MONTHLY, "sbp-food-inflation-urban");
-      const result: FoodInflationUrbanResult = {
-        points: series.history.map((p) => ({ date: p.date, value: p.value })),
-        source: "SBP EasyData",
-      };
-      setCache(cacheKey, result);
-      return result;
-    });
-  } catch (err) {
-    console.error(
-      `[SBP] Urban Food Inflation fetch failed\nReason: ${err instanceof Error ? err.message : String(err)}\nServing: none (no fallback snapshot exists for this series)\nTimestamp: ${new Date().toISOString()}`,
-    );
-    return null;
-  }
+  return dedupeInFlight(cacheKey, async () => {
+    const rows = await getCanonicalSbpHistory(FOOD_INFLATION_URBAN_INDICATOR_KEY, 500);
+    if (rows.length === 0) {
+      console.error(
+        `[SBP] Urban Food Inflation — no canonical observations ingested yet\nServing: none (no fallback snapshot exists for this series)\nTimestamp: ${new Date().toISOString()}`,
+      );
+      return null;
+    }
+    const result: FoodInflationUrbanResult = {
+      points: rows.map((r) => ({ date: r.observationPeriod, value: r.value })),
+      source: "SBP EasyData",
+    };
+    setCache(cacheKey, result);
+    return result;
+  });
 }
 
 // --- Money Supply M2 YoY growth (weeklyIntelligenceCompute.ts only) --------
