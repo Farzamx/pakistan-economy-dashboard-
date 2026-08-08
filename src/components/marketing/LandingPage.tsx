@@ -1,5 +1,12 @@
 import MarketingNav from "@/components/marketing/MarketingNav";
 import Hero from "@/components/marketing/Hero";
+import HeroBackground from "@/components/marketing/HeroBackground";
+import WhatPeicDoes from "@/components/marketing/sections/WhatPeicDoes";
+import DecisionSupportLabSection from "@/components/marketing/sections/DecisionSupportLabSection";
+import InsidePlatformSection from "@/components/marketing/sections/InsidePlatformSection";
+import DataSourcesSection from "@/components/marketing/sections/DataSourcesSection";
+import ClosingCta from "@/components/marketing/sections/ClosingCta";
+import MarketingFooter from "@/components/marketing/MarketingFooter";
 import type { TapeCell } from "@/components/marketing/LiveIndicatorTape";
 import { getAllSbpIndicators } from "@/lib/data/sbpServer";
 import { getNetLiquidReserves } from "@/lib/data/fxReserves";
@@ -209,8 +216,22 @@ export default async function LandingPage() {
 
   return (
     <div className={`${marketingFontVariables} marketing-theme min-h-screen w-full`}>
-      <MarketingNav />
-      <Hero tapeCells={tapeCells} />
+      {/* Rendered once here, position:fixed — every section below sits on
+          this same living background as the page scrolls, not just the
+          hero. See HeroBackground.tsx's header comment for why. */}
+      <HeroBackground />
+      <div className="relative z-10">
+        <MarketingNav />
+        <main>
+          <Hero tapeCells={tapeCells} />
+          <WhatPeicDoes />
+          <DecisionSupportLabSection />
+          <InsidePlatformSection cpi={sbp.cpiInflation} policyRate={sbp.policyRate} />
+          <DataSourcesSection />
+          <ClosingCta />
+        </main>
+        <MarketingFooter />
+      </div>
     </div>
   );
 }
