@@ -48,7 +48,7 @@ export default function LessonView({ lesson, category, prevLesson, nextLesson }:
     <div className="mx-auto max-w-3xl px-4 py-10 sm:px-8">
       {/* Breadcrumb */}
       <div className="mb-6 flex items-center gap-2 text-xs text-white/40 light:text-slate-400">
-        <Link href="/" className="hover:text-white light:hover:text-slate-700 transition-colors">Home</Link>
+        <Link href="/overview" className="hover:text-white light:hover:text-slate-700 transition-colors">Home</Link>
         <span>/</span>
         <Link href="/workshop" className="hover:text-white light:hover:text-slate-700 transition-colors">{t("workshop.backToWorkshop")}</Link>
         <span>/</span>

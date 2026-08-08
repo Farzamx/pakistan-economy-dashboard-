@@ -159,7 +159,7 @@ export default async function ArchiveDetailPage({ params }: PageProps) {
 
         <div className="mx-auto max-w-4xl">
           <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-xs text-white/40 light:text-slate-400">
-            <Link href="/" className="hover:text-white light:hover:text-slate-900">Home</Link>
+            <Link href="/overview" className="hover:text-white light:hover:text-slate-900">Home</Link>
             <span aria-hidden="true">/</span>
             <Link href="/economic-calendar" className="hover:text-white light:hover:text-slate-900">Economic Calendar</Link>
             <span aria-hidden="true">/</span>

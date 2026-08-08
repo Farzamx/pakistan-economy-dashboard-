@@ -121,7 +121,7 @@ export default function SiteMapPage() {
       <div className="mx-auto max-w-4xl">
         <div className="flex items-center justify-between">
           <Link
-            href="/"
+            href="/overview"
             className="flex items-center gap-2 text-xs font-medium text-white/50 light:text-slate-500 transition-colors hover:text-white light:hover:text-slate-900"
           >
             <span aria-hidden="true">←</span> {SITE_NAME}
@@ -149,7 +149,7 @@ export default function SiteMapPage() {
           <Section
             title={<T tKey="sitemap.mainDashboard" />}
             links={[
-              { href: "/", label: "Live Economic Dashboard" },
+              { href: "/overview", label: "Live Economic Dashboard" },
               { href: "/economic-calendar", label: "Economic Calendar" },
             ]}
           />
@@ -157,7 +157,7 @@ export default function SiteMapPage() {
 
         <div className="mt-10 mb-4 text-center">
           <Link
-            href="/"
+            href="/overview"
             className="inline-flex items-center gap-2 rounded-lg bg-neon-blue/10 border border-neon-blue/20 px-5 py-2.5 text-sm font-medium text-neon-blue transition-colors hover:bg-neon-blue/20"
           >
             <T tKey="sitemap.openDashboard" />

@@ -16,7 +16,7 @@ export default function AuthShell({ title, subtitle, children, footer }: AuthShe
   return (
     <main className="flex min-h-screen w-full items-center justify-center px-4 py-12 sm:px-6">
       <div className="w-full max-w-md">
-        <Link href="/" className="mb-8 flex items-center justify-center gap-3">
+        <Link href="/overview" className="mb-8 flex items-center justify-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-neon-blue/50 font-serif text-lg font-semibold text-neon-blue">
             P
           </div>

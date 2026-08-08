@@ -40,7 +40,7 @@ export default function SidebarAuthCard() {
     setSigningOut(true);
     try {
       await Promise.all([signOutAction(), signOut()]);
-      router.push("/");
+      router.push("/overview");
       router.refresh();
     } finally {
       if (isMountedRef.current) {

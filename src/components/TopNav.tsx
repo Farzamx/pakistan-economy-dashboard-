@@ -34,12 +34,12 @@ import { isProtectedPath } from "@/lib/protectedSections";
 // are, so this reorder carries zero layout risk on its own.
 const NAV_ITEMS: { key: string; href: string; protected?: boolean }[] = [
   { key: "decisionLab", href: "/decision-support-lab" },
-  { key: "overview", href: "/" },
-  { key: "markets", href: "/#global-markets" },
+  { key: "overview", href: "/overview" },
+  { key: "markets", href: "/overview#global-markets" },
   { key: "calendar", href: "/economic-calendar", protected: true },
   { key: "research", href: "/comparisons", protected: true },
   { key: "academy", href: "/academy" },
-  { key: "riskIntel", href: "/#risk-intelligence" },
+  { key: "riskIntel", href: "/overview#risk-intelligence" },
   { key: "premium", href: "/signup" },
 ];
 
@@ -48,7 +48,7 @@ export default function TopNav() {
   const { user, loading } = useAuth();
   const { t } = useLanguage();
   const [guestModalOpen, setGuestModalOpen] = useState(false);
-  const [guestDestination, setGuestDestination] = useState("/");
+  const [guestDestination, setGuestDestination] = useState("/overview");
 
   function handleClick(e: React.MouseEvent<HTMLAnchorElement>, href: string, protectedItem?: boolean) {
     if (!protectedItem || !isProtectedPath(href) || loading || user) return;
@@ -58,7 +58,7 @@ export default function TopNav() {
   }
 
   function isActive(href: string): boolean {
-    if (href === "/") return pathname === "/";
+    if (href === "/overview") return pathname === "/overview";
     if (href.startsWith("/#")) return false; // homepage anchors — no route to match against off-page
     return !!pathname?.startsWith(href);
   }
@@ -76,7 +76,7 @@ export default function TopNav() {
           never overlap or leave a gap. */}
       <header className="sticky top-0 z-30 hidden h-16 w-full items-center justify-between border-b border-[var(--border-subtle)] bg-[var(--background)]/95 px-5 backdrop-blur-xl min-[800px]:flex">
         <div className="flex items-center gap-8">
-          <Link href="/" className="flex items-center gap-2.5 shrink-0">
+          <Link href="/overview" className="flex items-center gap-2.5 shrink-0">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-neon-blue/50 font-serif text-base font-semibold text-neon-blue">
               P
             </div>
@@ -135,14 +135,28 @@ export default function TopNav() {
           </nav>
         </div>
 
-        {!loading && !user && (
+        <div className="flex shrink-0 items-center gap-3">
+          {/* Returning-visitor routing (Section: Returning-visitor routing) —
+              /overview redirects returning visitors away from the marketing
+              site's "/" automatically via the peic_returning cookie, so this
+              is the one way back to the marketing landing page from inside
+              the app itself. Always /home, never "/", so it works even for
+              a visitor whose cookie is still set. */}
           <Link
-            href="/login"
-            className="shrink-0 whitespace-nowrap rounded-md border border-[var(--border)] px-3 py-1.5 text-sm font-medium text-white/80 light:text-slate-700 transition-colors hover:border-neon-blue/40 hover:text-white light:hover:text-slate-900"
+            href="/home"
+            className="whitespace-nowrap text-sm font-medium text-white/50 light:text-slate-500 transition-colors hover:text-white light:hover:text-slate-900"
           >
-            {t("hero.login")}
+            Back to site
           </Link>
-        )}
+          {!loading && !user && (
+            <Link
+              href="/login"
+              className="whitespace-nowrap rounded-md border border-[var(--border)] px-3 py-1.5 text-sm font-medium text-white/80 light:text-slate-700 transition-colors hover:border-neon-blue/40 hover:text-white light:hover:text-slate-900"
+            >
+              {t("hero.login")}
+            </Link>
+          )}
+        </div>
       </header>
 
       <GuestAccessModal open={guestModalOpen} onClose={() => setGuestModalOpen(false)} destination={guestDestination} />
