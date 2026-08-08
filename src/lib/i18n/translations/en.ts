@@ -766,6 +766,8 @@ export const en: Translations = {
     trustMethodology: "Transparent Methodology",
     toolsTitle: "Decision Support Tools",
     toolsSubtitle: "One shared data model and calculation engine, one tool at a time.",
+    financialPlanningTitle: "Financial Planning Intelligence",
+    financialPlanningSubtitle: "Institutional-grade goal planning — funding-gap analysis, Monte Carlo probability of success, sensitivity analysis, and scenario comparison, built on your Economic Profile.",
     incomeWealthTitle: "Income & Wealth Intelligence",
     incomeWealthSubtitle: "Connect your salary, raises and savings to the same inflation data — see what's really happening to your income.",
     timeValueTitle: "Time Value of Money",
@@ -823,6 +825,8 @@ export const en: Translations = {
     placeholderPercentage: "Enter percentage",
     validationEnterAmount: "Please enter an amount to continue.",
     tool: {
+      emergencyFundPlanner: { title: "Emergency Fund Planner", description: "Plan an inflation-adjusted emergency fund with funding-gap analysis and probability of success." },
+      wealthAccumulationPlanner: { title: "Wealth Accumulation Planner", description: "Plan a long-term wealth goal with Monte Carlo probability analysis and scenario comparison." },
       personalInflation: { description: "Reweight official CPI category data using your own spending pattern." },
       purchasingPower: { title: "Purchasing Power Calculator", description: "See how much of your money's real value inflation has eroded over time." },
       salaryPurchasingPower: { title: "Salary Purchasing Power", description: "Check whether your salary has kept pace with inflation since your last raise." },
@@ -879,6 +883,7 @@ export const en: Translations = {
     explainAssumptions: "Assumptions",
     explainLimitations: "Limitations",
     explainFrequency: "Data frequency",
+    explainProvenance: "Where each number came from",
     decisionPanelTitle: "What This Means For You",
     whatHappenedQuestion: "What happened?",
     whyHappenedQuestion: "Why did it happen?",
@@ -990,6 +995,18 @@ export const en: Translations = {
     realSalaryLabel: "Real Salary",
     purchasingPowerLabel: "Purchasing Power",
     chartTitle: "Nominal vs. Real Salary Over Time",
+  },
+
+  emergencyFundPlanner: {
+    eyebrow: "Financial Planning Intelligence",
+    title: "Emergency Fund Planner",
+    subtitle: "Plan an inflation-adjusted emergency fund with funding-gap analysis, Monte Carlo probability of success, sensitivity analysis, and scenario comparison.",
+  },
+
+  wealthAccumulationPlanner: {
+    eyebrow: "Financial Planning Intelligence",
+    title: "Wealth Accumulation Planner",
+    subtitle: "Plan a long-term wealth goal with funding-gap analysis, Monte Carlo probability of success, sensitivity analysis, and scenario comparison.",
   },
 
   savingsErosion: {

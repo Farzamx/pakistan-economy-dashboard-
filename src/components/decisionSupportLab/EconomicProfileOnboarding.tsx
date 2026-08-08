@@ -389,7 +389,7 @@ export default function EconomicProfileOnboarding() {
       content: (
         <p className="text-sm text-white/50 light:text-slate-500">
           {profile.goals.length === 0
-            ? "No financial goals set yet — add one from the Salary Required or Future Salary Projection tools."
+            ? "No financial goals set yet — add one from the Financial Planning Intelligence tools (Emergency Fund, Wealth Accumulation, and more)."
             : `${profile.goals.length} goal${profile.goals.length === 1 ? "" : "s"} configured.`}
         </p>
       ),

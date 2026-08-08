@@ -23,11 +23,32 @@ export interface HouseholdAllocationShape {
   allocation: Record<number, number>;
 }
 
+// Phase 6 — Financial Planning Intelligence. Widened from the original
+// { id, name, targetAmount, targetYear } shape (never populated by any UI —
+// confirmed via a full-repo grep before this change: every real profile has
+// goals: [], so there is no existing data to migrate). Still stored in the
+// same `goals` jsonb column (migration 0045) — no schema migration needed.
+export type GoalType = "retirement" | "fire" | "emergency-fund" | "wealth-accumulation" | "education" | "child-education" | "home-purchase" | "hajj-umrah" | "custom";
+export type GoalPriority = "high" | "medium" | "low";
+export type GoalStatus = "active" | "achieved" | "paused";
+
 export interface Goal {
   id: string;
   name: string;
-  targetAmount: number;
-  targetYear: number;
+  goalType: GoalType;
+  /** Target amount in today's PKR — inflated to a future value by goalEngine.ts, never stored pre-inflated. */
+  targetAmountToday: number;
+  /** ISO "YYYY-MM-DD". */
+  targetDate: string;
+  /** Savings already earmarked for this specific goal — distinct from the profile's general currentSavings. */
+  currentSavingsForGoal: number;
+  monthlyContribution: number;
+  /** Nominal annual %. */
+  expectedReturnPct: number;
+  priority: GoalPriority;
+  status: GoalStatus;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface EconomicProfile {

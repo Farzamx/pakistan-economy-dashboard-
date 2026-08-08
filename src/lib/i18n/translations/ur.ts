@@ -766,6 +766,8 @@ export const ur: Translations = {
     trustMethodology: "شفاف طریقہ کار",
     toolsTitle: "ڈیسیژن سپورٹ ٹولز",
     toolsSubtitle: "ایک مشترکہ ڈیٹا ماڈل اور کیلکولیشن انجن، ایک وقت میں ایک ٹول۔",
+    financialPlanningTitle: "فنانشل پلاننگ انٹیلیجنس",
+    financialPlanningSubtitle: "ادارہ جاتی معیار کی گول پلاننگ — فنڈنگ گیپ تجزیہ، مونٹی کارلو کامیابی کا امکان، حساسیت تجزیہ، اور سینیریو موازنہ، آپ کی اکنامک پروفائل پر مبنی۔",
     incomeWealthTitle: "آمدنی اور دولت کی انٹیلیجنس",
     incomeWealthSubtitle: "اپنی تنخواہ، اضافے اور بچتوں کو اسی مہنگائی کے ڈیٹا سے جوڑیں — دیکھیں کہ آپ کی آمدنی کے ساتھ حقیقت میں کیا ہو رہا ہے۔",
     timeValueTitle: "زر کی وقتی قدر",
@@ -823,6 +825,8 @@ export const ur: Translations = {
     placeholderPercentage: "فیصد درج کریں",
     validationEnterAmount: "جاری رکھنے کے لیے براہ کرم ایک رقم درج کریں۔",
     tool: {
+      emergencyFundPlanner: { title: "ایمرجنسی فنڈ پلانر", description: "فنڈنگ گیپ تجزیہ اور کامیابی کے امکان کے ساتھ مہنگائی کے مطابق ایمرجنسی فنڈ کی منصوبہ بندی کریں۔" },
+      wealthAccumulationPlanner: { title: "ویلتھ ایکومولیشن پلانر", description: "مونٹی کارلو امکانی تجزیہ اور سینیریو موازنہ کے ساتھ طویل مدتی دولت کے ہدف کی منصوبہ بندی کریں۔" },
       personalInflation: { description: "اپنے اخراجات کے انداز کا استعمال کرتے ہوئے سرکاری سی پی آئی زمرہ جاتی ڈیٹا کو دوبارہ وزن دیں۔" },
       purchasingPower: { title: "قوت خرید کیلکولیٹر", description: "دیکھیں کہ وقت کے ساتھ مہنگائی نے آپ کی رقم کی حقیقی قدر کتنی کم کی ہے۔" },
       salaryPurchasingPower: { title: "تنخواہ کی قوت خرید", description: "چیک کریں کہ کیا آپ کی آخری اضافے کے بعد سے تنخواہ مہنگائی کے ساتھ برابر رہی ہے۔" },
@@ -879,6 +883,7 @@ export const ur: Translations = {
     explainAssumptions: "مفروضات",
     explainLimitations: "حدود",
     explainFrequency: "ڈیٹا کی تعدد",
+    explainProvenance: "ہر عدد کہاں سے آیا",
     decisionPanelTitle: "اس کا آپ کے لیے کیا مطلب ہے",
     whatHappenedQuestion: "کیا ہوا؟",
     whyHappenedQuestion: "ایسا کیوں ہوا؟",
@@ -990,6 +995,18 @@ export const ur: Translations = {
     realSalaryLabel: "حقیقی تنخواہ",
     purchasingPowerLabel: "قوت خرید",
     chartTitle: "وقت کے ساتھ برائے نام بمقابلہ حقیقی تنخواہ",
+  },
+
+  emergencyFundPlanner: {
+    eyebrow: "فنانشل پلاننگ انٹیلیجنس",
+    title: "ایمرجنسی فنڈ پلانر",
+    subtitle: "فنڈنگ گیپ تجزیہ، مونٹی کارلو کامیابی کا امکان، حساسیت تجزیہ، اور سینیریو موازنہ کے ساتھ مہنگائی کے مطابق ایمرجنسی فنڈ کی منصوبہ بندی کریں۔",
+  },
+
+  wealthAccumulationPlanner: {
+    eyebrow: "فنانشل پلاننگ انٹیلیجنس",
+    title: "ویلتھ ایکومولیشن پلانر",
+    subtitle: "فنڈنگ گیپ تجزیہ، مونٹی کارلو کامیابی کا امکان، حساسیت تجزیہ، اور سینیریو موازنہ کے ساتھ طویل مدتی دولت کے ہدف کی منصوبہ بندی کریں۔",
   },
 
   savingsErosion: {

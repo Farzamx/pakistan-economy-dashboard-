@@ -16,6 +16,20 @@ function Base({ children, ...props }: IconProps & { children: React.ReactNode })
 }
 
 const ICONS: Record<string, (props: IconProps) => React.ReactElement> = {
+  // Emergency Fund Planner — a shield (safety/liquidity)
+  "emergency-fund-planner": (p) => (
+    <Base {...p}>
+      <path d="M12 3l7 3v6c0 5-3.5 7.5-7 9-3.5-1.5-7-4-7-9V6l7-3z" />
+      <path d="M9 12l2 2 4-4" />
+    </Base>
+  ),
+  // Wealth Accumulation Planner — a rising bar chart toward a target
+  "wealth-accumulation-planner": (p) => (
+    <Base {...p}>
+      <path d="M4 20V14M9.5 20V10M15 20V6M20 20V3" />
+      <path d="M2 20h20" />
+    </Base>
+  ),
   // Personal Inflation Calculator — a rising line with a percent mark
   "personal-inflation": (p) => (
     <Base {...p}>

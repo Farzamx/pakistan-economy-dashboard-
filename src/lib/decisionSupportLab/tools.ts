@@ -12,7 +12,7 @@ import { isToolReady } from "@/lib/decisionSupportLab/toolFieldRegistry";
 import type { EconomicProfile } from "@/lib/decisionSupportLab/economicProfile";
 
 export type ToolStatus = "available" | "coming-soon";
-export type ToolCategoryId = "core" | "income-wealth" | "time-value" | "investment-intelligence";
+export type ToolCategoryId = "financial-planning" | "core" | "income-wealth" | "time-value" | "investment-intelligence";
 
 export interface ToolDefinition {
   id: string;
@@ -26,6 +26,15 @@ export interface ToolDefinition {
   href?: string;
   /** i18n key for the "Est. Q_ 20__" chip on a coming-soon card. */
   estimatedReleaseKey?: string;
+  /**
+   * Display flag only (Phase 6) — drives the distinctive "Flagship" card/
+   * category styling. Deliberately NOT read by any access-control check:
+   * per product direction, Financial Planning Intelligence is UX-premium,
+   * not paywalled. Kept as its own field (rather than inferred from
+   * category) so a future real entitlement gate can read this exact same
+   * field without a registry refactor.
+   */
+  tier?: "standard" | "flagship";
 }
 
 export interface ToolCategory {
@@ -34,7 +43,11 @@ export interface ToolCategory {
   subtitleKey: string;
 }
 
+// "financial-planning" listed first — its flagship status per the Phase 6
+// brief means it should be the first thing a visitor sees, not appended
+// after the original 4 categories.
 export const TOOL_CATEGORIES: ToolCategory[] = [
+  { id: "financial-planning", titleKey: "decisionSupportLab.financialPlanningTitle", subtitleKey: "decisionSupportLab.financialPlanningSubtitle" },
   { id: "core", titleKey: "decisionSupportLab.toolsTitle", subtitleKey: "decisionSupportLab.toolsSubtitle" },
   { id: "income-wealth", titleKey: "decisionSupportLab.incomeWealthTitle", subtitleKey: "decisionSupportLab.incomeWealthSubtitle" },
   { id: "time-value", titleKey: "decisionSupportLab.timeValueTitle", subtitleKey: "decisionSupportLab.timeValueSubtitle" },
@@ -42,6 +55,24 @@ export const TOOL_CATEGORIES: ToolCategory[] = [
 ];
 
 export const DECISION_SUPPORT_TOOLS: ToolDefinition[] = [
+  {
+    id: "emergency-fund-planner",
+    category: "financial-planning",
+    titleKey: "decisionSupportLab.tool.emergencyFundPlanner.title",
+    descriptionKey: "decisionSupportLab.tool.emergencyFundPlanner.description",
+    status: "available",
+    href: "/decision-support-lab/emergency-fund-planner",
+    tier: "flagship",
+  },
+  {
+    id: "wealth-accumulation-planner",
+    category: "financial-planning",
+    titleKey: "decisionSupportLab.tool.wealthAccumulationPlanner.title",
+    descriptionKey: "decisionSupportLab.tool.wealthAccumulationPlanner.description",
+    status: "available",
+    href: "/decision-support-lab/wealth-accumulation-planner",
+    tier: "flagship",
+  },
   {
     id: "personal-inflation",
     category: "core",

@@ -37,7 +37,7 @@ import {
   type HouseholdAllocationShape,
 } from "@/lib/supabase/economicProfile";
 
-export type { EconomicProfile, FilerStatus, Province, IncomeType, HousingStatus, RiskTolerance, Goal, HouseholdAllocationShape } from "@/lib/supabase/economicProfile";
+export type { EconomicProfile, FilerStatus, Province, IncomeType, HousingStatus, RiskTolerance, Goal, GoalType, GoalPriority, GoalStatus, HouseholdAllocationShape } from "@/lib/supabase/economicProfile";
 export { DEFAULT_ECONOMIC_PROFILE };
 
 export type ProfileSyncStatus = "guest" | "loading" | "local-only" | "synced";

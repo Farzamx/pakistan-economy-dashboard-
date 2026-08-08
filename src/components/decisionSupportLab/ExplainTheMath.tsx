@@ -1,4 +1,5 @@
 import { T } from "@/components/T";
+import { PROVENANCE_SOURCE_LABEL, type ProvenanceEntry } from "@/lib/decisionSupportLab/provenance";
 
 export interface MathVariable {
   symbol: string;
@@ -18,6 +19,8 @@ export interface ExplainTheMathProps {
   assumptions?: string[];
   /** Known limitations/caveats — institutional transparency about what this number does NOT capture. */
   limitations?: string[];
+  /** Per-input sourced-values table (Phase 6 addition) — where each number fed into this specific calculation actually came from. See provenance.ts; optional so every existing call site keeps compiling unchanged. */
+  provenance?: ProvenanceEntry[];
 }
 
 /**
@@ -37,6 +40,7 @@ export default function ExplainTheMath({
   dataFrequency,
   assumptions,
   limitations,
+  provenance,
 }: ExplainTheMathProps) {
   return (
     <section className="glass-card rounded-xl p-5 sm:p-6">
@@ -82,6 +86,27 @@ export default function ExplainTheMath({
               <li key={i}>{l}</li>
             ))}
           </ul>
+        </div>
+      )}
+
+      {provenance && provenance.length > 0 && (
+        <div className="mt-4">
+          <p className="text-label text-white/40 light:text-slate-400">
+            <T tKey="decisionSupportLab.explainProvenance" />
+          </p>
+          <div className="mt-1.5 overflow-x-auto rounded-lg border border-[var(--border-subtle)]">
+            <table className="w-full text-sm">
+              <tbody>
+                {provenance.map((entry, i) => (
+                  <tr key={i} className={i > 0 ? "border-t border-[var(--border-subtle)]" : ""}>
+                    <td className="px-3 py-1.5 text-white/60 light:text-slate-500">{entry.label}</td>
+                    <td className="text-mono-num px-3 py-1.5 text-right text-white/85 light:text-slate-800">{entry.value}</td>
+                    <td className="px-3 py-1.5 text-right text-xs text-white/40 light:text-slate-400">{PROVENANCE_SOURCE_LABEL[entry.source]}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 

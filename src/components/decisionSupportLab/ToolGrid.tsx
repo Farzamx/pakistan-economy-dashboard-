@@ -136,8 +136,19 @@ export default function ToolGrid({ isAuthenticated }: Props) {
           {TOOL_CATEGORIES.map((category) => {
             const tools = DECISION_SUPPORT_TOOLS.filter((tool) => tool.category === category.id);
             if (tools.length === 0) return null;
+            const isFlagship = category.id === "financial-planning";
             return (
-              <section key={category.id} id={`dsl-category-${category.id}`}>
+              <section
+                key={category.id}
+                id={`dsl-category-${category.id}`}
+                className={isFlagship ? "rounded-2xl border border-neon-blue/25 bg-gradient-to-br from-neon-blue/[0.06] via-transparent to-transparent p-5 sm:p-6" : undefined}
+              >
+                {isFlagship && (
+                  <span className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-neon-blue/40 bg-neon-blue/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-neon-blue">
+                    <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-neon-blue" />
+                    Flagship
+                  </span>
+                )}
                 <h2 className="text-headline text-white light:text-slate-900">
                   <T tKey={category.titleKey} />
                 </h2>

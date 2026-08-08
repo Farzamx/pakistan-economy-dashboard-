@@ -43,12 +43,15 @@ function SidebarTreeRow({
   isActive,
   onClick,
   ariaLabel,
+  flagship,
 }: {
   href: string;
   label: string;
   isActive: boolean;
   onClick?: (e: React.MouseEvent<HTMLAnchorElement>) => void;
   ariaLabel?: string;
+  /** Phase 6 — see SidebarNavItem.flagship. A narrow exception to this row's otherwise-uniform bullet dot, not a restructure of the tree. */
+  flagship?: boolean;
 }) {
   return (
     <Link
@@ -62,7 +65,11 @@ function SidebarTreeRow({
           : "text-white/55 light:text-slate-500 hover:bg-white/[0.04] hover:text-white light:hover:bg-slate-50 light:hover:text-slate-900"
       }`}
     >
-      <span className={`h-1 w-1 shrink-0 rounded-full ${isActive ? "bg-neon-blue" : "bg-white/20 light:bg-slate-300"}`} />
+      <span
+        className={`h-1 w-1 shrink-0 rounded-full ${
+          isActive ? "bg-neon-blue" : flagship ? "bg-gradient-to-r from-neon-blue to-violet-400" : "bg-white/20 light:bg-slate-300"
+        }`}
+      />
       {label}
     </Link>
   );
@@ -245,6 +252,7 @@ export default function Sidebar() {
                           href={href}
                           label={label}
                           isActive={isActive}
+                          flagship={item.flagship}
                           onClick={
                             target.kind === "anchor"
                               ? (e) => handleAnchorClick(e, target.id)

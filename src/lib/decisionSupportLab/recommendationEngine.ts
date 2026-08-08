@@ -3,8 +3,16 @@
 // result): this reasons across the whole profile plus whatever computed
 // figures the caller has available, and ranks what to do next.
 // Deterministic, fixed thresholds — no AI, no ML, no fabricated advice.
-import type { EconomicProfile } from "@/lib/decisionSupportLab/economicProfile";
+import type { EconomicProfile, Goal } from "@/lib/decisionSupportLab/economicProfile";
 import { getOverallCompletionPct } from "@/lib/decisionSupportLab/profileCompletion";
+
+/** One goal's already-computed funding-gap result (from goalEngine.ts's projectGoalProgress) — passed in rather than recomputed here, so this engine never duplicates goal math, only reasons about its output. */
+export interface GoalRecommendationInput {
+  goal: Goal;
+  fundingGapAmount: number;
+  fundingGapPct: number;
+  requiredMonthlyContributionValue: number;
+}
 
 export interface Recommendation {
   priority: number;
@@ -21,11 +29,34 @@ export interface RecommendationComputedInputs {
   savingsErosionPct?: number;
   portfolioRealReturnPct?: number;
   officialInflationPct?: number;
+  /** Financial Planning Intelligence (Phase 6) goals with a computed funding-gap result — omitted entirely by every non-goal tool, so this stays a no-op for them. */
+  goals?: GoalRecommendationInput[];
 }
 
 /** Ranked by `priority` ascending (1 = most important). Extend by adding a rule to this list — nothing else needs to change since every consumer reads the returned array, not individual rule functions. */
 export function generateRecommendations(profile: EconomicProfile, computed: RecommendationComputedInputs = {}): Recommendation[] {
   const recs: Recommendation[] = [];
+
+  for (const { goal, fundingGapAmount, fundingGapPct, requiredMonthlyContributionValue } of computed.goals ?? []) {
+    if (fundingGapAmount > 0 && requiredMonthlyContributionValue > goal.monthlyContribution) {
+      const shortfallMonthly = requiredMonthlyContributionValue - goal.monthlyContribution;
+      recs.push({
+        priority: fundingGapPct > 25 ? 1 : 2,
+        title: `Increase your "${goal.name}" contribution to stay on track`,
+        expectedImpact: fundingGapPct > 25 ? "high" : "medium",
+        reason: `At your current monthly contribution, this goal is projected to fall short by Rs ${Math.round(fundingGapAmount).toLocaleString("en-US")} (${fundingGapPct.toFixed(0)}%). Raising your monthly contribution by about Rs ${Math.round(shortfallMonthly).toLocaleString("en-US")} would close the gap.`,
+        frame: "risk",
+      });
+    } else if (fundingGapAmount <= 0 && goal.monthlyContribution > 0) {
+      recs.push({
+        priority: 3,
+        title: `"${goal.name}" is on track`,
+        expectedImpact: "low",
+        reason: `Your current savings and contribution rate are projected to meet this goal's inflation-adjusted target by ${goal.targetDate}.`,
+        frame: "opportunity",
+      });
+    }
+  }
 
   if (profile.monthlySpending > 0 && profile.currentSavings > 0 && profile.currentSavings < 3 * profile.monthlySpending) {
     recs.push({

@@ -469,6 +469,7 @@ export interface Translations {
     eyebrow: string; title: string; subtitle: string;
     trustSources: string; trustMethodology: string;
     toolsTitle: string; toolsSubtitle: string;
+    financialPlanningTitle: string; financialPlanningSubtitle: string;
     incomeWealthTitle: string; incomeWealthSubtitle: string;
     timeValueTitle: string; timeValueSubtitle: string;
     investmentIntelligenceTitle: string; investmentIntelligenceSubtitle: string;
@@ -500,6 +501,8 @@ export interface Translations {
     placeholderPercentage: string;
     validationEnterAmount: string;
     tool: {
+      emergencyFundPlanner: { title: string; description: string };
+      wealthAccumulationPlanner: { title: string; description: string };
       personalInflation: { description: string };
       purchasingPower: { title: string; description: string };
       salaryPurchasingPower: { title: string; description: string };
@@ -534,7 +537,7 @@ export interface Translations {
     identityCurrency: string; identityCurrencyNote: string; identityCurrencyLabel: string;
     useIdentitySuggestion: string;
     explainTheMathTitle: string; explainSource: string; explainLastUpdated: string;
-    explainAssumptions: string; explainLimitations: string; explainFrequency: string;
+    explainAssumptions: string; explainLimitations: string; explainFrequency: string; explainProvenance: string;
     educationTitle: string;
     eduWhatQuestion: string; eduWhyQuestion: string; eduHowQuestion: string; eduSourcesQuestion: string;
     downloadReport: string; generatingReport: string;
@@ -589,6 +592,14 @@ export interface Translations {
     currentSalaryLabel: string; annualRaiseLabel: string; inflationLabel: string; yearsLabel: string;
     resultsTitle: string; nominalSalaryLabel: string; realSalaryLabel: string; purchasingPowerLabel: string;
     chartTitle: string;
+  };
+
+  emergencyFundPlanner: {
+    eyebrow: string; title: string; subtitle: string;
+  };
+
+  wealthAccumulationPlanner: {
+    eyebrow: string; title: string; subtitle: string;
   };
 
   savingsErosion: {

@@ -226,6 +226,32 @@ export function generateCompoundingDominanceInsight(compoundingGrowthAmount: num
   };
 }
 
+// Phase 6 — Financial Planning Intelligence. Same deterministic,
+// threshold-only approach: fires only when the funding gap is large enough
+// (or the goal is comfortably ahead) to be worth a callout on its own,
+// beyond what the Recommendation Engine's action-oriented card already says.
+const GOAL_COMFORTABLY_AHEAD_THRESHOLD_PCT = -15;
+
+/** Whether a goal's funding gap is worth a standalone callout — a large shortfall, or being comfortably ahead of the inflation-adjusted target (a negative "gap" means projected value exceeds it). */
+export function generateGoalProgressInsight(goalName: string, fundingGapPct: number): Insight | null {
+  if (fundingGapPct > 0 && fundingGapPct < 5) return null; // close enough not to be worth a separate callout beyond the recommendation card
+  if (fundingGapPct <= GOAL_COMFORTABLY_AHEAD_THRESHOLD_PCT) {
+    return {
+      id: "goal-progress",
+      tone: "positive",
+      message: `Your "${goalName}" goal is projected to exceed its inflation-adjusted target by ${Math.abs(fundingGapPct).toFixed(0)}% — you may be able to redirect some of this contribution elsewhere.`,
+    };
+  }
+  if (fundingGapPct > 0) {
+    return {
+      id: "goal-progress",
+      tone: "warning",
+      message: `At the current pace, "${goalName}" is projected to fall ${fundingGapPct.toFixed(0)}% short of its inflation-adjusted target.`,
+    };
+  }
+  return null;
+}
+
 export interface PersonalInsightsInput {
   contributions?: CategoryContribution[];
   personalCpiPct?: number;
@@ -240,6 +266,7 @@ export interface PersonalInsightsInput {
   assetProtection?: { strongerAssetName: string; strongerRealReturnPct: number; weakerAssetName: string; weakerRealReturnPct: number };
   consecutiveNegativeRealReturnYears?: number;
   compoundingDominance?: { compoundingGrowthAmount: number; contributionGrowthAmount: number };
+  goalProgress?: { goalName: string; fundingGapPct: number };
 }
 
 /** Runs every applicable rule against whatever inputs are available and returns only the insights that actually fired — callers don't need to know which rules exist, just what data they can supply. */
@@ -315,6 +342,11 @@ export function generatePersonalInsights(input: PersonalInsightsInput): Insight[
   if (input.compoundingDominance) {
     const dominance = generateCompoundingDominanceInsight(input.compoundingDominance.compoundingGrowthAmount, input.compoundingDominance.contributionGrowthAmount);
     if (dominance) insights.push(dominance);
+  }
+
+  if (input.goalProgress) {
+    const goalProgress = generateGoalProgressInsight(input.goalProgress.goalName, input.goalProgress.fundingGapPct);
+    if (goalProgress) insights.push(goalProgress);
   }
 
   return insights;

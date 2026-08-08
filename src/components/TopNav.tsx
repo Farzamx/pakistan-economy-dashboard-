@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import GuestAccessModal from "@/components/GuestAccessModal";
+import DecisionLabNavItem from "@/components/DecisionLabNavItem";
 import { useAuth } from "@/components/AuthProvider";
 import { useLanguage } from "@/components/LanguageProvider";
 import { isProtectedPath } from "@/lib/protectedSections";
@@ -26,12 +27,17 @@ import { isProtectedPath } from "@/lib/protectedSections";
 // rather than inventing a new route. A first-class item in the same nav
 // list as Overview/Markets/etc. (not a separate right-aligned CTA) per the
 // "Premium is a first-class destination" navigation pass.
+// Phase 6 nav-order pass: "Decision Lab" moved to the front (right after
+// the logo, before "Overview") to match its flagship status — the pill
+// treatment (DecisionLabNavItem) and gap-4 width-recovery math below are
+// unaffected by ordering, only by which items exist and how many there
+// are, so this reorder carries zero layout risk on its own.
 const NAV_ITEMS: { key: string; href: string; protected?: boolean }[] = [
+  { key: "decisionLab", href: "/decision-support-lab" },
   { key: "overview", href: "/" },
   { key: "markets", href: "/#global-markets" },
   { key: "calendar", href: "/economic-calendar", protected: true },
   { key: "research", href: "/comparisons", protected: true },
-  { key: "decisionLab", href: "/decision-support-lab" },
   { key: "academy", href: "/academy" },
   { key: "riskIntel", href: "/#risk-intelligence" },
   { key: "premium", href: "/signup" },
@@ -68,7 +74,7 @@ export default function TopNav() {
           MobileNav/Sidebar/MobileStickyCta all switch at this same
           min-[800px] threshold so the mobile and desktop nav paradigms
           never overlap or leave a gap. */}
-      <header className="sticky top-0 z-30 hidden h-16 w-full items-center justify-between border-b border-[var(--border-subtle)] bg-[var(--background)]/95 px-6 backdrop-blur-xl min-[800px]:flex">
+      <header className="sticky top-0 z-30 hidden h-16 w-full items-center justify-between border-b border-[var(--border-subtle)] bg-[var(--background)]/95 px-5 backdrop-blur-xl min-[800px]:flex">
         <div className="flex items-center gap-8">
           <Link href="/" className="flex items-center gap-2.5 shrink-0">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-neon-blue/50 font-serif text-base font-semibold text-neon-blue">
@@ -87,10 +93,31 @@ export default function TopNav() {
               per item (a wrapped 2-line label was the visible symptom),
               and the logo wordmark hiding below 880px (the logo mark alone
               still identifies the site) to give the nav itself more room
-              exactly in the tightest 800-880px band. */}
-          <nav className="flex items-center gap-5">
+              exactly in the tightest 800-880px band.
+              Phase 6: "Decision Lab" got its own distinctive pill treatment
+              (DecisionLabNavItem) instead of plain text — a few px wider
+              than the plain-text version it replaced, so gap-5→gap-4
+              across the OTHER 7 items recovers the room (7 gaps × 4px =
+              28px, comfortably more than the pill's added width) rather
+              than pushing the breakpoint itself, which would ripple into
+              Sidebar/MobileNav/MobileStickyCta's shared min-[800px] switch.
+              Nav-order pass (moving "Decision Lab" first): re-measuring at
+              800/880px surfaced a pre-existing 3-11px deficit that had been
+              silently masked — the "Log In" link (the header's other flex
+              child, sharing the same row via justify-between) had no
+              whitespace-nowrap/shrink-0, so instead of the header actually
+              overflowing, the browser was quietly shrinking that link's box
+              and wrapping "Log In" onto two lines. Giving it nowrap+shrink-0
+              (matching every other nav item's convention) turned that
+              latent deficit into real, measurable overflow, fixed here by
+              trimming header px-6→px-5 and the Log In link's px-4→px-3
+              (12px recovered — comfortably covers the 11px worst case). */}
+          <nav className="flex items-center gap-4">
             {NAV_ITEMS.map((item) => {
               const active = isActive(item.href);
+              if (item.key === "decisionLab") {
+                return <DecisionLabNavItem key={item.key} href={item.href} label={t(`topNav.${item.key}`)} active={active} onClick={(e) => handleClick(e, item.href, item.protected)} />;
+              }
               return (
                 <Link
                   key={item.key}
@@ -111,7 +138,7 @@ export default function TopNav() {
         {!loading && !user && (
           <Link
             href="/login"
-            className="rounded-md border border-[var(--border)] px-4 py-1.5 text-sm font-medium text-white/80 light:text-slate-700 transition-colors hover:border-neon-blue/40 hover:text-white light:hover:text-slate-900"
+            className="shrink-0 whitespace-nowrap rounded-md border border-[var(--border)] px-3 py-1.5 text-sm font-medium text-white/80 light:text-slate-700 transition-colors hover:border-neon-blue/40 hover:text-white light:hover:text-slate-900"
           >
             {t("hero.login")}
           </Link>

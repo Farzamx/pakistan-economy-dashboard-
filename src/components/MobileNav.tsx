@@ -29,6 +29,8 @@ interface DrawerLink {
   href: string;
   icon: React.ReactNode;
   group: DrawerGroup;
+  /** Phase 6 — a small "Flagship" dot next to the label, matching TopNav's DecisionLabNavItem treatment. Display only, no access-control meaning. */
+  flagship?: boolean;
 }
 
 // Phase M1 — grouped instead of one flat 11(+1)-item list, so the drawer
@@ -55,6 +57,7 @@ const LINKS: DrawerLink[] = [
     navKey: "decisionSupportLab",
     href: "/decision-support-lab",
     group: "explore",
+    flagship: true,
     icon: (
       <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
         <path d="M9 3h6M10 3v6l-5.5 9.5A1.5 1.5 0 0 0 5.8 21h12.4a1.5 1.5 0 0 0 1.3-2.5L14 9V3" />
@@ -427,6 +430,7 @@ export default function MobileNav() {
                           >
                             <span className={isActive ? "text-neon-blue" : "text-white/40 light:text-slate-400"}>{link.icon}</span>
                             <span>{t(`nav.${link.navKey}`)}</span>
+                            {link.flagship && <span aria-hidden="true" className="h-1.5 w-1.5 shrink-0 rounded-full bg-gradient-to-r from-neon-blue to-violet-400" />}
                           </Link>
                         </motion.div>
                       );

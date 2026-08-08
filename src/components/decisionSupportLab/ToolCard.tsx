@@ -36,11 +36,18 @@ function LockIcon({ className = "h-3 w-3" }: { className?: string }) {
 export default function ToolCard({ tool, isAuthenticated }: Props) {
   const isAvailable = tool.status === "available";
   const showLock = isAvailable && !isAuthenticated;
+  const isFlagship = tool.tier === "flagship";
 
   const body = (
     <>
       <div className="flex items-start justify-between gap-3">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-neon-blue/30 bg-neon-blue/10 text-neon-blue">
+        <span
+          className={
+            isFlagship
+              ? "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-neon-blue/50 bg-gradient-to-br from-neon-blue/20 to-neon-blue/5 text-neon-blue shadow-[0_0_12px_rgba(77,141,247,0.25)]"
+              : "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-neon-blue/30 bg-neon-blue/10 text-neon-blue"
+          }
+        >
           <ToolIcon toolId={tool.id} className="h-5 w-5" />
         </span>
         {!isAvailable && (

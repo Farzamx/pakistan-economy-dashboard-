@@ -770,6 +770,8 @@ export const rm: Translations = {
     trustMethodology: "Shaffaf Tareeqa-e-Kar",
     toolsTitle: "Decision Support Tools",
     toolsSubtitle: "Aik mushtarka data model aur calculation engine, aik waqt mein aik tool.",
+    financialPlanningTitle: "Financial Planning Intelligence",
+    financialPlanningSubtitle: "Institutional-grade goal planning — funding-gap analysis, Monte Carlo success probability, sensitivity analysis, aur scenario comparison, aap ki Economic Profile par mabni.",
     incomeWealthTitle: "Income & Wealth Intelligence",
     incomeWealthSubtitle: "Apni tankhwah, izafon aur bachaton ko usi mehngai data se jorein — dekhein ke aap ki aamdani ke saath haqeeqat mein kya ho raha hai.",
     timeValueTitle: "Time Value of Money",
@@ -827,6 +829,8 @@ export const rm: Translations = {
     placeholderPercentage: "Fisad darj karein",
     validationEnterAmount: "Jari rakhne ke liye baraye meharbani aik raqam darj karein.",
     tool: {
+      emergencyFundPlanner: { title: "Emergency Fund Planner", description: "Funding-gap analysis aur success probability ke saath inflation-adjusted emergency fund plan karein." },
+      wealthAccumulationPlanner: { title: "Wealth Accumulation Planner", description: "Monte Carlo probability analysis aur scenario comparison ke saath long-term wealth goal plan karein." },
       personalInflation: { description: "Aap ke apne kharchon ke andaz ka istemal karte huay sarkari CPI category-wise data ko dobara weight dein." },
       purchasingPower: { title: "Purchasing Power Calculator", description: "Dekhein ke waqt ke saath mehngai ne aap ki raqam ki haqeeqi qadar kitni kam ki hai." },
       salaryPurchasingPower: { title: "Tankhwah ki Purchasing Power", description: "Check karein ke kya aap ki tankhwah aakhri izafay ke baad se mehngai ke saath barabar rahi hai." },
@@ -883,6 +887,7 @@ export const rm: Translations = {
     explainAssumptions: "Mafrozat",
     explainLimitations: "Hudood",
     explainFrequency: "Data ki Tadaad",
+    explainProvenance: "Har number kahan se aya",
     decisionPanelTitle: "Iska Aap ke Liye Kya Matlab Hai",
     whatHappenedQuestion: "Kya hua?",
     whyHappenedQuestion: "Yeh kyun hua?",
@@ -994,6 +999,18 @@ export const rm: Translations = {
     realSalaryLabel: "Haqeeqi Tankhwah",
     purchasingPowerLabel: "Purchasing Power",
     chartTitle: "Waqt ke Saath Nominal bamuqabla Haqeeqi Tankhwah",
+  },
+
+  emergencyFundPlanner: {
+    eyebrow: "Financial Planning Intelligence",
+    title: "Emergency Fund Planner",
+    subtitle: "Funding-gap analysis, Monte Carlo success probability, sensitivity analysis, aur scenario comparison ke saath inflation-adjusted emergency fund plan karein.",
+  },
+
+  wealthAccumulationPlanner: {
+    eyebrow: "Financial Planning Intelligence",
+    title: "Wealth Accumulation Planner",
+    subtitle: "Funding-gap analysis, Monte Carlo success probability, sensitivity analysis, aur scenario comparison ke saath long-term wealth goal plan karein.",
   },
 
   savingsErosion: {

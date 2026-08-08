@@ -19,6 +19,8 @@ export type SidebarNavTarget =
 export interface SidebarNavItem {
   labelKey: string;
   target: SidebarNavTarget;
+  /** Phase 6 — a narrow, deliberate exception to this tree's otherwise-uniform bulleted rows (see Sidebar.tsx's own comment on why uniformity is intentional): an accent-colored dot for this one row, display only. */
+  flagship?: boolean;
 }
 
 export interface SidebarNavGroup {
@@ -95,7 +97,7 @@ export const SIDEBAR_NAV_GROUPS: SidebarNavGroup[] = [
     key: "tools",
     labelKey: "nav.tools",
     items: [
-      { labelKey: "nav.decisionSupportLab", target: { kind: "route", href: "/decision-support-lab" } },
+      { labelKey: "nav.decisionSupportLab", target: { kind: "route", href: "/decision-support-lab" }, flagship: true },
       { labelKey: "nav.budgetTracker", target: { kind: "route", href: "/budget" } },
       { labelKey: "nav.provincialBudget", target: { kind: "route", href: "/provincial-budget" } },
       { labelKey: "nav.economicCalendar", target: { kind: "route", href: "/economic-calendar" } },
