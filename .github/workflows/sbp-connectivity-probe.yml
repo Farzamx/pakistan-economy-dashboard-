@@ -1,0 +1,220 @@
+# SBP EasyData Connectivity Probe — Phase 1 of the data-platform architecture
+# programme. Diagnostic only: this workflow ingests nothing, writes nothing,
+# and touches no application code or database.
+#
+# WHY THIS EXISTS
+# The production SBP ingestion (scripts/ingestSbp.ts) runs on a developer
+# laptop because earlier testing found that Vercel, GitHub Actions and
+# Supabase Edge Functions all received HTTP 403 from easydata.sbp.org.pk, and
+# concluded the block was IP/ASN-based. A later probe from that same laptop
+# found something the original diagnosis did not control for:
+#
+#   default curl User-Agent  -> 403   (Cloudflare edge blocked it)
+#   browser-like User-Agent  -> 401   (reached SBP's origin; only the API key
+#                                      was missing)
+#
+# A 401 can only be produced by the origin application, so the browser-UA
+# request passed Cloudflare. src/lib/data/sbp.ts sends no User-Agent header at
+# all, which means every earlier cloud test used the header shape that gets
+# 403 from ANY network — including the laptop. The 403s therefore do not
+# demonstrate IP blocking; the header is a confound.
+#
+# This workflow re-runs that comparison from a GitHub-hosted runner so the
+# infrastructure decision rests on measurement rather than inference.
+#
+# WHAT IT DELIBERATELY DOES NOT DO
+#   - never sends the SBP API key (see "AUTHENTICATION" below)
+#   - never prints a response body
+#   - never runs on a schedule; workflow_dispatch only
+#   - requests no repository permissions
+#
+# AUTHENTICATION
+# The probe is entirely unauthenticated, by design. Because no key is sent,
+# SBP's origin answers a well-formed request with 401 — and that 401 is
+# precisely the signal we want, since only the origin can emit it. Sending a
+# real key would add credential-exposure risk while telling us less: a 200
+# would confirm the same edge traversal that 401 already proves. Whether the
+# key itself is accepted from this network is a separate question, and is the
+# authenticated follow-up test required before Phase 3.
+
+name: SBP Connectivity Probe
+
+on:
+  workflow_dispatch:
+
+# Diagnostic workflow: no checkout, no package access, no repo writes.
+permissions: {}
+
+jobs:
+  probe:
+    name: Probe SBP EasyData from a GitHub-hosted runner
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    env:
+      # A real SBP EasyData series (weekly M2). Any valid series path works —
+      # what matters is the status code and which layer produced it.
+      SBP_URL: "https://easydata.sbp.org.pk/api/v1/series/TS_GP_BAM_M2_W.M000070/data?format=json"
+      BROWSER_UA: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+      MAX_TIME: "25"
+
+    steps:
+      - name: Record runner environment
+        run: |
+          echo "--- runner ---"
+          echo "os:      $(uname -srm)"
+          echo "curl:    $(curl --version | head -n 1)"
+          echo ""
+          echo "--- egress identity (Cloudflare's own public trace endpoint) ---"
+          # Establishes the runner's public egress IP, the Cloudflare PoP that
+          # serves it, and the negotiated TLS version. This is the control that
+          # separates hypothesis A from hypothesis B: it proves the runner can
+          # reach Cloudflare-fronted infrastructure in general, so a 403 from
+          # SBP specifically cannot be dismissed as "Cloudflare is unreachable
+          # from CI". The IP is an ephemeral GitHub-hosted address from a
+          # publicly documented range — not a secret.
+          curl -s --max-time "$MAX_TIME" https://www.cloudflare.com/cdn-cgi/trace \
+            | grep -E '^(ip|loc|colo|http|tls)=' || echo "trace unavailable"
+
+      - name: Probe SBP with three header shapes
+        run: |
+          set -uo pipefail
+
+          # Only these response headers are ever printed. An explicit allowlist
+          # rather than a full header dump, so nothing unexpected in a future
+          # SBP response (a Set-Cookie, a debug header) can be logged.
+          HEADER_ALLOWLIST='^(HTTP/|server:|cf-ray:|cf-mitigated:|cf-cache-status:|content-type:|retry-after:|www-authenticate:)'
+
+          probe () {
+            label="$1"; shift
+            hdrs="$(mktemp)"
+
+            # -o /dev/null discards the body entirely: it is never read,
+            # never printed, never stored.
+            result="$(curl -s -o /dev/null -D "$hdrs" \
+                        -w '%{http_code} %{time_total}' \
+                        --max-time "$MAX_TIME" \
+                        "$@" "$SBP_URL" 2>/dev/null || echo '000 0')"
+
+            code="${result%% *}"
+            secs="${result##* }"
+
+            echo ""
+            echo "=============================================="
+            echo "PROBE: $label"
+            echo "  status : $code"
+            echo "  time   : ${secs}s"
+
+            # Attribute the response to an edge or an origin. Cloudflare serves
+            # its own block pages with a cf-ray and Server: cloudflare; the
+            # origin's 401 is proxied through Cloudflare too, so cf-ray alone
+            # is not sufficient — the status code carries the real signal.
+            case "$code" in
+              401) layer="SBP ORIGIN (passed Cloudflare; only the API key was missing)" ;;
+              403) layer="CLOUDFLARE EDGE (request rejected before reaching SBP)" ;;
+              200) layer="SBP ORIGIN (unexpected without a key — investigate)" ;;
+              000) layer="NO RESPONSE (timeout or connection failure)" ;;
+              *)   layer="UNCLASSIFIED — inspect headers below" ;;
+            esac
+            echo "  layer  : $layer"
+
+            echo "  headers:"
+            grep -iE "$HEADER_ALLOWLIST" "$hdrs" | sed 's/^/    /' || echo "    (none captured)"
+            rm -f "$hdrs"
+
+            # Export for the verdict step.
+            echo "${label}_CODE=$code" >> "$GITHUB_ENV"
+          }
+
+          # A — the header shape the application currently sends. src/lib/data/sbp.ts
+          #     sets no headers, so undici/Node supplies its own default UA. curl's
+          #     default is the closest available stand-in on a runner.
+          probe "A_DEFAULT_UA"
+
+          # B — the single-variable change under test.
+          probe "B_BROWSER_UA" -A "$BROWSER_UA"
+
+          # C — browser UA plus the Accept/Accept-Language headers a real browser
+          #     sends, in case Cloudflare scores header completeness rather than
+          #     the UA string alone.
+          probe "C_BROWSER_UA_PLUS_ACCEPT" \
+            -A "$BROWSER_UA" \
+            -H "Accept: application/json,text/html;q=0.9,*/*;q=0.8" \
+            -H "Accept-Language: en-US,en;q=0.9"
+
+      - name: Interpret the result
+        if: always()
+        run: |
+          set -u
+          A="${A_DEFAULT_UA_CODE:-unknown}"
+          B="${B_BROWSER_UA_CODE:-unknown}"
+          C="${C_BROWSER_UA_PLUS_ACCEPT_CODE:-unknown}"
+
+          {
+            echo "## SBP connectivity probe — GitHub-hosted runner"
+            echo ""
+            echo "| Probe | Header shape | Status |"
+            echo "|---|---|---|"
+            echo "| A | default (what the app sends today) | \`$A\` |"
+            echo "| B | browser User-Agent | \`$B\` |"
+            echo "| C | browser UA + Accept headers | \`$C\` |"
+            echo ""
+            echo "**Laptop baseline for comparison:** A=\`403\`, B=\`401\`, C=\`401\`"
+            echo ""
+            echo "### Verdict"
+            echo ""
+
+            if [ "$B" = "401" ] || [ "$C" = "401" ]; then
+              echo "**Hypothesis A supported — the block correlates with headers, not the network.**"
+              echo ""
+              echo "A browser-like User-Agent reached SBP's origin from a GitHub-hosted"
+              echo "runner. GitHub's datacenter IP range is therefore not categorically"
+              echo "blocked by Cloudflare for this host."
+              echo ""
+              echo "**What this proves:** unauthenticated requests with correct headers"
+              echo "traverse Cloudflare from GitHub Actions."
+              echo ""
+              echo "**What this does NOT prove:** that authenticated ingestion will"
+              echo "succeed. Still unverified — whether the API key is accepted from"
+              echo "this ASN, whether sustained request volume triggers rate limiting or"
+              echo "a bot score that a single request does not, and whether the result"
+              echo "holds across runner IPs and time of day. Cloudflare policy is"
+              echo "dynamic; one green probe is a snapshot, not a guarantee."
+              echo ""
+              echo "**Required before Phase 3:** an authenticated single-series fetch"
+              echo "using the repository secret, asserting a 200 and a parseable row"
+              echo "count, repeated across several runs on different days."
+            elif [ "$A" = "403" ] && [ "$B" = "403" ] && [ "$C" = "403" ]; then
+              echo "**Hypothesis B supported — the block survives correct headers.**"
+              echo ""
+              echo "Every header shape was rejected at the edge, including the shape that"
+              echo "succeeds from a residential connection. That points to IP/ASN"
+              echo "reputation or a TLS/HTTP fingerprint difference rather than the"
+              echo "User-Agent, and the original diagnosis stands."
+              echo ""
+              echo "**Consequence:** GitHub Actions is not viable for SBP ingestion."
+              echo "Fall back to the self-hosted-runner option, and note that a residual"
+              echo "confound remains — curl on this runner presents a different TLS"
+              echo "fingerprint than curl on the laptop, so this does not isolate IP"
+              echo "reputation from fingerprinting."
+            elif [ "$A" = "000" ] && [ "$B" = "000" ] && [ "$C" = "000" ]; then
+              echo "**Inconclusive — no response on any probe.**"
+              echo ""
+              echo "Network failure or SBP downtime rather than a policy decision."
+              echo "Check the egress trace in the first step and re-run before drawing"
+              echo "any conclusion."
+            else
+              echo "**Inconclusive — mixed result, needs a human read.**"
+              echo ""
+              echo "The combination \`A=$A B=$B C=$C\` does not match a known pattern."
+              echo "Compare the per-probe headers in the log above against the laptop"
+              echo "baseline before acting."
+            fi
+
+            echo ""
+            echo "---"
+            echo "_Diagnostic only. No API key was transmitted, no response body was"
+            echo "read or logged, and nothing was ingested._"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          echo "Verdict written to the workflow summary."
