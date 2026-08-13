@@ -14,7 +14,11 @@
 // Dependency-light on purpose (see src/lib/seriesDefinition.ts's own header)
 // — this keeps that file's zero-import, client-safe status, which the
 // Phase 7 free-form selector's client-side compatibility gate relies on.
-import type { SeriesCadence } from "@/lib/seriesDefinition";
+// Phase 8.20: also imports SERIES_CATALOG (a plain data constant, not a
+// type) for the same reason — it's declared in the same dependency-light,
+// client-safe file, so importing its values here introduces no new
+// server-only or heavy dependency.
+import { SERIES_CATALOG, type SeriesCadence } from "@/lib/seriesDefinition";
 
 export type ComparisonGroupId =
   | "external-sector"
@@ -105,6 +109,17 @@ export interface ComparisonSeriesConfig {
   id: SeriesProviderId;
   label: string;
   shortLabel: string;
+  /**
+   * Phase 8.20: unit/frequency are DERIVED from SERIES_CATALOG
+   * (src/lib/seriesDefinition.ts), not independently authored — every real
+   * entry in COMPARISONS below is built via comparisonSeriesConfig(), which
+   * looks these two fields up rather than accepting them as parameters.
+   * This field still exists on the shape (unchanged for every downstream
+   * reader — comparisonData.ts, comparisonCompatibility.ts, every
+   * Comparisons UI component) so nothing outside this file and
+   * seriesOptions.ts needs to change; only how the value is CONSTRUCTED
+   * changed, not what it looks like at read time.
+   */
   unit: string;
   /**
    * Declared cadence — static, authoring-time metadata that also doubles as
@@ -113,10 +128,29 @@ export interface ComparisonSeriesConfig {
    * (see comparisonCompatibility.ts). The runtime half lives on
    * SeriesFetchResult (comparisonData.ts), populated FROM this same field so
    * "authoring metadata only" is never the sole source at request time.
+   * Phase 8.20: also derived, not authored — see `unit`'s comment above.
    */
   frequency: ComparisonFrequency;
   /** Hex color for this series' line/area — matches the dashboard's neon palette. */
   color: string;
+}
+
+/**
+ * Phase 8.20: the ONLY sanctioned way to build a real ComparisonSeriesConfig
+ * for a series listed in SERIES_CATALOG. Pulls unit/frequency from that one
+ * authoritative source instead of accepting them as parameters — a future
+ * comparison entry literally cannot declare a conflicting unit/frequency for
+ * an existing series, because there is no parameter here to set one. Throws
+ * at module-load time (not silently falling back to a guess) if `id` has no
+ * catalog entry, so a typo or a genuinely new series missing its catalog
+ * entry fails loudly during development rather than shipping mislabeled.
+ */
+export function comparisonSeriesConfig(id: SeriesProviderId, label: string, shortLabel: string, color: string): ComparisonSeriesConfig {
+  const catalogEntry = SERIES_CATALOG[id];
+  if (!catalogEntry || catalogEntry.unit === undefined) {
+    throw new Error(`comparisonSeriesConfig: no SERIES_CATALOG entry (with a unit) for "${id}" — add one to src/lib/seriesDefinition.ts's SERIES_CATALOG first.`);
+  }
+  return { id, label, shortLabel, color, unit: catalogEntry.unit, frequency: catalogEntry.cadence as ComparisonFrequency };
 }
 
 export interface ComparisonDef {
@@ -143,8 +177,8 @@ export const COMPARISONS: ComparisonDef[] = [
     title: "USD/PKR Exchange Rate vs Total SBP Reserves",
     shortTitle: "USD/PKR vs Total SBP Reserves",
     group: "external-sector",
-    seriesA: { id: "sbp:usdPkr", frequency: "monthly", label: "USD / PKR", shortLabel: "USD/PKR", unit: "PKR", color: NEON_BLUE },
-    seriesB: { id: "sbp:foreignReserves", frequency: "monthly", label: "Total SBP Reserves (Monthly, incl. gold/SDR)", shortLabel: "Total SBP Reserves", unit: "B USD", color: NEON_PURPLE },
+    seriesA: comparisonSeriesConfig("sbp:usdPkr", "USD / PKR", "USD/PKR", NEON_BLUE),
+    seriesB: comparisonSeriesConfig("sbp:foreignReserves", "Total SBP Reserves (Monthly, incl. gold/SDR)", "Total SBP Reserves", NEON_PURPLE),
     description: "Tracks the Rupee's exchange rate against the US Dollar alongside the State Bank's total foreign exchange reserves.",
     whyItMatters: "Reserves are the buffer that lets SBP defend the Rupee during external pressure — when reserves fall, the Rupee has historically come under more depreciation pressure, and vice versa when reserves are rebuilt.",
     faq: [
@@ -156,8 +190,8 @@ export const COMPARISONS: ComparisonDef[] = [
     title: "Current Account Balance vs Total SBP Reserves",
     shortTitle: "Current Account vs Total SBP Reserves",
     group: "external-sector",
-    seriesA: { id: "sbp:currentAccount", frequency: "monthly", label: "Current Account Balance", shortLabel: "Current Account", unit: "B USD", color: NEON_PURPLE },
-    seriesB: { id: "sbp:foreignReserves", frequency: "monthly", label: "Total SBP Reserves (Monthly, incl. gold/SDR)", shortLabel: "Total SBP Reserves", unit: "B USD", color: NEON_BLUE },
+    seriesA: comparisonSeriesConfig("sbp:currentAccount", "Current Account Balance", "Current Account", NEON_PURPLE),
+    seriesB: comparisonSeriesConfig("sbp:foreignReserves", "Total SBP Reserves (Monthly, incl. gold/SDR)", "Total SBP Reserves", NEON_BLUE),
     description: "Compares Pakistan's monthly current account balance (money flowing in vs out internationally) with the level of foreign exchange reserves it leaves behind.",
     whyItMatters: "A persistent current account deficit drains reserves over time unless offset by financial inflows (loans, FDI, remittances) — this comparison shows how directly the two have moved together historically.",
     faq: [
@@ -169,8 +203,8 @@ export const COMPARISONS: ComparisonDef[] = [
     title: "External Debt and Liabilities vs Total SBP Reserves",
     shortTitle: "External Debt vs Total SBP Reserves",
     group: "external-sector",
-    seriesA: { id: "sbp:externalDebt", frequency: "quarterly", label: "Total External Debt & Liabilities", shortLabel: "External Debt", unit: "B USD", color: AMBER },
-    seriesB: { id: "sbp:foreignReserves", frequency: "monthly", label: "Total SBP Reserves (Monthly, incl. gold/SDR)", shortLabel: "Total SBP Reserves", unit: "B USD", color: NEON_BLUE },
+    seriesA: comparisonSeriesConfig("sbp:externalDebt", "Total External Debt & Liabilities", "External Debt", AMBER),
+    seriesB: comparisonSeriesConfig("sbp:foreignReserves", "Total SBP Reserves (Monthly, incl. gold/SDR)", "Total SBP Reserves", NEON_BLUE),
     description: "Pakistan's total outstanding external debt and liabilities against the level of foreign exchange reserves available to service it.",
     whyItMatters: "A rising debt stock against flat or falling reserves signals growing repayment pressure relative to the buffer available to meet it — one of the most closely watched solvency signals for an emerging-market economy.",
     faq: [
@@ -182,8 +216,8 @@ export const COMPARISONS: ComparisonDef[] = [
     title: "Pakistan Exports vs Imports",
     shortTitle: "Exports vs Imports",
     group: "external-sector",
-    seriesA: { id: "sbp:exports", frequency: "monthly", label: "Exports (Goods, FOB)", shortLabel: "Exports", unit: "B USD", color: EMERALD },
-    seriesB: { id: "sbp:imports", frequency: "monthly", label: "Imports (Goods, FOB)", shortLabel: "Imports", unit: "B USD", color: AMBER },
+    seriesA: comparisonSeriesConfig("sbp:exports", "Exports (Goods, FOB)", "Exports", EMERALD),
+    seriesB: comparisonSeriesConfig("sbp:imports", "Imports (Goods, FOB)", "Imports", AMBER),
     description: "Pakistan's monthly goods exports against goods imports — the two halves of the trade balance.",
     whyItMatters: "The gap between these two lines is the trade balance. A narrow textile-dominated export base means exports have historically grown more slowly than an import bill driven by energy and machinery needs.",
     faq: [
@@ -195,8 +229,8 @@ export const COMPARISONS: ComparisonDef[] = [
     title: "Trade Balance vs USD/PKR Exchange Rate",
     shortTitle: "Trade Balance vs USD/PKR",
     group: "external-sector",
-    seriesA: { id: "sbp:tradeBalance", frequency: "monthly", label: "Trade Balance", shortLabel: "Trade Balance", unit: "B USD", color: AMBER },
-    seriesB: { id: "sbp:usdPkr", frequency: "monthly", label: "USD / PKR", shortLabel: "USD/PKR", unit: "PKR", color: NEON_BLUE },
+    seriesA: comparisonSeriesConfig("sbp:tradeBalance", "Trade Balance", "Trade Balance", AMBER),
+    seriesB: comparisonSeriesConfig("sbp:usdPkr", "USD / PKR", "USD/PKR", NEON_BLUE),
     description: "Pakistan's monthly trade balance (exports minus imports) against the Rupee's exchange rate.",
     whyItMatters: "A widening trade deficit increases demand for foreign currency to pay for imports, which has historically coincided with periods of faster Rupee depreciation.",
     faq: [
@@ -208,8 +242,8 @@ export const COMPARISONS: ComparisonDef[] = [
     title: "CPI Inflation vs SBP Policy Rate",
     shortTitle: "Inflation vs Policy Rate",
     group: "monetary-conditions",
-    seriesA: { id: "sbp:cpiInflation", frequency: "monthly", label: "CPI Inflation (YoY)", shortLabel: "CPI Inflation", unit: "%", color: NEON_PURPLE },
-    seriesB: { id: "sbp:policyRate", frequency: "monthly", label: "SBP Policy Rate", shortLabel: "Policy Rate", unit: "%", color: NEON_BLUE },
+    seriesA: comparisonSeriesConfig("sbp:cpiInflation", "CPI Inflation (YoY)", "CPI Inflation", NEON_PURPLE),
+    seriesB: comparisonSeriesConfig("sbp:policyRate", "SBP Policy Rate", "Policy Rate", NEON_BLUE),
     description: "Pakistan's headline year-over-year inflation rate against the State Bank's benchmark policy rate.",
     whyItMatters: "SBP's primary tool for controlling inflation is the policy rate — this comparison shows how closely (and with what lag) rate decisions have tracked actual inflation outcomes.",
     faq: [
@@ -221,8 +255,8 @@ export const COMPARISONS: ComparisonDef[] = [
     title: "Headline CPI Inflation vs Core Inflation",
     shortTitle: "Inflation vs Core Inflation",
     group: "monetary-conditions",
-    seriesA: { id: "sbp:cpiInflation", frequency: "monthly", label: "CPI Inflation (YoY)", shortLabel: "Headline CPI", unit: "%", color: NEON_PURPLE },
-    seriesB: { id: "sbp:coreInflation", frequency: "monthly", label: "Core Inflation (Urban NFNE, YoY)", shortLabel: "Core Inflation", unit: "%", color: EMERALD },
+    seriesA: comparisonSeriesConfig("sbp:cpiInflation", "CPI Inflation (YoY)", "Headline CPI", NEON_PURPLE),
+    seriesB: comparisonSeriesConfig("sbp:coreInflation", "Core Inflation (Urban NFNE, YoY)", "Core Inflation", EMERALD),
     description: "Headline CPI inflation against core inflation, which strips out volatile food and energy prices.",
     whyItMatters: "When headline inflation runs well above core inflation, food/energy price shocks are doing most of the work — when the two converge, price pressure has broadened across the economy.",
     faq: [
@@ -234,8 +268,8 @@ export const COMPARISONS: ComparisonDef[] = [
     title: "CPI Inflation vs M2 Money Supply Growth",
     shortTitle: "Inflation vs M2 Money Supply",
     group: "monetary-conditions",
-    seriesA: { id: "sbp:cpiInflation", frequency: "monthly", label: "CPI Inflation (YoY)", shortLabel: "CPI Inflation", unit: "%", color: NEON_PURPLE },
-    seriesB: { id: "sbp:moneySupplyM2", frequency: "monthly", label: "M2 Money Supply", shortLabel: "M2 Money Supply", unit: "T PKR", color: NEON_BLUE },
+    seriesA: comparisonSeriesConfig("sbp:cpiInflation", "CPI Inflation (YoY)", "CPI Inflation", NEON_PURPLE),
+    seriesB: comparisonSeriesConfig("sbp:moneySupplyM2", "M2 Money Supply", "M2 Money Supply", NEON_BLUE),
     description: "Inflation against the total level of M2 money supply circulating in the economy.",
     whyItMatters: "The quantity theory of money suggests faster money supply growth relative to real output tends to show up as inflation over time, with a lag — this comparison lets you see that relationship in Pakistan's own data.",
     faq: [
@@ -247,8 +281,8 @@ export const COMPARISONS: ComparisonDef[] = [
     title: "CPI Inflation vs Urban Food Inflation",
     shortTitle: "Inflation vs Urban Food Inflation",
     group: "monetary-conditions",
-    seriesA: { id: "sbp:cpiInflation", frequency: "monthly", label: "CPI Inflation (YoY)", shortLabel: "Headline CPI", unit: "%", color: NEON_PURPLE },
-    seriesB: { id: "sbp:foodInflationUrban", frequency: "monthly", label: "Urban Food CPI (YoY)", shortLabel: "Urban Food Inflation", unit: "%", color: EMERALD },
+    seriesA: comparisonSeriesConfig("sbp:cpiInflation", "CPI Inflation (YoY)", "Headline CPI", NEON_PURPLE),
+    seriesB: comparisonSeriesConfig("sbp:foodInflationUrban", "Urban Food CPI (YoY)", "Urban Food Inflation", EMERALD),
     description: "Headline CPI inflation against Urban Food CPI inflation, the closest published proxy for food-price pressure (SBP publishes Urban and Rural food CPI separately — there is no single National Food CPI series).",
     whyItMatters: "Food makes up a large share of household spending in Pakistan, especially for lower-income groups — tracking food inflation specifically shows how much of the headline number is being driven by food prices versus everything else.",
     faq: [
@@ -260,8 +294,8 @@ export const COMPARISONS: ComparisonDef[] = [
     title: "Pakistan Inflation vs US Inflation",
     shortTitle: "Pakistan vs US Inflation",
     group: "international",
-    seriesA: { id: "sbp:cpiInflation", frequency: "monthly", label: "Pakistan CPI Inflation (YoY)", shortLabel: "Pakistan", unit: "%", color: NEON_PURPLE },
-    seriesB: { id: "fred:usCpiInflation", frequency: "monthly", label: "US CPI Inflation (YoY)", shortLabel: "United States", unit: "%", color: NEON_BLUE },
+    seriesA: comparisonSeriesConfig("sbp:cpiInflation", "Pakistan CPI Inflation (YoY)", "Pakistan", NEON_PURPLE),
+    seriesB: comparisonSeriesConfig("fred:usCpiInflation", "US CPI Inflation (YoY)", "United States", NEON_BLUE),
     description: "Pakistan's headline inflation rate side-by-side with the US CPI inflation rate.",
     whyItMatters: "The inflation differential between Pakistan and the US is one of the structural forces behind long-run Rupee depreciation — persistently higher Pakistani inflation tends to erode the Rupee's value relative to the Dollar over time.",
     faq: [
@@ -273,8 +307,8 @@ export const COMPARISONS: ComparisonDef[] = [
     title: "Pakistan Policy Rate vs US Fed Funds Rate",
     shortTitle: "Pakistan vs Fed Funds Rate",
     group: "international",
-    seriesA: { id: "sbp:policyRate", frequency: "monthly", label: "SBP Policy Rate", shortLabel: "Pakistan", unit: "%", color: NEON_PURPLE },
-    seriesB: { id: "fred:fedFunds", frequency: "monthly", label: "US Federal Funds Rate", shortLabel: "United States", unit: "%", color: NEON_BLUE },
+    seriesA: comparisonSeriesConfig("sbp:policyRate", "SBP Policy Rate", "Pakistan", NEON_PURPLE),
+    seriesB: comparisonSeriesConfig("fred:fedFunds", "US Federal Funds Rate", "United States", NEON_BLUE),
     description: "SBP's benchmark policy rate against the US Federal Reserve's federal funds rate.",
     whyItMatters: "The gap between Pakistani and US interest rates affects the relative attractiveness of holding Rupee versus Dollar assets — a narrowing gap can pressure capital flows and the exchange rate.",
     faq: [
@@ -286,8 +320,8 @@ export const COMPARISONS: ComparisonDef[] = [
     title: "Pakistan GDP Growth vs India GDP Growth",
     shortTitle: "Pakistan vs India GDP Growth",
     group: "international",
-    seriesA: { id: "worldbank:gdpGrowthPak", frequency: "annual", label: "Pakistan Real GDP Growth", shortLabel: "Pakistan", unit: "%", color: NEON_PURPLE },
-    seriesB: { id: "worldbank:gdpGrowthIndia", frequency: "annual", label: "India Real GDP Growth", shortLabel: "India", unit: "%", color: NEON_BLUE },
+    seriesA: comparisonSeriesConfig("worldbank:gdpGrowthPak", "Pakistan Real GDP Growth", "Pakistan", NEON_PURPLE),
+    seriesB: comparisonSeriesConfig("worldbank:gdpGrowthIndia", "India Real GDP Growth", "India", NEON_BLUE),
     description: "Annual real GDP growth rates for Pakistan and India side-by-side, going back up to 30 years.",
     whyItMatters: "India and Pakistan started from broadly comparable economic positions decades ago — the diverging growth trajectory since is one of the most cited comparisons in South Asian economic analysis.",
     faq: [
@@ -299,8 +333,8 @@ export const COMPARISONS: ComparisonDef[] = [
     title: "Pakistan GDP Growth vs Bangladesh GDP Growth",
     shortTitle: "Pakistan vs Bangladesh GDP Growth",
     group: "international",
-    seriesA: { id: "worldbank:gdpGrowthPak", frequency: "annual", label: "Pakistan Real GDP Growth", shortLabel: "Pakistan", unit: "%", color: NEON_PURPLE },
-    seriesB: { id: "worldbank:gdpGrowthBangladesh", frequency: "annual", label: "Bangladesh Real GDP Growth", shortLabel: "Bangladesh", unit: "%", color: EMERALD },
+    seriesA: comparisonSeriesConfig("worldbank:gdpGrowthPak", "Pakistan Real GDP Growth", "Pakistan", NEON_PURPLE),
+    seriesB: comparisonSeriesConfig("worldbank:gdpGrowthBangladesh", "Bangladesh Real GDP Growth", "Bangladesh", EMERALD),
     description: "Annual real GDP growth rates for Pakistan and Bangladesh side-by-side, going back up to 30 years.",
     whyItMatters: "Bangladesh has frequently outgrown Pakistan over the past two decades despite a similar starting point in 1971 — a comparison often raised in discussions of textile-export competitiveness and structural reform.",
     faq: [
@@ -312,8 +346,8 @@ export const COMPARISONS: ComparisonDef[] = [
     title: "Gold Price vs USD/PKR Exchange Rate",
     shortTitle: "Gold vs USD/PKR",
     group: "asset-allocation",
-    seriesA: { id: "yfinance:gold", frequency: "monthly", label: "Gold (USD/oz)", shortLabel: "Gold", unit: "$/oz", color: AMBER },
-    seriesB: { id: "sbp:usdPkr", frequency: "monthly", label: "USD / PKR", shortLabel: "USD/PKR", unit: "PKR", color: NEON_BLUE },
+    seriesA: comparisonSeriesConfig("yfinance:gold", "Gold (USD/oz)", "Gold", AMBER),
+    seriesB: comparisonSeriesConfig("sbp:usdPkr", "USD / PKR", "USD/PKR", NEON_BLUE),
     description: "The US Dollar gold price against the Rupee's exchange rate — two of the most common inflation/currency hedges held by Pakistani investors.",
     whyItMatters: "Gold is priced in Dollars globally, so for a Pakistani holder, returns come from both gold's own price movement and Rupee depreciation against the Dollar — this comparison separates the two effects visually.",
     faq: [
@@ -325,8 +359,8 @@ export const COMPARISONS: ComparisonDef[] = [
     title: "Gold Price vs 3-Month Treasury Bill Yield",
     shortTitle: "Gold vs Treasury Bills",
     group: "asset-allocation",
-    seriesA: { id: "yfinance:gold", frequency: "monthly", label: "Gold (USD/oz)", shortLabel: "Gold", unit: "$/oz", color: AMBER },
-    seriesB: { id: "sbp:tbillYield3m", frequency: "monthly", label: "3-Month T-Bill Yield", shortLabel: "T-Bill Yield", unit: "%", color: NEON_PURPLE },
+    seriesA: comparisonSeriesConfig("yfinance:gold", "Gold (USD/oz)", "Gold", AMBER),
+    seriesB: comparisonSeriesConfig("sbp:tbillYield3m", "3-Month T-Bill Yield", "T-Bill Yield", NEON_PURPLE),
     description: "Gold's USD price against the yield on Pakistan's 3-month Treasury Bills — a non-yielding hedge asset against a risk-free Rupee yield.",
     whyItMatters: "When T-Bill yields are very high, the opportunity cost of holding non-yielding gold rises — this comparison shows how gold has performed across different domestic interest rate environments.",
     faq: [

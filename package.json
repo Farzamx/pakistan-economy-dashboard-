@@ -10,7 +10,9 @@
     "test": "vitest run",
     "ingest:sbp": "tsx scripts/ingestSbp.ts",
     "ingest:worldbank": "tsx scripts/ingestWorldBank.ts",
-    "ingest:netliquidreserves": "tsx scripts/ingestNetLiquidReserves.ts"
+    "ingest:netliquidreserves": "tsx scripts/ingestNetLiquidReserves.ts",
+    "ingest:fred": "tsx scripts/ingestFred.ts",
+    "ingest:yahoogold": "tsx scripts/ingestYahooGold.ts"
   },
   "dependencies": {
     "@next/third-parties": "16.2.9",

@@ -96,6 +96,14 @@ const INGESTION_JOB_COPY: Record<string, { title: string; description: string }>
     title: "Net Liquid FX Reserves Ingestion Watchdog",
     description: "Same dead-man's-switch concept as SBP's and World Bank's, for the Net Liquid FX Reserves weekly ingestion (Phase 8.10B–8.10D). Runs weekly, not daily, so a longer alert threshold applies. Reflects only whether the ingestion job is still completing, not whether SBP has published a newer reserves figure.",
   },
+  "fred-monthly-ingestion": {
+    title: "FRED Monthly Ingestion Watchdog",
+    description: "Same dead-man's-switch concept as the others, for the FRED monthly canonicalization pilot (fred:fedFunds, fred:usCpiInflation only — Phase 8.12–8.14; native-daily FRED series are not ingested or monitored). Runs weekly, not daily, so a longer alert threshold applies. Reflects only whether the ingestion job is still completing, not whether FRED has published a newer monthly figure.",
+  },
+  "yahoo-gold-monthly-ingestion": {
+    title: "Yahoo Gold Monthly Ingestion Watchdog",
+    description: "Same dead-man's-switch concept as the others, for the Yahoo Gold Monthly canonicalization pilot (yahoo:goldMonthly only — Phase 8.15–8.18; Silver, DXY, and Market FX are not ingested or monitored). Runs monthly, on a genuinely monthly schedule (not weekly), so a longer alert threshold applies than any other monitored job. Reflects only whether the ingestion job is still completing, not whether Yahoo has published a newer monthly close.",
+  },
 };
 
 function ingestionJobCopy(job: IngestionMonitorJob): { title: string; description: string } {

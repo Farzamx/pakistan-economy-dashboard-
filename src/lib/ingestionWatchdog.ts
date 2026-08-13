@@ -139,8 +139,84 @@ export const NET_LIQUID_RESERVES_MONITOR_JOB: IngestionMonitorJob = {
   commandHint: "npm run ingest:netliquidreserves",
 };
 
-/** Exactly the jobs currently operational (Phase 8.3/8.4/8.10B/8.10C). Do not add a future provider speculatively — extend this array only when a real ingestion job exists for it. */
-export const MONITORED_INGESTION_JOBS: IngestionMonitorJob[] = [SBP_MONITOR_JOB, WORLD_BANK_MONITOR_JOB, NET_LIQUID_RESERVES_MONITOR_JOB];
+/**
+ * Phase 8.14. Task Scheduler trigger weekly, Mondays 08:45 PKT — confirmed
+ * directly against the live Task Scheduler registration (Phase 8.14), the
+ * same StartWhenAvailable + WakeToRun + MultipleInstances:IgnoreNew +
+ * Interactive logon behavior as SBP's, World Bank's, and Net Liquid FX
+ * Reserves' tasks, on the same laptop.
+ *
+ * expectedIntervalHours/staleAfterHours are reused verbatim from
+ * WORLD_BANK_MONITOR_JOB (and NET_LIQUID_RESERVES_MONITOR_JOB, which
+ * already reused the same numbers in Phase 8.10D): this is the SAME weekly
+ * cadence, on the SAME laptop, under the SAME scheduler mechanics
+ * (identical StartWhenAvailable/WakeToRun catch-up behavior, confirmed
+ * directly via Get-ScheduledTask in Phase 8.14, not assumed) — so every
+ * fact the original Phase 8.6 threshold decision was based on ("absorb an
+ * ordinary long-weekend laptop-off period without alerting on a single
+ * Monday run that catches up a day or two late, while still firing before a
+ * second consecutive Monday is missed") applies unchanged. This is the
+ * third reuse of the same evidence-based decision for an identical
+ * situation, not a fresh policy call — the two underlying FRED series
+ * (fred:fedFunds, fred:usCpiInflation) are monthly-cadence data, but the
+ * INGESTION JOB's own schedule (what this threshold actually measures) is
+ * weekly, deliberately checking more often than the data itself changes —
+ * the same pattern World Bank's own annual-cadence data already
+ * established on this same weekly ingestion mechanics.
+ */
+export const FRED_MONITOR_JOB: IngestionMonitorJob = {
+  ingestionJobName: "fred-monthly-ingestion",
+  watchdogJobName: "fred-ingestion-watchdog",
+  label: "FRED monthly ingestion",
+  expectedIntervalHours: 168,
+  staleAfterHours: 216,
+  commandHint: "npm run ingest:fred",
+};
+
+/**
+ * Phase 8.18. Task Scheduler trigger — genuinely MONTHLY (day 3 of every
+ * month, 09:00 PKT), confirmed directly against the live Task Scheduler
+ * registration (Phase 8.18), the same StartWhenAvailable + WakeToRun +
+ * MultipleInstances:IgnoreNew + Interactive logon behavior as every other
+ * PEIC ingestion task, on the same laptop. Unlike SBP/World Bank/Net
+ * Liquid FX Reserves/FRED — every one of which uses a daily or weekly
+ * TASK SCHEDULE even where the underlying DATA is a different cadence —
+ * this is the first genuinely monthly-scheduled ingestion job in this
+ * project. No prior monthly-scheduled job's staleAfterHours exists to
+ * directly reuse (unlike Net Liquid FX Reserves/FRED, which both reused
+ * World Bank's exact 216h because their schedules were identical in kind).
+ *
+ * expectedIntervalHours = 744h (31 days) — reuses
+ * freshnessEngine.ts's own CADENCE_INTERVAL_DAYS.monthly=31 constant, this
+ * project's existing standard arithmetic unit for "one month," not a fresh
+ * number.
+ *
+ * staleAfterHours = 912h (744h interval + a 168h/7-day buffer) — freshly
+ * derived because no directly-reusable monthly-SCHEDULE precedent exists,
+ * but using the IDENTICAL method every other threshold in this file
+ * already uses: enough buffer to absorb the laptop being off for an
+ * ordinary period around the scheduled day (StartWhenAvailable catches it
+ * up within days, not weeks) without alerting on a single run that
+ * completes a bit late, while still firing well before a SECOND
+ * consecutive monthly run would be missed entirely (1488h) — 576h/24 days
+ * of margin before that point, proportionally more generous than World
+ * Bank's own 120h/5-day margin (216h stale vs. 336h second-miss on a
+ * weekly cadence), appropriate for a still-less-frequent schedule. The
+ * 168h buffer itself reuses this project's own already-established "one
+ * week" unit (the exact interval already used for every weekly job in this
+ * file) rather than inventing an arbitrary number of days.
+ */
+export const YAHOO_GOLD_MONITOR_JOB: IngestionMonitorJob = {
+  ingestionJobName: "yahoo-gold-monthly-ingestion",
+  watchdogJobName: "yahoo-gold-monthly-ingestion-watchdog",
+  label: "Yahoo Gold monthly ingestion",
+  expectedIntervalHours: 744,
+  staleAfterHours: 912,
+  commandHint: "npm run ingest:yahoogold",
+};
+
+/** Exactly the jobs currently operational (Phase 8.3/8.4/8.10B/8.10C/8.14/8.18). Do not add a future provider speculatively — extend this array only when a real ingestion job exists for it. */
+export const MONITORED_INGESTION_JOBS: IngestionMonitorJob[] = [SBP_MONITOR_JOB, WORLD_BANK_MONITOR_JOB, NET_LIQUID_RESERVES_MONITOR_JOB, FRED_MONITOR_JOB, YAHOO_GOLD_MONITOR_JOB];
 
 const MS_PER_HOUR = 60 * 60 * 1000;
 

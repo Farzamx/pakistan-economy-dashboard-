@@ -40,6 +40,16 @@ import { getAllSbpIndicatorKeys, getSbpIndicatorFrequency, type SbpIndicatorKey,
 import { canonicalIndicatorKey, SBP_EASYDATA_PROVIDER_ID, FOOD_INFLATION_URBAN_INDICATOR_KEY, M2_YOY_GROWTH_INDICATOR_KEY } from "@/lib/data/canonicalResolutionConfig";
 import type { SeriesDefinition, ReleaseCadence } from "@/lib/freshness/freshnessEngine";
 import type { MarketType } from "@/lib/marketCalendar";
+// Phase 8.20: SERIES_CATALOG is the single authoritative source for the
+// cadence of every series ALSO used by the Comparisons feature (World Bank,
+// FRED, Yahoo Gold below) — not re-declared here as an independent literal.
+// SBP's own 20-indicator cadence continues to come from sbp.ts's Frequency
+// (via FREQUENCY_TO_CADENCE below), unchanged — see SERIES_CATALOG's own
+// header comment in seriesDefinition.ts for exactly why 3 of SBP's
+// comparison-facing series (moneySupplyM2, policyRate, tbillYield3m) are a
+// documented, deliberate exception to this cross-reference, not silently
+// unified with it.
+import { SERIES_CATALOG } from "@/lib/seriesDefinition";
 
 const FREQUENCY_TO_CADENCE: Record<Frequency, ReleaseCadence> = {
   Monthly: "monthly",
@@ -162,22 +172,131 @@ const EXTRA_SERIES_DEFINITIONS: Record<string, SeriesDefinition> = {
 // justify a different number, and inventing one without evidence would be
 // exactly the kind of unearned precision this registry's SBP comments
 // already warn against.
+//
+// cadence: derived from SERIES_CATALOG (Phase 8.20) rather than a hardcoded
+// "annual" literal — these 3 series IDs are the same comparison-facing IDs
+// SERIES_CATALOG already declares "annual" for, so this is a cross-reference
+// to the single authoritative fact, not a new decision.
 const WORLD_BANK_GDP_GROWTH_SERIES_IDS = ["worldbank:gdpGrowthPak", "worldbank:gdpGrowthIndia", "worldbank:gdpGrowthBangladesh"] as const;
 export const WORLD_BANK_PROVIDER_ID = "world-bank";
 
 const WORLD_BANK_SERIES_DEFINITIONS: Record<string, SeriesDefinition> = Object.fromEntries(
-  WORLD_BANK_GDP_GROWTH_SERIES_IDS.map((seriesId) => [
-    seriesId,
-    {
+  WORLD_BANK_GDP_GROWTH_SERIES_IDS.map((seriesId) => {
+    const cadence = SERIES_CATALOG[seriesId]?.cadence;
+    if (!cadence) throw new Error(`seriesRegistry: no SERIES_CATALOG entry for World Bank series "${seriesId}"`);
+    return [
       seriesId,
-      provider: WORLD_BANK_PROVIDER_ID,
-      cadence: "annual" as ReleaseCadence,
-      graceDays: CADENCE_GRACE_DAYS.annual,
-      expectsReleaseDate: false,
-      expectsSourceUpdatedAt: true,
-    },
-  ]),
+      {
+        seriesId,
+        provider: WORLD_BANK_PROVIDER_ID,
+        cadence,
+        graceDays: CADENCE_GRACE_DAYS[cadence],
+        expectsReleaseDate: false,
+        expectsSourceUpdatedAt: true,
+      },
+    ];
+  }),
 );
+
+// Phase 8.12: FRED monthly canonicalization pilot — EXACTLY the two FRED
+// series already consumed by the Comparisons feature in their existing
+// monthly-transformed form (see src/lib/providers/fredAdapter.ts's own
+// header for the full transformation-identity rationale). Registered here,
+// the same sanctioned extension point every provider uses — not a new
+// registry, not a change to evaluateFreshness() itself.
+//
+// cadence/graceDays: both series are genuinely monthly (FRED's own
+// frequency=m/aggregation_method=eop and units=pc1 transforms produce one
+// point per calendar month), so this reuses the SAME already-validated
+// monthly graceDays=40 default every other monthly-cadence entry in this
+// registry uses — a Phase 8.11 binding decision, not a fresh policy call.
+// No daily-cadence FRED series is registered here — see the Phase 8.11
+// audit for why that remains a blocked, separate policy decision.
+//
+// expectsReleaseDate/expectsSourceUpdatedAt: both false. FRED's
+// /observations endpoint exposes no per-observation release date, and the
+// realtime_start/realtime_end fields it does expose were confirmed live
+// (Phase 8.12) to equal the QUERY date on every row, not a genuine
+// per-observation update timestamp — see fredAdapter.ts's header for the
+// full evidence. Populating either flag as true here would license a
+// freshness read that doesn't exist.
+// cadence: derived from SERIES_CATALOG (Phase 8.20) rather than a hardcoded
+// "monthly" literal — same comparison-facing IDs SERIES_CATALOG already
+// declares "monthly" for, so this is a cross-reference, not a new decision.
+const FRED_SERIES_IDS = ["fred:fedFunds", "fred:usCpiInflation"] as const;
+export const FRED_PROVIDER_ID = "fred";
+
+const FRED_SERIES_DEFINITIONS: Record<string, SeriesDefinition> = Object.fromEntries(
+  FRED_SERIES_IDS.map((seriesId) => {
+    const cadence = SERIES_CATALOG[seriesId]?.cadence;
+    if (!cadence) throw new Error(`seriesRegistry: no SERIES_CATALOG entry for FRED series "${seriesId}"`);
+    return [
+      seriesId,
+      {
+        seriesId,
+        provider: FRED_PROVIDER_ID,
+        cadence,
+        graceDays: CADENCE_GRACE_DAYS[cadence],
+        expectsReleaseDate: false,
+        expectsSourceUpdatedAt: false,
+      },
+    ];
+  }),
+);
+
+// Phase 8.17: Yahoo Gold Monthly canonicalization pilot — EXACTLY one
+// series, the completed-monthly-close representation of GC=F (see
+// src/lib/providers/yahooGoldAdapter.ts's own header for the full
+// trailing-bar-exclusion and transformation-identity rationale). Registered
+// here, the same sanctioned extension point every provider uses — not a
+// new registry, not a change to evaluateFreshness() itself. Silver, DXY,
+// Market FX, and every other Yahoo-backed instrument are explicitly out of
+// scope for this pilot — see the Phase 8.15 audit / Phase 8.16 design
+// confirmation for why gold alone is the safe first slice.
+//
+// cadence/graceDays: the series is genuinely monthly (one completed bar per
+// calendar month, after the in-progress current month is excluded), so this
+// reuses the SAME already-validated monthly graceDays=40 default every
+// other monthly-cadence entry in this registry uses (SBP's monthly
+// indicators, fred:fedFunds/fred:usCpiInflation) — a Phase 8.16 binding
+// decision, not a fresh policy call.
+//
+// marketType: deliberately left undefined. Direct inspection (Phase 8.16
+// Decision 3) confirmed no monthly-or-slower-cadence entry anywhere in this
+// registry sets marketType — only sbp:usdPkr does, a genuinely near-daily
+// tradeable rate with real day-to-day session gaps. freshnessEngine.ts's
+// market-closed branch only matters when an observation's own period falls
+// within the last ~14 days; for a monthly series the cadence-due-date
+// arithmetic already dominates every realistic evaluation, so marketType
+// would have no meaningful effect here — matching fred:fedFunds/
+// fred:usCpiInflation's own identical choice, not a departure from it.
+//
+// expectsReleaseDate/expectsSourceUpdatedAt: both false. Yahoo's chart
+// endpoint exposes no per-observation release date, and its historical-bars
+// array exposes no per-bar "last updated"/"revised at" field — confirmed
+// live during the Phase 8.15 investigation.
+//
+// cadence: derived from SERIES_CATALOG (Phase 8.20) rather than a hardcoded
+// "monthly" literal — looked up under "yfinance:gold", the comparison-facing
+// ID Phase 8.17 deliberately gave this series (distinct from this registry's
+// own YAHOO_GOLD_MONTHLY_SERIES_ID key), not a new decision.
+export const YAHOO_GOLD_MONTHLY_SERIES_ID = "yahoo:goldMonthly";
+export const YAHOO_FINANCE_PROVIDER_ID = "yahoo-finance";
+
+const YAHOO_GOLD_CATALOG_LOOKUP_KEY = "yfinance:gold";
+const yahooGoldCadence = SERIES_CATALOG[YAHOO_GOLD_CATALOG_LOOKUP_KEY]?.cadence;
+if (!yahooGoldCadence) throw new Error(`seriesRegistry: no SERIES_CATALOG entry for "${YAHOO_GOLD_CATALOG_LOOKUP_KEY}"`);
+
+const YAHOO_GOLD_SERIES_DEFINITIONS: Record<string, SeriesDefinition> = {
+  [YAHOO_GOLD_MONTHLY_SERIES_ID]: {
+    seriesId: YAHOO_GOLD_MONTHLY_SERIES_ID,
+    provider: YAHOO_FINANCE_PROVIDER_ID,
+    cadence: yahooGoldCadence,
+    graceDays: CADENCE_GRACE_DAYS[yahooGoldCadence],
+    expectsReleaseDate: false,
+    expectsSourceUpdatedAt: false,
+  },
+};
 
 let cachedRegistry: Map<string, SeriesDefinition> | null = null;
 
@@ -191,6 +310,12 @@ function buildRegistry(): Map<string, SeriesDefinition> {
     map.set(def.seriesId, def);
   }
   for (const def of Object.values(WORLD_BANK_SERIES_DEFINITIONS)) {
+    map.set(def.seriesId, def);
+  }
+  for (const def of Object.values(FRED_SERIES_DEFINITIONS)) {
+    map.set(def.seriesId, def);
+  }
+  for (const def of Object.values(YAHOO_GOLD_SERIES_DEFINITIONS)) {
     map.set(def.seriesId, def);
   }
   return map;

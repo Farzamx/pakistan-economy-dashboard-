@@ -22,6 +22,8 @@ const {
   SBP_MONITOR_JOB,
   WORLD_BANK_MONITOR_JOB,
   NET_LIQUID_RESERVES_MONITOR_JOB,
+  FRED_MONITOR_JOB,
+  YAHOO_GOLD_MONITOR_JOB,
   MONITORED_INGESTION_JOBS,
 } = await import("@/lib/ingestionWatchdog");
 
@@ -59,9 +61,9 @@ function resetAll() {
 }
 
 describe("A. registry", () => {
-  it("contains exactly three monitored jobs: SBP, World Bank, and Net Liquid FX Reserves", () => {
-    expect(MONITORED_INGESTION_JOBS).toHaveLength(3);
-    expect(MONITORED_INGESTION_JOBS).toEqual([SBP_MONITOR_JOB, WORLD_BANK_MONITOR_JOB, NET_LIQUID_RESERVES_MONITOR_JOB]);
+  it("contains exactly five monitored jobs: SBP, World Bank, Net Liquid FX Reserves, FRED, and Yahoo Gold", () => {
+    expect(MONITORED_INGESTION_JOBS).toHaveLength(5);
+    expect(MONITORED_INGESTION_JOBS).toEqual([SBP_MONITOR_JOB, WORLD_BANK_MONITOR_JOB, NET_LIQUID_RESERVES_MONITOR_JOB, FRED_MONITOR_JOB, YAHOO_GOLD_MONITOR_JOB]);
   });
 
   it("every job has a unique ingestionJobName", () => {
@@ -107,6 +109,49 @@ describe("A. registry", () => {
     expect(NET_LIQUID_RESERVES_MONITOR_JOB.staleAfterHours).toBe(WORLD_BANK_MONITOR_JOB.staleAfterHours);
     expect(NET_LIQUID_RESERVES_MONITOR_JOB.expectedIntervalHours).toBe(WORLD_BANK_MONITOR_JOB.expectedIntervalHours);
     expect(NET_LIQUID_RESERVES_MONITOR_JOB.staleAfterHours).not.toBe(SBP_MONITOR_JOB.staleAfterHours);
+  });
+
+  it("FRED matches the actual Phase 8.14 weekly schedule (168h) and job names — ingestionJobName exactly matches ingestFred.ts's cron_run_log JOB_NAME", () => {
+    expect(FRED_MONITOR_JOB.ingestionJobName).toBe("fred-monthly-ingestion");
+    expect(FRED_MONITOR_JOB.watchdogJobName).toBe("fred-ingestion-watchdog");
+    expect(FRED_MONITOR_JOB.expectedIntervalHours).toBe(168);
+  });
+
+  it("FRED reuses World Bank's/Net Liquid FX Reserves' exact, already-evidenced weekly threshold (same cadence, same scheduler mechanics, confirmed live in Phase 8.14) rather than a freshly invented number or a blind copy of SBP's 36h", () => {
+    expect(FRED_MONITOR_JOB.staleAfterHours).toBe(216);
+    expect(FRED_MONITOR_JOB.staleAfterHours).toBe(WORLD_BANK_MONITOR_JOB.staleAfterHours);
+    expect(FRED_MONITOR_JOB.staleAfterHours).toBe(NET_LIQUID_RESERVES_MONITOR_JOB.staleAfterHours);
+    expect(FRED_MONITOR_JOB.expectedIntervalHours).toBe(WORLD_BANK_MONITOR_JOB.expectedIntervalHours);
+    expect(FRED_MONITOR_JOB.staleAfterHours).not.toBe(SBP_MONITOR_JOB.staleAfterHours);
+  });
+
+  it("FRED's watchdogJobName is unique and cannot collide with SBP/World Bank/Net Liquid FX Reserves", () => {
+    const allWatchdogNames = MONITORED_INGESTION_JOBS.map((j) => j.watchdogJobName);
+    expect(allWatchdogNames.filter((n) => n === FRED_MONITOR_JOB.watchdogJobName)).toHaveLength(1);
+  });
+
+  it("B/C/D. Yahoo Gold matches the actual Phase 8.18 genuinely-monthly schedule (744h = 31 days) and job names — ingestionJobName exactly matches ingestYahooGold.ts's cron_run_log JOB_NAME", () => {
+    expect(YAHOO_GOLD_MONITOR_JOB.ingestionJobName).toBe("yahoo-gold-monthly-ingestion");
+    expect(YAHOO_GOLD_MONITOR_JOB.watchdogJobName).toBe("yahoo-gold-monthly-ingestion-watchdog");
+    expect(YAHOO_GOLD_MONITOR_JOB.expectedIntervalHours).toBe(744);
+  });
+
+  it("E. Yahoo Gold's threshold (912h = 744h interval + 168h/7-day buffer) is freshly derived — no prior monthly-SCHEDULED job exists to reuse from — but follows the identical method (interval + buffer, fire before a second miss) every other threshold in this file already uses, not SBP's unrelated 36h", () => {
+    expect(YAHOO_GOLD_MONITOR_JOB.staleAfterHours).toBe(912);
+    expect(YAHOO_GOLD_MONITOR_JOB.staleAfterHours).not.toBe(SBP_MONITOR_JOB.staleAfterHours);
+    expect(YAHOO_GOLD_MONITOR_JOB.staleAfterHours).not.toBe(WORLD_BANK_MONITOR_JOB.staleAfterHours); // deliberately NOT a copy — different schedule kind (monthly vs weekly)
+    expect(YAHOO_GOLD_MONITOR_JOB.staleAfterHours).toBeGreaterThan(YAHOO_GOLD_MONITOR_JOB.expectedIntervalHours);
+    expect(YAHOO_GOLD_MONITOR_JOB.staleAfterHours).toBeLessThan(YAHOO_GOLD_MONITOR_JOB.expectedIntervalHours * 2); // must fire before a second consecutive miss (1488h)
+  });
+
+  it("Yahoo Gold's watchdogJobName is unique and cannot collide with any other monitored job", () => {
+    const allWatchdogNames = MONITORED_INGESTION_JOBS.map((j) => j.watchdogJobName);
+    expect(allWatchdogNames.filter((n) => n === YAHOO_GOLD_MONITOR_JOB.watchdogJobName)).toHaveLength(1);
+  });
+
+  it("O. commandHint reflects the real package.json script and contains no credential-shaped value", () => {
+    expect(YAHOO_GOLD_MONITOR_JOB.commandHint).toBe("npm run ingest:yahoogold");
+    expect(YAHOO_GOLD_MONITOR_JOB.commandHint).not.toMatch(/key|token|secret|password|bearer/i);
   });
 });
 
@@ -569,5 +614,246 @@ describe("F. Net Liquid FX Reserves — Phase 8.10D dedicated coverage", () => {
     const nlrResult = await runIngestionWatchdog(NET_LIQUID_RESERVES_MONITOR_JOB, NOW);
     expect(nlrResult.health.alertAlreadySent).toBe(false);
     expect(nlrResult.alertSent).toBe(true);
+  });
+});
+
+describe("G. FRED — Phase 8.14 dedicated coverage", () => {
+  it("A/F. FRED monitor job exists and evaluates a healthy weekly ingestion as healthy", async () => {
+    resetAll();
+    mockHistories({ [FRED_MONITOR_JOB.ingestionJobName]: [successAgo(FRED_MONITOR_JOB.ingestionJobName, 2)] });
+    const result = await runIngestionWatchdog(FRED_MONITOR_JOB, NOW);
+    expect(result.health.state).toBe("healthy");
+    expect(result.alertSent).toBe(false);
+  });
+
+  it("G. an old successful run (past the 216h threshold) is correctly reported stale", async () => {
+    resetAll();
+    mockHistories({ [FRED_MONITOR_JOB.ingestionJobName]: [successAgo(FRED_MONITOR_JOB.ingestionJobName, 220)] });
+    const result = await runIngestionWatchdog(FRED_MONITOR_JOB, NOW);
+    expect(result.health.state).toBe("stale");
+    expect(result.alertSent).toBe(true);
+    expect(sendEmailMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("H. never-run state", async () => {
+    resetAll();
+    mockHistories({});
+    const result = await runIngestionWatchdog(FRED_MONITOR_JOB, NOW);
+    expect(result.health.state).toBe("never-run");
+    expect(result.health.lastSuccessAt).toBeNull();
+    expect(result.alertSent).toBe(true); // never-run is alertable, same as every other job
+  });
+
+  it("I. a failed recent run does not mask an old successful run", async () => {
+    resetAll();
+    const oldSuccess = successAgo(FRED_MONITOR_JOB.ingestionJobName, 220);
+    const recentFailure = run(FRED_MONITOR_JOB.ingestionJobName, { finishedAt: new Date(NOW.getTime() - 1 * HOUR).toISOString(), status: "failure" });
+    mockHistories({ [FRED_MONITOR_JOB.ingestionJobName]: [oldSuccess, recentFailure] });
+    const result = await runIngestionWatchdog(FRED_MONITOR_JOB, NOW);
+    expect(result.health.state).toBe("stale");
+    expect(result.health.lastSuccessAt).toBe(oldSuccess.finishedAt);
+  });
+
+  it("J. alert deduplication — repeated stale checks during the same episode do not re-alert", async () => {
+    resetAll();
+    const lastSuccess = successAgo(FRED_MONITOR_JOB.ingestionJobName, 220);
+    mockHistories({ [FRED_MONITOR_JOB.ingestionJobName]: [lastSuccess] });
+    await runIngestionWatchdog(FRED_MONITOR_JOB, NOW);
+    const firstDetail = logCronRunMock.mock.calls[0][3] as string;
+
+    const priorWatchdogRun = run(FRED_MONITOR_JOB.watchdogJobName, { finishedAt: NOW.toISOString(), status: "failure", detail: firstDetail });
+    sendEmailMock.mockClear();
+    mockHistories({ [FRED_MONITOR_JOB.ingestionJobName]: [lastSuccess], [FRED_MONITOR_JOB.watchdogJobName]: [priorWatchdogRun] });
+
+    const second = await runIngestionWatchdog(FRED_MONITOR_JOB, new Date(NOW.getTime() + HOUR));
+    expect(second.health.alertAlreadySent).toBe(true);
+    expect(second.alertSent).toBe(false);
+    expect(sendEmailMock).not.toHaveBeenCalled();
+  });
+
+  it("K. recovery creates a new alert episode", async () => {
+    resetAll();
+    const oldEpisode = successAgo(FRED_MONITOR_JOB.ingestionJobName, 400);
+    const staleAlert = run(FRED_MONITOR_JOB.watchdogJobName, { finishedAt: NOW.toISOString(), status: "failure", detail: `state=stale | alerted-for=${oldEpisode.finishedAt}` });
+    const recovery = successAgo(FRED_MONITOR_JOB.ingestionJobName, 220); // recovered, then went stale again -- a NEW episode
+    mockHistories({ [FRED_MONITOR_JOB.ingestionJobName]: [oldEpisode, recovery], [FRED_MONITOR_JOB.watchdogJobName]: [staleAlert] });
+
+    const result = await runIngestionWatchdog(FRED_MONITOR_JOB, NOW);
+    expect(result.health.state).toBe("stale");
+    expect(result.health.alertAlreadySent).toBe(false); // old marker was for a DIFFERENT episode
+    expect(result.alertSent).toBe(true);
+  });
+
+  it("L. missing ADMIN_EMAIL remains safe (no throw, alert simply skipped)", async () => {
+    resetAll();
+    delete process.env.ADMIN_EMAIL;
+    mockHistories({ [FRED_MONITOR_JOB.ingestionJobName]: [successAgo(FRED_MONITOR_JOB.ingestionJobName, 220)] });
+
+    const result = await runIngestionWatchdog(FRED_MONITOR_JOB, NOW);
+    expect(result.alertSent).toBe(false);
+    expect(result.reason).toContain("ADMIN_EMAIL");
+    expect(sendEmailMock).not.toHaveBeenCalled();
+    process.env.ADMIN_EMAIL = "ops@example.com";
+  });
+
+  it("M. no FRED/SBP/World Bank/Net Liquid FX secrets appear in alert or log output", async () => {
+    resetAll();
+    process.env.FRED_API_KEY = "SUPER-SECRET-FRED-KEY";
+    process.env.SBP_EASYDATA_API_KEY = "SUPER-SECRET-SBP-KEY";
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = "FAKE-ANON-KEY";
+    mockHistories({ [FRED_MONITOR_JOB.ingestionJobName]: [successAgo(FRED_MONITOR_JOB.ingestionJobName, 220)] });
+
+    await runIngestionWatchdog(FRED_MONITOR_JOB, NOW);
+
+    const [emailArgs] = sendEmailMock.mock.calls[0];
+    const emailBlob = JSON.stringify(emailArgs);
+    const logBlob = String(logCronRunMock.mock.calls[0][3]);
+    for (const blob of [emailBlob, logBlob]) {
+      expect(blob).not.toContain("SUPER-SECRET-FRED-KEY");
+      expect(blob).not.toContain("SUPER-SECRET-SBP-KEY");
+      expect(blob).not.toContain("FAKE-ANON-KEY");
+      expect(blob).not.toContain("stlouisfed.org");
+      expect(blob).not.toContain("sbp.org.pk");
+    }
+  });
+
+  it("N. job isolation: a FRED episode never suppresses or is suppressed by SBP's, World Bank's, or Net Liquid FX Reserves'", async () => {
+    resetAll();
+    const fredEpisode = successAgo(FRED_MONITOR_JOB.ingestionJobName, 220);
+    const nlrEpisode = successAgo(NET_LIQUID_RESERVES_MONITOR_JOB.ingestionJobName, 220);
+    const nlrAlert = run(NET_LIQUID_RESERVES_MONITOR_JOB.watchdogJobName, { finishedAt: NOW.toISOString(), status: "failure", detail: `state=stale | alerted-for=${nlrEpisode.finishedAt}` });
+    mockHistories({
+      [FRED_MONITOR_JOB.ingestionJobName]: [fredEpisode],
+      [NET_LIQUID_RESERVES_MONITOR_JOB.ingestionJobName]: [nlrEpisode],
+      [NET_LIQUID_RESERVES_MONITOR_JOB.watchdogJobName]: [nlrAlert],
+    });
+
+    const fredResult = await runIngestionWatchdog(FRED_MONITOR_JOB, NOW);
+    expect(fredResult.health.alertAlreadySent).toBe(false);
+    expect(fredResult.alertSent).toBe(true);
+  });
+
+  it("O. the generic watchdog route (sbp-ingestion-watchdog/route.ts) discovers FRED automatically via MONITORED_INGESTION_JOBS — no route change needed", () => {
+    expect(MONITORED_INGESTION_JOBS).toContain(FRED_MONITOR_JOB);
+  });
+});
+
+describe("H. Yahoo Gold — Phase 8.18 dedicated coverage", () => {
+  it("A/F. registry contains Gold exactly once, and a healthy recent monthly run evaluates healthy", async () => {
+    resetAll();
+    expect(MONITORED_INGESTION_JOBS.filter((j) => j === YAHOO_GOLD_MONITOR_JOB)).toHaveLength(1);
+    mockHistories({ [YAHOO_GOLD_MONITOR_JOB.ingestionJobName]: [successAgo(YAHOO_GOLD_MONITOR_JOB.ingestionJobName, 2)] });
+    const result = await runIngestionWatchdog(YAHOO_GOLD_MONITOR_JOB, NOW);
+    expect(result.health.state).toBe("healthy");
+    expect(result.alertSent).toBe(false);
+  });
+
+  it("G. an old successful run (past the 912h threshold) is correctly reported stale", async () => {
+    resetAll();
+    mockHistories({ [YAHOO_GOLD_MONITOR_JOB.ingestionJobName]: [successAgo(YAHOO_GOLD_MONITOR_JOB.ingestionJobName, 920)] });
+    const result = await runIngestionWatchdog(YAHOO_GOLD_MONITOR_JOB, NOW);
+    expect(result.health.state).toBe("stale");
+    expect(result.alertSent).toBe(true);
+    expect(sendEmailMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("H. never-run state", async () => {
+    resetAll();
+    mockHistories({});
+    const result = await runIngestionWatchdog(YAHOO_GOLD_MONITOR_JOB, NOW);
+    expect(result.health.state).toBe("never-run");
+    expect(result.health.lastSuccessAt).toBeNull();
+    expect(result.alertSent).toBe(true); // never-run is alertable, same as every other job
+  });
+
+  it("I. a failed recent run does not mask an old successful run", async () => {
+    resetAll();
+    const oldSuccess = successAgo(YAHOO_GOLD_MONITOR_JOB.ingestionJobName, 920);
+    const recentFailure = run(YAHOO_GOLD_MONITOR_JOB.ingestionJobName, { finishedAt: new Date(NOW.getTime() - 1 * HOUR).toISOString(), status: "failure" });
+    mockHistories({ [YAHOO_GOLD_MONITOR_JOB.ingestionJobName]: [oldSuccess, recentFailure] });
+    const result = await runIngestionWatchdog(YAHOO_GOLD_MONITOR_JOB, NOW);
+    expect(result.health.state).toBe("stale");
+    expect(result.health.lastSuccessAt).toBe(oldSuccess.finishedAt);
+  });
+
+  it("J. alert deduplication — repeated stale checks during the same episode do not re-alert", async () => {
+    resetAll();
+    const lastSuccess = successAgo(YAHOO_GOLD_MONITOR_JOB.ingestionJobName, 920);
+    mockHistories({ [YAHOO_GOLD_MONITOR_JOB.ingestionJobName]: [lastSuccess] });
+    await runIngestionWatchdog(YAHOO_GOLD_MONITOR_JOB, NOW);
+    const firstDetail = logCronRunMock.mock.calls[0][3] as string;
+
+    const priorWatchdogRun = run(YAHOO_GOLD_MONITOR_JOB.watchdogJobName, { finishedAt: NOW.toISOString(), status: "failure", detail: firstDetail });
+    sendEmailMock.mockClear();
+    mockHistories({ [YAHOO_GOLD_MONITOR_JOB.ingestionJobName]: [lastSuccess], [YAHOO_GOLD_MONITOR_JOB.watchdogJobName]: [priorWatchdogRun] });
+
+    const second = await runIngestionWatchdog(YAHOO_GOLD_MONITOR_JOB, new Date(NOW.getTime() + HOUR));
+    expect(second.health.alertAlreadySent).toBe(true);
+    expect(second.alertSent).toBe(false);
+    expect(sendEmailMock).not.toHaveBeenCalled();
+  });
+
+  it("K. recovery creates a new alert episode", async () => {
+    resetAll();
+    const oldEpisode = successAgo(YAHOO_GOLD_MONITOR_JOB.ingestionJobName, 1500);
+    const staleAlert = run(YAHOO_GOLD_MONITOR_JOB.watchdogJobName, { finishedAt: NOW.toISOString(), status: "failure", detail: `state=stale | alerted-for=${oldEpisode.finishedAt}` });
+    const recovery = successAgo(YAHOO_GOLD_MONITOR_JOB.ingestionJobName, 920); // recovered, then went stale again -- a NEW episode
+    mockHistories({ [YAHOO_GOLD_MONITOR_JOB.ingestionJobName]: [oldEpisode, recovery], [YAHOO_GOLD_MONITOR_JOB.watchdogJobName]: [staleAlert] });
+
+    const result = await runIngestionWatchdog(YAHOO_GOLD_MONITOR_JOB, NOW);
+    expect(result.health.state).toBe("stale");
+    expect(result.health.alertAlreadySent).toBe(false); // old marker was for a DIFFERENT episode
+    expect(result.alertSent).toBe(true);
+  });
+
+  it("L. job isolation: a Yahoo Gold episode never suppresses or is suppressed by SBP's, World Bank's, Net Liquid FX Reserves', or FRED's", async () => {
+    resetAll();
+    const goldEpisode = successAgo(YAHOO_GOLD_MONITOR_JOB.ingestionJobName, 920);
+    const fredEpisode = successAgo(FRED_MONITOR_JOB.ingestionJobName, 220);
+    const fredAlert = run(FRED_MONITOR_JOB.watchdogJobName, { finishedAt: NOW.toISOString(), status: "failure", detail: `state=stale | alerted-for=${fredEpisode.finishedAt}` });
+    mockHistories({
+      [YAHOO_GOLD_MONITOR_JOB.ingestionJobName]: [goldEpisode],
+      [FRED_MONITOR_JOB.ingestionJobName]: [fredEpisode],
+      [FRED_MONITOR_JOB.watchdogJobName]: [fredAlert],
+    });
+
+    const goldResult = await runIngestionWatchdog(YAHOO_GOLD_MONITOR_JOB, NOW);
+    expect(goldResult.health.alertAlreadySent).toBe(false);
+    expect(goldResult.alertSent).toBe(true);
+  });
+
+  it("M. missing ADMIN_EMAIL remains safe (no throw, alert simply skipped)", async () => {
+    resetAll();
+    delete process.env.ADMIN_EMAIL;
+    mockHistories({ [YAHOO_GOLD_MONITOR_JOB.ingestionJobName]: [successAgo(YAHOO_GOLD_MONITOR_JOB.ingestionJobName, 920)] });
+
+    const result = await runIngestionWatchdog(YAHOO_GOLD_MONITOR_JOB, NOW);
+    expect(result.alertSent).toBe(false);
+    expect(result.reason).toContain("ADMIN_EMAIL");
+    expect(sendEmailMock).not.toHaveBeenCalled();
+    process.env.ADMIN_EMAIL = "ops@example.com";
+  });
+
+  it("N. no Yahoo/FRED/SBP/World Bank/Net Liquid FX secrets appear in alert or log output", async () => {
+    resetAll();
+    process.env.SBP_EASYDATA_API_KEY = "SUPER-SECRET-SBP-KEY";
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = "FAKE-ANON-KEY";
+    mockHistories({ [YAHOO_GOLD_MONITOR_JOB.ingestionJobName]: [successAgo(YAHOO_GOLD_MONITOR_JOB.ingestionJobName, 920)] });
+
+    await runIngestionWatchdog(YAHOO_GOLD_MONITOR_JOB, NOW);
+
+    const [emailArgs] = sendEmailMock.mock.calls[0];
+    const emailBlob = JSON.stringify(emailArgs);
+    const logBlob = String(logCronRunMock.mock.calls[0][3]);
+    for (const blob of [emailBlob, logBlob]) {
+      expect(blob).not.toContain("SUPER-SECRET-SBP-KEY");
+      expect(blob).not.toContain("FAKE-ANON-KEY");
+      expect(blob).not.toContain("query1.finance.yahoo.com");
+      expect(blob).not.toContain("stlouisfed.org");
+    }
+  });
+
+  it("P. the generic watchdog route discovers Yahoo Gold automatically via MONITORED_INGESTION_JOBS — no route change needed", () => {
+    expect(MONITORED_INGESTION_JOBS).toContain(YAHOO_GOLD_MONITOR_JOB);
   });
 });

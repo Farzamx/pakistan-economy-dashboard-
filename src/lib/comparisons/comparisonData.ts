@@ -25,7 +25,9 @@ import { getSbpIndicatorHistory, getFoodInflationUrbanHistory } from "@/lib/data
 import type { SbpIndicatorKey } from "@/lib/data/sbp";
 import { getGdpGrowthHistory, type WorldBankCountryCode } from "@/lib/data/worldBank";
 import { getFedFundsHistory, getUsCpiInflationHistory } from "@/lib/data/fred";
+import { getCanonicalFredHistory } from "@/lib/data/fredCanonicalStore";
 import { getGoldHistory } from "@/lib/data/yfinance";
+import { getCanonicalYahooGoldHistory } from "@/lib/data/yahooGoldCanonicalStore";
 import { getExternalDebtHistory } from "@/lib/data/externalDebt";
 import { getSeriesOption } from "./seriesOptions";
 import type { ComparisonDef, ComparisonFrequency, SeriesProviderId } from "./comparisonRegistry";
@@ -87,6 +89,103 @@ interface RawFetch {
   source: string;
 }
 
+// Phase 8.13: DB-first read for the two FRED series canonicalized in Phase
+// 8.12 (fred:fedFunds, fred:usCpiInflation only -- see fredAdapter.ts for
+// why every other FRED series stays on the legacy live path). Mirrors
+// src/lib/data/fred.ts's getFedFundsHistory()/getUsCpiInflationHistory()'s
+// own default startDate ("2016-01-01") exactly, so the canonical path
+// serves the SAME observation window the legacy path already does -- the
+// canonical store itself holds much more history (back to the 1940s/50s)
+// than this comparison has ever shown; trimming it here (not in
+// fredCanonicalStore.ts, which stays a plain, comparison-agnostic reader)
+// is what keeps comparison output unchanged. A live baseline comparison
+// (Phase 8.13 report Section F) confirmed zero value/count differences
+// between the two paths at equivalent logical periods.
+const FRED_COMPARISON_START_DATE = "2016-01-01";
+
+/**
+ * canonical DB read first; legacy live FRED fetch as fallback. Dates
+ * returned by the canonical store are already period-END ("YYYY-MM-31" or
+ * the month's actual last day) -- fredAdapter.ts's normalization, verified
+ * live in Phase 8.12 -- so no date transformation happens here; reapplying
+ * it would double-transform an already-correct date.
+ *
+ * getCanonicalFredHistory() never throws (returns [] on any failure, per
+ * its own contract) -- the try/catch below is defense in depth, not the
+ * primary fallback mechanism. A canonical read that is unavailable, errors,
+ * or has no observations within the comparison window falls straight
+ * through to the unchanged legacy path; a canonical-read problem must never
+ * be visible to this feature's callers.
+ */
+async function fetchFredComparisonSeries(id: "fred:fedFunds" | "fred:usCpiInflation"): Promise<RawFetch | null> {
+  try {
+    const canonicalRows = await getCanonicalFredHistory(id, 200); // 200 months comfortably covers back to FRED_COMPARISON_START_DATE (2016) with margin
+    const windowed = canonicalRows.filter((r) => r.observationPeriod >= FRED_COMPARISON_START_DATE);
+    if (windowed.length > 0) {
+      return { points: windowed.map((r) => ({ date: r.observationPeriod, value: r.value })), source: "FRED" };
+    }
+  } catch {
+    // Falls through to the legacy live path below.
+  }
+
+  if (id === "fred:fedFunds") {
+    const points = await getFedFundsHistory();
+    return points ? { points, source: "FRED" } : null;
+  }
+  const points = await getUsCpiInflationHistory();
+  return points ? { points, source: "FRED" } : null;
+}
+
+// Phase 8.17: DB-first read for yahoo:goldMonthly, the one Yahoo series
+// canonicalized so far (see src/lib/providers/yahooGoldAdapter.ts's own
+// header). This is the SAME canonical indicatorKey ("yahoo:goldMonthly")
+// used for ingestion/canonical storage; it is deliberately NOT the same
+// string as the comparisons-facing SeriesProviderId ("yfinance:gold",
+// comparisonRegistry.ts, unchanged by this phase) — the two are related
+// through this function alone, exactly as FRED's pilot kept
+// indicatorKey/sourceSeriesId distinct rather than conflated.
+const YAHOO_GOLD_MONTHLY_INDICATOR_KEY = "yahoo:goldMonthly"; // must exactly match yahooGoldAdapter.ts's YAHOO_GOLD_INDICATOR_KEY
+
+/**
+ * canonical DB read first; legacy live Yahoo fetch (getGoldHistory) as
+ * fallback. Mirrors fetchFredComparisonSeries()'s exact DB-first/fallback
+ * shape (Phase 8.13).
+ *
+ * getCanonicalYahooGoldHistory() never throws (returns [] on any failure,
+ * per its own contract) — the try/catch below is defense in depth, not the
+ * primary fallback mechanism.
+ *
+ * Stale-canonical policy (Phase 8.17 Section 14): mirrors the established
+ * FRED pattern exactly — canonical data is preferred whenever it is
+ * non-empty, even if it has since gone stale (e.g. ingestion hasn't run
+ * this month yet), rather than falling back to a fresher live fetch purely
+ * because time has passed. This is a deliberate reuse of the existing,
+ * already-running FRED decision, not a fresh policy call — no repository
+ * evidence surfaced during this pilot to justify a different rule for gold.
+ *
+ * KNOWN, INTENDED difference from the legacy path: legacy getGoldHistory()
+ * includes Yahoo's current, still-open month as its trailing point (an
+ * intraday-updating value, sometimes more than one such row — see
+ * yahooGoldAdapter.ts's header); the canonical path never does, by design
+ * (Phase 8.16 Decision 1). Once this cutover is live, the Gold comparisons
+ * chart's most recent point becomes the last COMPLETED month rather than a
+ * live in-progress print — this is the deliberate purpose of this
+ * migration, not a regression.
+ */
+async function fetchYahooGoldComparisonSeries(): Promise<RawFetch | null> {
+  try {
+    const canonicalRows = await getCanonicalYahooGoldHistory(YAHOO_GOLD_MONTHLY_INDICATOR_KEY, 150);
+    if (canonicalRows.length > 0) {
+      return { points: canonicalRows.map((r) => ({ date: r.observationPeriod, value: r.value })), source: "Yahoo Finance" };
+    }
+  } catch {
+    // Falls through to the legacy live path below.
+  }
+
+  const points = await getGoldHistory();
+  return points ? { points: points.map((p) => ({ date: p.date, value: p.close })), source: "Yahoo Finance" } : null;
+}
+
 async function fetchRaw(id: SeriesProviderId): Promise<RawFetch | null> {
   const sbpKey = SBP_KEY_BY_PROVIDER[id];
   if (sbpKey) {
@@ -101,19 +200,12 @@ async function fetchRaw(id: SeriesProviderId): Promise<RawFetch | null> {
     return { points: series.history.map((p) => ({ date: p.month, value: p.value })), source: "World Bank" };
   }
 
-  if (id === "fred:fedFunds") {
-    const points = await getFedFundsHistory();
-    return points ? { points, source: "FRED" } : null;
-  }
-  if (id === "fred:usCpiInflation") {
-    const points = await getUsCpiInflationHistory();
-    return points ? { points, source: "FRED" } : null;
+  if (id === "fred:fedFunds" || id === "fred:usCpiInflation") {
+    return fetchFredComparisonSeries(id);
   }
 
   if (id === "yfinance:gold") {
-    const points = await getGoldHistory();
-    if (!points) return null;
-    return { points: points.map((p) => ({ date: p.date, value: p.close })), source: "Yahoo Finance" };
+    return fetchYahooGoldComparisonSeries();
   }
 
   if (id === "sbp:foodInflationUrban") {
