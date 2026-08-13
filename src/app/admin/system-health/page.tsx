@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getSystemHealthSnapshot } from "@/lib/systemHealth";
+import { formatAge } from "@/lib/ingestionWatchdog";
+import type { IngestionHealth, IngestionMonitorJob } from "@/lib/ingestionWatchdog";
 import type { SeriesSourceRanking, Recommendation, SyncTriggerRecord } from "@/lib/systemHealth";
 
 // Internal operational diagnostics — NOT a public page (Production
@@ -70,6 +72,91 @@ function rankBadge(rank: number): string {
   if (rank === 1) return "text-emerald-400 font-bold";
   if (rank === 2) return "text-sky-400";
   return "text-slate-400";
+}
+
+/**
+ * Phase 8.10E: presentation copy for each monitored ingestion job, keyed by
+ * ingestionJobName. Kept here (not on IngestionMonitorJob itself) because
+ * this prose is UI-specific — ingestionWatchdog.ts stays a pure,
+ * provider-agnostic evaluator with no display concerns. A job without an
+ * entry here still renders (see ingestionJobCopy's fallback below) so
+ * adding a new job to MONITORED_INGESTION_JOBS can never break this page —
+ * it just gets a generic card until dedicated copy is added.
+ */
+const INGESTION_JOB_COPY: Record<string, { title: string; description: string }> = {
+  "sbp-local-ingestion": {
+    title: "SBP Ingestion Watchdog",
+    description: "Whether the ingestion job is still completing — deliberately not a statement about whether SBP has published newer data. A run that finds nothing new is healthy: it means the pipeline worked and there was nothing to fetch. Ingestion runs outside this application, so without this check a stopped runner is invisible.",
+  },
+  "worldbank-gdp-growth-ingestion": {
+    title: "World Bank GDP-growth Ingestion Watchdog",
+    description: "Same dead-man's-switch concept as SBP's, for the World Bank GDP-growth pilot (Pakistan/India/Bangladesh only — population and sector composition are not ingested/monitored). Runs weekly, not daily, so a longer alert threshold applies; an unchanged run is healthy for the same reason it is for SBP.",
+  },
+  "netliquidreserves-ingestion": {
+    title: "Net Liquid FX Reserves Ingestion Watchdog",
+    description: "Same dead-man's-switch concept as SBP's and World Bank's, for the Net Liquid FX Reserves weekly ingestion (Phase 8.10B–8.10D). Runs weekly, not daily, so a longer alert threshold applies. Reflects only whether the ingestion job is still completing, not whether SBP has published a newer reserves figure.",
+  },
+};
+
+function ingestionJobCopy(job: IngestionMonitorJob): { title: string; description: string } {
+  return (
+    INGESTION_JOB_COPY[job.ingestionJobName] ?? {
+      title: `${job.label} Watchdog`,
+      description: `Dead-man's-switch for ${job.label} — runs roughly every ${job.expectedIntervalHours}h; alerts if no successful run in ${job.staleAfterHours}h. Reflects ingestion completion only, not data freshness.`,
+    }
+  );
+}
+
+/**
+ * Renders one monitored ingestion job's dead-man's-switch state (Phase 8.6:
+ * ingestionWatchdog.ts's generic evaluator; Phase 8.7: this component so
+ * SBP and World Bank render through identical markup instead of two copies
+ * of the same JSX). Purely presentational — every value displayed
+ * (state/lastSuccessAt/ageMs/expectedCadenceHours/staleAfterHours/
+ * alertAlreadySent) comes straight from the already-computed
+ * `IngestionHealth` passed in; this component performs no health
+ * evaluation, no threshold math, and no data fetch of its own.
+ */
+function IngestionHealthCard({ title, description, health }: { title: string; description: string; health: IngestionHealth }) {
+  return (
+    <section>
+      <h2 className="text-lg font-semibold">{title}</h2>
+      <p className="mt-1 text-xs text-slate-500">{description}</p>
+      <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="rounded-xl border border-white/10 px-4 py-3">
+          <div className="text-xs uppercase tracking-wide text-slate-500">State</div>
+          <div className="mt-1 inline-flex items-center gap-1.5 text-sm font-medium">
+            <span className={`h-2 w-2 rounded-full ${STATUS_DOT[health.state === "healthy" ? "ok" : health.state === "stale" ? "overdue" : "never-run"]}`} />
+            {health.state}
+          </div>
+        </div>
+        <div className="rounded-xl border border-white/10 px-4 py-3">
+          <div className="text-xs uppercase tracking-wide text-slate-500">Last successful run</div>
+          <div className="mt-1 text-sm font-medium">
+            {health.lastSuccessAt ? new Date(health.lastSuccessAt).toISOString().replace("T", " ").slice(0, 19) + "Z" : "never"}
+          </div>
+        </div>
+        <div className="rounded-xl border border-white/10 px-4 py-3">
+          <div className="text-xs uppercase tracking-wide text-slate-500">Age</div>
+          <div className="mt-1 text-sm font-medium">{formatAge(health.ageMs)}</div>
+        </div>
+        <div className="rounded-xl border border-white/10 px-4 py-3">
+          <div className="text-xs uppercase tracking-wide text-slate-500">Expected cadence</div>
+          <div className="mt-1 text-sm font-medium">
+            every {health.expectedCadenceHours}h
+            <span className="text-slate-500"> · alerts after {health.staleAfterHours}h</span>
+          </div>
+        </div>
+      </div>
+      <p className="mt-2 text-xs text-slate-500">
+        {health.state === "healthy"
+          ? "No alert condition."
+          : health.alertAlreadySent
+            ? "An alert has already been sent for this failure; further checks stay silent until ingestion recovers."
+            : "No alert has been sent yet for this failure."}
+      </p>
+    </section>
+  );
 }
 
 export default async function SystemHealthPage() {
@@ -147,6 +234,12 @@ export default async function SystemHealthPage() {
             </table>
           </div>
         </section>
+
+        {/* ── Ingestion Watchdogs (dead-man's switch, one card per monitored job — Phase 8.10E) ── */}
+        {snapshot.ingestionHealth.map(({ job, health }) => {
+          const copy = ingestionJobCopy(job);
+          return <IngestionHealthCard key={job.ingestionJobName} title={copy.title} description={copy.description} health={health} />;
+        })}
 
         {/* ── Canonical SBP Freshness (Institutional Data Core Wave 1) ──── */}
         <section>

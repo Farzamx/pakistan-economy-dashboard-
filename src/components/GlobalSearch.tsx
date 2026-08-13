@@ -36,7 +36,7 @@ export const SEARCH_INDEX: SearchEntry[] = [
   { label: "Global Markets", href: "/overview#global-markets", keywords: ["Gold", "Oil", "Brent", "WTI"] },
   { label: "Real Economy", href: "/overview#real-economy" },
   { label: "Reserves", href: "/overview#reserves", keywords: ["Foreign Exchange Reserves", "Foreign Reserves"] },
-  { label: "Live FX", href: "/overview#live-fx" },
+  { label: "FX Rates", href: "/overview#live-fx" },
   { label: "Exchange Rate", href: "/overview#exchange-rate", keywords: ["USD/PKR", "PKR"] },
   { label: "Remittances", href: "/overview#remittances" },
   { label: "External Sector", href: "/overview#external-sector", keywords: ["Current Account", "Trade Balance"] },

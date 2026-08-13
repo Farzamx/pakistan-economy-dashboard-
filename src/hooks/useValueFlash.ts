@@ -22,7 +22,7 @@ const STORAGE_PREFIX = "peic-value-last:";
  * because more than one component renders a KPI value — KpiCard and
  * MacroSnapshot's Tier1Cell both need the identical behavior, and a second
  * hand-copy would be exactly the kind of duplication this codebase's own
- * conventions avoid elsewhere (see canonicalObsCacheKey, computeLsmYoY from
+ * conventions avoid elsewhere (see releasedEventValueCacheKey, computeLsmYoY from
  * the data-pipeline hardening pass for the same principle applied there).
  *
  * @param key       Unique identity for this value series (e.g. the KPI title).

@@ -27,6 +27,7 @@ export default function ComparisonDetailView({ bundle }: ComparisonDetailViewPro
         sourceA={bundle.sourceA}
         sourceB={bundle.sourceB}
         hasError={bundle.hasError}
+        compatibility={bundle.compatibility}
         timeRange={timeRange}
         chartMode={chartMode}
       />

@@ -83,7 +83,7 @@ function Tier1Cell({ kpi }: { kpi: Kpi }) {
         <span className="truncate">{kpi.change}</span>
       </div>
 
-      {kpi.latestDate && <DataQualityBadge kpi={kpi} />}
+      {kpi.latestDate && kpi.freshness && <DataQualityBadge kpi={kpi} freshness={kpi.freshness} />}
     </div>
   );
 }

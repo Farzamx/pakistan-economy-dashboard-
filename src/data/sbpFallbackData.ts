@@ -1,5 +1,5 @@
 import type { TrendPoint } from "@/components/charts/TrendLineChart";
-import type { SbpIndicatorResult } from "@/lib/data/sbp";
+import type { SbpIndicatorSnapshot } from "@/lib/data/sbp";
 
 // Fallback data, used by getSbpIndicator()/getAllSbpIndicators() in
 // src/lib/data/sbp.ts if the SBP EasyData API is unreachable or the API key
@@ -503,7 +503,7 @@ const fiscalBalanceTrend: TrendPoint[] = [
   { month: "Jun '25", value: -6.17 },
 ];
 
-export const fallbackForeignReserves: SbpIndicatorResult = {
+export const fallbackForeignReserves: SbpIndicatorSnapshot = {
   kpi: {
     title: "Total SBP Reserves",
     value: "16.0",
@@ -558,7 +558,7 @@ const netLiquidReservesTrend: TrendPoint[] = [
   { month: "31 Jul '26", value: 17.04 },
 ];
 
-export const fallbackNetLiquidReserves: SbpIndicatorResult = {
+export const fallbackNetLiquidReserves: SbpIndicatorSnapshot = {
   kpi: {
     title: "Foreign Reserves",
     value: "17.0",
@@ -579,7 +579,7 @@ export const fallbackNetLiquidReserves: SbpIndicatorResult = {
   },
 };
 
-export const fallbackUsdPkr: SbpIndicatorResult = {
+export const fallbackUsdPkr: SbpIndicatorSnapshot = {
   kpi: {
     title: "USD / PKR",
     value: "278.84",
@@ -600,7 +600,7 @@ export const fallbackUsdPkr: SbpIndicatorResult = {
   },
 };
 
-export const fallbackPolicyRate: SbpIndicatorResult = {
+export const fallbackPolicyRate: SbpIndicatorSnapshot = {
   kpi: {
     title: "Policy Rate",
     value: "11.50",
@@ -621,7 +621,7 @@ export const fallbackPolicyRate: SbpIndicatorResult = {
   },
 };
 
-export const fallbackCpiInflation: SbpIndicatorResult = {
+export const fallbackCpiInflation: SbpIndicatorSnapshot = {
   kpi: {
     title: "CPI Inflation",
     value: "11.7",
@@ -642,7 +642,7 @@ export const fallbackCpiInflation: SbpIndicatorResult = {
   },
 };
 
-export const fallbackCoreInflation: SbpIndicatorResult = {
+export const fallbackCoreInflation: SbpIndicatorSnapshot = {
   kpi: {
     title: "Core Inflation",
     value: "9.0",
@@ -663,7 +663,7 @@ export const fallbackCoreInflation: SbpIndicatorResult = {
   },
 };
 
-export const fallbackWpiInflation: SbpIndicatorResult = {
+export const fallbackWpiInflation: SbpIndicatorSnapshot = {
   kpi: {
     title: "WPI Inflation",
     value: "12.7",
@@ -684,7 +684,7 @@ export const fallbackWpiInflation: SbpIndicatorResult = {
   },
 };
 
-export const fallbackTbillYield3m: SbpIndicatorResult = {
+export const fallbackTbillYield3m: SbpIndicatorSnapshot = {
   kpi: {
     title: "3M T-Bill Yield",
     value: "12.31",
@@ -705,7 +705,7 @@ export const fallbackTbillYield3m: SbpIndicatorResult = {
   },
 };
 
-export const fallbackPibYield3y: SbpIndicatorResult = {
+export const fallbackPibYield3y: SbpIndicatorSnapshot = {
   kpi: {
     title: "3Y PIB Yield",
     value: "13.25",
@@ -734,7 +734,7 @@ export const fallbackPibYield3y: SbpIndicatorResult = {
 // time. Re-verify (and bump FALLBACK_LAST_UPDATED) once June 2026 data is
 // published — SBP typically releases the following month's remittances
 // figure in the first few business days of the next-next month.
-export const fallbackRemittances: SbpIndicatorResult = {
+export const fallbackRemittances: SbpIndicatorSnapshot = {
   kpi: {
     title: "Remittances",
     value: "4.3",
@@ -755,7 +755,7 @@ export const fallbackRemittances: SbpIndicatorResult = {
   },
 };
 
-export const fallbackCurrentAccount: SbpIndicatorResult = {
+export const fallbackCurrentAccount: SbpIndicatorSnapshot = {
   kpi: {
     title: "Current Account",
     value: "-0.32",
@@ -776,7 +776,7 @@ export const fallbackCurrentAccount: SbpIndicatorResult = {
   },
 };
 
-export const fallbackTradeBalance: SbpIndicatorResult = {
+export const fallbackTradeBalance: SbpIndicatorSnapshot = {
   kpi: {
     title: "Trade Balance",
     value: "-3.32",
@@ -797,7 +797,7 @@ export const fallbackTradeBalance: SbpIndicatorResult = {
   },
 };
 
-export const fallbackMoneySupplyM2: SbpIndicatorResult = {
+export const fallbackMoneySupplyM2: SbpIndicatorSnapshot = {
   kpi: {
     title: "Money Supply (M2)",
     value: "44.04",
@@ -823,7 +823,7 @@ export const fallbackMoneySupplyM2: SbpIndicatorResult = {
   },
 };
 
-export const fallbackExports: SbpIndicatorResult = {
+export const fallbackExports: SbpIndicatorSnapshot = {
   kpi: {
     title: "Exports",
     value: "2.37",
@@ -844,7 +844,7 @@ export const fallbackExports: SbpIndicatorResult = {
   },
 };
 
-export const fallbackImports: SbpIndicatorResult = {
+export const fallbackImports: SbpIndicatorSnapshot = {
   kpi: {
     title: "Imports",
     value: "5.69",
@@ -865,7 +865,7 @@ export const fallbackImports: SbpIndicatorResult = {
   },
 };
 
-export const fallbackFdiInflows: SbpIndicatorResult = {
+export const fallbackFdiInflows: SbpIndicatorSnapshot = {
   kpi: {
     title: "FDI Inflows",
     value: "54.5",
@@ -886,7 +886,7 @@ export const fallbackFdiInflows: SbpIndicatorResult = {
   },
 };
 
-export const fallbackReer: SbpIndicatorResult = {
+export const fallbackReer: SbpIndicatorSnapshot = {
   kpi: {
     title: "REER",
     value: "105.8",
@@ -921,7 +921,7 @@ export const fallbackReer: SbpIndicatorResult = {
 // revised in a later PBS release the way Mar 2026 shifted slightly
 // (124.89 provisional -> 124.96 as later reported by SBP) — re-verify
 // against both sources again before the next refresh, not just SBP alone.
-export const fallbackLsm: SbpIndicatorResult = {
+export const fallbackLsm: SbpIndicatorSnapshot = {
   kpi: {
     title: "LSM",
     value: "114.6",
@@ -942,7 +942,7 @@ export const fallbackLsm: SbpIndicatorResult = {
   },
 };
 
-export const fallbackPrivateCreditGrowth: SbpIndicatorResult = {
+export const fallbackPrivateCreditGrowth: SbpIndicatorSnapshot = {
   kpi: {
     title: "Private Credit Growth",
     value: "13.1",
@@ -963,7 +963,7 @@ export const fallbackPrivateCreditGrowth: SbpIndicatorResult = {
   },
 };
 
-export const fallbackFiscalBalance: SbpIndicatorResult = {
+export const fallbackFiscalBalance: SbpIndicatorSnapshot = {
   kpi: {
     title: "Fiscal Balance",
     value: "-6.17",
@@ -994,7 +994,7 @@ const netBankReservesTrend: TrendPoint[] = [
   { month: "Apr '26", value: 4.95 },
 ];
 
-export const fallbackNetBankReserves: SbpIndicatorResult = {
+export const fallbackNetBankReserves: SbpIndicatorSnapshot = {
   kpi: {
     title: "Bank Reserves",
     value: "4.95",

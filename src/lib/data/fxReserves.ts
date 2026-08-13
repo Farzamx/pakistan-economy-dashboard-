@@ -20,7 +20,9 @@
 import "server-only";
 import type { TrendPoint } from "@/components/charts/TrendLineChart";
 import type { Kpi } from "@/data/kpiData";
-import type { SbpIndicatorResult, SbpMeta } from "@/lib/data/sbp";
+import type { SbpIndicatorResult, SbpIndicatorSnapshot, SbpMeta } from "@/lib/data/sbp";
+import { evaluateFreshness, type FreshnessResult } from "@/lib/freshness/freshnessEngine";
+import { getSeriesDefinition, FX_RESERVES_INDICATOR_KEY } from "@/lib/freshness/seriesRegistry";
 import type { SourceStatus } from "@/lib/dataQuality";
 import { getTrendDirection } from "@/lib/trendDirection";
 import { dedupeInFlight, getFresh, getStale, setCache } from "@/lib/memoryCache";
@@ -29,6 +31,7 @@ import {
   type FxReservesWeeklyRow,
 } from "@/lib/economicCalendar/automation/syncFxReservesFromSbpExcel";
 import { fallbackNetLiquidReserves } from "@/data/sbpFallbackData";
+import { getCanonicalNetLiquidReservesHistory } from "@/lib/data/netLiquidReservesCanonicalStore";
 
 // SBP publishes a new week-ending observation on Thursdays/Fridays — matches
 // the revalidate window sbp.ts uses for its own weekly/as-needed series
@@ -130,6 +133,7 @@ function buildKpi(history: FxReservesWeeklyRow[], sourceStatus: SourceStatus): K
     frequency: "Weekly",
     sourceStatus,
     snapshotDate: isFallback ? latest.weekEndingDate : undefined,
+    freshness: evaluateFxReservesFreshness(latest.weekEndingDate),
   };
 }
 
@@ -145,7 +149,90 @@ function buildMeta(history: FxReservesWeeklyRow[], sourceStatus: SourceStatus): 
     observationDate: latest.weekEndingDate,
     lastUpdated: new Date().toISOString(),
     sourceStatus,
+    // Phase 6: the authoritative verdict comes from the observation's own
+    // week-ending date against this series' declared weekly cadence -- never
+    // from `sourceStatus` above, which only records how the value reached us.
+    // A successful spreadsheet parse of a two-month-old week is still stale.
+    freshness: evaluateFxReservesFreshness(latest.weekEndingDate),
   };
+}
+
+/** Pure, synchronous, no I/O -- adds no query to any render path. */
+function evaluateFxReservesFreshness(weekEndingDate: string, now: Date = new Date()): FreshnessResult {
+  const definition = getSeriesDefinition(FX_RESERVES_INDICATOR_KEY);
+  if (!definition) {
+    // Unreachable in practice (the entry is a module-level constant in
+    // seriesRegistry.ts). Fails safe rather than silently claiming currency.
+    return {
+      state: "source-unavailable",
+      severity: "caution",
+      seriesId: FX_RESERVES_INDICATOR_KEY,
+      observationPeriod: weekEndingDate,
+      expectedPeriodOrDate: null,
+      expectedDateSource: null,
+      ageDays: null,
+      reasonCode: "series-definition-missing",
+      reason: "No freshness definition is registered for this series.",
+      evidence: ["series definition missing from the freshness registry"],
+    };
+  }
+  return evaluateFreshness(
+    {
+      observationPeriod: weekEndingDate,
+      value: null,
+      // Forex_Arch.xlsx carries no release-date/source-updated-at metadata --
+      // left null rather than fabricated, so the engine degrades honestly to
+      // cadence-based evaluation (and can never emit ingestion-lagging here).
+      releaseDate: null,
+      sourceUpdatedAt: null,
+      fetchedAt: null,
+      vintage: null,
+    },
+    definition,
+    { now },
+  );
+}
+
+/**
+ * The static snapshot (src/data/sbpFallbackData.ts) carries no verdict by
+ * design -- a checked-in constant cannot know today's date. Attach one at
+ * runtime, exactly like every live path, so a fallback can never be rendered
+ * without an authoritative freshness state.
+ */
+function withFallbackFreshness(snapshot: SbpIndicatorSnapshot): SbpIndicatorResult {
+  return {
+    ...snapshot,
+    kpi: { ...snapshot.kpi, freshness: evaluateFxReservesFreshness(snapshot.meta.observationDate) },
+    meta: { ...snapshot.meta, freshness: evaluateFxReservesFreshness(snapshot.meta.observationDate) },
+  };
+}
+
+// ── Phase 8.10B: canonical-DB-backed primary path for the single
+// "NET RESERVES WITH SBP" series ────────────────────────────────────────
+//
+// Scope note: only ONE of Forex_Arch.xlsx's three columns
+// ("NET RESERVES WITH SBP") is canonicalized -- "NET RESERVES WITH BANKS"
+// and "TOTAL LIQUID FX RESERVES" are not. buildKpi()/buildMeta()/buildTrend()
+// above only ever read `netSbpReservesM` (confirmed by inspection — neither
+// bank nor total fields are referenced by any of them), so a canonical-only
+// FxReservesWeeklyRow can safely satisfy their existing signatures with
+// placeholder zeros for the two uncanonicalized fields. Those placeholders
+// must NEVER reach a real consumer: getFxReservesWeeklySnapshot() (the one
+// function that genuinely needs bank/total figures) is deliberately left on
+// the live-fetch path below, unchanged, never on canonical-derived rows.
+const NET_LIQUID_RESERVES_INDICATOR_KEY = "sbp-forex-arch:netLiquidReserves";
+
+async function fetchCanonicalHistoryAsWeeklyRows(): Promise<FxReservesWeeklyRow[]> {
+  const rows = await getCanonicalNetLiquidReservesHistory(NET_LIQUID_RESERVES_INDICATOR_KEY, 500);
+  if (rows.length === 0) {
+    throw new Error(`No canonical observations ingested yet for ${NET_LIQUID_RESERVES_INDICATOR_KEY} — run scripts/ingestNetLiquidReserves.ts`);
+  }
+  return rows.map((r) => ({
+    weekEndingDate: r.observationPeriod,
+    netSbpReservesM: r.value,
+    netBankReservesM: 0, // placeholder — not canonicalized; never read by buildKpi/buildMeta/buildTrend, see note above
+    totalLiquidReservesM: 0, // placeholder — see note above
+  }));
 }
 
 function buildTrend(history: FxReservesWeeklyRow[]): TrendPoint[] {
@@ -156,28 +243,60 @@ function buildTrend(history: FxReservesWeeklyRow[]): TrendPoint[] {
 }
 
 /**
- * The dashboard's primary "Foreign Reserves" KPI + 24-week trend — same
- * three-tier resolution as getSbpIndicator() (L1 cache -> live fetch ->
- * last-known-good stale cache -> static fallback), same SbpIndicatorResult
- * shape so every existing KpiCard/SeoPageLayout/DataQualityBadge consumer
- * works unchanged.
+ * The dashboard's primary "Foreign Reserves" KPI + 24-week trend.
+ *
+ * Phase 8.10B: now DB-first. Four-tier resolution, mirroring
+ * src/lib/data/worldBank.ts's getGdpKpi() precedent exactly:
+ *  1. Canonical DB read (fetchCanonicalHistoryAsWeeklyRows — migration
+ *     0050/0051, populated by scripts/ingestNetLiquidReserves.ts). Labeled
+ *     "live": as current as the last successful ingestion run.
+ *  2. DB read failed or empty (e.g. ingestion never run yet): falls back to
+ *     the existing fetchHistoryThroughCache() path — itself already a
+ *     three-tier resolution (L1 cache -> live Excel fetch -> last-known-good
+ *     stale cache), completely unchanged. Kept as a fallback tier rather
+ *     than removed for the same reasoning as World Bank: dropping it would
+ *     only make the system more fragile, not differently architected —
+ *     though note (Phase 8.10A finding) the live Excel fetch itself is
+ *     presently blocked from Vercel/cloud infra by the same Cloudflare
+ *     behavior documented for easydata.sbp.org.pk, so in practice this tier
+ *     will usually itself fall through to its own stale-cache tier until a
+ *     future phase migrates that transport too (out of this phase's scope).
+ *  3. Both failed: the static, dateless fallbackNetLiquidReserves snapshot.
+ *
+ * Same SbpIndicatorResult shape throughout, so every existing
+ * KpiCard/SeoPageLayout/DataQualityBadge consumer works unchanged.
  */
 export async function getNetLiquidReserves(): Promise<SbpIndicatorResult> {
   try {
-    const { history, sourceStatus } = await fetchHistoryThroughCache();
-    return { kpi: buildKpi(history, sourceStatus), trend: buildTrend(history), meta: buildMeta(history, sourceStatus) };
-  } catch {
-    return fallbackNetLiquidReserves;
+    const history = await fetchCanonicalHistoryAsWeeklyRows();
+    setCache(CACHE_KEY, history); // shares the same L1 slot fetchHistoryThroughCache() already uses, so a later transient DB failure can still fall through to a recent DB-sourced stale copy
+    logFx("live", `read from canonical DB, ${history.length} weekly points, latest=${history[history.length - 1].weekEndingDate}`);
+    return { kpi: buildKpi(history, "live"), trend: buildTrend(history), meta: buildMeta(history, "live") };
+  } catch (dbErr) {
+    console.error(`[FxReserves] canonical DB read failed for ${NET_LIQUID_RESERVES_INDICATOR_KEY}, falling back to live fetch: ${dbErr instanceof Error ? dbErr.message : String(dbErr)}`);
+    try {
+      const { history, sourceStatus } = await fetchHistoryThroughCache();
+      return { kpi: buildKpi(history, sourceStatus), trend: buildTrend(history), meta: buildMeta(history, sourceStatus) };
+    } catch {
+      return withFallbackFreshness(fallbackNetLiquidReserves);
+    }
   }
 }
 
-/** For the sync/freshness-audit pipelines only — bypasses the L1 cache. Mirrors getSbpIndicatorHistoryFresh()'s role in sbp.ts. */
+/** For the sync/freshness-audit pipelines only — bypasses the L1 cache. Same DB-first-then-live-fetch resolution as getNetLiquidReserves(); "fresh" here means bypassing the L1 cache on the live-fetch fallback tier, matching the pre-8.10B contract exactly (the canonical DB read has no cache of its own to bypass). Mirrors getSbpIndicatorHistoryFresh()'s role in sbp.ts. */
 export async function getNetLiquidReservesFresh(): Promise<SbpIndicatorResult> {
   try {
-    const { history, sourceStatus } = await fetchHistoryThroughCache(true);
-    return { kpi: buildKpi(history, sourceStatus), trend: buildTrend(history), meta: buildMeta(history, sourceStatus) };
-  } catch {
-    return fallbackNetLiquidReserves;
+    const history = await fetchCanonicalHistoryAsWeeklyRows();
+    logFx("live", `read from canonical DB (fresh), ${history.length} weekly points, latest=${history[history.length - 1].weekEndingDate}`);
+    return { kpi: buildKpi(history, "live"), trend: buildTrend(history), meta: buildMeta(history, "live") };
+  } catch (dbErr) {
+    console.error(`[FxReserves] canonical DB read failed for ${NET_LIQUID_RESERVES_INDICATOR_KEY}, falling back to live fetch: ${dbErr instanceof Error ? dbErr.message : String(dbErr)}`);
+    try {
+      const { history, sourceStatus } = await fetchHistoryThroughCache(true);
+      return { kpi: buildKpi(history, sourceStatus), trend: buildTrend(history), meta: buildMeta(history, sourceStatus) };
+    } catch {
+      return withFallbackFreshness(fallbackNetLiquidReserves);
+    }
   }
 }
 

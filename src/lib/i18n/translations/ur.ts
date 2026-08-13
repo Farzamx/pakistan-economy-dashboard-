@@ -94,7 +94,7 @@ export const ur: Translations = {
     globalMarketsDesc: "قیمتی دھاتیں، توانائی کے معیار، اور امریکی شرحیں جو عالمی خطرے کی بھوک اور پاکستان کے درآمدی بل پر اثر ڈالتی ہیں۔",
     realEconomyFiscal: "حقیقی معیشت اور مالیات",
     realEconomyFiscalDesc: "تجارتی بہاؤ، سرمایہ کاری، مسابقت، صنعتی پیداوار، قرضوں کی توسیع، اور پاکستان کی مالی پوزیشن۔",
-    liveExchangeRates: "لائیو شرح تبادلہ",
+    liveExchangeRates: "شرح تبادلہ",
     liveExchangeRatesDesc: "PKR کراس پیئرز کے لیے موجودہ انٹربینک مارکیٹ ریٹ، Yahoo Finance مارکیٹ ڈیٹا سے ان ٹریڈنگ ڈے میں اپڈیٹ۔",
     sbpReserves: "SBP ذخائر", commercialBanks: "تجارتی بینک",
     totalReserves: "کل ذخائر", importCover: "درآمد کور",
@@ -351,6 +351,7 @@ export const ur: Translations = {
     agriculture: "زراعت", industry: "صنعت", services: "خدمات",
     sourcesLabel: "ذرائع:", noOverlapDetailed: "ان دو اشاروں کے درمیان کوئی مشترکہ ڈیٹا نہیں۔",
     unavailableError: "ایک یا دونوں اشارے ابھی دستیاب نہیں — تھوڑی دیر بعد کوشش کریں۔",
+    incompatibleFrequency: "ان اشاروں کی فریکوئنسی مختلف ہے اور ان کا براہ راست موازنہ ممکن نہیں۔", differentUnitsNote: "یہ اشارے مختلف اکائیوں میں ہیں — الگ محوروں پر دکھائے گئے ہیں۔",
     perfKseNote: "KSE-100 (پاکستان کی اسٹاک مارکیٹ) شامل نہیں — اس ڈیش بورڈ پر KSE-100 کا تاریخی ڈیٹا دستیاب نہیں، اور ایک پراکسی منافع کو اصل انڈیکس کے طور پر پیش نہیں کیا جانا چاہیے۔",
   },
 

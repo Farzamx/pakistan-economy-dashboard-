@@ -3,20 +3,28 @@
 // sbp.ts stays client-safe on principle — a data-fetching module with no
 // server-only/SBP-credential-adjacent imports, safe for any future code to
 // depend on from either side of the boundary. This file is where anything
-// that needs the PBS canonical override actually lives.
+// that needs the PBS override actually lives.
 //
 // This module solves that split cleanly:
 //   - sbp.ts        → client-safe, SBP EasyData only, imported by both server
 //                     and client-reachable code (history, types, fallbacks)
-//   - sbpServer.ts  → this file, server-only, adds the canonical PBS override
-//                     for PBS-primary indicators. All server pages and
+//   - sbpServer.ts  → this file, server-only, adds the PBS override for
+//                     PBS-primary indicators. All server pages and
 //                     server-only lib modules import from here.
 //
-// Canonical override covers 6 PBS-primary indicators (CANONICAL_SERIES_SLUGS):
+// PBS override covers 6 PBS-primary indicators (PBS_PRIMARY_SERIES_SLUGS):
 //   CPI, Core Inflation, LSM, Trade Balance: PBS publishes 1–5 days before SBP EasyData.
 //   Exports, Imports: PBS advance release publishes 28–30 days before SBP BPM6.
 //
-// The canonical override is applied after getSbpIndicator / getAllSbpIndicators
+// Phase 8.0 naming note: this was previously called the "canonical override"
+// / CANONICAL_SERIES_SLUGS. Renamed because it has nothing to do with
+// canonical_observations (migration 0050+, the numeric observation ledger) —
+// it overlays a value read from economic_events (the release/calendar
+// ledger) via src/lib/data/latestReleasedEventValue.ts. See that file's
+// header for the full architectural-boundary explanation. No behavior
+// changed by this rename.
+//
+// The override is applied after getSbpIndicator / getAllSbpIndicators
 // resolves. For all other indicators it is a fast no-op. The SBP trend/sparkline
 // is always preserved — PBS does not publish long time-series.
 //
@@ -59,12 +67,13 @@ import {
   getSbpIndicator as _getSbpIndicator,
   getAllSbpIndicators as _getAllSbpIndicators,
   getSbpIndicatorHistory as _getSbpIndicatorHistory,
+  evaluateSbpFreshness,
   type SbpIndicatorKey,
   type SbpIndicatorResult,
   type SbpIndicatorHistory,
 } from "@/lib/data/sbp";
 
-import { getLatestCanonicalObservation } from "@/lib/data/canonicalObservation";
+import { getLatestReleasedEventValue } from "@/lib/data/latestReleasedEventValue";
 import { getTrendDirection } from "@/lib/trendDirection";
 import type { Trend } from "@/data/kpiData";
 
@@ -87,7 +96,7 @@ function changeLabel(diff: number, prevLabel: string, format: (d: number) => str
 
 // Maps indicator key → series slug in economic_event_series.
 // All others short-circuit immediately in applyCanonicalOverride.
-const CANONICAL_SERIES_SLUGS: Partial<Record<SbpIndicatorKey, string>> = {
+const PBS_PRIMARY_SERIES_SLUGS: Partial<Record<SbpIndicatorKey, string>> = {
   cpiInflation:  "cpi-inflation-release",
   coreInflation: "core-inflation-release",
   lsm:           "large-scale-manufacturing-lsm-growth",
@@ -117,11 +126,11 @@ async function applyCanonicalOverride(
   key: SbpIndicatorKey,
   sbpResult: SbpIndicatorResult,
 ): Promise<SbpIndicatorResult> {
-  const seriesSlug = CANONICAL_SERIES_SLUGS[key];
+  const seriesSlug = PBS_PRIMARY_SERIES_SLUGS[key];
   if (!seriesSlug) return sbpResult;
 
   try {
-    const canonical = await getLatestCanonicalObservation(seriesSlug);
+    const canonical = await getLatestReleasedEventValue(seriesSlug);
     if (!canonical) return sbpResult;
 
     // Only override when canonical covers a newer reference period than SBP.
@@ -158,6 +167,17 @@ async function applyCanonicalOverride(
 
     const isBillionsUsd = key === "tradeBalance" || key === "exports" || key === "imports";
 
+    // Phase 8.0 freshness-invariant fix: observationDate is about to be
+    // rewritten to the PBS date below. Recompute freshness for THAT date
+    // now, at the single point the rewrite happens, and stamp both
+    // meta.freshness and kpi.freshness with it — reusing sbp.ts's own
+    // evaluateSbpFreshness (no second freshness algorithm). Before this fix,
+    // the override rewrote observationDate/sourceStatus but left the
+    // verdict computed against the OLDER SBP date attached, violating the
+    // Phase 6 invariant that an observation and its freshness verdict must
+    // describe the same observation.
+    const updatedFreshness = evaluateSbpFreshness(key, { ...sbpResult.meta, observationDate: canonical.observationDate });
+
     return {
       ...sbpResult,
       kpi: {
@@ -174,11 +194,13 @@ async function applyCanonicalOverride(
         latestDate:   canonical.observationDate,
         sourceStatus: "live" as const,
         snapshotDate: undefined,
+        freshness:    updatedFreshness,
       },
       meta: {
         ...sbpResult.meta,
         observationDate: canonical.observationDate,
         sourceStatus:    "live" as const,
+        freshness:       updatedFreshness,
       },
     };
   } catch (err) {
@@ -201,11 +223,11 @@ async function applyCanonicalOverrideToHistory(
   key: SbpIndicatorKey,
   history: SbpIndicatorHistory,
 ): Promise<SbpIndicatorHistory> {
-  const seriesSlug = CANONICAL_SERIES_SLUGS[key];
+  const seriesSlug = PBS_PRIMARY_SERIES_SLUGS[key];
   if (!seriesSlug) return history;
 
   try {
-    const canonical = await getLatestCanonicalObservation(seriesSlug);
+    const canonical = await getLatestReleasedEventValue(seriesSlug);
     if (!canonical) return history;
 
     const lastPoint = history.points[history.points.length - 1];
@@ -216,12 +238,16 @@ async function applyCanonicalOverrideToHistory(
       `(SBP EasyData history's latest point: ${lastPoint?.date ?? "none"}) | value=${canonical.value} (${canonical.sourceName})`,
     );
 
+    // Phase 8.0 freshness-invariant fix — same reasoning as applyCanonicalOverride above.
+    const updatedFreshness = evaluateSbpFreshness(key, { ...history.meta, observationDate: canonical.observationDate });
+
     return {
       points: [...history.points, { date: canonical.observationDate, value: canonical.value }],
       meta: {
         ...history.meta,
         observationDate: canonical.observationDate,
         sourceStatus: "live" as const,
+        freshness: updatedFreshness,
       },
     };
   } catch (err) {
@@ -272,7 +298,7 @@ export async function getSbpIndicator(key: SbpIndicatorKey): Promise<SbpIndicato
 export async function getAllSbpIndicators(): Promise<Record<SbpIndicatorKey, SbpIndicatorResult>> {
   const base = await _getAllSbpIndicators();
 
-  const canonicalKeys = Object.keys(CANONICAL_SERIES_SLUGS) as SbpIndicatorKey[];
+  const canonicalKeys = Object.keys(PBS_PRIMARY_SERIES_SLUGS) as SbpIndicatorKey[];
   const overrides = await Promise.all(
     canonicalKeys.map((key) => applyCanonicalOverride(key, base[key])),
   );

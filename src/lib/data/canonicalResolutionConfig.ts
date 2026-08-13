@@ -1,7 +1,11 @@
 import type { SbpIndicatorKey } from "@/lib/data/sbp";
 
 // Data-driven provider precedence for the canonical resolution layer
-// (supabase/migrations/0050_raw_canonical_observations.sql). Every SBP
+// (supabase/migrations/0050_raw_canonical_observations.sql) — the NUMERIC
+// OBSERVATION LEDGER. (Not to be confused with economic_events, the
+// separate release/calendar ledger — see src/lib/data/latestReleasedEventValue.ts's
+// header for the full boundary explanation between the two; PBS is not yet
+// a provider here, see that file's Phase 8.0 finding.) Every SBP
 // indicator maps to an ordered list of provider ids — resolveCanonicalObservation
 // callers (scripts/ingestSbp.ts today) always write with the FIRST entry as
 // source_provider. Wave 1 ships every indicator single-sourced from SBP
