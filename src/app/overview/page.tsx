@@ -75,6 +75,27 @@ const OVERVIEW_DESCRIPTION =
   "Real-time dashboard tracking Pakistan GDP, inflation, exchange rates, reserves, remittances, financial markets, monetary policy, and economic indicators in one place.";
 const OVERVIEW_SOCIAL_DESCRIPTION = "Real-time dashboard tracking Pakistan's key economic indicators.";
 
+// Phase 8.13B: explicit ISR window, replacing an ACCIDENTAL one. Before this
+// change, this route had no revalidate declaration of its own; `next build`
+// reported a 5-minute (300s) window anyway, entirely as a side effect of
+// src/lib/economicCalendar/economicEventsRepo.ts's unstable_cache(revalidate:
+// 300) calls (getAllScheduledEvents/getHistoricalEvents, used here only for
+// calendar-freshness cross-referencing) being the shortest cache signal
+// anywhere in this page's render tree — Next.js's route-segment revalidate is
+// the minimum of every cache signal it finds, not a deliberate choice anyone
+// made for macro/FX freshness (Phase 8.13A audit finding). 900s (15 min)
+// replaces that accidental dependency with the same explicit, evidence-based
+// value used on "/" and "/home" (see page.tsx's comment) — reused here rather
+// than re-derived because this route renders the exact same getFxRates() live
+// quote and the exact same getAllSbpIndicators() macro data as the marketing
+// pages; there is no basis for a different number. This loosens the page's
+// regeneration from the previous incidental 5 minutes to a deliberate 15 —
+// still well within fxRates.ts's own definition of "genuinely near-real-time"
+// for these specific quotes, and unrelated to how often calendar events
+// themselves need re-checking (economicEventsRepo.ts's own cache is
+// untouched and keeps its independent 300s window).
+export const revalidate = 900;
+
 export const metadata: Metadata = {
   title: OVERVIEW_TITLE,
   description: OVERVIEW_DESCRIPTION,
