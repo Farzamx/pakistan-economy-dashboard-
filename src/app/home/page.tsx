@@ -21,6 +21,13 @@ export const metadata: Metadata = {
   twitter: { card: "summary_large_image", title: SITE_NAME, description: DESCRIPTION },
 };
 
+// Phase 8.13B: same explicit ISR window as "/" (see that file's comment for
+// the full rationale) — required here too because Next.js route-segment
+// config is per-route, not inherited from the shared <LandingPage/> component
+// the two routes render. Without this, "/" refreshing would not imply "/home"
+// does; both must declare it independently for the fix to cover both URLs.
+export const revalidate = 900;
+
 export default function HomePage() {
   return <LandingPage />;
 }
