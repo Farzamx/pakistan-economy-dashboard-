@@ -14,6 +14,16 @@ export interface MacroDriver {
   unit: string;
   change: string;
   trend: Kpi["trend"];
+  /**
+   * "Jul 2026" — the observation period this value actually reports on
+   * (from the underlying series' own observationDate/latestDate), never
+   * the date the app fetched or cached the value. Phase 9.2 freshness
+   * audit: several of these drivers (Exports, Imports especially) had no
+   * period indicator at all, making it impossible to tell whether a shown
+   * figure was the latest available release or an older one still
+   * pending an update — omit to render the cell exactly as before.
+   */
+  asOf?: string;
 }
 
 interface Props {
@@ -99,6 +109,9 @@ function Tier2Cell({ driver }: { driver: MacroDriver }) {
         <TrendArrowIcon trend={driver.trend} className="h-2 w-2" />
         {driver.change}
       </span>
+      {driver.asOf && (
+        <span className="text-[10px] text-white/30 light:text-slate-400">As of {driver.asOf}</span>
+      )}
     </div>
   );
 }

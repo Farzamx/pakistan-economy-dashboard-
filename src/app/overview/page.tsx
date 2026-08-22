@@ -31,6 +31,7 @@ import { sectionData } from "@/data/sectionData";
 import { getFreshnessStatus } from "@/lib/dataFreshness";
 import { getDataQuality } from "@/lib/dataQuality";
 import { getTrendDirection } from "@/lib/trendDirection";
+import { formatMonthLabel } from "@/lib/formatMonthLabel";
 import { getMostRecentEvent, valueMatchesEventOutcome } from "@/lib/economicCalendar/economicCalendarData";
 import { getAllScheduledEvents, getHistoricalEvents, toEconomicEvent } from "@/lib/economicCalendar/economicEventsRepo";
 import type { AiEconomicAnalysis } from "@/lib/data/aiEconomicAnalysis";
@@ -606,14 +607,22 @@ export default async function Home() {
     headlineKpis[3],
   ];
 
+  // asOf: the observation period each figure actually reports on (from the
+  // indicator's own meta.observationDate — never the fetch/cache time),
+  // formatted "Jul 2026". Phase 9.2 freshness audit: this tier previously
+  // showed no period at all, making Exports/Imports (and every other driver
+  // here) impossible to date at a glance — a genuinely stale value and a
+  // freshly-released one were visually identical. Applied to every driver
+  // in this tier, not just Exports/Imports, since they all share the exact
+  // same ambiguity and singling out two would be its own inconsistency.
   const macroTier2 = [
-    { label: "Current Account", value: sbp.currentAccount.kpi.value, unit: sbp.currentAccount.kpi.unit, change: sbp.currentAccount.kpi.change, trend: sbp.currentAccount.kpi.trend },
-    { label: "Trade Balance", value: sbp.tradeBalance.kpi.value, unit: sbp.tradeBalance.kpi.unit, change: sbp.tradeBalance.kpi.change, trend: sbp.tradeBalance.kpi.trend },
-    { label: "Remittances", value: sbp.remittances.kpi.value, unit: sbp.remittances.kpi.unit, change: sbp.remittances.kpi.change, trend: sbp.remittances.kpi.trend },
-    { label: "Exports", value: sbp.exports.kpi.value, unit: sbp.exports.kpi.unit, change: sbp.exports.kpi.change, trend: sbp.exports.kpi.trend },
-    { label: "Imports", value: sbp.imports.kpi.value, unit: sbp.imports.kpi.unit, change: sbp.imports.kpi.change, trend: sbp.imports.kpi.trend },
-    { label: "Fiscal Balance", value: sbp.fiscalBalance.kpi.value, unit: sbp.fiscalBalance.kpi.unit, change: sbp.fiscalBalance.kpi.change, trend: sbp.fiscalBalance.kpi.trend },
-    { label: "Money Supply (M2)", value: sbp.moneySupplyM2.kpi.value, unit: sbp.moneySupplyM2.kpi.unit, change: sbp.moneySupplyM2.kpi.change, trend: sbp.moneySupplyM2.kpi.trend },
+    { label: "Current Account", value: sbp.currentAccount.kpi.value, unit: sbp.currentAccount.kpi.unit, change: sbp.currentAccount.kpi.change, trend: sbp.currentAccount.kpi.trend, asOf: formatMonthLabel(sbp.currentAccount.meta.observationDate) },
+    { label: "Trade Balance", value: sbp.tradeBalance.kpi.value, unit: sbp.tradeBalance.kpi.unit, change: sbp.tradeBalance.kpi.change, trend: sbp.tradeBalance.kpi.trend, asOf: formatMonthLabel(sbp.tradeBalance.meta.observationDate) },
+    { label: "Remittances", value: sbp.remittances.kpi.value, unit: sbp.remittances.kpi.unit, change: sbp.remittances.kpi.change, trend: sbp.remittances.kpi.trend, asOf: formatMonthLabel(sbp.remittances.meta.observationDate) },
+    { label: "Exports", value: sbp.exports.kpi.value, unit: sbp.exports.kpi.unit, change: sbp.exports.kpi.change, trend: sbp.exports.kpi.trend, asOf: formatMonthLabel(sbp.exports.meta.observationDate) },
+    { label: "Imports", value: sbp.imports.kpi.value, unit: sbp.imports.kpi.unit, change: sbp.imports.kpi.change, trend: sbp.imports.kpi.trend, asOf: formatMonthLabel(sbp.imports.meta.observationDate) },
+    { label: "Fiscal Balance", value: sbp.fiscalBalance.kpi.value, unit: sbp.fiscalBalance.kpi.unit, change: sbp.fiscalBalance.kpi.change, trend: sbp.fiscalBalance.kpi.trend, asOf: formatMonthLabel(sbp.fiscalBalance.meta.observationDate) },
+    { label: "Money Supply (M2)", value: sbp.moneySupplyM2.kpi.value, unit: sbp.moneySupplyM2.kpi.unit, change: sbp.moneySupplyM2.kpi.change, trend: sbp.moneySupplyM2.kpi.trend, asOf: formatMonthLabel(sbp.moneySupplyM2.meta.observationDate) },
   ];
 
   const globalMarketsKpis = [

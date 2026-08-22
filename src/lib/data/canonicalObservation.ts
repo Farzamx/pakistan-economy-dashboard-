@@ -1,6 +1,7 @@
 import "server-only";
 import { createPublicDataClient } from "@/lib/supabase/publicDataClient";
 import { getFresh, setCache } from "@/lib/memoryCache";
+import { CANONICAL_VALUE_PARSERS } from "@/lib/data/canonicalObservationParsers";
 
 // TTL for the canonical observation cache. Short enough that the KPI card
 // reflects a new PBS sync within 5 minutes; long enough to avoid a Supabase
@@ -18,43 +19,7 @@ export interface CanonicalObservation {
   formattedValue: string;
 }
 
-// --- Value parsers keyed by series slug -----------------------------------
-//
-// Each parser handles the exact actual_value format written by the corresponding
-// sync module. The format conventions are:
-//   syncCpiFromPbs:          "+11.3% YoY" | "11.3% YoY" | "-2.1% YoY"
-//   syncLsmFromPbs:          "+6.1% YoY"  | "-1.4% YoY"
-//   syncLsmYoYFromEasyData:  "+6.1% YoY"  | "-1.4% YoY"
-//   syncTradeBalanceFromPbs: "-$2.84B"    | "+$0.30B"    (trade balance, signed)
-//                            "$2.69B"                    (exports, always positive)
-//                            "$5.47B"                    (imports, always positive)
-
-function parsePercentYoY(v: string): number | null {
-  // Accepts "+11.3% YoY", "11.3% YoY", "-2.1% YoY"
-  const m = v.match(/^([+-]?)([\d.]+)\s*%/);
-  if (!m) return null;
-  const n = parseFloat(m[2]);
-  if (isNaN(n)) return null;
-  return m[1] === "-" ? -n : n;
-}
-
-function parseBillionsUsd(v: string): number | null {
-  // Accepts "-$2.84B", "+$0.30B", "$2.84B", "$5.47B"
-  const m = v.match(/^([+-]?)\$?([\d.]+)B$/i);
-  if (!m) return null;
-  const n = parseFloat(m[2]);
-  if (isNaN(n)) return null;
-  return m[1] === "-" ? -n : n;
-}
-
-const PARSERS: Record<string, (v: string) => number | null> = {
-  "cpi-inflation-release":                parsePercentYoY,
-  "core-inflation-release":               parsePercentYoY,
-  "large-scale-manufacturing-lsm-growth": parsePercentYoY,
-  "trade-balance":                        parseBillionsUsd,
-  "exports-release":                      parseBillionsUsd,
-  "imports-release":                      parseBillionsUsd,
-};
+const PARSERS = CANONICAL_VALUE_PARSERS;
 
 async function fetchFromDb(seriesSlug: string): Promise<CanonicalObservation | null> {
   const supabase = createPublicDataClient();
