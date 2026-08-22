@@ -6,7 +6,7 @@ import type { Kpi } from "@/data/kpiData";
 import AnimatedValue from "@/components/AnimatedValue";
 import InfoTooltip from "@/components/InfoTooltip";
 import DataQualityBadge from "@/components/DataQualityBadge";
-import { getDataQuality, DATA_QUALITY_DOT } from "@/lib/dataQuality";
+import { FRESHNESS_SEVERITY_DOT, FRESHNESS_STATE_LABEL } from "@/lib/freshness/readModel";
 import { getActiveTier, SOURCE_CHAINS } from "@/lib/marketDataSources";
 import { KPI_SEO_SLUG } from "@/lib/seoConfig";
 import { TrendArrowIcon, TREND_TEXT_COLOR, TREND_STROKE_COLOR } from "@/components/TrendIndicator";
@@ -54,7 +54,7 @@ function Sparkline({ data, trend }: { data: number[]; trend: Kpi["trend"] }) {
   );
 }
 
-export default function KpiCard({ title, value, unit, change, trend, source, latestDate, frequency, marketType, expectedReleaseDate, releaseAlreadyReflected, sourceStatus, snapshotDate, sparkline }: Kpi) {
+export default function KpiCard({ title, value, unit, change, trend, source, latestDate, frequency, marketType, sourceStatus, snapshotDate, sparkline, freshness: kpiFreshness }: Kpi) {
   const { t } = useLanguage();
 
   const trendColor = TREND_TEXT_COLOR[trend];
@@ -77,9 +77,13 @@ export default function KpiCard({ title, value, unit, change, trend, source, lat
   // Unavailable classification DataQualityBadge already computes, surfaced
   // a second time (cheap, synchronous, no fetch) right next to the title
   // so freshness reads at a glance instead of only in the small footer text.
-  const quality = latestDate
-    ? getDataQuality({ sourceStatus: sourceStatus ?? "live", latestDate, frequency, marketType, expectedReleaseDate, releaseAlreadyReflected, snapshotDate })
-    : null;
+  // Phase 6: the header dot and the footer badge both render the SAME
+  // authoritative verdict produced upstream by the freshness engine -- this
+  // component no longer classifies anything itself. Migrated providers (SBP
+  // EasyData, Net Liquid FX Reserves) always supply it. Non-migrated
+  // providers (Global Markets/World Bank, out of Phase 6 scope) still pass a
+  // bare Kpi; those cards show no freshness chrome rather than a guess.
+  const freshness = kpiFreshness ?? null;
 
   return (
     <motion.div
@@ -93,14 +97,14 @@ export default function KpiCard({ title, value, unit, change, trend, source, lat
           <span className="text-label truncate text-white/50 light:text-slate-500">{title}</span>
           <InfoTooltip termKey={title} />
         </div>
-        {quality && (
+        {freshness && (
           // v4 accessibility: dot grown 8px→10px and given a real accessible
           // name (sr-only text) instead of aria-hidden + title-only — the
           // freshness state is information, not decoration, so it must be
           // reachable by screen readers and not color-only.
-          <span className={`shrink-0 text-[10px] ${DATA_QUALITY_DOT[quality.state]}`} title={quality.state}>
+          <span className={`shrink-0 text-[10px] ${FRESHNESS_SEVERITY_DOT[freshness.severity]}`} title={freshness.reason}>
             <span aria-hidden="true">&#9679;</span>
-            <span className="sr-only">Data status: {quality.state}</span>
+            <span className="sr-only">Data status: {FRESHNESS_STATE_LABEL[freshness.state]}</span>
           </span>
         )}
       </div>
@@ -133,9 +137,10 @@ export default function KpiCard({ title, value, unit, change, trend, source, lat
 
       {/* Row 4 — source/frequency/updated footer, always visible (the
           data-provenance floor every card guarantees) */}
-      {latestDate && (
+      {latestDate && freshness && (
         <DataQualityBadge
-          kpi={{ source, latestDate, frequency, marketType, expectedReleaseDate, releaseAlreadyReflected, sourceStatus, snapshotDate }}
+          kpi={{ source, latestDate, frequency, marketType, sourceStatus, snapshotDate }}
+          freshness={freshness}
           extraTooltip={sourceChainNote ?? undefined}
           className="section-divider pt-2"
         />

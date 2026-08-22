@@ -1,6 +1,7 @@
 import type { DataFrequency } from "@/lib/dataFreshness";
 import type { MarketType } from "@/lib/marketCalendar";
 import type { SourceStatus } from "@/lib/dataQuality";
+import type { FreshnessResult } from "@/lib/freshness/freshnessEngine";
 
 export type Trend = "up" | "down" | "neutral";
 
@@ -27,6 +28,19 @@ export interface Kpi {
   expectedReleaseDate?: string;
   /** Whether this KPI's value already matches the known outcome of expectedReleaseDate — see dataFreshness.ts's FreshnessOptions for why this matters (a "hold" decision produces no new dated observation at all). */
   releaseAlreadyReflected?: boolean;
+  /**
+   * Phase 6: the authoritative freshness verdict for this observation, from
+   * src/lib/freshness/freshnessEngine.ts.
+   *
+   * Optional ONLY as a legacy carrier boundary: Kpi is shared with providers
+   * not yet migrated (Global Markets, World Bank, metals). It is populated
+   * for every migrated path (SBP EasyData via sbp.ts, Net Liquid FX Reserves
+   * via fxReserves.ts). The final rendering component (DataQualityBadge)
+   * takes freshness as a REQUIRED prop, so a migrated observation can never
+   * be rendered without its verdict -- the optionality never reaches the
+   * renderer. Never read sourceStatus to answer "is this current?".
+   */
+  freshness?: FreshnessResult;
   /** Recent historical values (oldest first) for the card's inline sparkline. Only ever a slice of a real fetched series — never fabricated — so cards without a wired-up history simply render without one. */
   sparkline?: number[];
 }

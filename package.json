@@ -8,7 +8,11 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
-    "ingest:sbp": "tsx scripts/ingestSbp.ts"
+    "ingest:sbp": "tsx scripts/ingestSbp.ts",
+    "ingest:worldbank": "tsx scripts/ingestWorldBank.ts",
+    "ingest:netliquidreserves": "tsx scripts/ingestNetLiquidReserves.ts",
+    "ingest:fred": "tsx scripts/ingestFred.ts",
+    "ingest:yahoogold": "tsx scripts/ingestYahooGold.ts"
   },
   "dependencies": {
     "@next/third-parties": "16.2.9",
@@ -21,6 +25,7 @@
     "react-dom": "19.2.4",
     "recharts": "^3.8.1",
     "resend": "6.16.0",
+    "server-only": "^0.0.1",
     "unpdf": "^1.6.2",
     "xlsx": "0.18.5"
   },

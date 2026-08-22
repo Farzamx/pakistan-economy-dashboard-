@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import type { Kpi } from "@/data/kpiData";
 import InfoTooltip from "@/components/InfoTooltip";
 import { getDataQuality, DATA_QUALITY_DOT } from "@/lib/dataQuality";
+import { FRESHNESS_SEVERITY_DOT, FRESHNESS_STATE_LABEL } from "@/lib/freshness/readModel";
 import { KPI_SEO_SLUG } from "@/lib/seoConfig";
 import { TrendArrowIcon, TREND_TEXT_COLOR, TREND_STROKE_COLOR } from "@/components/TrendIndicator";
 
@@ -40,7 +41,13 @@ function Sparkline({ data, trend }: { data: number[]; trend: Kpi["trend"] }) {
 
 function Row({ kpi, index }: { kpi: Kpi; index: number }) {
   const trendColor = TREND_TEXT_COLOR[kpi.trend];
-  const quality = kpi.latestDate
+  // Phase 6: when the observation carries an authoritative verdict (migrated
+  // providers -- SBP EasyData, Net Liquid FX Reserves), render THAT. The
+  // legacy getDataQuality() path below remains only for providers not yet
+  // migrated (Global Markets/Yahoo/FRED, out of Phase 6 scope), which have no
+  // series-registry entry and therefore no authoritative verdict to show.
+  const authoritative = kpi.freshness ?? null;
+  const quality = !authoritative && kpi.latestDate
     ? getDataQuality({
         sourceStatus: kpi.sourceStatus ?? "live",
         latestDate: kpi.latestDate,
@@ -55,6 +62,11 @@ function Row({ kpi, index }: { kpi: Kpi; index: number }) {
 
   const content = (
     <div className="panel-row flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-white/[0.02] light:hover:bg-slate-50">
+      {authoritative ? (
+        <span className={`shrink-0 text-[7px] ${FRESHNESS_SEVERITY_DOT[authoritative.severity]}`} title={`${FRESHNESS_STATE_LABEL[authoritative.state]} — ${authoritative.reason}`} aria-hidden="true">
+          &#9679;
+        </span>
+      ) : null}
       {quality && (
         <span className={`shrink-0 text-[7px] ${DATA_QUALITY_DOT[quality.state]}`} title={quality.state} aria-hidden="true">
           &#9679;

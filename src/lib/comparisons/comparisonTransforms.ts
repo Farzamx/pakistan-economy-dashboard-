@@ -8,12 +8,22 @@
 // it needs back from here; this file never imports anything from there.
 
 import type { ComparisonDef, ComparisonSeriesConfig } from "./comparisonRegistry";
+import type { CompatibilityResult } from "./comparisonCompatibility";
+
+/** Whether a merged point's value was actually published for this period, or is the last real value carried forward because no new observation exists (see comparisonData.ts's mergeSeries). `null` only when there is no value at all yet (before the series' first observation). */
+export type PointOrigin = "observed" | "carried-forward";
 
 export interface MergedPoint {
-  /** "YYYY-MM" for monthly series, "YYYY" for annual. */
+  /** "YYYY-MM" for monthly/quarterly series, "YYYY" for annual. */
   key: string;
   a: number | null;
   b: number | null;
+  /** null iff `a` is null (no observation, and nothing to carry forward from, yet). */
+  aOrigin: PointOrigin | null;
+  bOrigin: PointOrigin | null;
+  /** Present only when aOrigin === "carried-forward" — the real "YYYY-MM-DD"/"YYYY" date the carried value was actually observed. */
+  aSourcePeriod?: string;
+  bSourcePeriod?: string;
 }
 
 export type TimeRange = "1y" | "3y" | "5y" | "10y" | "max";
@@ -43,9 +53,19 @@ export interface ChartPoint {
   key: string;
   a: number | null;
   b: number | null;
+  aOrigin: PointOrigin | null;
+  bOrigin: PointOrigin | null;
+  aSourcePeriod?: string;
+  bSourcePeriod?: string;
 }
 
-/** Recomputes a/b as % change or base-100 index relative to each series' own first available value in the window — derived math, not new data. */
+/**
+ * Recomputes a/b as % change or base-100 index relative to each series' own
+ * first available value in the window — derived math, not new data. Origin
+ * passes through unchanged: whether an underlying observation was real or
+ * carried-forward doesn't change under a %-change/rebasing transform, so the
+ * tooltip stays accurate regardless of chart mode.
+ */
 export function applyChartMode(points: MergedPoint[], mode: ChartMode): ChartPoint[] {
   if (mode === "raw") return points;
   const baseA = points.find((p) => p.a !== null)?.a ?? null;
@@ -54,6 +74,10 @@ export function applyChartMode(points: MergedPoint[], mode: ChartMode): ChartPoi
     key: p.key,
     a: p.a === null || baseA === null || baseA === 0 ? null : transform(p.a, baseA, mode),
     b: p.b === null || baseB === null || baseB === 0 ? null : transform(p.b, baseB, mode),
+    aOrigin: p.aOrigin,
+    bOrigin: p.bOrigin,
+    ...(p.aSourcePeriod ? { aSourcePeriod: p.aSourcePeriod } : {}),
+    ...(p.bSourcePeriod ? { bSourcePeriod: p.bSourcePeriod } : {}),
   }));
 }
 
@@ -141,6 +165,8 @@ export interface ComparisonChartBundle {
   merged: MergedPoint[];
   sourceA: string;
   sourceB: string;
-  /** True if either series failed to fetch entirely (caller should render an error state, not a partial chart presented as complete). */
+  /** True if either series failed to fetch, OR the pair is compatibility-incompatible (caller should render an error state, not a partial chart presented as complete). */
   hasError: boolean;
+  /** null only when hasError is true because a fetch failed before compatibility could even be checked. */
+  compatibility: CompatibilityResult | null;
 }

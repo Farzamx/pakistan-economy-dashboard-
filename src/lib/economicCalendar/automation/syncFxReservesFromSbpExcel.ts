@@ -32,7 +32,10 @@ import type { SyncResult, SyncProvenance } from "@/lib/economicCalendar/automati
 // Security: writes via sync_event_actual() SECURITY DEFINER RPC, gated by
 // NOTIFICATION_WORKER_SECRET (migration 0027).
 
-const FOREX_ARCH_URL = "https://www.sbp.org.pk/assets/document/Forex_Arch.xlsx";
+// Exported (Phase 8.10B) so the new netLiquidReservesAdapter.ts reuses this
+// exact constant rather than re-declaring the literal URL a second place --
+// the value itself is unchanged.
+export const FOREX_ARCH_URL = "https://www.sbp.org.pk/assets/document/Forex_Arch.xlsx";
 const FETCH_TIMEOUT_MS = 20_000;
 const SERIES_SLUG = "sbp-foreign-exchange-reserves";
 

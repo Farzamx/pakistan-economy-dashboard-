@@ -63,6 +63,7 @@ import {
 } from "@/lib/riskModels";
 import { getHealthStatus, healthLabelToRiskLevel, type HealthModelResult } from "@/lib/economicHealth";
 import type { Kpi } from "@/data/kpiData";
+import { FRESHNESS_STATE_LABEL } from "@/lib/freshness/readModel";
 
 const OVERVIEW_URL = `${SITE_URL}/overview`;
 // Was the root layout's site-wide default metadata when this page was
@@ -505,7 +506,16 @@ export default async function Home() {
   // design (see spi.ts) — a null result means the live fetch failed, not
   // that a snapshot was substituted.
   const heroDataStatus: { name: string; label: string; live: boolean }[] = [
-    { name: "SBP", live: !isFallback(netLiquidReserves.meta), label: !isFallback(netLiquidReserves.meta) ? "Live" : "Fallback" },
+    // Phase 6: derived from the authoritative freshness verdict, NOT from
+    // "did a read succeed". The previous form (!isFallback -> "Live") is the
+    // exact defect Phase 6 removes: a successfully-read but months-old
+    // observation reported "Live". `live` now means "healthy severity", and
+    // the label names the actual state (Current / Delayed / Stale / ...).
+    {
+      name: "SBP",
+      live: netLiquidReserves.meta.freshness.severity === "healthy",
+      label: FRESHNESS_STATE_LABEL[netLiquidReserves.meta.freshness.state],
+    },
     { name: "PBS",          live: spi !== null,                          label: spi !== null ? "Latest Release" : "Unavailable" },
     { name: "World Bank",   live: gdpKpi.sourceStatus !== "fallback",    label: gdpKpi.sourceStatus !== "fallback" ? "Verified" : "Fallback" },
   ];

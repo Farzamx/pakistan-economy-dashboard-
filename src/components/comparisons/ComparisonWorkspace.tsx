@@ -43,7 +43,10 @@ export default function ComparisonWorkspace({
 
   const sectorWindowed = useMemo(() => {
     if (!sectorComposition) return null;
-    const merged = sectorComposition.map((p) => ({ key: p.year, a: p.agriculture, b: p.industry }));
+    // Sector-composition figures are always real annual observations, never
+    // forward-filled -- origin is "observed" unconditionally here, this is
+    // not output from mergeSeries().
+    const merged = sectorComposition.map((p) => ({ key: p.year, a: p.agriculture, b: p.industry, aOrigin: "observed" as const, bOrigin: "observed" as const }));
     const windowed = applyTimeRange(merged, timeRange);
     const windowedKeys = new Set(windowed.map((p) => p.key));
     return sectorComposition.filter((p) => windowedKeys.has(p.year));
@@ -91,6 +94,7 @@ export default function ComparisonWorkspace({
                       sourceA={bundle.sourceA}
                       sourceB={bundle.sourceB}
                       hasError={bundle.hasError}
+                      compatibility={bundle.compatibility}
                       timeRange={timeRange}
                       chartMode={chartMode}
                     />

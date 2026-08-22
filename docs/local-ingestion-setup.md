@@ -15,6 +15,12 @@ Linux box, Docker container, GitHub Actions runner, or any cron daemon later
 means changing *where* `npm run ingest:sbp` is triggered from, never what it
 does. Task Scheduler here is purely the trigger.
 
+**Status on this machine:** configured and enabled — task `PEIC SBP
+Ingestion`, daily at 8:00 AM local (Pakistan Standard Time, UTC+5 = 03:00
+UTC), running as the interactive `farza` account. Everything below reflects
+what's actually running, not just a suggestion; the rest of this doc is kept
+instructional so the same steps reproduce cleanly on a replacement machine.
+
 ## One-time setup
 
 1. Confirm `.env.local` has these already (it should — they're the same
@@ -73,24 +79,40 @@ dialog gives you the working-directory field you need).
   working directory)
 
 **Conditions tab**
-- Uncheck "Start the task only if the computer is on AC power" if this is a
-  laptop you sometimes run on battery.
-- Leave "Start only if network connection is available" checked if present
-  in your Windows version — a sensible guard for this specific job.
+- Uncheck **both** "Start the task only if the computer is on AC power" and
+  "Stop if the computer switches to battery power" if this is a laptop that
+  is ever on battery. This is not optional on this machine: verified by
+  direct test — a temporary task with the AC-power restriction left at its
+  PowerShell-module default queued forever and never actually launched while
+  running on battery, with no error and no log line anywhere, just silently
+  stuck in "Queued". If left checked, ingestion silently stops running the
+  moment the laptop is unplugged.
+- Leave "Start only if network connection is available" **unchecked**. It's
+  a coarse, imprecise check (false negatives on VPNs, brief detection lag),
+  and `scripts/ingestSbp.ts`'s own per-indicator retry/catch already handles
+  a genuinely offline run cleanly (fails that indicator, logs it, picked up
+  next run) — adding this would be a second, cruder connectivity gate on top
+  of a system that already handles the failure mode correctly.
 
 **Settings tab**
 - Check "Run task as soon as possible after a scheduled start is missed" —
   this is `StartWhenAvailable` (see the exported XML below) — covers the
   laptop being fully off at the scheduled time; Windows runs the task the
   next time it's on, once.
-- Optionally check "Wake the computer to run this task" if the laptop is
-  merely asleep (not off) at 8am and you want it to actually wake for this
-  — free, built into Windows, no extra software. Leave unchecked if you'd
-  rather it just run `StartWhenAvailable`-style whenever you next wake it
-  yourself.
-- "If the task fails, restart every" → 10 minutes, up to 3 attempts — a
-  reasonable outer retry layer on top of the script's own internal
-  per-indicator retries.
+- Check "Wake the computer to run this task" — free, built into Windows, and
+  covers the common case of the laptop being merely asleep (not off, not
+  logged out) at 8am with your session still intact.
+- Leave "If the task fails, restart every ___" **unchecked/disabled**.
+  `scripts/ingestSbp.ts` already retries each indicator internally
+  (`MAX_RETRIES`, backoff) and only exits non-zero when every indicator
+  failed — a scheduler-level restart on top would be a second, cruder retry
+  system layered over one that already works and is already visible in
+  `cron_run_log`. Don't add it.
+- Under "If the task is already running, then the following rule applies":
+  choose **"Do not start a new instance"**. This is the actual overlap
+  protection — without it, a slow run (network trouble) plus a missed-run
+  catch-up firing close together could run two ingestions concurrently
+  against the same Supabase tables.
 
 Save, then right-click the task → **Run** once to confirm it executes
 outside of an interactive terminal (output won't be visible, but you can
@@ -101,8 +123,9 @@ checking `canonical_observations` directly).
 
 | Scenario | What happens | Mechanism |
 |---|---|---|
-| Laptop fully off at scheduled time | Runs once, automatically, the next time the laptop is on | Task Scheduler's `StartWhenAvailable` (Settings tab above) — no code involved |
-| Laptop asleep at scheduled time | Either wakes and runs (if "Wake the computer" is checked), or runs `StartWhenAvailable`-style on next wake | Task Scheduler |
+| Laptop fully off at scheduled time | Runs once, automatically, the next time the laptop is on **and you're logged on** | Task Scheduler's `StartWhenAvailable` (Settings tab above) — no code involved |
+| Laptop asleep, you're still logged on | Wakes and runs (`WakeToRun`), or catches up on next wake if the wake itself is missed | Task Scheduler |
+| You're logged off (not just locked/asleep) at the scheduled time, for any length of time | Task does not run at all until you log back on, at which point `StartWhenAvailable` fires it once | Task Scheduler's `Logon Mode: Interactive only` — a real limitation of the "logged-on only" mode chosen for this machine, not something Task Scheduler can bridge on its own. The ingestion watchdog (`sbp-ingestion-watchdog`, checked daily at 09:00 UTC) will alert if this causes a genuine multi-day gap. |
 | Internet down for part of the run | Each indicator retries twice with backoff before giving up; a genuinely offline run fails cleanly and is retried in full on the next scheduled run — nothing is left half-written (see Idempotency below) | `scripts/ingestSbp.ts`'s `fetchWithRetry` |
 | SBP EasyData itself down/erroring (5xx, timeout) | Same retry-then-isolate behavior — that one indicator is marked `failed` for this run, everything else still completes, and it's picked up again next run | `scripts/ingestSbp.ts`'s per-indicator try/catch |
 | Ingestion never runs for several days | Nothing breaks — the next successful run's incremental fetch window (last 60 days) still covers the gap, and `/admin/system-health`'s Canonical SBP Freshness section will honestly show each affected indicator as overdue in the meantime, never silently "fresh" | `INCREMENTAL_LOOKBACK_DAYS` + the freshness SLA view |
@@ -125,17 +148,26 @@ right-click menu) for backup/version reference. The action block looks like:
   </Exec>
 </Actions>
 <Settings>
+  <MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>
+  <DisallowStartIfOnBatteries>false</DisallowStartIfOnBatteries>
+  <StopIfGoingOnBatteries>false</StopIfGoingOnBatteries>
   <StartWhenAvailable>true</StartWhenAvailable>
-  <RestartOnFailure>
-    <Interval>PT10M</Interval>
-    <Count>3</Count>
-  </RestartOnFailure>
+  <WakeToRun>true</WakeToRun>
+  <ExecutionTimeLimit>PT1H</ExecutionTimeLimit>
 </Settings>
 ```
 
+(`Command` above shows the generic Program-Files path as an example only —
+use whatever `(Get-Command node).Source` prints on your machine; it will not
+always be under Program Files.)
+
 `StartWhenAvailable` is the actual missed-run setting from the checkbox
-above — if it's `true` here, the "ran while the laptop was off" scenario
-is genuinely configured, not just assumed.
+above — if it's `true` here, the "ran while the laptop was off" scenario is
+genuinely configured, not just assumed. `MultipleInstancesPolicy: IgnoreNew`
+is the overlap protection: confirms Task Scheduler will refuse to start a
+second run while one is still in progress, rather than running two
+concurrently. There is deliberately no `RestartOnFailure` block — see the
+Settings tab note above for why.
 
 ## Example output
 
@@ -184,3 +216,82 @@ Run `npm run ingest:sbp` twice in a row. The second run should report
 `0 updated` for every indicator that didn't genuinely change between the
 two runs (which, for daily/monthly/as-needed SBP series, is normally all
 20) — confirming no duplicate rows are ever written for unchanged data.
+
+## World Bank GDP-growth ingestion (Phase 8.4)
+
+A second, independent scheduled task — `scripts/ingestWorldBank.ts` — keeps
+the 3 approved World Bank GDP-growth series current using the exact same
+laptop/Task-Scheduler architecture as SBP above, and reuses the same
+generic pipeline (Phase 8.1's `ingestionOrchestrator.ts` + Phase 8.2's
+`worldBankAdapter.ts`) rather than a second implementation. Only these 3
+series are scheduled — **not** population, sector composition, or any
+other provider:
+
+- `worldbank:gdpGrowthPak`
+- `worldbank:gdpGrowthIndia`
+- `worldbank:gdpGrowthBangladesh`
+
+**Task name:** `PEIC - World Bank GDP Ingestion` (separate task, separate
+trigger, separate `MultipleInstances` scope from `PEIC SBP Ingestion` — the
+two never block or interfere with each other).
+
+**Cadence:** Weekly, every **Monday at 08:15 AM** (Pakistan Standard Time).
+Not daily, deliberately: World Bank's GDP-growth indicator is annual data,
+typically revised a few times a year (not daily), and the adapter always
+re-fetches each series' full ~65-year history rather than an incremental
+window (see `worldBankAdapter.ts`'s own header — annual revisions can touch
+many historical years at once, so a full re-fetch is the only way to
+reliably catch one). A daily run would burn 7x the requests/laptop-wake
+cycles for no realistic freshness benefit; weekly is frequent enough to
+catch a revision within days of publication while staying proportionate to
+how often the underlying data actually changes. Monday 08:15 was chosen
+only to land shortly after the SBP task's daily 08:00 slot, not because
+World Bank publishes on a fixed weekday (it doesn't).
+
+**Command:** identical pattern to SBP's — explicit `node.exe`, explicit tsx
+CLI path, explicit script path, no PATH/npm/npx dependency:
+```
+"C:\ECONOMY DASHBOARD\pakistan-economy-dashboard\node_modules\tsx\dist\cli.mjs" "C:\ECONOMY DASHBOARD\pakistan-economy-dashboard\scripts\ingestWorldBank.ts"
+```
+**Working directory:** `C:\ECONOMY DASHBOARD\pakistan-economy-dashboard`
+(same reason as SBP — `.env.local` resolves relative to `process.cwd()`).
+
+**Login/power/missed-run behavior:** identical to the SBP task, unchanged
+rationale — `Interactive` logon (runs while logged on, including locked),
+`MultipleInstances: IgnoreNew` (no overlapping runs), AC/battery
+restrictions off, `StartWhenAvailable: true` (catches up once if the
+laptop was off at 08:15 Monday), `WakeToRun: true` (wakes a sleeping
+laptop), no scheduler-level restart-on-failure (the orchestrator already
+retries per-series internally and isolates failures — see
+`ingestionOrchestrator.ts`).
+
+**Environment variables:** the exact same three as SBP need —
+`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`,
+`NOTIFICATION_WORKER_SECRET` — read from the same `.env.local`. World
+Bank's API is keyless, so `SBP_EASYDATA_API_KEY` is not needed for this
+task. No new secret was created; nothing in the task's action, arguments,
+trigger, or settings contains a credential.
+
+**Manual test command** (run from the project root):
+```
+npm run ingest:worldbank
+```
+
+**Manually triggering the registered task** (PowerShell):
+```powershell
+Start-ScheduledTask -TaskName "PEIC - World Bank GDP Ingestion"
+Get-ScheduledTaskInfo -TaskName "PEIC - World Bank GDP Ingestion"
+```
+
+**Inspecting `cron_run_log`** for this job (from a Node/tsx script, or via
+`/admin/system-health`'s Cron History section — same view SBP's runs
+already appear in):
+```js
+await supabase.rpc("get_cron_run_history", { p_job_name: "worldbank-gdp-growth-ingestion", p_limit: 10 });
+```
+
+**Monitoring:** there is deliberately no separate World Bank ingestion
+watchdog in this phase (unlike `sbp-ingestion-watchdog`) — `cron_run_log`
+is the only current visibility into missed/failed runs. If a genuine
+multi-week silent-gap risk is identified, a dedicated watchdog is a future
+architectural decision, not something to add speculatively here.

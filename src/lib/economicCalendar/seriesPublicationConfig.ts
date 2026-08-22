@@ -1027,7 +1027,7 @@ export const PENDING_AUTOMATION_REGISTRY: readonly PendingAutomationEntry[] = [
       "Only worth pursuing if a separate WPI Economic Calendar series is added for display " +
       "purposes. If so: add economic_event_series slug='wpi-inflation-release', extend " +
       "syncCpiFromPbs.ts to also scrape the PBS WPI bulletin, add parsePercentYoY parser " +
-      "to canonicalObservation.ts, add wpiInflation to CANONICAL_SERIES_SLUGS in sbpServer.ts.",
+      "to latestReleasedEventValue.ts, add wpiInflation to PBS_PRIMARY_SERIES_SLUGS in sbpServer.ts.",
     priority: "P3-medium",
     estimatedComplexity: "medium",
     blockedBy: [],

@@ -13,6 +13,7 @@ import {
   type TimeRange,
 } from "@/lib/comparisons/comparisonTransforms";
 import type { SeriesProviderId } from "@/lib/comparisons/comparisonRegistry";
+import { validateSeriesConfigCompatibility } from "@/lib/comparisons/comparisonCompatibility";
 import ComparisonControls from "./ComparisonControls";
 
 type FetchState =
@@ -31,11 +32,26 @@ export default function CustomComparisonBuilder() {
 
   const seriesA = getSeriesOption(aId);
   const seriesB = getSeriesOption(bId);
+  // Phase 7: cheap, synchronous, zero-I/O check against the same
+  // centralized gate the API route re-validates server-side — rejects an
+  // incompatible pair BEFORE rendering, and before ever calling fetch(),
+  // per "reject incompatible pairs BEFORE rendering" / "must run through the
+  // same compatibility gate". Frequency incompatibility (the only thing this
+  // gate hard-rejects — see comparisonCompatibility.ts) disables Compare
+  // entirely; a unit-only mismatch is allowed through with an advisory note
+  // (unchanged product behavior — the chart already renders differently-
+  // unit series on separate axes).
+  const compatibility = validateSeriesConfigCompatibility(seriesA, seriesB);
 
   async function handleCompare() {
+    if (!compatibility.compatible) return;
     setState({ status: "loading" });
     try {
       const res = await fetch(`/api/comparisons/series?a=${aId}&b=${bId}`);
+      if (res.status === 422) {
+        setState({ status: "error" });
+        return;
+      }
       if (!res.ok) {
         setState({ status: "error" });
         return;
@@ -108,7 +124,7 @@ export default function CustomComparisonBuilder() {
         <button
           type="button"
           onClick={handleCompare}
-          disabled={aId === bId || state.status === "loading"}
+          disabled={aId === bId || !compatibility.compatible || state.status === "loading"}
           className="rounded-lg bg-neon-blue/15 px-4 py-1.5 text-sm font-medium text-neon-blue transition-colors hover:bg-neon-blue/25 disabled:cursor-not-allowed disabled:opacity-40"
         >
           {state.status === "loading" ? t("comparisons.loading") : t("comparisons.compareBtn")}
@@ -117,6 +133,14 @@ export default function CustomComparisonBuilder() {
 
       {aId === bId && (
         <p className="text-xs text-amber-400">{t("comparisons.pickDifferent")}</p>
+      )}
+
+      {aId !== bId && !compatibility.compatible && (
+        <p className="text-xs text-amber-400">{t("comparisons.incompatibleFrequency")} {compatibility.reason}</p>
+      )}
+
+      {aId !== bId && compatibility.compatible && compatibility.requiresNormalization && (
+        <p className="text-xs text-[var(--text-muted)]">{t("comparisons.differentUnitsNote")}</p>
       )}
 
       {state.status === "error" && (

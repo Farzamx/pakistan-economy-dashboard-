@@ -58,12 +58,37 @@ import { logCronRun } from "@/lib/cronLogging";
 // Food Inflation was still calling SBP EasyData live from
 // /pakistan-food-inflation's render path — this generic descriptor is what
 // lets one ingestion loop cover both without special-casing the extra series.
-interface IngestibleSeries {
+export interface IngestibleSeries {
   label: string;
   indicatorKey: string;
   provider: string;
+  // Phase 4 (Observation Contract): declared per-entry rather than inferred
+  // inside ingestSeries() below, so that function stays provider-agnostic —
+  // a future non-SBP provider entry would supply its own values instead of
+  // ingestSeries() guessing at what's "official" for it.
+  qualityStatus: string;
+  buildSourceReference: (live: SbpSeries) => Record<string, unknown> | null;
   fetch: (sinceDate?: string) => Promise<SbpSeries>;
 }
+
+// SBP EasyData's own data endpoint, WITHOUT the api_key query parameter —
+// see src/lib/data/sbp.ts's SBP_API_BASE for the authenticated request URL,
+// which is never constructed here. This constant exists only to build a
+// safe, credential-free provenance reference; it must never gain a query
+// string.
+const SBP_PUBLIC_ENDPOINT_BASE = "https://easydata.sbp.org.pk/api/v1/series";
+
+/** Structured, non-secret provenance for an SBP EasyData-sourced observation. */
+function sbpSourceReference(live: SbpSeries): Record<string, unknown> {
+  return { endpoint: `${SBP_PUBLIC_ENDPOINT_BASE}/${live.seriesKey}/data` };
+}
+
+// Every ingestible series today is genuinely SBP's own published statistic —
+// SBP EasyData IS the State Bank's official statistical release system, so
+// "official" is a true fact about the source, not a per-row guess. This is
+// NOT the place to invent a finer-grained status (e.g. "preliminary" vs
+// "final") that SBP EasyData's response never actually distinguishes.
+const SBP_QUALITY_STATUS = "official";
 
 // Production Readiness Audit (Phase 6A.3), section 15: the WRITE side was
 // already incremental (diff against existing canonical rows, skip
@@ -92,12 +117,16 @@ function extraSeries(): IngestibleSeries[] {
       label: "foodInflationUrban",
       indicatorKey: FOOD_INFLATION_URBAN_INDICATOR_KEY,
       provider: FOOD_INFLATION_URBAN_PROVIDER_ID,
+      qualityStatus: SBP_QUALITY_STATUS,
+      buildSourceReference: sbpSourceReference,
       fetch: fetchFoodInflationUrbanForIngestion,
     },
     {
       label: "moneySupplyM2YoyGrowth",
       indicatorKey: M2_YOY_GROWTH_INDICATOR_KEY,
       provider: M2_YOY_GROWTH_PROVIDER_ID,
+      qualityStatus: SBP_QUALITY_STATUS,
+      buildSourceReference: sbpSourceReference,
       fetch: fetchM2YoyGrowthForIngestion,
     },
   ];
@@ -125,7 +154,7 @@ function getSupabase(): SupabaseClient {
 
 type IndicatorStatus = "unchanged" | "updated" | "failed";
 
-interface IndicatorOutcome {
+export interface IndicatorOutcome {
   label: string;
   status: IndicatorStatus;
   periodsWritten: number;
@@ -138,6 +167,8 @@ function allIngestibleSeries(): IngestibleSeries[] {
     label: key,
     indicatorKey: canonicalIndicatorKey(key),
     provider: primaryProviderFor(key),
+    qualityStatus: SBP_QUALITY_STATUS,
+    buildSourceReference: sbpSourceReference,
     fetch: (sinceDate?: string) => fetchSbpSeriesForIngestion(key, sinceDate),
   }));
   return [...main, ...extraSeries()];
@@ -160,7 +191,7 @@ async function fetchWithRetry(series: IngestibleSeries, sinceDate?: string): Pro
   throw lastErr instanceof Error ? lastErr : new Error(String(lastErr));
 }
 
-async function ingestSeries(
+export async function ingestSeries(
   supabase: SupabaseClient,
   internalSecret: string,
   runId: string,
@@ -214,6 +245,17 @@ async function ingestSeries(
       p_source_raw_observation_id: (rawResult as { raw_observation_id?: string } | null)?.raw_observation_id ?? null,
       p_series_name: live.seriesName,
       p_confidence: "official",
+      // Phase 4 (Observation Contract): genuinely known values only.
+      // release_date/source_updated_at stay null -- SBP EasyData's /data
+      // endpoint exposes no such fields (see SbpApiResponse), so there is
+      // nothing honest to put here. Never inferred from fetch time or the
+      // economic calendar.
+      p_release_date: null,
+      p_source_updated_at: null,
+      p_fetched_at: live.lastUpdated,
+      p_quality_status: series.qualityStatus,
+      p_source_series_id: live.seriesKey,
+      p_source_reference: series.buildSourceReference(live),
     });
     if (canonError) throw new Error(`resolve_canonical_observation failed for ${label}@${point.date}: ${canonError.message}`);
     written++;

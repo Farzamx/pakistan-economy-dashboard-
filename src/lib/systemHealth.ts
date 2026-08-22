@@ -23,6 +23,12 @@ import { getNews } from "@/lib/data/news";
 import { getProviderHealthSnapshot, type ProviderHealthSnapshot } from "@/lib/openRouterClient";
 import { getLatestWeeklyIntelligenceSnapshot } from "@/lib/data/weeklyIntelligence";
 import { getCronRunHistory, type CronRunRecord } from "@/lib/cronLogging";
+import {
+  evaluateIngestionHealth,
+  MONITORED_INGESTION_JOBS,
+  type IngestionMonitorJob,
+  type IngestionHealth,
+} from "@/lib/ingestionWatchdog";
 import { checkResendHealth } from "@/lib/email/resend";
 import { createPublicDataClient } from "@/lib/supabase/publicDataClient";
 import { getSourceHealthSummary, type SourceHealthRecord } from "@/lib/economicCalendar/sourceHealthTracker";
@@ -301,6 +307,7 @@ export const CRON_JOBS: CronJobInfo[] = [
   { jobNames: ["notification-worker-safety-net"], path: "/api/cron/process-notification-jobs", schedule: "0 20 * * *  (daily, 20:00 UTC)", description: "Safety-net sweep for any notification job the calendar sync's inline drain missed." },
   { jobNames: ["weekly-intelligence"], path: "/api/cron/weekly-intelligence", schedule: "0 6 * * 1  (Mondays, 06:00 UTC, Vercel — primary) + 0 12 * * 1  (Mondays, 12:00 UTC, GitHub Actions — safety net)", description: "Computes Health Score + Recession/Default probabilities once, stores the snapshot the homepage reads. Idempotent — a duplicate invocation in the same ISO week is rejected by a DB constraint and logged as 'skipped', not an error. GitHub Actions safety net (.github/workflows/weekly-intelligence.yml) added by PEIC v2.3 after the audit found this was the only cron job without GitHub Actions redundancy." },
   { jobNames: ["sbp-local-ingestion"], path: "npm run ingest:sbp (scripts/ingestSbp.ts)", schedule: "Local machine, Windows Task Scheduler — see docs/local-ingestion-setup.md", description: "Institutional Data Core Wave 1: SBP EasyData is Cloudflare-blocked from Vercel/GitHub Actions/Supabase Edge Functions (confirmed by direct testing), so ingestion runs from a machine that can actually reach it, writing to raw_observations/canonical_observations (migration 0050). The dashboard's render path reads only from canonical_observations — never SBP EasyData directly. Execution environment is explicitly temporary; the command and its logic are unchanged when it moves to a VPS/cron later." },
+  { jobNames: ["worldbank-gdp-growth-ingestion"], path: "npm run ingest:worldbank (scripts/ingestWorldBank.ts)", schedule: "Local machine, Windows Task Scheduler, weekly Mondays 08:15 PKT — see docs/local-ingestion-setup.md", description: "Phase 8.3/8.4: World Bank GDP-growth pilot (Pakistan/India/Bangladesh only) via the generic ingestionOrchestrator + worldBankAdapter, writing to the same raw_observations/canonical_observations ledger as SBP. Weekly, not daily — GDP growth is annual data, revised infrequently. Independent Task Scheduler task from SBP's; same laptop, same architecture." },
 ];
 
 export interface CronJobHistory extends CronJobInfo {
@@ -338,7 +345,41 @@ export interface SystemHealthSnapshot {
   recommendations: Recommendation[];
   syncTriggers: SyncTriggerRecord[];
   canonicalSbpFreshness: CanonicalIndicatorFreshness[];
+  /** Ingestion-RUN health (did the job complete?) — not data freshness. See ingestionWatchdog.ts. One entry per MONITORED_INGESTION_JOBS. */
+  ingestionHealth: IngestionJobHealth[];
   generatedAt: string;
+}
+
+export interface IngestionJobHealth {
+  job: IngestionMonitorJob;
+  health: IngestionHealth;
+}
+
+/**
+ * Read-only ingestion health for display, for any monitored job. Evaluates
+ * the same logic the watchdog uses, but sends nothing and writes nothing.
+ */
+async function getIngestionHealthFor(job: IngestionMonitorJob): Promise<IngestionHealth> {
+  const [ingestionRuns, watchdogRuns] = await Promise.all([
+    getCronRunHistory(job.ingestionJobName, 50),
+    getCronRunHistory(job.watchdogJobName, 50),
+  ]);
+  return evaluateIngestionHealth(ingestionRuns, watchdogRuns, new Date(), job);
+}
+
+/**
+ * Phase 8.10E: generalized from two hardcoded fields (sbpIngestionHealth,
+ * worldBankIngestionHealth) into one collection derived from
+ * MONITORED_INGESTION_JOBS, so a newly monitored job (e.g. Net Liquid FX
+ * Reserves, Phase 8.10D) appears here automatically rather than requiring a
+ * new hardcoded field each time. Exported separately (not inlined into
+ * getSystemHealthSnapshot's Promise.all) so it is independently testable
+ * without mocking every other live check this module performs.
+ */
+export async function getIngestionHealthList(): Promise<IngestionJobHealth[]> {
+  return Promise.all(
+    MONITORED_INGESTION_JOBS.map(async (job) => ({ job, health: await getIngestionHealthFor(job) })),
+  );
 }
 
 export async function getSystemHealthSnapshot(): Promise<SystemHealthSnapshot> {
@@ -348,6 +389,7 @@ export async function getSystemHealthSnapshot(): Promise<SystemHealthSnapshot> {
     weeklyIntelligence, cronJobs,
     sourceHealth, sourceBenchmarks, publicationLeads, syncTriggers,
     canonicalSbpFreshness,
+    ingestionHealth,
   ] = await Promise.all([
     checkSbp(),
     checkPbs(),
@@ -366,6 +408,10 @@ export async function getSystemHealthSnapshot(): Promise<SystemHealthSnapshot> {
     getPublicationLeadStats(90),          // last 90 days
     getSyncTriggerHistory(20),
     getCanonicalSbpFreshness(),           // Institutional Data Core Wave 1
+    // Read-only evaluation. Deliberately NOT runIngestionWatchdog(): that
+    // sends mail and writes a run record, which must never be a side effect of
+    // rendering a page. Alerting is driven separately (the Vercel Cron watchdog route).
+    getIngestionHealthList(),
   ]);
 
   // Pure computations from DB data — no I/O
@@ -384,6 +430,7 @@ export async function getSystemHealthSnapshot(): Promise<SystemHealthSnapshot> {
     recommendations,
     syncTriggers,
     canonicalSbpFreshness,
+    ingestionHealth,
     generatedAt: new Date().toISOString(),
   };
 }

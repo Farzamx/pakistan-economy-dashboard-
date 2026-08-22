@@ -7,6 +7,9 @@ import { findSamePeriodPriorYear } from "@/lib/yoyMath";
 import { dedupeInFlight, getFresh, getStale, setCache } from "@/lib/memoryCache";
 import { canonicalIndicatorKey, FOOD_INFLATION_URBAN_INDICATOR_KEY, M2_YOY_GROWTH_INDICATOR_KEY } from "@/lib/data/canonicalResolutionConfig";
 import { getCanonicalSbpHistory } from "@/lib/data/sbpCanonicalStore";
+import { sbpTransportGet } from "@/lib/data/sbpTransport";
+import { evaluateFreshness, type FreshnessResult } from "@/lib/freshness/freshnessEngine";
+import { getSbpSeriesDefinition } from "@/lib/freshness/seriesRegistry";
 import {
   fallbackCoreInflation,
   fallbackCpiInflation,
@@ -115,7 +118,12 @@ const FETCH_TIMEOUT_MS = 10_000;
 
 export type Frequency = "Monthly" | "As-Needed" | "Weekly" | "Annual";
 
-const SBP_FREQ_MAP: Record<Frequency, DataFrequency> = {
+// Exported (Phase 5, read-only shadow instrumentation) so
+// src/lib/freshness/shadowFreshnessAdapter.ts can call the existing
+// getFreshnessStatus/getDataQuality with the exact same DataFrequency value
+// a real page render already uses, instead of duplicating this 4-entry
+// mapping. No behavior here changes -- purely a visibility change.
+export const SBP_FREQ_MAP: Record<Frequency, DataFrequency> = {
   "Monthly": "Monthly",
   "As-Needed": "As Needed",
   "Weekly": "Weekly",
@@ -182,7 +190,17 @@ export interface SbpSeries {
   lastUpdated: string;
 }
 
-export interface SbpMeta {
+/**
+ * Provider metadata WITHOUT a freshness verdict.
+ *
+ * Phase 6: this is the shape a *static snapshot* can honestly declare. A
+ * freshness verdict is a function of the current time, so it cannot be baked
+ * into a checked-in constant (src/data/sbpFallbackData.ts) — a snapshot that
+ * hard-coded "current" would be a lie the moment it was committed. Static
+ * fallbacks are therefore typed as SbpIndicatorSnapshot (below) and get a
+ * verdict attached at runtime, like every other path.
+ */
+export interface SbpMetaBase {
   // Widened for fxReserves.ts (Phase 6A) — a second, non-EasyData source
   // (SBP's own Forex_Arch.xlsx) reuses this same result shape rather than
   // inventing a parallel one, since every consumer (KpiCard, SeoPageLayout,
@@ -199,14 +217,38 @@ export interface SbpMeta {
   /** ISO timestamp of when this data was fetched (or when the fallback snapshot was captured). */
   lastUpdated: string;
   /**
-   * Where this result actually came from this request: a fresh upstream
-   * fetch ("live"), the L1 in-memory cache — fresh or stale-on-error, both
-   * still real SBP data ("cache"), or the static last-resort snapshot in
-   * sbpFallbackData.ts ("fallback"). Optional and currently unused by any
-   * UI — set on the main getSbpIndicator() path so it's available for a
-   * future tooltip/debug surface without committing to one now.
+   * DELIVERY status only — how this value reached us on this request (fresh
+   * upstream read, warm L1 cache, degraded cache-after-failure, or the static
+   * snapshot).
+   *
+   * Phase 6: this field must NEVER be read as an answer to "is this data
+   * current?". A successful read of a six-month-old canonical row is still
+   * `sourceStatus: "live"` — that was precisely the defect Phase 6 removes.
+   * Data currency comes from `meta.freshness` (the Phase 5 engine) and from
+   * nowhere else.
    */
   sourceStatus?: SbpSourceStatus;
+}
+
+/**
+ * Runtime provider metadata — always carries an authoritative freshness
+ * verdict from src/lib/freshness/freshnessEngine.ts.
+ *
+ * `freshness` is required, not optional: every runtime path in this file
+ * (live canonical read, L1 cache hit, degraded cache, static fallback)
+ * attaches one, so any consumer holding an SbpMeta can always answer "is
+ * this current?" correctly, and no consumer can accidentally fall back to
+ * inferring it from sourceStatus.
+ */
+export interface SbpMeta extends SbpMetaBase {
+  freshness: FreshnessResult;
+}
+
+/** A static, checked-in snapshot: real data, but no time-dependent verdict. See SbpMetaBase. */
+export interface SbpIndicatorSnapshot {
+  kpi: Kpi;
+  trend: TrendPoint[];
+  meta: SbpMetaBase;
 }
 
 export interface SbpIndicatorResult {
@@ -248,6 +290,11 @@ function changeLabel(diff: number | null, previousLabel: string | null, format: 
  * Throws on a missing API key, non-200 response, or a series with no usable
  * numeric observations — callers are expected to catch and fall back.
  */
+// noCache is retained rather than removed: it sits mid-signature, so deleting
+// it would silently shift `startDate` into its position at all five call sites.
+// It no longer selects a cache mode (see the transport note below) but the
+// parameter stays for call-site safety until the transport question is settled.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- see above
 async function fetchSbpSeries(seriesKey: string, revalidateSeconds: number, cacheTag: string, noCache = false, startDate: string = HISTORY_START_DATE): Promise<SbpSeries> {
   const apiKey = process.env.SBP_EASYDATA_API_KEY;
   if (!apiKey) {
@@ -260,24 +307,29 @@ async function fetchSbpSeries(seriesKey: string, revalidateSeconds: number, cach
     format: "json",
   });
 
-  // noCache=true uses cache:'no-store' for the sync pipeline — bypasses Next.js
-  // L2 fetch cache so new SBP observations are seen on the next cron run rather
-  // than waiting up to 24h for cache expiry. Options are mutually exclusive per
-  // Next.js docs: { revalidate, tags } and { cache:'no-store' } cannot coexist.
-  const cacheOptions: RequestInit = noCache
-    ? { cache: "no-store" }
-    : { next: { revalidate: revalidateSeconds, tags: [cacheTag] } };
+  // Routed through sbpTransportGet (curl) rather than fetch: Cloudflare rejects
+  // Node's TLS fingerprint outright for this host with a 403, measured across
+  // fetch/undici, node:https, pinned ALPN, Chrome cipher ordering and forced
+  // TLSv1.2 — see sbpTransport.ts for the full evidence table. Only the request
+  // itself moved; parsing, validation, retries, concurrency and persistence all
+  // remain exactly where they were.
+  //
+  // revalidateSeconds/cacheTag/noCache are retained on this signature for
+  // call-site compatibility but no longer select a Next.js Data Cache mode.
+  // That is not a behavioural regression: every live-fetch caller already
+  // passed noCache=true, so the { revalidate, tags } branch was unreachable in
+  // practice. The L1 memory cache in getSbpIndicator() and the canonical-ledger
+  // read path are both unaffected.
+  const { status, body } = await sbpTransportGet(
+    `${SBP_API_BASE}/${seriesKey}/data?${params.toString()}`,
+    FETCH_TIMEOUT_MS,
+  );
 
-  const response = await fetch(`${SBP_API_BASE}/${seriesKey}/data?${params.toString()}`, {
-    ...cacheOptions,
-    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-  });
-
-  if (!response.ok) {
-    throw new Error(`SBP EasyData API returned ${response.status} for ${seriesKey}`);
+  if (status !== 200) {
+    throw new Error(`SBP EasyData API returned ${status} for ${seriesKey}`);
   }
 
-  const json = (await response.json()) as SbpApiResponse;
+  const json = JSON.parse(body) as SbpApiResponse;
   if (!json.rows || json.rows.length === 0) {
     throw new Error(`SBP EasyData API returned no rows for ${seriesKey}`);
   }
@@ -652,7 +704,7 @@ interface IndicatorConfig {
   /** Converts a raw observation value to the unit shown on the trend chart (e.g. Million USD -> Billion USD). */
   toTrendValue: (value: number) => number;
   buildKpi: (series: SbpSeries) => Kpi;
-  fallback: SbpIndicatorResult;
+  fallback: SbpIndicatorSnapshot;
 }
 
 const CONFIGS: Record<SbpIndicatorKey, IndicatorConfig> = {
@@ -862,7 +914,7 @@ export async function fetchSbpSeriesForIngestion(key: SbpIndicatorKey, sinceDate
   return fetchSbpSeries(config.seriesKey, config.revalidate, sbpCacheTag(key), true, sinceDate);
 }
 
-function seriesToIndicatorResult(config: IndicatorConfig, series: SbpSeries): SbpIndicatorResult {
+function seriesToIndicatorResult(config: IndicatorConfig, series: SbpSeries): SbpIndicatorSnapshot {
   const formatLabel =
     config.frequency === "Monthly" || config.frequency === "Annual"
       ? formatMonthLabel
@@ -900,7 +952,7 @@ function seriesToIndicatorResult(config: IndicatorConfig, series: SbpSeries): Sb
  * comparisons render path uses buildIndicatorResultFromCanonical() below
  * instead, which never touches SBP EasyData at request time.
  */
-async function buildIndicatorResult(key: SbpIndicatorKey, config: IndicatorConfig, noCache = false): Promise<SbpIndicatorResult> {
+async function buildIndicatorResult(key: SbpIndicatorKey, config: IndicatorConfig, noCache = false): Promise<SbpIndicatorSnapshot> {
   const series = await fetchSbpSeries(config.seriesKey, config.revalidate, sbpCacheTag(key), noCache);
   return seriesToIndicatorResult(config, series);
 }
@@ -932,7 +984,7 @@ async function fetchCanonicalSbpSeries(key: SbpIndicatorKey): Promise<SbpSeries>
   };
 }
 
-async function buildIndicatorResultFromCanonical(key: SbpIndicatorKey, config: IndicatorConfig): Promise<SbpIndicatorResult> {
+async function buildIndicatorResultFromCanonical(key: SbpIndicatorKey, config: IndicatorConfig): Promise<SbpIndicatorSnapshot> {
   const series = await fetchCanonicalSbpSeries(key);
   return seriesToIndicatorResult(config, series);
 }
@@ -946,8 +998,11 @@ async function buildIndicatorResultFromCanonical(key: SbpIndicatorKey, config: I
  * snapshot with no visible "Fallback" marker anywhere on it — the Production
  * Audit's single highest-impact finding. Fixed here, once, for all 20 series.
  */
-function withSourceStatus(result: SbpIndicatorResult, status: SbpSourceStatus): SbpIndicatorResult {
+function withSourceStatus(key: SbpIndicatorKey, result: SbpIndicatorResult | SbpIndicatorSnapshot, status: SbpSourceStatus): SbpIndicatorResult {
   const isFallback = status === "fallback";
+  // Evaluated ONCE per call and stamped onto both meta and kpi, so the badge
+  // and the card always show the same verdict and neither recomputes it.
+  const freshness = evaluateSbpFreshness(key, result.meta);
   return {
     ...result,
     kpi: {
@@ -955,9 +1010,49 @@ function withSourceStatus(result: SbpIndicatorResult, status: SbpSourceStatus): 
       source: isFallback ? "SBP EasyData (fallback)" : "SBP EasyData",
       sourceStatus: status,
       snapshotDate: isFallback ? result.meta.observationDate : undefined,
+      freshness,
     },
-    meta: { ...result.meta, sourceStatus: status },
+    meta: { ...result.meta, sourceStatus: status, freshness },
   };
+}
+
+/**
+ * The single place an SBP observation is joined to its authoritative
+ * freshness verdict (Phase 6).
+ *
+ * Deliberately takes ONLY the observation's own date plus the series'
+ * declared cadence — `sourceStatus` is not a parameter and is not consulted,
+ * so "the read succeeded" is structurally incapable of producing "current".
+ *
+ * Evidence discipline, unchanged from Phase 5: releaseDate/sourceUpdatedAt
+ * are passed as null rather than invented. SBP EasyData exposes neither (see
+ * seriesRegistry.ts's expectsReleaseDate/expectsSourceUpdatedAt = false), so
+ * the engine degrades honestly to cadence-based evaluation and can never
+ * manufacture `ingestion-lagging` without positive publication evidence.
+ *
+ * Pure and synchronous — no database round trip, so attaching a verdict to
+ * every indicator adds no queries (see the N+1 constraint in the Phase 6
+ * brief). It reuses the observation date already present on `meta`.
+ *
+ * Exported (Phase 8.0): sbpServer.ts's PBS override rewrites `observationDate`
+ * after this module has already computed a verdict for the original SBP
+ * date — reusing this exact function (not a second one) is how it
+ * recomputes freshness for the new date without introducing another
+ * freshness algorithm.
+ */
+export function evaluateSbpFreshness(key: SbpIndicatorKey, meta: SbpMetaBase, now: Date = new Date()): FreshnessResult {
+  return evaluateFreshness(
+    {
+      observationPeriod: meta.observationDate ?? null,
+      value: null,
+      releaseDate: null,
+      sourceUpdatedAt: null,
+      fetchedAt: null,
+      vintage: meta.lastUpdated ?? null,
+    },
+    getSbpSeriesDefinition(key),
+    { now },
+  );
 }
 
 /**
@@ -989,10 +1084,10 @@ export async function getSbpIndicator(key: SbpIndicatorKey): Promise<SbpIndicato
   const config = CONFIGS[key];
   const cacheKey = `sbp-indicator:${key}`;
 
-  const l1 = getFresh<SbpIndicatorResult>(cacheKey, L1_TTL_MS);
+  const l1 = getFresh<SbpIndicatorSnapshot>(cacheKey, L1_TTL_MS);
   if (l1) {
     logSbp(key, "cache-fresh", `L1 hit, ${Math.round(l1.ageMs / 1000)}s old, observation=${l1.data.meta.observationDate}`);
-    return withSourceStatus(l1.data, "cache-fresh");
+    return withSourceStatus(key, l1.data, "cache-fresh");
   }
 
   return dedupeInFlight(cacheKey, async () => {
@@ -1000,17 +1095,18 @@ export async function getSbpIndicator(key: SbpIndicatorKey): Promise<SbpIndicato
       const result = await buildIndicatorResultFromCanonical(key, config);
       setCache(cacheKey, result);
       logSbp(key, "live", `read from canonical DB, observation=${result.meta.observationDate}`);
-      return withSourceStatus(result, "live");
+      return withSourceStatus(key, result, "live");
     } catch (err) {
       const reason = err instanceof Error ? err.message : String(err);
-      const stale = getStale<SbpIndicatorResult>(cacheKey);
+      const stale = getStale<SbpIndicatorSnapshot>(cacheKey);
       if (stale) {
         logSbpError(key, reason, "cache-stale");
-        return withSourceStatus(stale.data, "cache-stale");
+        return withSourceStatus(key, stale.data, "cache-stale");
       }
       logSbpError(key, reason, "fallback");
       const fb = config.fallback;
       return withSourceStatus(
+        key,
         {
           ...fb,
           kpi: {
@@ -1044,12 +1140,13 @@ export async function getSbpIndicatorFresh(key: SbpIndicatorKey): Promise<SbpInd
   try {
     const result = await buildIndicatorResult(key, config, true);
     logSbp(key, "live", `no-cache fetch OK, observation=${result.meta.observationDate}`);
-    return withSourceStatus(result, "live");
+    return withSourceStatus(key, result, "live");
   } catch (err) {
     const reason = err instanceof Error ? err.message : String(err);
     logSbpError(key, reason, "fallback");
     const fb = config.fallback;
     return withSourceStatus(
+      key,
       {
         ...fb,
         kpi: {
@@ -1165,6 +1262,7 @@ export async function getSbpIndicatorHistoryFresh(key: SbpIndicatorKey): Promise
         observationDate: series.latestDate,
         lastUpdated: series.lastUpdated,
         sourceStatus: "live",
+        freshness: evaluateSbpFreshness(key, { source: "SBP EasyData", seriesKey: series.seriesKey, seriesName: series.seriesName, unit: series.unit, frequency: config.frequency, observationDate: series.latestDate, lastUpdated: series.lastUpdated }),
       },
     };
     setCache(cacheKey, result);
@@ -1174,7 +1272,7 @@ export async function getSbpIndicatorHistoryFresh(key: SbpIndicatorKey): Promise
     const fb = config.fallback;
     return {
       points: fb.trend.map((p) => ({ date: parseFallbackMonthLabel(p.month), value: p.value })),
-      meta: { ...fb.meta, source: "SBP EasyData", sourceStatus: "fallback" },
+      meta: { ...fb.meta, source: "SBP EasyData", sourceStatus: "fallback", freshness: evaluateSbpFreshness(key, fb.meta) },
     };
   }
 }
@@ -1232,7 +1330,7 @@ async function fetchCanonicalIndicatorHistoryUncached(key: SbpIndicatorKey): Pro
     const fb = config.fallback;
     return {
       points: fb.trend.map((p) => ({ date: parseFallbackMonthLabel(p.month), value: p.value })),
-      meta: { ...fb.meta, source: "SBP EasyData", sourceStatus: "fallback" },
+      meta: { ...fb.meta, source: "SBP EasyData", sourceStatus: "fallback", freshness: evaluateSbpFreshness(key, fb.meta) },
     };
   }
   const latest = rows[rows.length - 1];
@@ -1250,6 +1348,7 @@ async function fetchCanonicalIndicatorHistoryUncached(key: SbpIndicatorKey): Pro
       observationDate: latest.observationPeriod,
       lastUpdated: latest.vintage,
       sourceStatus: "live",
+      freshness: evaluateSbpFreshness(key, { source: "SBP EasyData", seriesKey: SERIES_KEYS[key], seriesName: latest.seriesName ?? INDICATOR_LABELS[key], unit: latest.unit, frequency: config.frequency, observationDate: latest.observationPeriod, lastUpdated: latest.vintage }),
     },
   };
 }

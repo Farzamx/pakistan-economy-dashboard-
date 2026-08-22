@@ -15,7 +15,11 @@ export interface SecondaryStat {
   value: string;
 }
 
-type BadgeKpi = Pick<Kpi, "source" | "latestDate" | "frequency" | "marketType" | "expectedReleaseDate" | "releaseAlreadyReflected" | "sourceStatus" | "snapshotDate">;
+// Phase 6: `freshness` rides along so this layout renders the authoritative
+// verdict rather than re-deriving one. Optional only because Kpi is shared
+// with providers not yet migrated (Global Markets/World Bank); when absent,
+// the badge is not rendered at all rather than shown with a guessed state.
+type BadgeKpi = Pick<Kpi, "source" | "latestDate" | "frequency" | "marketType" | "sourceStatus" | "snapshotDate" | "freshness">;
 
 export interface SeoPageLayoutProps {
   title: string;
@@ -153,8 +157,8 @@ export default function SeoPageLayout({
               </span>
             )}
           </div>
-          {kpiQuality ? (
-            <DataQualityBadge kpi={kpiQuality} className="mt-1" />
+          {kpiQuality && kpiQuality.freshness ? (
+            <DataQualityBadge kpi={kpiQuality} freshness={kpiQuality.freshness} className="mt-1" />
           ) : (
             kpiSourceNote && <span className="mt-1 text-xs text-white/35 light:text-slate-400">{kpiSourceNote}</span>
           )}

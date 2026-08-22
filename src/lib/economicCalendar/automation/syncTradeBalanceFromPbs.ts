@@ -5,7 +5,7 @@ import { SERIES_PUBLICATION_META } from "@/lib/economicCalendar/seriesPublicatio
 import { recordSourceAttempt } from "@/lib/economicCalendar/sourceHealthTracker";
 import type { SyncResult, SyncProvenance } from "@/lib/economicCalendar/automation/syncFromSbpEasyData";
 import { invalidate } from "@/lib/memoryCache";
-import { canonicalObsCacheKey } from "@/lib/data/canonicalObservation";
+import { releasedEventValueCacheKey } from "@/lib/data/latestReleasedEventValue";
 
 // PBS Trade Balance Sync — Phase 7 Step 4
 //
@@ -364,7 +364,7 @@ export async function syncTradeBalanceFromPbs(): Promise<SyncResult[]> {
         if (error) {
           results.push({ seriesSlug: SERIES_SLUG, status: "error", detail: error.message, durationMs: Date.now() - entryMs });
         } else if (didUpdate) {
-          invalidate(canonicalObsCacheKey(SERIES_SLUG));
+          invalidate(releasedEventValueCacheKey(SERIES_SLUG));
           const { data: tbNext } = await supabase
             .from("economic_events")
             .select("event_date, economic_event_series!inner(slug)")
@@ -464,7 +464,7 @@ export async function syncTradeBalanceFromPbs(): Promise<SyncResult[]> {
           if (error) {
             results.push({ seriesSlug: "exports-release", status: "error", detail: error.message, durationMs: Date.now() - entryMs });
           } else if (didUpdate) {
-            invalidate(canonicalObsCacheKey("exports-release"));
+            invalidate(releasedEventValueCacheKey("exports-release"));
             const { data: exNext } = await supabase
               .from("economic_events")
               .select("event_date, economic_event_series!inner(slug)")
@@ -561,7 +561,7 @@ export async function syncTradeBalanceFromPbs(): Promise<SyncResult[]> {
           if (error) {
             results.push({ seriesSlug: "imports-release", status: "error", detail: error.message, durationMs: Date.now() - entryMs });
           } else if (didUpdate) {
-            invalidate(canonicalObsCacheKey("imports-release"));
+            invalidate(releasedEventValueCacheKey("imports-release"));
             const { data: imNext } = await supabase
               .from("economic_events")
               .select("event_date, economic_event_series!inner(slug)")

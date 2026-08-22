@@ -231,6 +231,7 @@ export interface Translations {
     whyItMatters: string; faq: string; relatedComparisons: string; viewAll: string;
     agriculture: string; industry: string; services: string;
     sourcesLabel: string; noOverlapDetailed: string; unavailableError: string;
+    incompatibleFrequency: string; differentUnitsNote: string;
     perfKseNote: string;
   };
 

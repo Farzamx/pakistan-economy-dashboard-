@@ -9,7 +9,7 @@ import { SERIES_PUBLICATION_META } from "@/lib/economicCalendar/seriesPublicatio
 import { recordSourceAttempt } from "@/lib/economicCalendar/sourceHealthTracker";
 import type { SyncResult, SyncProvenance } from "@/lib/economicCalendar/automation/syncFromSbpEasyData";
 import { invalidate } from "@/lib/memoryCache";
-import { canonicalObsCacheKey } from "@/lib/data/canonicalObservation";
+import { releasedEventValueCacheKey } from "@/lib/data/latestReleasedEventValue";
 import { storeCpiCategoryBreakdown, type CpiCategoryRow } from "@/lib/data/cpiCategoryBreakdown";
 import { storeCpiMonthlyIndex, type CpiIndexUpsertRow } from "@/lib/data/cpiMonthlyIndex";
 
@@ -363,7 +363,7 @@ async function writeSyncResult(
   };
 
   if (didUpdate) {
-    invalidate(canonicalObsCacheKey(seriesSlug));
+    invalidate(releasedEventValueCacheKey(seriesSlug));
     const { data: nextEvt } = await supabase
       .from("economic_events")
       .select("event_date, economic_event_series!inner(slug)")

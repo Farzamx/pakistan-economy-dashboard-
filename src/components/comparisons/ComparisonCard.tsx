@@ -13,6 +13,7 @@ import {
   type TimeRange,
 } from "@/lib/comparisons/comparisonTransforms";
 import type { ComparisonDef } from "@/lib/comparisons/comparisonRegistry";
+import type { CompatibilityResult } from "@/lib/comparisons/comparisonCompatibility";
 
 interface ComparisonCardProps {
   def: ComparisonDef;
@@ -20,6 +21,8 @@ interface ComparisonCardProps {
   sourceA: string;
   sourceB: string;
   hasError: boolean;
+  /** Phase 7: null when hasError is true because a fetch failed before compatibility could be checked -- distinguishes "provider unavailable" from "invalid comparison", per the requirement not to conflate the two. */
+  compatibility: CompatibilityResult | null;
   timeRange: TimeRange;
   chartMode: ChartMode;
 }
@@ -30,6 +33,7 @@ export default function ComparisonCard({
   sourceA,
   sourceB,
   hasError,
+  compatibility,
   timeRange,
   chartMode,
 }: ComparisonCardProps) {
@@ -71,10 +75,19 @@ export default function ComparisonCard({
 
       {hasError && (
         <div className="flex h-[320px] flex-col items-center justify-center gap-2 rounded-xl border border-red-500/15 bg-red-500/[0.04] text-center">
-          <p className="text-sm font-medium text-red-400">{t("comparisons.dataUnavailable")}</p>
-          <p className="max-w-xs text-xs text-[var(--text-muted)]">
-            {t("comparisons.dataUnavailableDesc")}
-          </p>
+          {compatibility && !compatibility.compatible ? (
+            <>
+              <p className="text-sm font-medium text-red-400">{t("comparisons.incompatibleFrequency")}</p>
+              <p className="max-w-xs text-xs text-[var(--text-muted)]">{compatibility.reason}</p>
+            </>
+          ) : (
+            <>
+              <p className="text-sm font-medium text-red-400">{t("comparisons.dataUnavailable")}</p>
+              <p className="max-w-xs text-xs text-[var(--text-muted)]">
+                {t("comparisons.dataUnavailableDesc")}
+              </p>
+            </>
+          )}
         </div>
       )}
 
