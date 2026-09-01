@@ -5,13 +5,26 @@
 // unchanged) works correctly when driven by the Yahoo Gold adapter's real
 // output, before any cutover decision is made.
 
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 const fetchYfHistoryMock = vi.hoisted(() => vi.fn());
 vi.mock("@/lib/data/yfinance", () => ({ fetchYfHistory: fetchYfHistoryMock }));
 
 const { ingestOneSeries, ingestManySeries } = await import("@/lib/providers/ingestionOrchestrator");
 const { yahooGoldAdapter, YAHOO_GOLD_INDICATOR_KEY } = await import("@/lib/providers/yahooGoldAdapter");
+
+// The calendar state this fixture was captured in, stated explicitly rather
+// than inherited from the real system clock. GOLD_FIXTURE's trailing bar is
+// dated 2026-08-13, so "now" must be inside August 2026 for that bar to be
+// the current, still-in-progress month the adapter is supposed to exclude.
+// Matches yahooGoldAdapter.test.ts's own NOW constant for the same fixture.
+//
+// Before this was pinned, the suite silently depended on the real date: it
+// passed all through August and began failing on 2026-09-01, when August
+// became a completed month and the trailing bar started being (correctly)
+// ingested. The production exclusion rule is unchanged and still exercised
+// here -- only the definition of "now" is now deterministic.
+const NOW = new Date("2026-08-13T20:00:00.000Z");
 
 const GOLD_FIXTURE = [
   { date: "2026-06-01", close: 4022.89990234375 },
@@ -29,6 +42,14 @@ function historyResponse(rows: { observation_period: string; value: number; unit
 
 beforeEach(() => {
   fetchYfHistoryMock.mockReset();
+  // Only Date is faked -- timers stay real so the orchestrator's async
+  // retry/await paths behave exactly as in production.
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(NOW);
+});
+
+afterEach(() => {
+  vi.useRealTimers();
 });
 
 describe("adapter -> orchestrator integration", () => {

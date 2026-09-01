@@ -67,6 +67,22 @@ beforeEach(() => {
   getSbpSeriesDefinitionMock.mockImplementation((key: string) => monthlySeries(key));
   getSourceHealthSummaryMock.mockResolvedValue([]);
   getLatestCanonicalProvenanceMock.mockResolvedValue(null);
+
+  // NOW is already threaded explicitly into runShadowFreshnessComparison,
+  // which covers the NEW freshness engine. The OLD system it is compared
+  // against (dataFreshness.ts's getFreshnessStatus) reads `new Date()`
+  // internally and has no injection seam, so without pinning the clock these
+  // comparisons silently drifted with the real date -- they passed in August
+  // and began failing on 2026-09-01 once the fixtures' observation dates aged
+  // past the old system's "Delayed" threshold. Faking only Date (timers stay
+  // real) aligns both systems on the same NOW without touching production
+  // thresholds or classification logic.
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(NOW);
+});
+
+afterEach(() => {
+  vi.useRealTimers();
 });
 
 describe("runShadowFreshnessComparison", () => {
