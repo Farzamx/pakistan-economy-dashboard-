@@ -4,7 +4,7 @@ export const en: Translations = {
   topNav: {
     overview: "Overview", markets: "Markets", calendar: "Calendar",
     research: "Research", academy: "Academy", riskIntel: "Risk Intel", premium: "Premium",
-    decisionLab: "Decision Lab",
+    decisionLab: "Decision Lab", macroIntelligence: "Macro Intel", macroIntelligenceLong: "Macro Intelligence",
   },
 
   nav: {

@@ -20,6 +20,10 @@ interface Props {
  * (not just extra classes on the shared item) since its markup genuinely
  * differs (icon + pill vs. plain text) — reusing the loop would need an
  * item-type branch either way.
+ *
+ * Phase 10 UI refinement: padding steps up at the 1280px tier (px-2/py-1 ->
+ * px-3/py-1.5), matching MacroIntelligenceNavItem's own identical step, so
+ * the two flagship pills keep the same rhythm at every width.
  */
 export default function DecisionLabNavItem({ href, label, active, onClick }: Props) {
   return (
@@ -27,7 +31,7 @@ export default function DecisionLabNavItem({ href, label, active, onClick }: Pro
       href={href}
       onClick={onClick}
       aria-current={active ? "true" : undefined}
-      className={`group relative flex items-center gap-1.5 whitespace-nowrap rounded-full border px-2 py-1 text-sm font-medium transition-all duration-200 ${
+      className={`group relative flex items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 py-1.5 text-sm font-medium transition-all duration-200 min-[1280px]:px-3.5 min-[1280px]:py-2 ${
         active
           ? "border-neon-blue/60 bg-gradient-to-r from-neon-blue/20 to-violet-500/10 text-white shadow-[0_0_10px_rgba(77,141,247,0.3)]"
           : "border-neon-blue/20 bg-gradient-to-r from-neon-blue/5 to-violet-500/5 text-white/65 hover:border-neon-blue/45 hover:text-white hover:shadow-[0_0_8px_rgba(77,141,247,0.2)] light:text-slate-600"

@@ -4,7 +4,7 @@ export const ur: Translations = {
   topNav: {
     overview: "جائزہ", markets: "منڈیاں", calendar: "کیلنڈر",
     research: "تحقیق", academy: "اکیڈمی", riskIntel: "خطرے کی انٹیلی جنس", premium: "پریمیم",
-    decisionLab: "ڈیسیژن لیب",
+    decisionLab: "ڈیسیژن لیب", macroIntelligence: "میکرو انٹیل", macroIntelligenceLong: "میکرو انٹیلی جنس",
   },
 
   nav: {

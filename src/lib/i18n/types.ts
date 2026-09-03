@@ -20,7 +20,7 @@ export interface Translations {
   topNav: {
     overview: string; markets: string; calendar: string;
     research: string; academy: string; riskIntel: string; premium: string;
-    decisionLab: string;
+    decisionLab: string; macroIntelligence: string; macroIntelligenceLong: string;
   };
 
   nav: {

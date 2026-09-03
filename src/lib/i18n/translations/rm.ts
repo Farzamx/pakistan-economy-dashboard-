@@ -4,7 +4,7 @@ export const rm: Translations = {
   topNav: {
     overview: "Jaiza", markets: "Mandiyan", calendar: "Calendar",
     research: "Tehqeeq", academy: "Academy", riskIntel: "Khatray ki Intel", premium: "Premium",
-    decisionLab: "Decision Lab",
+    decisionLab: "Decision Lab", macroIntelligence: "Macro Intel", macroIntelligenceLong: "Macro Intelligence",
   },
 
   nav: {

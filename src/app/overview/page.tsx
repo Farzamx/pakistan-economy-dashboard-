@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import DashboardSection from "@/components/DashboardSection";
 import { T } from "@/components/T";
 import { SITE_URL, SITE_NAME } from "@/lib/seoConfig";
@@ -8,7 +9,6 @@ import type { DashboardSnapshot } from "@/lib/assistantContext";
 import HealthScoreCard from "@/components/HealthScoreCard";
 import Hero from "@/components/Hero";
 import IntelligenceFeed, { type IntelligenceFeedItem } from "@/components/IntelligenceFeed";
-import MacroIntelligenceSection from "@/components/MacroIntelligenceSection";
 import { buildMacroIntelligenceReport } from "@/lib/intelligence/macroIntelligence";
 import WeekCalendarPanel from "@/components/WeekCalendarPanel";
 import ResearchTeaser from "@/components/ResearchTeaser";
@@ -819,18 +819,46 @@ export default async function Home() {
           </div>
         )}
 
-        {/* Phase 9.1 Macro Intelligence Engine (Phase 9.5 production
-            integration). Independent of the Weekly Intelligence gate above —
-            macroIntelligenceReport is fetched unconditionally in this page's
-            own Promise.all, not derived from weeklySnapshot — so it renders
-            regardless of whether the weekly Health Score/Risk Intelligence
-            snapshot exists yet. Placed after Risk Intelligence and before
-            the first per-KPI section: a synthesis layer answering "which
-            dimensions are improving/deteriorating/mixed", distinct from
-            Health Score's single aggregate number and Risk Intelligence's
-            recession/default probabilities. */}
+        {/* Phase 10 — Macro Intelligence is now a first-class top-nav
+            destination (/macro-intelligence, see TopNav.tsx's
+            MacroIntelligenceNavItem), so the full seven-card experience
+            no longer renders twice on the site. This compact teaser keeps
+            the "which dimensions are improving/deteriorating/mixed"
+            headline visible here (independent of the Weekly Intelligence
+            gate above — macroIntelligenceReport is fetched unconditionally
+            in this page's own Promise.all) without duplicating confidence
+            badges, summaries, or evidence — those live only on the
+            dedicated page. */}
         <HideableSection id="macro-intelligence">
-          <MacroIntelligenceSection report={macroIntelligenceReport} />
+          <div id="macro-intelligence" className="glass-card mt-8 scroll-mt-[60px] p-6 sm:scroll-mt-[120px] sm:p-8">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <h2 className="text-headline text-white light:text-slate-900">Macro Intelligence</h2>
+                <p className="mt-2 max-w-2xl text-sm text-white/60 light:text-slate-500">
+                  Which economic dimensions are improving, deteriorating, or mixed right now.
+                </p>
+              </div>
+              <Link
+                href="/macro-intelligence"
+                className="shrink-0 whitespace-nowrap rounded-full border border-neon-blue/30 bg-gradient-to-r from-neon-blue/10 to-violet-500/5 px-3.5 py-1.5 text-xs font-semibold text-white/85 transition-all hover:border-neon-blue/50 hover:text-white light:text-slate-700"
+              >
+                View full analysis →
+              </Link>
+            </div>
+            <ul className="section-divider mt-5 grid grid-cols-1 gap-x-6 gap-y-3 pt-4 sm:grid-cols-2 lg:grid-cols-4">
+              {macroIntelligenceReport.signals.map((signal) => (
+                <li key={signal.id} className="flex items-baseline justify-between gap-2">
+                  <span className="text-xs font-medium text-white/60 light:text-slate-500">{signal.label}</span>
+                  <span className="text-sm font-semibold text-white light:text-slate-900">
+                    <span aria-hidden="true" className="mr-1 text-neutral-400">
+                      {signal.direction === "Rising" ? "↑" : signal.direction === "Falling" ? "↓" : signal.direction === "Flat" ? "→" : "?"}
+                    </span>
+                    {signal.state.replace(/-/g, " ")}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
         </HideableSection>
 
         <HideableSection id="gdp">
