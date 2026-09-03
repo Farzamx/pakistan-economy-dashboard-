@@ -83,22 +83,93 @@ export interface BuildEvidenceInput {
   freshness: FreshnessResult | undefined;
   /** True only when the source module itself already reported this value as a hardcoded/static fallback (e.g. SbpMeta.source.includes("fallback"), Kpi.sourceStatus === "fallback"). Never guessed — see the per-source construction in macroIntelligence.ts. Defaults to false when the source has no such concept exposed (e.g. FRED/Yahoo Gold canonical rows). */
   isFallback?: boolean;
+  /**
+   * Phase 9.6A fix. The read model's own authoritative current-value string
+   * (e.g. `result.kpi.value`), when the caller's read model can produce a
+   * value for `observationPeriod` that is NOT guaranteed to already be the
+   * last element of `points` — concretely, sbpServer.ts's applyCanonicalOverride
+   * rewrites kpi.value/meta.observationDate to a newer PBS advance-release
+   * figure while deliberately leaving the SBP trend/sparkline (`points`)
+   * unchanged (that array is shared with every KPI card/chart/comparison
+   * consumer — see sbpServer.ts's own header). Before this fix, this
+   * function always read `value` from `points`' last element, so an active
+   * PBS override produced an evidence record pairing the NEW
+   * `observationPeriod` with the OLD, pre-override value — two fields
+   * describing different observations. Root-caused and reproduced in Phase
+   * 9.6 (STOP), fixed here in Phase 9.6A.
+   *
+   * When provided (and parseable), `value` always comes from this string
+   * instead of `points`, so `value` and `observationPeriod` can never
+   * disagree about which observation they describe — the Phase 9.6A
+   * invariant. Trend-derived direction/changeAbsolute/changePercent/
+   * acceleration remain as computed from `points` ONLY when `points`' last
+   * value would itself round to this same authoritative string (i.e. no
+   * override/divergence is actually active — the ordinary case, verified
+   * unchanged for every existing indicator: sbp.ts's seriesToIndicatorResult
+   * builds both kpi.value and the trend's last point from the same raw
+   * value with the same rounding). When they disagree, this function has no
+   * validated way to know what the PRIOR comparable reading was — sbpServer.ts
+   * itself only computes a same-methodology diff for CPI/Core/LSM, and
+   * explicitly declines to for Trade Balance/Exports/Imports (BPM6 vs
+   * customs-basis mismatch) — so direction/change/acceleration are reported
+   * as Unknown/null rather than either fabricating a comparison or silently
+   * reusing sbpServer.ts's per-indicator judgment (which isn't exposed here
+   * and would have to be re-guessed). Omitted entirely by callers whose read
+   * model has no such split concept (Reserves, GDP, Yahoo Gold) — for those,
+   * behavior is byte-identical to before this fix.
+   */
+  authoritativeValueDisplay?: string | null;
+}
+
+/** Number of digits after the decimal point in a numeric string, e.g. "-3.98" -> 2, "9" -> 0. Used to compare a rounded trend point against an authoritative display string at the SAME precision it was actually displayed at, so ordinary display rounding (e.g. a 1-decimal KPI vs a 2-decimal-stored trend point) is never mistaken for a genuine value/trend divergence. */
+function countDecimalPlaces(numericString: string): number {
+  const dotIndex = numericString.indexOf(".");
+  return dotIndex === -1 ? 0 : numericString.length - dotIndex - 1;
 }
 
 /** Builds one indicator's evidence entry, including its trend-derived direction/change — the single place read-model output is converted into the shape a signal rule consumes. */
 export function buildIndicatorEvidence(input: BuildEvidenceInput): IndicatorObservationEvidence {
   const trend = summarizeTrend(input.points);
   const availability = classifyAvailability(input.freshness?.state);
+
+  let value = trend.latestValue;
+  let direction = trend.change.direction;
+  let changeAbsolute = trend.change.absolute;
+  let changePercent = trend.change.percent;
+  let acceleration = trend.acceleration;
+
+  if (input.authoritativeValueDisplay != null) {
+    const authoritative = parseFloat(input.authoritativeValueDisplay);
+    if (!Number.isNaN(authoritative)) {
+      // The authoritative reading always wins for `value` — it is, by
+      // definition, the same observation `observationPeriod` describes.
+      value = authoritative;
+      const decimals = countDecimalPlaces(input.authoritativeValueDisplay);
+      const trendAgrees = trend.latestValue !== null && trend.latestValue.toFixed(decimals) === authoritative.toFixed(decimals);
+      if (!trendAgrees) {
+        // `points` does not (yet) include this observation — e.g. an active
+        // PBS advance-release override. No validated prior comparable
+        // reading is available here, so direction/change/acceleration are
+        // Unknown rather than a comparison against a period `points` never
+        // actually reached.
+        direction = "Unknown";
+        changeAbsolute = null;
+        changePercent = null;
+        acceleration = "Unknown";
+      }
+    }
+  }
+
   return {
     seriesId: input.seriesId,
     label: input.label,
-    value: trend.latestValue,
+    value,
     unit: input.unit,
     observationPeriod: input.observationPeriod,
-    direction: trend.change.direction,
-    changeAbsolute: trend.change.absolute,
-    changePercent: trend.change.percent,
-    acceleration: trend.acceleration,
+    direction,
+    changeAbsolute,
+    changePercent,
+    acceleration,
     availability,
     freshnessState: input.freshness?.state ?? "not-registered",
     freshnessReason: input.freshness?.reason ?? "No freshness registry entry exists for this series — its currency cannot be verified by the freshness engine.",

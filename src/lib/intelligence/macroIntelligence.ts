@@ -75,6 +75,15 @@ async function safeSbpEvidence(key: SbpIndicatorKey, label: string, seriesId: st
       observationPeriod: result.meta.observationDate,
       freshness: result.meta.freshness,
       isFallback: result.meta.source.includes("fallback"),
+      // Phase 9.6A fix: getSbpIndicator() may return a PBS-overridden
+      // kpi.value/meta.observationDate pair (sbpServer.ts's
+      // applyCanonicalOverride) while result.trend deliberately still ends
+      // at the older SBP-only period. Passing kpi.value here lets
+      // buildIndicatorEvidence guarantee value/observationPeriod always
+      // describe the same observation, degrading direction/change/
+      // acceleration to Unknown instead of comparing against a period
+      // `points` hasn't reached — see evidence.ts's header on this field.
+      authoritativeValueDisplay: result.kpi.value,
     });
   } catch (err) {
     console.error(`[macroIntelligence] failed to read ${label} (${seriesId}): ${err instanceof Error ? err.message : String(err)}`);

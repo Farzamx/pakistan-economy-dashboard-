@@ -99,6 +99,129 @@ describe("buildIndicatorEvidence", () => {
   });
 });
 
+describe("buildIndicatorEvidence — authoritativeValueDisplay (Phase 9.6A: value/observationPeriod consistency)", () => {
+  // Root-caused in Phase 9.6, fixed in Phase 9.6A: sbpServer.ts's
+  // applyCanonicalOverride rewrites kpi.value/meta.observationDate to a
+  // newer PBS advance-release figure while deliberately leaving the SBP
+  // trend/sparkline (`points`) at its older, pre-override tail — see
+  // sbpServer.ts's own "SBP trend/sparkline is always preserved" comment.
+  // Before this fix, `value` always came from `points`, so an active
+  // override paired the NEW observationPeriod with the OLD value.
+
+  it("omitted entirely -> byte-identical to pre-9.6A behavior (value from points, trend-derived direction/change)", () => {
+    const ev = buildIndicatorEvidence({ seriesId: "s", label: "L", unit: "u", points: [{ value: 8 }, { value: 9 }], observationPeriod: "2026-07-31", freshness: freshness("current") });
+    expect(ev.value).toBe(9);
+    expect(ev.direction).toBe("Rising");
+    expect(ev.changeAbsolute).toBe(1);
+  });
+
+  it("authoritative value agrees with points' last value (ordinary, no override) -> value/direction/change all as computed from points", () => {
+    const ev = buildIndicatorEvidence({
+      seriesId: "s", label: "L", unit: "u",
+      points: [{ value: 8 }, { value: 9 }],
+      observationPeriod: "2026-07-31",
+      freshness: freshness("current"),
+      authoritativeValueDisplay: "9.0",
+    });
+    expect(ev.value).toBe(9);
+    expect(ev.direction).toBe("Rising");
+    expect(ev.changeAbsolute).toBe(1);
+  });
+
+  it("authoritative value agrees at a COARSER display precision than the stored trend point -> still treated as consistent, never a false-positive divergence", () => {
+    // Mirrors real sbp.ts formatting: CPI's kpi.value is toFixed(1) ("9.2")
+    // while the trend array stores toFixed(2)-rounded numbers (9.2 exactly,
+    // here written as 9.20 to make the precision mismatch explicit).
+    const ev = buildIndicatorEvidence({
+      seriesId: "s", label: "L", unit: "%",
+      points: [{ value: 9.0 }, { value: 9.2 }],
+      observationPeriod: "2026-07-31",
+      freshness: freshness("current"),
+      authoritativeValueDisplay: "9.2",
+    });
+    expect(ev.value).toBe(9.2);
+    expect(ev.direction).toBe("Rising"); // NOT Unknown — this must not be mistaken for an override
+    expect(ev.changeAbsolute).toBeCloseTo(0.2);
+  });
+
+  it("THE DISCOVERED BUG, FIXED: authoritative value disagrees with points' last value (active PBS override) -> value follows the authoritative reading, never points' stale tail", () => {
+    // Exact reproduction of the Phase 9.6 finding: SBP trend still ends at
+    // -3.32 (Jun 2026), PBS override says -3.98 (Jul 2026).
+    const ev = buildIndicatorEvidence({
+      seriesId: "sbp:tradeBalance", label: "Trade Balance", unit: "B USD",
+      points: [{ value: -3.10 }, { value: -3.32 }],
+      observationPeriod: "2026-07-31", // the NEW, PBS-overridden period
+      freshness: freshness("current"),
+      authoritativeValueDisplay: "-3.98", // the NEW, PBS-overridden value
+    });
+    expect(ev.value).toBe(-3.98);
+    expect(ev.observationPeriod).toBe("2026-07-31");
+    // The exact defective pairing this phase exists to prevent, asserted
+    // negatively so a future regression trips this test immediately:
+    expect(ev.value).not.toBe(-3.32);
+  });
+
+  it("no fabricated comparison when points disagree with the authoritative reading -> direction/change/acceleration are Unknown/null, not a guessed diff", () => {
+    const ev = buildIndicatorEvidence({
+      seriesId: "sbp:tradeBalance", label: "Trade Balance", unit: "B USD",
+      points: [{ value: -3.10 }, { value: -3.32 }],
+      observationPeriod: "2026-07-31",
+      freshness: freshness("current"),
+      authoritativeValueDisplay: "-3.98",
+    });
+    expect(ev.direction).toBe("Unknown");
+    expect(ev.changeAbsolute).toBeNull();
+    expect(ev.changePercent).toBeNull();
+    expect(ev.acceleration).toBe("Unknown");
+  });
+
+  it("empty points + an authoritative value -> value is still the authoritative reading, never null, direction stays Unknown (no fabricated trend from zero history)", () => {
+    const ev = buildIndicatorEvidence({
+      seriesId: "s", label: "L", unit: "u", points: [],
+      observationPeriod: "2026-07-31",
+      freshness: freshness("current"),
+      authoritativeValueDisplay: "-3.98",
+    });
+    expect(ev.value).toBe(-3.98);
+    expect(ev.direction).toBe("Unknown");
+    expect(ev.changeAbsolute).toBeNull();
+  });
+
+  it("single-point trend + agreeing authoritative value -> value from the authoritative reading, direction stays Unknown (unchanged: a single point never yields a computable direction)", () => {
+    const ev = buildIndicatorEvidence({
+      seriesId: "s", label: "L", unit: "u", points: [{ value: -3.32 }],
+      observationPeriod: "2026-06-30",
+      freshness: freshness("current"),
+      authoritativeValueDisplay: "-3.32",
+    });
+    expect(ev.value).toBe(-3.32);
+    expect(ev.direction).toBe("Unknown");
+  });
+
+  it("malformed authoritativeValueDisplay (non-numeric) is ignored -> falls back to points-derived value, never NaN", () => {
+    const ev = buildIndicatorEvidence({
+      seriesId: "s", label: "L", unit: "u", points: [{ value: 8 }, { value: 9 }],
+      observationPeriod: "2026-07-31",
+      freshness: freshness("current"),
+      authoritativeValueDisplay: "n/a",
+    });
+    expect(ev.value).toBe(9);
+    expect(ev.direction).toBe("Rising");
+  });
+
+  it("stale availability is still gated correctly even when an authoritative value is present — this fix never bypasses freshness gating", () => {
+    const ev = buildIndicatorEvidence({
+      seriesId: "sbp:tradeBalance", label: "Trade Balance", unit: "B USD",
+      points: [{ value: -3.10 }, { value: -3.32 }],
+      observationPeriod: "2026-07-31",
+      freshness: freshness("stale", "no successful ingestion in 90 days"),
+      authoritativeValueDisplay: "-3.98",
+    });
+    expect(ev.availability).toBe("Stale");
+    expect(ev.value).toBe(-3.98); // value/observationPeriod consistency is orthogonal to availability
+  });
+});
+
 describe("computeSignalConfidence — reuses riskModels.ts's computeDataConfidence, never a fabricated score", () => {
   const now = "2026-08-14T00:00:00.000Z";
 
