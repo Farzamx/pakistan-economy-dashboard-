@@ -8,6 +8,8 @@ import type { DashboardSnapshot } from "@/lib/assistantContext";
 import HealthScoreCard from "@/components/HealthScoreCard";
 import Hero from "@/components/Hero";
 import IntelligenceFeed, { type IntelligenceFeedItem } from "@/components/IntelligenceFeed";
+import MacroIntelligenceSection from "@/components/MacroIntelligenceSection";
+import { buildMacroIntelligenceReport } from "@/lib/intelligence/macroIntelligence";
 import WeekCalendarPanel from "@/components/WeekCalendarPanel";
 import ResearchTeaser from "@/components/ResearchTeaser";
 import IndicatorTable from "@/components/IndicatorTable";
@@ -160,7 +162,7 @@ function getSection(id: string) {
 }
 
 export default async function Home() {
-  const [gdpKpi, sbp, netLiquidReserves, fxReservesWeekly, goldKpi, silverKpi, brentKpi, wtiKpi, naturalGasKpi, dxyKpi, us10yKpi, fedFundsKpi, newsItems, fxRates, pakEtfKpi, quarterlyGdp, spi, scheduledCalendarEvents, historicalCalendarEvents, gdpSectorComposition, cpiCategoryBreakdown] =
+  const [gdpKpi, sbp, netLiquidReserves, fxReservesWeekly, goldKpi, silverKpi, brentKpi, wtiKpi, naturalGasKpi, dxyKpi, us10yKpi, fedFundsKpi, newsItems, fxRates, pakEtfKpi, quarterlyGdp, spi, scheduledCalendarEvents, historicalCalendarEvents, gdpSectorComposition, cpiCategoryBreakdown, macroIntelligenceReport] =
     await Promise.all([
       getGdpKpi(),
       getAllSbpIndicators(),
@@ -191,6 +193,17 @@ export default async function Home() {
       // Personal Inflation Calculator) rather than adding a new pipeline.
       getGdpSectorComposition(),
       getLatestCpiCategoryBreakdown(),
+      // Phase 9.1 Macro Intelligence Engine (Phase 9.5 production
+      // integration) — runs concurrently with every other read-model call
+      // above rather than sequentially after them, so its own 15 internal
+      // read-model calls (several of which target the SAME SBP/reserves
+      // indicators getAllSbpIndicators()/getNetLiquidReserves() above
+      // already fetch) land inside the same in-flight dedupe/10-minute L1
+      // cache window (see sbp.ts's getSbpIndicator) instead of triggering a
+      // second round of canonical-DB reads. `now` is supplied explicitly —
+      // the engine itself never calls Date.now(), preserving its
+      // determinism (see macroIntelligence.ts's own header).
+      buildMacroIntelligenceReport(new Date()),
     ]);
 
   // Weekly SPI has no static fallback (see spi.ts) — the card simply
@@ -805,6 +818,20 @@ export default async function Home() {
             </p>
           </div>
         )}
+
+        {/* Phase 9.1 Macro Intelligence Engine (Phase 9.5 production
+            integration). Independent of the Weekly Intelligence gate above —
+            macroIntelligenceReport is fetched unconditionally in this page's
+            own Promise.all, not derived from weeklySnapshot — so it renders
+            regardless of whether the weekly Health Score/Risk Intelligence
+            snapshot exists yet. Placed after Risk Intelligence and before
+            the first per-KPI section: a synthesis layer answering "which
+            dimensions are improving/deteriorating/mixed", distinct from
+            Health Score's single aggregate number and Risk Intelligence's
+            recession/default probabilities. */}
+        <HideableSection id="macro-intelligence">
+          <MacroIntelligenceSection report={macroIntelligenceReport} />
+        </HideableSection>
 
         <HideableSection id="gdp">
         <DashboardSection

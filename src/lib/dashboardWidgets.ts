@@ -13,6 +13,7 @@ export interface DashboardWidget {
 
 export const DASHBOARD_WIDGETS: DashboardWidget[] = [
   { id: "risk-intelligence", label: "Risk Intelligence" },
+  { id: "macro-intelligence", label: "Macro Intelligence" },
   { id: "gdp", label: "GDP" },
   { id: "inflation", label: "Inflation" },
   { id: "price-indices", label: "Prices" },
