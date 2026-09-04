@@ -25,7 +25,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { useAuth } from "@/components/AuthProvider";
-import { useTheme, STORAGE_UPDATED_AT_KEY } from "@/components/ThemeProvider";
+import { useTheme, STORAGE_UPDATED_AT_KEY, shouldAdoptRemoteTheme } from "@/components/ThemeProvider";
 import {
   getUserPreferences,
   upsertUserPreferences,
@@ -93,30 +93,25 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
       .then((prefs) => {
         if (cancelled) return;
         setPreferences(prefs);
-        // This device's localStorage may predate the account, or another
-        // device may have changed the theme since — DB wins on first load,
-        // but ONLY if the user hasn't already made a fresh local choice
-        // since this fetch started (themeRef.current === themeAtFetchStart)
-        // AND the DB row isn't older than this device's last local write.
-        // The second check matters even with the effect now keyed on a
-        // stable user?.id (see the file-level comment): a fetch and a write
-        // are two independent network requests with no ordering guarantee,
-        // so a fetch can still resolve before an in-flight write lands —
-        // confirmed live on a hard reload taken within ~1s of toggling.
-        // Comparing timestamps (not just "is it different") tells "the DB
-        // is genuinely newer, e.g. from another device" apart from "my own
-        // write just hasn't propagated to this read yet."
+        // This device's localStorage may predate the account — DB wins on
+        // first load, but ONLY if this device has never recorded an
+        // explicit local theme choice at all, and only if the user hasn't
+        // already made a fresh local choice since this fetch started
+        // (themeRef.current === themeAtFetchStart). See
+        // shouldAdoptRemoteTheme's own comment in ThemeProvider.tsx (Phase
+        // 10.8) for why a row-level `updated_at` timestamp comparison was
+        // tried first and turned out to silently revert explicit choices.
         if (
-          user &&
-          prefs?.preferredTheme &&
-          prefs.preferredTheme !== themeAtFetchStart &&
-          themeRef.current === themeAtFetchStart
+          shouldAdoptRemoteTheme({
+            hasUser: !!user,
+            remoteTheme: prefs?.preferredTheme,
+            themeAtFetchStart,
+            currentTheme: themeRef.current,
+            hasLocalWrite: localStorage.getItem(STORAGE_UPDATED_AT_KEY) !== null,
+          }) &&
+          prefs?.preferredTheme
         ) {
-          const localWriteAt = Number(localStorage.getItem(STORAGE_UPDATED_AT_KEY) ?? 0);
-          const dbUpdatedAt = prefs.updatedAt ? new Date(prefs.updatedAt).getTime() : 0;
-          if (localWriteAt <= dbUpdatedAt) {
-            setTheme(prefs.preferredTheme);
-          }
+          setTheme(prefs.preferredTheme);
         }
       })
       .catch(() => { if (!cancelled) setPreferences(null); })

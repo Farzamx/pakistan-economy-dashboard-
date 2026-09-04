@@ -13,6 +13,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useEconomicProfile, setEconomicProfile, DEFAULT_ECONOMIC_PROFILE, type FilerStatus, type Province, type IncomeType, type HousingStatus, type RiskTolerance } from "@/lib/decisionSupportLab/economicProfile";
 import { getOverallCompletionPct, getSectionOutcome, type ProfileSectionId } from "@/lib/decisionSupportLab/profileCompletion";
+import { PROVINCE_OPTIONS, FILER_STATUS_OPTIONS, INCOME_TYPE_OPTIONS, HOUSING_STATUS_OPTIONS, RISK_TOLERANCE_OPTIONS } from "@/lib/decisionSupportLab/economicProfileOptions";
 import { getAffectedTools } from "@/lib/decisionSupportLab/toolFieldRegistry";
 import CityCombobox from "@/components/decisionSupportLab/CityCombobox";
 import type { PakistanCity } from "@/data/pakistanCities";
@@ -162,10 +163,9 @@ export default function EconomicProfileOnboarding() {
               className="mt-1.5 w-full rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-2)] px-3 py-2.5 text-sm text-white outline-none focus:border-neon-blue light:text-slate-900"
             >
               <option value="">Select province</option>
-              <option value="punjab">Punjab</option>
-              <option value="sindh">Sindh</option>
-              <option value="kp">Khyber Pakhtunkhwa</option>
-              <option value="balochistan">Balochistan</option>
+              {PROVINCE_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
             </select>
             {provinceAutoFilled && (
               <p className="mt-1 text-[11px] text-white/40 light:text-slate-400">
@@ -187,9 +187,9 @@ export default function EconomicProfileOnboarding() {
               onChange={(e) => setEconomicProfile({ filerStatus: e.target.value as FilerStatus })}
               className="mt-1.5 w-full rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-2)] px-3 py-2.5 text-sm text-white outline-none focus:border-neon-blue light:text-slate-900"
             >
-              <option value="unknown">Prefer not to say</option>
-              <option value="filer">Filer</option>
-              <option value="non-filer">Non-filer</option>
+              {FILER_STATUS_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
             </select>
           </div>
         </div>
@@ -213,10 +213,9 @@ export default function EconomicProfileOnboarding() {
               className="mt-1.5 w-full rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-2)] px-3 py-2.5 text-sm text-white outline-none focus:border-neon-blue light:text-slate-900"
             >
               <option value="">Select income type</option>
-              <option value="salaried">Salaried</option>
-              <option value="business">Business</option>
-              <option value="freelance">Freelance</option>
-              <option value="mixed">Mixed</option>
+              {INCOME_TYPE_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
             </select>
           </div>
           <div className="sm:col-span-3">
@@ -268,9 +267,9 @@ export default function EconomicProfileOnboarding() {
               className="mt-1.5 w-full rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-2)] px-3 py-2.5 text-sm text-white outline-none focus:border-neon-blue light:text-slate-900"
             >
               <option value="">Select housing status</option>
-              <option value="own">Own</option>
-              <option value="rent">Rent</option>
-              <option value="family">Living with family</option>
+              {HOUSING_STATUS_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
             </select>
           </div>
           <NumberInput id="ep-housing-cost" label="Monthly Housing Cost" field="monthlyHousingCost" value={profile.monthlyHousingCost} onChange={(v) => setEconomicProfile({ monthlyHousingCost: v })} prefix="Rs" step={1000} placeholder="Enter rent or mortgage" />
@@ -323,9 +322,9 @@ export default function EconomicProfileOnboarding() {
                 className="mt-1.5 w-full rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-2)] px-3 py-2.5 text-sm text-white outline-none focus:border-neon-blue light:text-slate-900"
               >
                 <option value="">Select risk tolerance</option>
-                <option value="conservative">Conservative</option>
-                <option value="moderate">Moderate</option>
-                <option value="aggressive">Aggressive</option>
+                {RISK_TOLERANCE_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>{o.label}</option>
+                ))}
               </select>
             </div>
           </div>
