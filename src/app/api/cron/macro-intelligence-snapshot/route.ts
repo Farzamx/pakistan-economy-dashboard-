@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { runMacroIntelligenceSnapshotCycle } from "@/lib/macroIntelligenceSnapshotCompute";
 import { logCronRun } from "@/lib/cronLogging";
 
@@ -18,6 +19,23 @@ import { logCronRun } from "@/lib/cronLogging";
 // (NOTIFICATION_WORKER_SECRET) is separate and gates the actual database
 // write, matching weekly-intelligence/route.ts's identical two-secret
 // pattern.
+//
+// Phase 10.6: /macro-intelligence has no `revalidate` export and no
+// fetch-tag infrastructure (its data comes from Supabase .rpc() calls, not
+// tagged next/cache fetches) — Next.js built it as a fully static page with
+// no expiry, so a newly persisted snapshot was invisible on the public page
+// until the next unrelated deployment (confirmed live: x-vercel-cache HIT,
+// age in the tens of thousands of seconds, unchanged across requests).
+// revalidatePath() is called below immediately after a genuine (not
+// skipped, not failed) write — the same inline-in-the-route-handler
+// pattern this project already uses for /api/revalidate-fx's
+// revalidateTag() call, and the reason it's safe to call directly here
+// rather than needing a separate module the way sbpCacheInvalidation.ts
+// does: a Route Handler file can never be imported into a Client
+// Component, so there is no risk of "next/cache" ending up in a client
+// bundle the way there would be for a shared src/lib module. Deliberately
+// NOT called on a skip (the page already reflects today's data — nothing
+// changed) or on a failure (nothing new to show).
 export const maxDuration = 30;
 
 const JOB_NAME = "macro-intelligence-snapshot";
@@ -39,6 +57,12 @@ export async function GET(request: Request) {
     if (!cycle.success) {
       await logCronRun(JOB_NAME, startedAt, "failure", cycle.error);
       return NextResponse.json({ ranAt: new Date().toISOString(), success: false, error: cycle.error }, { status: 500 });
+    }
+    if (!cycle.skipped) {
+      // A genuinely new row was persisted for today — bust the static
+      // page's cache so the next visitor gets a fresh render reflecting
+      // it, rather than waiting for an unrelated deployment.
+      revalidatePath("/macro-intelligence");
     }
     await logCronRun(
       JOB_NAME,
