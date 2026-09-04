@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Sidebar from "@/components/Sidebar";
 import MacroIntelligenceSection from "@/components/MacroIntelligenceSection";
 import { buildMacroIntelligenceReport } from "@/lib/intelligence/macroIntelligence";
+import { readRecentMacroIntelligenceSnapshots } from "@/lib/data/macroIntelligenceSnapshots";
+import { buildHistoryByDimension } from "@/lib/macroIntelligenceHistory";
 import { SITE_URL, SITE_NAME } from "@/lib/seoConfig";
 
 // Phase 10 — Macro Intelligence promoted from an /overview section to its
@@ -45,8 +47,25 @@ const HERO_STATS: { label: string; value: string }[] = [
   { label: "Sources", value: "SBP · World Bank · Yahoo Finance" },
 ];
 
+// Phase 10.1 — how many recent daily snapshots to fetch for history. One
+// query (readRecentMacroIntelligenceSnapshots -> get_recent_macro_intelligence_snapshots),
+// never one per dimension (no N+1). 30 days is generous enough that a
+// genuinely long-running regime's consecutive-count rarely hits the window
+// boundary, while staying a small, bounded read — not an export.
+const HISTORY_WINDOW = 30;
+
 export default async function MacroIntelligencePage() {
-  const report = await buildMacroIntelligenceReport(new Date());
+  // Independent fetches: a history-read failure must never affect the
+  // current report, and vice versa. readRecentMacroIntelligenceSnapshots()
+  // already catches every error internally and resolves to [] rather than
+  // rejecting (see its own header) — so this Promise.all cannot reject on
+  // history's account, and the current signals always render even if
+  // history genuinely cannot be read.
+  const [report, recentSnapshots] = await Promise.all([
+    buildMacroIntelligenceReport(new Date()),
+    readRecentMacroIntelligenceSnapshots(HISTORY_WINDOW),
+  ]);
+  const historyByDimension = buildHistoryByDimension(recentSnapshots);
 
   return (
     <div className="flex min-h-screen w-full">
@@ -73,7 +92,7 @@ export default async function MacroIntelligencePage() {
             </div>
           </div>
 
-          <MacroIntelligenceSection report={report} />
+          <MacroIntelligenceSection report={report} historyByDimension={historyByDimension} />
         </div>
       </main>
     </div>

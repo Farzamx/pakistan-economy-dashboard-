@@ -20,8 +20,9 @@
 // the only thing colored, because confidence is the only severity the
 // engine actually computes.
 
-import type { IndicatorObservationEvidence, IntelligenceSignal, MacroIntelligenceReport, SignalConfidence } from "@/lib/intelligence/types";
+import type { IndicatorObservationEvidence, IntelligenceDimension, IntelligenceSignal, MacroIntelligenceReport, SignalConfidence } from "@/lib/intelligence/types";
 import { FRESHNESS_STATE_LABEL } from "@/lib/freshness/readModel";
+import type { DimensionHistory } from "@/lib/macroIntelligenceHistory";
 
 const CONFIDENCE_BADGE_CLASS: Record<SignalConfidence, string> = {
   High: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
@@ -64,7 +65,53 @@ function EvidenceRow({ evidence }: { evidence: IndicatorObservationEvidence }) {
   );
 }
 
-function SignalCard({ signal }: { signal: IntelligenceSignal }) {
+/**
+ * Phase 10.1 — small, subordinate history strip. Purely mechanical: every
+ * value here is read straight from DimensionHistory (already-computed by
+ * macroIntelligenceHistory.ts from persisted snapshots) — no chart, no
+ * graph, no color-coded trend, nothing decorative. A single muted text row
+ * plus a one-line status caption, deliberately smaller/quieter than the
+ * current-state headline above it, so history never competes with the
+ * live signal for attention.
+ */
+function HistoryStrip({ history }: { history: DimensionHistory | null }) {
+  if (!history) {
+    return (
+      <p className="mt-3 border-t border-white/5 pt-3 text-[11px] text-white/30 light:border-black/5 light:text-slate-400">History will appear after additional snapshots.</p>
+    );
+  }
+
+  if (history.points.length === 1) {
+    return (
+      <div className="mt-3 border-t border-white/5 pt-3 light:border-black/5">
+        <span className="text-label text-white/30 light:text-slate-400">History</span>
+        <p className="mt-1 text-[11px] text-white/40 light:text-slate-500">1 snapshot</p>
+      </div>
+    );
+  }
+
+  const countLabel = `${history.truncated ? `${history.consecutiveCount}+` : history.consecutiveCount} consecutive snapshot${history.consecutiveCount === 1 ? "" : "s"}`;
+
+  return (
+    <div className="mt-3 border-t border-white/5 pt-3 light:border-black/5">
+      <span className="text-label text-white/30 light:text-slate-400">History</span>
+      <p className="mt-1 text-[11px] leading-relaxed text-white/50 light:text-slate-500">
+        {history.points.map((p, i) => (
+          <span key={`${p.computedAt}-${i}`}>
+            {i > 0 && <span aria-hidden="true" className="mx-1 text-white/20 light:text-slate-300">→</span>}
+            {p.state.replace(/-/g, " ")}
+          </span>
+        ))}
+      </p>
+      <p className="mt-1 text-[11px] text-white/40 light:text-slate-500">
+        {history.currentState.replace(/-/g, " ")} · {countLabel}
+        {history.previousState && <> · Changed from {history.previousState.replace(/-/g, " ")}</>}
+      </p>
+    </div>
+  );
+}
+
+function SignalCard({ signal, history }: { signal: IntelligenceSignal; history: DimensionHistory | null }) {
   const usableCount = signal.evidence.length - signal.missingInputs.length;
   return (
     <div className="relative overflow-hidden rounded-lg border border-white/10 bg-white/[0.025] p-5 light:border-black/10 light:bg-black/[0.015]">
@@ -100,6 +147,8 @@ function SignalCard({ signal }: { signal: IntelligenceSignal }) {
         )}
       </div>
 
+      <HistoryStrip history={history} />
+
       {signal.evidence.length > 0 && (
         <details className="group mt-3">
           <summary className="w-fit cursor-pointer list-none text-[11px] font-medium text-neutral-400 hover:text-neutral-300 light:text-neutral-500 light:hover:text-neutral-700">
@@ -119,7 +168,14 @@ function SignalCard({ signal }: { signal: IntelligenceSignal }) {
   );
 }
 
-export default function MacroIntelligenceSection({ report }: { report: MacroIntelligenceReport }) {
+export default function MacroIntelligenceSection({
+  report,
+  historyByDimension = {},
+}: {
+  report: MacroIntelligenceReport;
+  /** Phase 10.1 — optional; omitted entirely on any page that hasn't fetched history (defaults to empty, which HistoryStrip renders as "will appear after additional snapshots" for every card, never a crash). */
+  historyByDimension?: Partial<Record<IntelligenceDimension, DimensionHistory>>;
+}) {
   return (
     <div className="glass-card scroll-mt-[60px] p-6 sm:scroll-mt-[120px] sm:p-8" id="macro-intelligence">
       <span className="text-label text-neon-blue">Macro Regime</span>
@@ -128,7 +184,7 @@ export default function MacroIntelligenceSection({ report }: { report: MacroInte
       </p>
       <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {report.signals.map((signal) => (
-          <SignalCard key={signal.id} signal={signal} />
+          <SignalCard key={signal.id} signal={signal} history={historyByDimension[signal.dimension] ?? null} />
         ))}
       </div>
     </div>
