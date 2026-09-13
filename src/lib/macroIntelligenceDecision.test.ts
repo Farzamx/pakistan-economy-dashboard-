@@ -509,6 +509,34 @@ describe("no unsupported claim is ever generated", () => {
     expect(full.knowledge.observed.join(" ")).toContain("30");
     expect(full.historyWindow).toBe(30);
   });
+
+  it("regression: the truncation note counts snapshots actually READ, never the larger requested window", () => {
+    // Production read 10 snapshots against a window of 30 and rendered "the
+    // oldest of the 30 snapshots read" — overstating the history available.
+    const r = buildMacroDecisionReport({
+      signals: [signal("Inflation", "rising")],
+      historyByDimension: { Inflation: history(["rising", "rising", "rising"]) },
+      snapshotCount: 3,
+      historyWindow: 30,
+    });
+    expect(r.dimensions[0].runTruncated).toBe(true);
+    const note = r.knowledge.unknown.find((u) => u.includes("true start"))!;
+    expect(note).toContain("oldest of the 3 snapshots read");
+    expect(note).not.toContain("30 snapshots read");
+  });
+
+  it("singularises the truncation note when exactly one snapshot was read", () => {
+    const r = buildMacroDecisionReport({
+      signals: [signal("Inflation", "rising")],
+      historyByDimension: { Inflation: history(["rising"]) },
+      snapshotCount: 1,
+      historyWindow: 30,
+    });
+    // A single-point run is not truncated, so no note is produced at all —
+    // the honest outcome, rather than a note about a run that cannot exist.
+    expect(r.dimensions[0].runTruncated).toBe(false);
+    expect(r.knowledge.unknown.some((u) => u.includes("true start"))).toBe(false);
+  });
 });
 
 // ── Direct unit coverage of the small helpers ─────────────────────────────

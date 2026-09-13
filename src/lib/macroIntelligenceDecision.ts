@@ -554,7 +554,12 @@ function buildKnowledgeSplit(
     unknown.push(historyDepth === "none" ? "How any dimension has changed over time — no history is stored yet." : "How durable current conditions are — too few snapshots are stored to judge persistence.");
   }
   if (decisions.some((d) => d.runTruncated)) {
-    unknown.push(`The true start of at least one run — it reaches the oldest of the ${historyWindow} snapshots read, so it may have begun earlier.`);
+    // Counts the snapshots ACTUALLY read, not the window that was requested.
+    // Using the window here overstated available history — with 10 stored
+    // and 30 requested it read "the oldest of the 30 snapshots read", which
+    // is precisely the "implies more history than it has" failure this
+    // layer exists to avoid.
+    unknown.push(`The true start of at least one run — it reaches the oldest of the ${snapshotCount} snapshot${snapshotCount === 1 ? "" : "s"} read, so it may have begun earlier.`);
   }
   unknown.push("Why any dimension moved, and what happens next — this layer describes observed states and changes only, and makes no forecast or recommendation.");
 
