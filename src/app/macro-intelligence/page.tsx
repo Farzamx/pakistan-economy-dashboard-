@@ -2,10 +2,12 @@ import type { Metadata } from "next";
 import Sidebar from "@/components/Sidebar";
 import MacroIntelligenceSection from "@/components/MacroIntelligenceSection";
 import MacroDecisionLayer from "@/components/MacroDecisionLayer";
+import MacroHistoricalAnalytics from "@/components/MacroHistoricalAnalytics";
 import { buildMacroIntelligenceReport } from "@/lib/intelligence/macroIntelligence";
 import { readRecentMacroIntelligenceSnapshots } from "@/lib/data/macroIntelligenceSnapshots";
 import { buildHistoryByDimension } from "@/lib/macroIntelligenceHistory";
 import { buildMacroDecisionReport } from "@/lib/macroIntelligenceDecision";
+import { buildHistoricalAnalytics } from "@/lib/macroIntelligenceHistoricalAnalytics";
 import { SITE_URL, SITE_NAME } from "@/lib/seoConfig";
 
 // Phase 10 — Macro Intelligence promoted from an /overview section to its
@@ -78,6 +80,15 @@ export default async function MacroIntelligencePage() {
     snapshotCount: recentSnapshots.length,
     historyWindow: HISTORY_WINDOW,
   });
+  // Phase 13 — a second pure derivation from the SAME already-fetched
+  // snapshots. No additional query, no per-dimension or per-snapshot read,
+  // and no schema change: everything the historical analytics needs (state,
+  // confidence, dates, per-dimension coverage) is already persisted by
+  // migration 0053.
+  const historicalAnalytics = buildHistoricalAnalytics({
+    snapshotsNewestFirst: recentSnapshots,
+    historyWindow: HISTORY_WINDOW,
+  });
 
   return (
     <div className="flex min-h-screen w-full">
@@ -105,6 +116,8 @@ export default async function MacroIntelligencePage() {
           </div>
 
           <MacroDecisionLayer report={decision} />
+
+          <MacroHistoricalAnalytics report={historicalAnalytics} />
 
           <MacroIntelligenceSection report={report} historyByDimension={historyByDimension} />
         </div>
