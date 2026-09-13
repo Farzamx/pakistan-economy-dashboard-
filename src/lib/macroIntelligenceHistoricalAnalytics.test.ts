@@ -276,6 +276,33 @@ describe("persistence and longest observed runs", () => {
     expect(p.longestObservedRun?.length).toBe(3);
   });
 
+  it("Phase 15: current state diverging from a genuinely long historical run — the run is preserved as history, not conflated with 'current'", () => {
+    // 8 consecutive snapshots of one polarity, then the newest snapshot
+    // flips — an economically meaningful shape production could plausibly
+    // reach soon (today's real Inflation run is already 10+). The old run
+    // must be reported as history (longestObservedRun / longestRunForCurrentState
+    // for its own state), never blended into what "current" means, and the
+    // flip must read as a turning point since both sides are classified
+    // and opposite in polarity.
+    const long = Array.from({ length: 8 }, (_, i) => snap(i + 1, { Inflation: "rising" }));
+    const r = analyse([...long, snap(9, { Inflation: "falling" })]);
+    const p = r.profiles.find((x) => x.dimension === "Inflation")!;
+
+    expect(p.currentState).toBe("falling");
+    expect(p.currentRunLength).toBe(1);
+    expect(p.currentRunTruncated).toBe(false); // this run's start (snapshot 9) is fully inside the window
+    expect(p.standing).toBe("recently-reversed");
+
+    // The 8-long "rising" run is real history — findable, not erased or merged.
+    const risingRun = r.timeline.slice(0, 8).every((pt) => pt.states.Inflation === "rising");
+    expect(risingRun).toBe(true);
+    expect(p.longestObservedRun).toMatchObject({ state: "rising", length: 8, truncatedStart: true });
+
+    const t = r.transitions.find((x) => x.dimension === "Inflation")!;
+    expect(t).toMatchObject({ fromState: "rising", toState: "falling", isTurningPoint: true, persistedSnapshots: 1, ongoing: true });
+    expect(r.turningPoints).toContainEqual(t);
+  });
+
   it("marks the current state as new after a single-snapshot change", () => {
     const r = analyse([snap(1, { Inflation: "flat" }), snap(2, { Inflation: "flat" }), snap(3, { Inflation: "rising" })]);
     expect(r.profiles.find((x) => x.dimension === "Inflation")!.standing).toBe("new");
