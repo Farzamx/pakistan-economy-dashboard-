@@ -69,6 +69,38 @@ export function getMostRecentEvent(events: EconomicEvent[], titlePrefix: string,
   return sortByDateAsc(past)[past.length - 1];
 }
 
+/**
+ * The next `limit` events dated today or later, for any tile that presents
+ * events as UPCOMING.
+ *
+ * Why this exists (observed live on production 2026-09-13): the repo's
+ * getAllScheduledEvents() selects on `status = 'scheduled'` and orders by
+ * event_date ASCENDING, with no date predicate — by design, since that
+ * status set is also what the full calendar page and the .ics feed consume.
+ * But any event whose outcome was never recorded upstream stays
+ * `scheduled` forever, so the ascending sort surfaces the OLDEST such rows
+ * first. The overview's "Upcoming Calendar" tile sliced the first five and
+ * presented 27 Jul, 5 Aug and 7 Aug 2026 as upcoming, seven weeks after
+ * they had passed.
+ *
+ * This filters at the presentation boundary rather than inside
+ * getAllScheduledEvents(), so the calendar page and the .ics feed keep
+ * their existing "everything still marked scheduled" semantics unchanged.
+ * It deliberately does NOT invent or re-date anything: if nothing genuinely
+ * upcoming remains, the caller renders its own empty state, which is the
+ * honest answer and surfaces the upstream gap instead of masking it.
+ *
+ * Comparison is plain ISO string ordering — both sides are date-only
+ * "YYYY-MM-DD", so this is exact and needs no timezone arithmetic.
+ */
+export function selectUpcomingByDate<T extends { eventDate: string }>(
+  events: readonly T[],
+  todayIso: string,
+  limit: number,
+): T[] {
+  return events.filter((e) => e.eventDate >= todayIso).slice(0, limit);
+}
+
 /** First signed-decimal substring in `value`, or null if none — e.g. "$11.2B" -> 11.2, "11.5% (held)" -> 11.5, "-0.85%" -> -0.85. */
 function extractLeadingNumber(value: string): number | null {
   const match = value.match(/-?\d+(\.\d+)?/);

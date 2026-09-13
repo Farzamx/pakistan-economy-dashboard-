@@ -34,7 +34,7 @@ import { getFreshnessStatus } from "@/lib/dataFreshness";
 import { getDataQuality } from "@/lib/dataQuality";
 import { getTrendDirection } from "@/lib/trendDirection";
 import { formatMonthLabel } from "@/lib/formatMonthLabel";
-import { getMostRecentEvent, valueMatchesEventOutcome } from "@/lib/economicCalendar/economicCalendarData";
+import { getMostRecentEvent, selectUpcomingByDate, valueMatchesEventOutcome } from "@/lib/economicCalendar/economicCalendarData";
 import { getAllScheduledEvents, getHistoricalEvents, toEconomicEvent } from "@/lib/economicCalendar/economicEventsRepo";
 import type { AiEconomicAnalysis } from "@/lib/data/aiEconomicAnalysis";
 import type { AiRiskIntelligence } from "@/lib/data/aiRiskIntelligence";
@@ -493,9 +493,15 @@ export default async function Home() {
   const latestRelease = recentReleasedEvents[0] ?? null;
 
   // Hero briefing's "Upcoming Calendar" tile — getAllScheduledEvents() is
-  // already sorted soonest-first, so this is a plain slice/map, no new query.
-  const heroUpcomingEvents = scheduledCalendarEvents
-    .slice(0, 5)
+  // sorted soonest-first, but it selects purely on `status = 'scheduled'`
+  // with no date predicate, so an event whose outcome was never recorded
+  // upstream stays in that set indefinitely and the ascending sort puts the
+  // OLDEST such rows first. Slicing without a date filter therefore showed
+  // 27 Jul / 5 Aug / 7 Aug 2026 as "upcoming" on 13 Sep 2026. Filtering to
+  // today-or-later here (not inside the repo function) keeps the calendar
+  // page and .ics feed on their existing semantics — see
+  // selectUpcomingByDate's own comment. No new query.
+  const heroUpcomingEvents = selectUpcomingByDate(scheduledCalendarEvents, todayForCalendar.toISOString().slice(0, 10), 5)
     .map((e) => ({ title: e.title, date: e.eventDate, importance: e.importance }));
 
   // Intelligence Feed — a "what changed" line per recent release (real
