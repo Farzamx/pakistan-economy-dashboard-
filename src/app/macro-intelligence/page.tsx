@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import Sidebar from "@/components/Sidebar";
 import MacroIntelligenceSection from "@/components/MacroIntelligenceSection";
+import MacroDecisionLayer from "@/components/MacroDecisionLayer";
 import { buildMacroIntelligenceReport } from "@/lib/intelligence/macroIntelligence";
 import { readRecentMacroIntelligenceSnapshots } from "@/lib/data/macroIntelligenceSnapshots";
 import { buildHistoryByDimension } from "@/lib/macroIntelligenceHistory";
+import { buildMacroDecisionReport } from "@/lib/macroIntelligenceDecision";
 import { SITE_URL, SITE_NAME } from "@/lib/seoConfig";
 
 // Phase 10 — Macro Intelligence promoted from an /overview section to its
@@ -66,6 +68,16 @@ export default async function MacroIntelligencePage() {
     readRecentMacroIntelligenceSnapshots(HISTORY_WINDOW),
   ]);
   const historyByDimension = buildHistoryByDimension(recentSnapshots);
+  // Phase 12 — pure derivation from the two values already in hand. No
+  // second fetch, no second history store, no schema change: the decision
+  // layer is a function of the engine's own signals plus the snapshots this
+  // page already read.
+  const decision = buildMacroDecisionReport({
+    signals: report.signals,
+    historyByDimension,
+    snapshotCount: recentSnapshots.length,
+    historyWindow: HISTORY_WINDOW,
+  });
 
   return (
     <div className="flex min-h-screen w-full">
@@ -91,6 +103,8 @@ export default async function MacroIntelligencePage() {
               ))}
             </div>
           </div>
+
+          <MacroDecisionLayer report={decision} />
 
           <MacroIntelligenceSection report={report} historyByDimension={historyByDimension} />
         </div>

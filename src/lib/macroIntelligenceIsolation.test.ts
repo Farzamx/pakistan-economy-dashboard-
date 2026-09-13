@@ -18,7 +18,10 @@ import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 
 const INTELLIGENCE_DIR = join(__dirname, "intelligence");
-const FORBIDDEN_IMPORTS = ["macroIntelligenceSnapshots", "macroIntelligenceHistory", "macroIntelligenceSnapshotCompute"];
+// macroIntelligenceDecision joined this list in Phase 12 — the decision
+// layer is another strictly downstream reader of the engine's output, so
+// the same one-way rule applies to it: the engine must never import it.
+const FORBIDDEN_IMPORTS = ["macroIntelligenceSnapshots", "macroIntelligenceHistory", "macroIntelligenceSnapshotCompute", "macroIntelligenceDecision"];
 
 describe("intelligence engine has no dependency on persistence (Phase 10.1 architectural invariant)", () => {
   const files = readdirSync(INTELLIGENCE_DIR).filter((f) => f.endsWith(".ts") && !f.endsWith(".test.ts"));
@@ -27,10 +30,23 @@ describe("intelligence engine has no dependency on persistence (Phase 10.1 archi
     expect(files).toEqual(expect.arrayContaining(["types.ts", "evidence.ts", "trendAnalysis.ts", "signalDefinitions.ts", "macroIntelligence.ts"]));
   });
 
-  it.each(files)("%s does not import any Phase 10.1 persistence/history module", (file) => {
+  it.each(files)("%s does not import any persistence/history/decision module", (file) => {
     const source = readFileSync(join(INTELLIGENCE_DIR, file), "utf-8");
     for (const forbidden of FORBIDDEN_IMPORTS) {
       expect(source.includes(forbidden)).toBe(false);
     }
+  });
+
+  // Phase 12 — the decision layer interprets the engine's output; it must
+  // never reach back into the engine's internals to recompute a signal,
+  // re-derive evidence, or apply its own confidence rule. Importing the
+  // shared TYPE module is correct and expected; importing any rule module
+  // is not.
+  it("the decision layer imports only the engine's types, never its rule modules", () => {
+    const source = readFileSync(join(__dirname, "macroIntelligenceDecision.ts"), "utf-8");
+    for (const ruleModule of ["intelligence/evidence", "intelligence/signalDefinitions", "intelligence/trendAnalysis", "intelligence/macroIntelligence"]) {
+      expect(source.includes(ruleModule)).toBe(false);
+    }
+    expect(source.includes("@/lib/intelligence/types")).toBe(true);
   });
 });
