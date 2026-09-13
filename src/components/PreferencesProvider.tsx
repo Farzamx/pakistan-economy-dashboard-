@@ -25,7 +25,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { useAuth } from "@/components/AuthProvider";
-import { useTheme, STORAGE_UPDATED_AT_KEY, shouldAdoptRemoteTheme } from "@/components/ThemeProvider";
+import { useTheme, shouldAdoptRemoteTheme, hasExplicitLocalThemeChoice } from "@/components/ThemeProvider";
 import {
   getUserPreferences,
   upsertUserPreferences,
@@ -107,7 +107,7 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
             remoteTheme: prefs?.preferredTheme,
             themeAtFetchStart,
             currentTheme: themeRef.current,
-            hasLocalWrite: localStorage.getItem(STORAGE_UPDATED_AT_KEY) !== null,
+            hasLocalWrite: hasExplicitLocalThemeChoice(),
           }) &&
           prefs?.preferredTheme
         ) {

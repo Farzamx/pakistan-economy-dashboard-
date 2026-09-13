@@ -73,6 +73,9 @@ export default function PreferencesBoard() {
   }
 
   async function handleThemeChange(next: Theme) {
+    // Already active — clicking it again is a no-op, not a re-save, exactly
+    // as handleProvinceChange below already treats its own selection.
+    if (next === theme) return;
     setTheme(next);
     await persist({ preferredTheme: next });
   }

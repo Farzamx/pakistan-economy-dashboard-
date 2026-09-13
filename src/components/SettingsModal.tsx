@@ -131,6 +131,12 @@ export default function SettingsModal({ open, onClose }: Props) {
   // /settings/preferences page, the next time its DB fetch resolved. Now
   // mirrors PreferencesBoard.tsx's handleThemeChange exactly.
   function handleThemeSelect(next: Theme) {
+    // Re-picking the theme that's already active is a no-op, not a re-save —
+    // same convention PreferencesBoard.handleProvinceChange already follows.
+    // Without this, clicking the already-selected row costs a pointless
+    // Supabase round trip and needlessly re-stamps this device's local
+    // theme-write marker.
+    if (next === theme) return;
     setTheme(next);
     if (user) updatePreferences({ preferredTheme: next }).catch(() => {});
   }

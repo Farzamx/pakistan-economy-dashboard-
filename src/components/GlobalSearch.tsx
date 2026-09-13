@@ -101,8 +101,25 @@ export default function GlobalSearch({ onLinkClick, placeholder, className }: Pr
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const selected = results[highlightedIndex] ?? results[0];
+    const index = results[highlightedIndex] ? highlightedIndex : 0;
+    const selected = results[index];
     if (!selected) return;
+    // Drive the keyboard path through the very same <a> the mouse path
+    // already uses, instead of router.push()-ing straight at the href.
+    // onLinkClick — the host's handler, from Sidebar/MobileNav — is what
+    // turns a protected destination into the GuestAccessModal for a
+    // signed-out visitor (and what works around MobileNav's
+    // drawer-unmount race). router.push() bypassed it entirely, so
+    // pressing Enter on "Budget Tracker" hard-navigated out to /login
+    // while clicking that identical row opened the intended modal. This
+    // component is documented above as deliberately delegating that
+    // decision to its host; the Enter path simply wasn't honouring it.
+    const anchor = document.getElementById(`${listId}-${index}`)?.querySelector("a");
+    if (anchor) {
+      anchor.click(); // -> onClick -> go() -> onLinkClick, then <Link> navigates
+      return;
+    }
+    // Defensive fallback only — reached if the list isn't in the DOM.
     setQuery("");
     inputRef.current?.blur();
     router.push(selected.href);
