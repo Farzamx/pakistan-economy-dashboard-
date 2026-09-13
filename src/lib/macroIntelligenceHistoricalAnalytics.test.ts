@@ -393,3 +393,102 @@ describe("helper units", () => {
     expect(text).not.toMatch(/\b\d+\s*(day|days|week|weeks|month|months|year|years)\b/i);
   });
 });
+
+// ── Phase 14: stability as history grows well beyond today's production ────
+// depth (currently 10 snapshots). These use real calendar-date arithmetic
+// (snap() above breaks past day 31) so a 31+ fixture is a genuine date
+// range, not a truncated month. Purely in-memory — nothing here touches or
+// resembles a production write.
+
+function snapAt(daysFromEpoch: number, states: Partial<Record<IntelligenceDimension, string>>): MacroIntelligenceSnapshot {
+  const d = new Date(Date.UTC(2026, 0, 1) + daysFromEpoch * 86_400_000);
+  const date = d.toISOString().slice(0, 10);
+  const dimensions: MacroIntelligenceSnapshot["dimensions"] = {};
+  for (const [k, state] of Object.entries(states)) {
+    dimensions[k as IntelligenceDimension] = { state: state!, direction: "Flat", confidence: "High", confidenceScore: 80, summary: "" };
+  }
+  return { computedAt: `${date}T10:00:00.000Z`, snapshotDate: date, dimensions };
+}
+
+/** n snapshots, oldest-first, cycling every dimension through a short repeating pattern so runs, transitions and turning points all occur throughout — a stress case, not a flat history. */
+function manySnapshots(n: number): MacroIntelligenceSnapshot[] {
+  const pattern: Record<IntelligenceDimension, string[]> = {
+    Inflation: ["rising", "rising", "rising", "flat", "falling"],
+    MonetaryPolicy: ["held", "tightening"],
+    ExternalSector: ["improving", "mixed", "deteriorating"],
+    LiquidityCredit: ["expanding", "insufficient-data"],
+    FiscalConditions: ["improving", "improving", "deteriorating"],
+    Growth: ["accelerating", "decelerating"],
+    MarketStress: ["mixed", "pressure-building", "pressure-easing"],
+  };
+  return Array.from({ length: n }, (_, i) => {
+    const states: Partial<Record<IntelligenceDimension, string>> = {};
+    for (const dim of DIMENSION_ORDER) states[dim] = pattern[dim][i % pattern[dim].length];
+    return snapAt(i, states);
+  });
+}
+
+describe("stability as history grows (10 / 30 / 31+ snapshots)", () => {
+  it.each([10, 30, 31, 90])("does not crash and stays internally consistent at %d snapshots", (n) => {
+    const r = analyse(manySnapshots(n), 30);
+    expect(r.timeline).toHaveLength(n);
+    // Dates strictly increasing, oldest-first — the ordering contract every
+    // consumer (UI, transitions, runs) depends on.
+    for (let i = 1; i < r.timeline.length; i++) {
+      expect(r.timeline[i].snapshotDate > r.timeline[i - 1].snapshotDate).toBe(true);
+    }
+    // Every profile stays within the fixture's bounds — no run length or
+    // transition count can exceed what n snapshots can support.
+    for (const p of r.profiles) {
+      expect(p.currentRunLength).toBeLessThanOrEqual(n);
+      expect(p.observedInSnapshots).toBeLessThanOrEqual(n);
+      expect(p.transitionCount).toBeLessThanOrEqual(n - 1);
+    }
+    expect(r.configuration.searched).toBe(n);
+    expect(r.configuration.exactMatches).toBeLessThanOrEqual(n);
+  });
+
+  it("is deterministic at scale — two runs over the same 90-snapshot fixture produce byte-identical output", () => {
+    const fixture = manySnapshots(90);
+    expect(JSON.stringify(analyse(fixture, 30))).toBe(JSON.stringify(analyse(fixture, 30)));
+  });
+
+  it("completes in well under a second at 90 snapshots — no accidental quadratic blowup that would matter at real scale", () => {
+    const fixture = manySnapshots(90);
+    const start = performance.now();
+    analyse(fixture, 30);
+    expect(performance.now() - start).toBeLessThan(1000);
+  });
+
+  it("31st snapshot (one past a 30-day window some callers might use) does not corrupt truncation semantics", () => {
+    // The real call site bounds its own request to historyWindow, so
+    // snapshotCount can never exceed it in production — this fixture checks
+    // the pure module's own robustness independent of that call-site
+    // guarantee, in case a future caller widens the window.
+    const r = analyse(manySnapshots(31), 30);
+    expect(r.sufficiency.snapshotCount).toBe(31);
+    // windowPossiblyTruncated is keyed on snapshotCount >= historyWindow —
+    // still fires correctly even when the count exceeds the window, rather
+    // than only handling the exact-equality case.
+    expect(r.sufficiency.windowPossiblyTruncated).toBe(true);
+    // No run can silently claim to reach further back than the data allows.
+    for (const p of r.profiles) {
+      if (p.longestObservedRun) expect(p.longestObservedRun.length).toBeLessThanOrEqual(31);
+    }
+  });
+
+  it("many transitions and coverage changes across a long, volatile history remain correctly separated and ordered", () => {
+    const r = analyse(manySnapshots(60), 30);
+    expect(r.transitions.length).toBeGreaterThan(20); // the fixture is deliberately volatile
+    // Newest-first ordering holds even with a large transition set.
+    for (let i = 1; i < r.transitions.length; i++) {
+      expect(r.transitions[i].computedAt <= r.transitions[i - 1].computedAt).toBe(true);
+    }
+    // Every coverage change is still excluded from turning points, at scale.
+    expect(r.turningPoints.every((t) => !t.involvesDataGap)).toBe(true);
+    expect(r.coverageChanges.every((t) => t.involvesDataGap)).toBe(true);
+    // The two sets never overlap.
+    const turningKeys = new Set(r.turningPoints.map((t) => `${t.snapshotDate}-${t.dimension}`));
+    for (const c of r.coverageChanges) expect(turningKeys.has(`${c.snapshotDate}-${c.dimension}`)).toBe(false);
+  });
+});

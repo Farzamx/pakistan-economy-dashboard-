@@ -19,6 +19,7 @@ const { GET } = await import("./route");
 
 const CRON_SECRET = "test-cron-secret";
 const WORKER_SECRET = "test-worker-secret";
+const JOB_NAME_EXPECTED = "macro-intelligence-snapshot"; // matches route.ts's own JOB_NAME (not exported)
 
 function req(auth?: string) {
   const headers = new Headers();
@@ -66,6 +67,26 @@ describe("GET /api/cron/macro-intelligence-snapshot", () => {
     const res = await GET(req(`Bearer ${CRON_SECRET}`));
     expect(res.status).toBe(500);
     expect(revalidatePathMock).not.toHaveBeenCalled();
+  });
+
+  it("Phase 14: a computation-layer throw (e.g. buildMacroIntelligenceReport rejecting) is caught, logged as failure, and never masquerades as success", async () => {
+    // runMacroIntelligenceSnapshotCycle has no try/catch of its own around
+    // buildMacroIntelligenceReport() — an uncaught exception there propagates
+    // out of the cycle call and must be caught by THIS route's outer
+    // try/catch (route.ts's own comment: "never let a false success reach
+    // the operator"). This is the one failure path the existing suite never
+    // actually exercised: every prior test mocked the cycle to RESOLVE with
+    // success:false, never to REJECT outright.
+    runCycleMock.mockRejectedValue(new Error("read-model fetch failed"));
+    const res = await GET(req(`Bearer ${CRON_SECRET}`));
+    const body = await res.json();
+
+    expect(res.status).toBe(500);
+    expect(body.success).toBe(false);
+    expect(body.error).toContain("read-model fetch failed");
+    expect(revalidatePathMock).not.toHaveBeenCalled();
+    expect(logCronRunMock).toHaveBeenCalledTimes(1);
+    expect(logCronRunMock).toHaveBeenCalledWith(JOB_NAME_EXPECTED, expect.any(Date), "failure", expect.stringContaining("read-model fetch failed"));
   });
 
   it("missing NOTIFICATION_WORKER_SECRET fails closed before ever calling the cycle or revalidating", async () => {
