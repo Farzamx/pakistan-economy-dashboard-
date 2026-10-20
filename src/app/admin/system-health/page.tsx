@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getSystemHealthSnapshot } from "@/lib/systemHealth";
-import { formatAge } from "@/lib/ingestionWatchdog";
+import { formatAge, REMINDER_INTERVAL_HOURS } from "@/lib/ingestionWatchdog";
 import type { IngestionHealth, IngestionMonitorJob } from "@/lib/ingestionWatchdog";
 import type { SeriesSourceRanking, Recommendation, SyncTriggerRecord } from "@/lib/systemHealth";
 
@@ -160,7 +160,7 @@ function IngestionHealthCard({ title, description, health }: { title: string; de
         {health.state === "healthy"
           ? "No alert condition."
           : health.alertAlreadySent
-            ? "An alert has already been sent for this failure; further checks stay silent until ingestion recovers."
+            ? `An alert has already been sent for this failure; a reminder is sent every ${REMINDER_INTERVAL_HOURS}h until ingestion recovers.`
             : "No alert has been sent yet for this failure."}
       </p>
     </section>

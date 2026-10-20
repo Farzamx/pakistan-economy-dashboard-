@@ -236,9 +236,33 @@ export interface IngestionHealth {
    * alert for a genuinely new failure while suppressing repeats of the same one.
    */
   episodeKey: string;
-  /** True when an alert has already been sent for this episode. */
+  /** True when at least one alert (initial or reminder) has already been sent for this episode. */
   alertAlreadySent: boolean;
+  /** `finishedAt` of the most recent watchdog row that recorded an alert for this episode, or null if none has been sent. */
+  lastAlertAt: string | null;
+  /** True when the episode is still failing, an alert was already sent, and the reminder interval has elapsed since the last one. Always false when no alert has been sent yet (that is the initial alert's job) or when ingestion is healthy. */
+  reminderDue: boolean;
 }
+
+/**
+ * Phase 21 (C1). While one failure episode continues, repeat the alert every
+ * 72h instead of staying silent until recovery. Before this, SBP went 37 days
+ * (last success 12 Sep, still failing on 19 Oct) with a single alert on day 2.
+ */
+export const REMINDER_INTERVAL_HOURS = 72;
+
+/**
+ * The watchdog is a once-a-day Vercel cron (`0 9 * * *`) whose actual start
+ * time drifts: over 49 production runs it started between 09:11:34 and
+ * 09:36:07 UTC, a 25-minute spread. Each run also logs its row (the
+ * reference for "last alert") a few seconds AFTER it started. Compared
+ * strictly, the third daily run after an alert would see slightly under 72h
+ * about half the time, miss, and push that reminder out to 96h. A one-hour
+ * tolerance (about 2x the observed spread) makes "every 72h" mean "on every
+ * third daily run". It does not make reminders more frequent than that: the
+ * day-2 run is ~48h after the alert, far below 71h.
+ */
+const REMINDER_SCHEDULE_TOLERANCE_HOURS = 1;
 
 /** Marker written into a job's own watchdog cron_run_log detail when it alerts. Job-scoped implicitly: only ever searched within that same job's own watchdogJobName history (see evaluateIngestionHealth/runIngestionWatchdog) — never compared across jobs. */
 function alertMarker(episodeKey: string): string {
@@ -272,7 +296,23 @@ export function evaluateIngestionHealth(
   const lastSuccessAt = successes.length > 0 ? successes[successes.length - 1] : null;
   const episodeKey = lastSuccessAt ?? "never";
 
-  const alertAlreadySent = watchdogRuns.some((r) => (r.detail ?? "").includes(alertMarker(episodeKey)));
+  // Latest alert for THIS episode. Alerts written before reminders existed use
+  // the same marker, so existing production history is read unchanged.
+  const alertTimes = watchdogRuns
+    .filter((r) => (r.detail ?? "").includes(alertMarker(episodeKey)))
+    .map((r) => r.finishedAt)
+    .sort();
+  const lastAlertAt = alertTimes.length > 0 ? alertTimes[alertTimes.length - 1] : null;
+  const alertAlreadySent = lastAlertAt !== null;
+
+  // Fails closed: if the alert row's timestamp were ever unparseable, NaN
+  // fails the >= comparison, so no reminder is sent and the episode behaves
+  // exactly as it did before reminders existed (one alert, then silence). That
+  // can't happen in practice (finished_at is a NOT NULL timestamptz), and
+  // sending on garbage input could spam instead.
+  const sinceLastAlertMs = lastAlertAt === null ? null : now.getTime() - new Date(lastAlertAt).getTime();
+  const reminderIntervalMs = (REMINDER_INTERVAL_HOURS - REMINDER_SCHEDULE_TOLERANCE_HOURS) * MS_PER_HOUR;
+  const intervalElapsed = sinceLastAlertMs !== null && sinceLastAlertMs >= reminderIntervalMs;
 
   const base = {
     lastSuccessAt,
@@ -280,17 +320,20 @@ export function evaluateIngestionHealth(
     staleAfterHours: job.staleAfterHours,
     episodeKey,
     alertAlreadySent,
+    lastAlertAt,
   };
 
   if (lastSuccessAt === null) {
-    return { ...base, state: "never-run", ageMs: null };
+    return { ...base, state: "never-run", ageMs: null, reminderDue: intervalElapsed };
   }
 
   const ageMs = now.getTime() - new Date(lastSuccessAt).getTime();
+  const state = ageMs > job.staleAfterHours * MS_PER_HOUR ? "stale" : "healthy";
   return {
     ...base,
-    state: ageMs > job.staleAfterHours * MS_PER_HOUR ? "stale" : "healthy",
+    state,
     ageMs,
+    reminderDue: state === "stale" && intervalElapsed,
   };
 }
 
@@ -310,16 +353,23 @@ function escapeHtml(value: string): string {
 }
 
 /** Parameterized on `job` — no provider name/command is hardcoded here anymore (Phase 8.6). */
-function buildAlert(job: IngestionMonitorJob, health: IngestionHealth): { subject: string; text: string; html: string } {
+function buildAlert(job: IngestionMonitorJob, health: IngestionHealth, isReminder = false): { subject: string; text: string; html: string } {
   const lastSuccess = health.lastSuccessAt ?? "no successful run on record";
-  const subject =
+  const baseSubject =
     health.state === "never-run"
       ? `PEIC: ${job.label} has never completed successfully`
       : `PEIC: ${job.label} stale — no successful run in ${formatAge(health.ageMs)}`;
+  const subject = isReminder ? `Reminder — ${baseSubject}` : baseSubject;
 
   // Deliberately contains no URLs, no credentials and no request details —
   // only job status facts already present in cron_run_log.
   const text = [
+    ...(isReminder
+      ? [
+          `Reminder: this failure is still unresolved. Last alert sent ${health.lastAlertAt}. Reminders repeat every ${REMINDER_INTERVAL_HOURS}h until a successful run is recorded.`,
+          "",
+        ]
+      : []),
     `${job.label} has not completed successfully within its expected window.`,
     "",
     `Last successful run : ${lastSuccess}`,
@@ -350,8 +400,10 @@ export interface WatchdogResult {
 }
 
 /**
- * Evaluates one job's ingestion health, sends at most one alert per failure
- * episode, and records the decision under THAT job's own watchdogJobName so
+ * Evaluates one job's ingestion health, sends one alert per failure episode
+ * plus one reminder per REMINDER_INTERVAL_HOURS while that episode continues
+ * (and none once ingestion recovers), and records the decision under THAT
+ * job's own watchdogJobName so
  * the next invocation (of this same job) can see it. Never reads or writes
  * any other job's history — this is what makes one job's failure episode
  * structurally incapable of suppressing or being suppressed by another's.
@@ -377,16 +429,20 @@ export async function runIngestionWatchdog(job: IngestionMonitorJob, now: Date =
   let alertSent = false;
   let reason: string;
 
+  // An alert is sent when none has gone out for this episode yet (initial),
+  // or when one has and the reminder interval has since elapsed (reminder).
+  const isReminder = health.alertAlreadySent && health.reminderDue;
+
   if (health.state === "healthy") {
     reason = "healthy — no alert";
-  } else if (health.alertAlreadySent) {
+  } else if (health.alertAlreadySent && !isReminder) {
     reason = "already alerted for this episode — suppressed";
   } else {
     const recipient = process.env.ADMIN_EMAIL;
     if (!recipient) {
       reason = "ADMIN_EMAIL not configured — alert skipped";
     } else {
-      const { subject, text, html } = buildAlert(job, health);
+      const { subject, text, html } = buildAlert(job, health, isReminder);
       const result = await sendEmail(
         { to: recipient, subject, text, html },
         // Job-scoped idempotency key: incorporates watchdogJobName so two
@@ -394,10 +450,25 @@ export async function runIngestionWatchdog(job: IngestionMonitorJob, now: Date =
         // collide with each other's Resend idempotency key, and repeated
         // invocations for the SAME job+episode still dedupe at the
         // provider level as a second layer under the app-level marker check.
-        `${job.watchdogJobName}-${health.episodeKey}`,
+        //
+        // The initial alert keeps its pre-reminder key unchanged. Each
+        // reminder is anchored to the previous alert's timestamp: that value
+        // is identical for every concurrent/repeated invocation within one
+        // reminder interval (so they dedupe at Resend) and strictly later for
+        // each successive reminder (so consecutive reminders never collide).
+        // It deliberately does not count prior alerts — retention keeps only
+        // the last 50 watchdog rows, so a count would shrink as old rows age
+        // out and could repeat an earlier key.
+        isReminder
+          ? `${job.watchdogJobName}-${health.episodeKey}-reminder-after-${health.lastAlertAt}`
+          : `${job.watchdogJobName}-${health.episodeKey}`,
       );
       alertSent = result.success;
-      reason = result.success ? "alert sent" : `alert failed: ${result.error ?? "unknown"}`;
+      reason = result.success
+        ? isReminder
+          ? "reminder sent"
+          : "alert sent"
+        : `${isReminder ? "reminder" : "alert"} failed: ${result.error ?? "unknown"}`;
     }
   }
 
@@ -410,6 +481,7 @@ export async function runIngestionWatchdog(job: IngestionMonitorJob, now: Date =
     `last-success=${health.lastSuccessAt ?? "never"}`,
     `age=${formatAge(health.ageMs)}`,
     alertSent ? alertMarker(health.episodeKey) : `no-alert (${reason})`,
+    ...(alertSent && isReminder ? [`reminder-after=${health.lastAlertAt}`] : []),
   ].join(" | ");
 
   await logCronRun(job.watchdogJobName, startedAt, health.state === "healthy" ? "success" : "failure", detail);

@@ -25,6 +25,7 @@ const {
   FRED_MONITOR_JOB,
   YAHOO_GOLD_MONITOR_JOB,
   MONITORED_INGESTION_JOBS,
+  REMINDER_INTERVAL_HOURS,
 } = await import("@/lib/ingestionWatchdog");
 
 const NOW = new Date("2026-08-12T12:00:00.000Z");
@@ -855,5 +856,383 @@ describe("H. Yahoo Gold — Phase 8.18 dedicated coverage", () => {
 
   it("P. the generic watchdog route discovers Yahoo Gold automatically via MONITORED_INGESTION_JOBS — no route change needed", () => {
     expect(MONITORED_INGESTION_JOBS).toContain(YAHOO_GOLD_MONITOR_JOB);
+  });
+});
+
+// Phase 21 (C1) — repeat the alert every 72h while ONE failure episode continues.
+describe("I. reminders — Phase 21 C1", () => {
+  const JOB = SBP_MONITOR_JOB;
+  /** A watchdog row recording an alert for `episodeKey`, finished `hoursAgo` before NOW. */
+  function alertRow(episodeKey: string, hoursAgo: number, extra = ""): CronRunRecord {
+    return run(JOB.watchdogJobName, {
+      finishedAt: new Date(NOW.getTime() - hoursAgo * HOUR).toISOString(),
+      status: "failure",
+      detail: `job=${JOB.ingestionJobName} | state=stale | alerted-for=${episodeKey}${extra}`,
+    });
+  }
+  /** One ingestion success long enough ago to be stale; episodeKey is its finishedAt. */
+  const staleSuccess = () => successAgo(JOB.ingestionJobName, 200);
+
+  it("A. initial alert: no prior alert -> a plain (non-reminder) alert with the unchanged pre-reminder idempotency key", async () => {
+    resetAll();
+    const success = staleSuccess();
+    mockHistories({ [JOB.ingestionJobName]: [success] });
+    const result = await runIngestionWatchdog(JOB, NOW);
+
+    expect(result.alertSent).toBe(true);
+    expect(result.reason).toBe("alert sent");
+    expect(result.health.reminderDue).toBe(false); // nothing to remind about yet
+    const [email, key] = sendEmailMock.mock.calls[0];
+    expect(email.subject).not.toMatch(/^Reminder/);
+    expect(email.text).not.toContain("Reminder:");
+    expect(key).toBe(`${JOB.watchdogJobName}-${success.finishedAt}`);
+    expect(logCronRunMock.mock.calls[0][3]).not.toContain("reminder-after=");
+  });
+
+  it("B. suppressed at every point before the interval has elapsed (1h, 24h, 48h, 70h)", async () => {
+    for (const hoursSinceAlert of [1, 24, 48, 70]) {
+      resetAll();
+      const success = staleSuccess();
+      mockHistories({
+        [JOB.ingestionJobName]: [success],
+        [JOB.watchdogJobName]: [alertRow(success.finishedAt, hoursSinceAlert)],
+      });
+      const result = await runIngestionWatchdog(JOB, NOW);
+      expect(result.alertSent, `${hoursSinceAlert}h`).toBe(false);
+      expect(result.health.reminderDue, `${hoursSinceAlert}h`).toBe(false);
+      expect(result.reason).toBe("already alerted for this episode — suppressed");
+      expect(sendEmailMock).not.toHaveBeenCalled();
+    }
+  });
+
+  it("C. reminder is sent once 72h have passed since the last alert, as a clearly marked reminder", async () => {
+    resetAll();
+    const success = staleSuccess();
+    const prior = alertRow(success.finishedAt, 72);
+    mockHistories({ [JOB.ingestionJobName]: [success], [JOB.watchdogJobName]: [prior] });
+    const result = await runIngestionWatchdog(JOB, NOW);
+
+    expect(result.health.alertAlreadySent).toBe(true);
+    expect(result.health.reminderDue).toBe(true);
+    expect(result.alertSent).toBe(true);
+    expect(result.reason).toBe("reminder sent");
+    const [email] = sendEmailMock.mock.calls[0];
+    expect(email.subject).toMatch(/^Reminder — PEIC: SBP ingestion stale/);
+    expect(email.text).toContain(`Last alert sent ${prior.finishedAt}`);
+    expect(email.text).toContain("every 72h");
+    // Still the same safe, credential-free content as the initial alert.
+    expect(email.text).toContain("Last successful run");
+  });
+
+  it("D. the 72h boundary tolerates the cron's own timing: due at 71h, not due a hair before", async () => {
+    // The watchdog is a once-a-day cron that logs its row a few seconds after it starts, so the third daily run sees slightly UNDER 72h.
+    // Without the 1h tolerance this would silently become a 96h cadence (see test H).
+    resetAll();
+    const success = staleSuccess();
+    const justUnder = new Date(NOW.getTime() - (71 * HOUR - 1)).toISOString();
+    const exactly = new Date(NOW.getTime() - 71 * HOUR).toISOString();
+    const mk = (finishedAt: string) => [run(JOB.watchdogJobName, { finishedAt, status: "failure", detail: `alerted-for=${success.finishedAt}` })];
+
+    mockHistories({ [JOB.ingestionJobName]: [success], [JOB.watchdogJobName]: mk(justUnder) });
+    expect((await runIngestionWatchdog(JOB, NOW)).alertSent).toBe(false);
+
+    mockHistories({ [JOB.ingestionJobName]: [success], [JOB.watchdogJobName]: mk(exactly) });
+    expect((await runIngestionWatchdog(JOB, NOW)).alertSent).toBe(true);
+  });
+
+  it("E. the reminder interval is measured from the MOST RECENT alert, not the first", async () => {
+    resetAll();
+    const success = staleSuccess();
+    // First alert 150h ago, a reminder 30h ago -> only 30h since the last one: suppressed.
+    mockHistories({
+      [JOB.ingestionJobName]: [success],
+      [JOB.watchdogJobName]: [alertRow(success.finishedAt, 150), alertRow(success.finishedAt, 30)],
+    });
+    const result = await runIngestionWatchdog(JOB, NOW);
+    expect(result.health.lastAlertAt).toBe(new Date(NOW.getTime() - 30 * HOUR).toISOString());
+    expect(result.alertSent).toBe(false);
+  });
+
+  it("F. idempotency keys: deterministic within one reminder interval, distinct for each successive reminder, distinct from the initial alert", async () => {
+    resetAll();
+    const success = staleSuccess();
+    const initialKey = `${JOB.watchdogJobName}-${success.finishedAt}`;
+
+    // Two invocations in the same interval see the same last alert -> same key (provider-level dedupe).
+    const alert1 = alertRow(success.finishedAt, 72);
+    mockHistories({ [JOB.ingestionJobName]: [success], [JOB.watchdogJobName]: [alert1] });
+    await Promise.all([runIngestionWatchdog(JOB, NOW), runIngestionWatchdog(JOB, NOW)]);
+    const [, k1a] = sendEmailMock.mock.calls[0];
+    const [, k1b] = sendEmailMock.mock.calls[1];
+    expect(k1a).toBe(k1b);
+    expect(k1a).toBe(`${initialKey}-reminder-after-${alert1.finishedAt}`);
+
+    // That reminder is logged at NOW; the NEXT one (72h later) is anchored to that row -> a different key.
+    sendEmailMock.mockClear();
+    const reminder1Row = run(JOB.watchdogJobName, {
+      finishedAt: NOW.toISOString(),
+      status: "failure",
+      detail: `alerted-for=${success.finishedAt} | reminder-after=${alert1.finishedAt}`,
+    });
+    mockHistories({ [JOB.ingestionJobName]: [success], [JOB.watchdogJobName]: [alert1, reminder1Row] });
+    await runIngestionWatchdog(JOB, new Date(NOW.getTime() + 72 * HOUR));
+    const [, k2] = sendEmailMock.mock.calls[0];
+    expect(k2).toBe(`${initialKey}-reminder-after-${reminder1Row.finishedAt}`);
+    expect(new Set([initialKey, k1a, k2]).size).toBe(3);
+  });
+
+  it("G. a reminder writes the same alert marker (so it suppresses the next 72h) plus an audit field; a suppressed run writes neither", async () => {
+    resetAll();
+    const success = staleSuccess();
+    const prior = alertRow(success.finishedAt, 80);
+    mockHistories({ [JOB.ingestionJobName]: [success], [JOB.watchdogJobName]: [prior] });
+    await runIngestionWatchdog(JOB, NOW);
+    const detail = logCronRunMock.mock.calls[0][3] as string;
+    expect(detail).toContain(`alerted-for=${success.finishedAt}`);
+    expect(detail).toContain(`reminder-after=${prior.finishedAt}`);
+
+    // Replaying that row as history -> the next hour's check is suppressed.
+    sendEmailMock.mockClear();
+    const reminderRow = run(JOB.watchdogJobName, { finishedAt: NOW.toISOString(), status: "failure", detail });
+    mockHistories({ [JOB.ingestionJobName]: [success], [JOB.watchdogJobName]: [prior, reminderRow] });
+    const next = await runIngestionWatchdog(JOB, new Date(NOW.getTime() + HOUR));
+    expect(next.alertSent).toBe(false);
+    expect(sendEmailMock).not.toHaveBeenCalled();
+    expect(logCronRunMock.mock.calls[1][3]).not.toContain("alerted-for=");
+    expect(logCronRunMock.mock.calls[1][3]).not.toContain("reminder-after=");
+  });
+
+  it("H. simulated daily cron over 12 days: alerts land on days 0, 3, 6, 9 — NOT every 4th day despite the run being logged seconds after it starts", async () => {
+    resetAll();
+    const success = successAgo(JOB.ingestionJobName, 40); // already stale on day 0
+    const rows: CronRunRecord[] = [];
+    const alertDays: number[] = [];
+    const DAY = 24 * HOUR;
+    for (let day = 0; day < 12; day++) {
+      const runNow = new Date(NOW.getTime() + day * DAY); // cron fires at the same time daily
+      mockHistories({ [JOB.ingestionJobName]: [success], [JOB.watchdogJobName]: [...rows] });
+      sendEmailMock.mockClear();
+      logCronRunMock.mockClear();
+      await runIngestionWatchdog(JOB, runNow);
+      if (sendEmailMock.mock.calls.length > 0) alertDays.push(day);
+      // logCronRun runs after the send; the DB stamps finished_at a few seconds after the run began.
+      const [, , status, detail] = logCronRunMock.mock.calls[0];
+      rows.unshift(run(JOB.watchdogJobName, { finishedAt: new Date(runNow.getTime() + 3000).toISOString(), status, detail }));
+    }
+    expect(alertDays).toEqual([0, 3, 6, 9]);
+  });
+
+  it("I. recovery: once ingestion succeeds again no reminder is sent, however long ago the last alert was", async () => {
+    resetAll();
+    const old = staleSuccess();
+    const recovery = successAgo(JOB.ingestionJobName, 2);
+    mockHistories({
+      [JOB.ingestionJobName]: [old, recovery],
+      [JOB.watchdogJobName]: [alertRow(old.finishedAt, 500)],
+    });
+    const result = await runIngestionWatchdog(JOB, NOW);
+    expect(result.health.state).toBe("healthy");
+    expect(result.health.reminderDue).toBe(false);
+    expect(result.alertSent).toBe(false);
+    expect(sendEmailMock).not.toHaveBeenCalled();
+  });
+
+  it("J. a NEW failure after recovery is an initial alert (not a reminder), even if the previous episode's alert is itself >72h old", async () => {
+    resetAll();
+    const old = successAgo(JOB.ingestionJobName, 400);
+    const recovery = successAgo(JOB.ingestionJobName, 40); // recovered, then failed again
+    mockHistories({
+      [JOB.ingestionJobName]: [old, recovery],
+      [JOB.watchdogJobName]: [alertRow(old.finishedAt, 300)],
+    });
+    const result = await runIngestionWatchdog(JOB, NOW);
+    expect(result.health.alertAlreadySent).toBe(false);
+    expect(result.alertSent).toBe(true);
+    expect(result.reason).toBe("alert sent");
+    expect(sendEmailMock.mock.calls[0][0].subject).not.toMatch(/^Reminder/);
+    expect(sendEmailMock.mock.calls[0][1]).toBe(`${JOB.watchdogJobName}-${recovery.finishedAt}`);
+  });
+
+  it("K. a failed reminder send writes no marker and is retried on the next invocation with the same key", async () => {
+    resetAll();
+    const success = staleSuccess();
+    const prior = alertRow(success.finishedAt, 80);
+    mockHistories({ [JOB.ingestionJobName]: [success], [JOB.watchdogJobName]: [prior] });
+    sendEmailMock.mockResolvedValue({ success: false, error: "resend down" });
+
+    const first = await runIngestionWatchdog(JOB, NOW);
+    expect(first.alertSent).toBe(false);
+    expect(first.reason).toBe("reminder failed: resend down");
+    const failedDetail = logCronRunMock.mock.calls[0][3] as string;
+    expect(failedDetail).not.toContain("alerted-for=");
+
+    // The failed attempt's row doesn't count as an alert, so the next run is still due.
+    sendEmailMock.mockResolvedValue({ success: true, id: "msg_2" });
+    const failedRow = run(JOB.watchdogJobName, { finishedAt: NOW.toISOString(), status: "failure", detail: failedDetail });
+    mockHistories({ [JOB.ingestionJobName]: [success], [JOB.watchdogJobName]: [prior, failedRow] });
+    const retry = await runIngestionWatchdog(JOB, new Date(NOW.getTime() + 24 * HOUR));
+    expect(retry.alertSent).toBe(true);
+    expect(sendEmailMock.mock.calls[0][1]).toBe(sendEmailMock.mock.calls[1][1]);
+  });
+
+  it("L. never-run episodes also remind every 72h", async () => {
+    resetAll();
+    const priorNever = run(JOB.watchdogJobName, {
+      finishedAt: new Date(NOW.getTime() - 72 * HOUR).toISOString(),
+      status: "failure",
+      detail: "state=never-run | alerted-for=never",
+    });
+    mockHistories({ [JOB.watchdogJobName]: [priorNever] });
+    const result = await runIngestionWatchdog(JOB, NOW);
+    expect(result.health.state).toBe("never-run");
+    expect(result.alertSent).toBe(true);
+    expect(sendEmailMock.mock.calls[0][0].subject).toMatch(/^Reminder — PEIC: SBP ingestion has never completed successfully/);
+    expect(sendEmailMock.mock.calls[0][1]).toBe(`${JOB.watchdogJobName}-never-reminder-after-${priorNever.finishedAt}`);
+
+    resetAll();
+    mockHistories({ [JOB.watchdogJobName]: [{ ...priorNever, finishedAt: new Date(NOW.getTime() - 24 * HOUR).toISOString() }] });
+    expect((await runIngestionWatchdog(JOB, NOW)).alertSent).toBe(false);
+  });
+
+  it("M. missing ADMIN_EMAIL on a due reminder: skipped without throwing, no marker, nothing sent", async () => {
+    resetAll();
+    delete process.env.ADMIN_EMAIL;
+    const success = staleSuccess();
+    mockHistories({ [JOB.ingestionJobName]: [success], [JOB.watchdogJobName]: [alertRow(success.finishedAt, 80)] });
+    const result = await runIngestionWatchdog(JOB, NOW);
+    expect(result.alertSent).toBe(false);
+    expect(result.reason).toContain("ADMIN_EMAIL");
+    expect(sendEmailMock).not.toHaveBeenCalled();
+    expect(logCronRunMock.mock.calls[0][3]).not.toContain("alerted-for=");
+    process.env.ADMIN_EMAIL = "ops@example.com";
+  });
+
+  it("N. job isolation: another job's recent alert neither triggers nor suppresses this job's reminder", async () => {
+    resetAll();
+    const sbpSuccess = successAgo(SBP_MONITOR_JOB.ingestionJobName, 200);
+    const wbSuccess = successAgo(WORLD_BANK_MONITOR_JOB.ingestionJobName, 300);
+    const wbRecentAlert = run(WORLD_BANK_MONITOR_JOB.watchdogJobName, {
+      finishedAt: new Date(NOW.getTime() - 1 * HOUR).toISOString(),
+      status: "failure",
+      detail: `alerted-for=${wbSuccess.finishedAt}`,
+    });
+    mockHistories({
+      [SBP_MONITOR_JOB.ingestionJobName]: [sbpSuccess],
+      [SBP_MONITOR_JOB.watchdogJobName]: [alertRow(sbpSuccess.finishedAt, 80)],
+      [WORLD_BANK_MONITOR_JOB.ingestionJobName]: [wbSuccess],
+      [WORLD_BANK_MONITOR_JOB.watchdogJobName]: [wbRecentAlert],
+    });
+    const sbp = await runIngestionWatchdog(SBP_MONITOR_JOB, NOW);
+    const wb = await runIngestionWatchdog(WORLD_BANK_MONITOR_JOB, NOW);
+    expect(sbp.alertSent).toBe(true); // SBP's own 80h-old alert -> reminder due
+    expect(wb.alertSent).toBe(false); // World Bank's own 1h-old alert -> still suppressed
+  });
+
+  it("O. evaluator: reminderDue is false when healthy or when no alert was ever sent; lastAlertAt is the latest of several; works on the exported constant", () => {
+    resetAll();
+    expect(REMINDER_INTERVAL_HOURS).toBe(72);
+
+    const stale = staleSuccess();
+    const noAlert = evaluateIngestionHealth([stale], [], NOW, JOB);
+    expect(noAlert.lastAlertAt).toBeNull();
+    expect(noAlert.reminderDue).toBe(false);
+
+    const healthy = successAgo(JOB.ingestionJobName, 2);
+    const healthyWithOldAlert = evaluateIngestionHealth([healthy], [alertRow(healthy.finishedAt, 500)], NOW, JOB);
+    expect(healthyWithOldAlert.state).toBe("healthy");
+    expect(healthyWithOldAlert.reminderDue).toBe(false);
+
+    const latest = alertRow(stale.finishedAt, 10);
+    const several = evaluateIngestionHealth([stale], [alertRow(stale.finishedAt, 300), latest, alertRow(stale.finishedAt, 100)], NOW, JOB);
+    expect(several.lastAlertAt).toBe(latest.finishedAt);
+  });
+
+  it("P. security: a reminder's email and run-log row carry no secrets or provider URLs", async () => {
+    resetAll();
+    process.env.SBP_EASYDATA_API_KEY = "SUPER-SECRET-REMINDER-KEY";
+    process.env.NOTIFICATION_WORKER_SECRET = "FAKE-INTERNAL-SECRET";
+    const success = staleSuccess();
+    mockHistories({ [JOB.ingestionJobName]: [success], [JOB.watchdogJobName]: [alertRow(success.finishedAt, 80)] });
+    await runIngestionWatchdog(JOB, NOW);
+
+    const blobs = [JSON.stringify(sendEmailMock.mock.calls[0]), String(logCronRunMock.mock.calls[0][3])];
+    for (const blob of blobs) {
+      expect(blob).not.toContain("SUPER-SECRET-REMINDER-KEY");
+      expect(blob).not.toContain("FAKE-INTERNAL-SECRET");
+      expect(blob).not.toContain("easydata.sbp.org.pk");
+      expect(blob).not.toContain("api_key");
+    }
+  });
+
+  it("Q. email sent but the run-log write is lost: the next invocation re-sends with the IDENTICAL key (at-least-once; never a missed alert) — initial alert and reminder", async () => {
+    // logCronRun is best-effort and never throws, so a lost write just means no marker row exists next time.
+    resetAll();
+    const success = staleSuccess();
+
+    // Initial alert: sent, row lost.
+    mockHistories({ [JOB.ingestionJobName]: [success] });
+    const first = await runIngestionWatchdog(JOB, NOW);
+    expect(first.alertSent).toBe(true);
+    // Next invocation sees the same (marker-less) history -> alerts again, same key, so Resend can dedupe inside its window.
+    const second = await runIngestionWatchdog(JOB, new Date(NOW.getTime() + HOUR));
+    expect(second.alertSent).toBe(true);
+    expect(sendEmailMock.mock.calls[0][1]).toBe(sendEmailMock.mock.calls[1][1]);
+    expect(sendEmailMock.mock.calls[1][0].subject).not.toMatch(/^Reminder/); // still an initial alert, not misreported as a reminder
+
+    // Reminder: sent, row lost -> next invocation repeats it, anchored to the same previous alert -> same key.
+    resetAll();
+    const prior = alertRow(success.finishedAt, 80);
+    mockHistories({ [JOB.ingestionJobName]: [success], [JOB.watchdogJobName]: [prior] });
+    await runIngestionWatchdog(JOB, NOW);
+    await runIngestionWatchdog(JOB, new Date(NOW.getTime() + HOUR));
+    expect(sendEmailMock).toHaveBeenCalledTimes(2);
+    expect(sendEmailMock.mock.calls[0][1]).toBe(sendEmailMock.mock.calls[1][1]);
+    expect(sendEmailMock.mock.calls[0][1]).toBe(`${JOB.watchdogJobName}-${success.finishedAt}-reminder-after-${prior.finishedAt}`);
+  });
+
+  it("R. daily cron with the OBSERVED production start-time spread (09:11:34-09:36:07, 25 min): reminders still land on every third run for 30 days", async () => {
+    resetAll();
+    const success = successAgo(JOB.ingestionJobName, 40);
+    const DAY = 24 * HOUR;
+    // Deterministic pseudo-random offsets spanning exactly the observed 0..1473s spread (no Math.random: tests must be reproducible).
+    let seed = 12345;
+    const nextOffsetMs = () => {
+      seed = (seed * 1103515245 + 12345) % 2147483648;
+      return (seed / 2147483648) * 1473 * 1000;
+    };
+    const rows: CronRunRecord[] = [];
+    const alertDays: number[] = [];
+    for (let day = 0; day < 30; day++) {
+      const runNow = new Date(NOW.getTime() + day * DAY + nextOffsetMs());
+      mockHistories({ [JOB.ingestionJobName]: [success], [JOB.watchdogJobName]: [...rows] });
+      sendEmailMock.mockClear();
+      logCronRunMock.mockClear();
+      await runIngestionWatchdog(JOB, runNow);
+      if (sendEmailMock.mock.calls.length > 0) alertDays.push(day);
+      const [, , status, detail] = logCronRunMock.mock.calls[0];
+      rows.unshift(run(JOB.watchdogJobName, { finishedAt: new Date(runNow.getTime() + 2000).toISOString(), status, detail }));
+    }
+    expect(alertDays).toEqual([0, 3, 6, 9, 12, 15, 18, 21, 24, 27]);
+  });
+
+  it("S. the reminder logic is identical for all five monitored jobs (each uses its own history, interval is job-independent)", async () => {
+    for (const job of MONITORED_INGESTION_JOBS) {
+      resetAll();
+      const stale = successAgo(job.ingestionJobName, job.staleAfterHours + 100);
+      const mk = (hoursAgo: number) =>
+        run(job.watchdogJobName, {
+          finishedAt: new Date(NOW.getTime() - hoursAgo * HOUR).toISOString(),
+          status: "failure",
+          detail: `alerted-for=${stale.finishedAt}`,
+        });
+
+      mockHistories({ [job.ingestionJobName]: [stale], [job.watchdogJobName]: [mk(48)] });
+      expect((await runIngestionWatchdog(job, NOW)).alertSent, `${job.label} @48h`).toBe(false);
+
+      mockHistories({ [job.ingestionJobName]: [stale], [job.watchdogJobName]: [mk(73)] });
+      const due = await runIngestionWatchdog(job, NOW);
+      expect(due.alertSent, `${job.label} @73h`).toBe(true);
+      expect(sendEmailMock.mock.calls.at(-1)![1]).toBe(`${job.watchdogJobName}-${stale.finishedAt}-reminder-after-${mk(73).finishedAt}`);
+    }
   });
 });
