@@ -226,6 +226,13 @@ export interface IngestionHealth {
   state: IngestionHealthState;
   /** ISO timestamp of the most recent successful ingestion, or null if there has never been one. */
   lastSuccessAt: string | null;
+  /**
+   * Where `lastSuccessAt` came from: the ingestion run history, or — only when
+   * that bounded (50-row) history no longer contains any success — the value
+   * the watchdog itself recorded earlier (see newestCarriedSuccess). null when
+   * there has never been a success.
+   */
+  lastSuccessSource: "ingestion-history" | "watchdog-record" | null;
   /** Milliseconds since that success, or null when there has never been one. */
   ageMs: number | null;
   expectedCadenceHours: number;
@@ -270,6 +277,69 @@ function alertMarker(episodeKey: string): string {
 }
 
 /**
+ * 50-ROW HISTORY WINDOW — CARRY-FORWARD WORKAROUND (Phase 23)
+ *
+ * cron_run_log keeps only the newest 50 rows per job (log_cron_run deletes
+ * the rest), so once 50 newer runs have landed after a job's last success, that
+ * success is gone from the ingestion history and, without this, the job would
+ * flip to "never-run": a different alert, and a NEW episode key that restarts
+ * the alert/reminder cycle. Retries and the logon trigger make that reachable
+ * in days rather than months for SBP.
+ *
+ * Every watchdog row already records `last-success=<timestamp>` in its detail
+ * (see runIngestionWatchdog), and the watchdog re-records the value it
+ * currently believes on every daily run. Reading the newest valid such value
+ * back from the job's own watchdog ledger therefore carries the last known
+ * success forward for as long as the watchdog keeps running.
+ *
+ * THIS IS A WORKAROUND, NOT DURABLE STORAGE. It relies on the watchdog having
+ * seen and recorded that success while it was still inside the window; it
+ * cannot recover a success the watchdog never observed, and it parses a
+ * free-text field this same module writes. Durable history would need a
+ * schema change (a last-success column, or longer retention), which is
+ * deliberately out of scope here.
+ */
+const CARRIED_TIMESTAMP_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:?\d{2})$/;
+
+/**
+ * A carried value can only ever make a job look MORE healthy than the ingestion
+ * history alone, so it is held to a stricter standard than the ingestion rows:
+ * a strict ISO-8601 shape, a parseable instant, and not meaningfully in the
+ * future. The 1h allowance covers clock skew between the ingestion host and
+ * the server; anything later (a corrupted or hand-edited row) is ignored
+ * rather than allowed to silence a real outage.
+ */
+const CARRIED_FUTURE_SKEW_MS = MS_PER_HOUR;
+
+/**
+ * Newest valid `last-success=` value in this job's own watchdog rows, or null.
+ * Only the FIRST `last-success=` field of a row is read: the genuine one is
+ * written before any free-text reason, so text later in the row (for example
+ * an email provider's error message) can never be mistaken for it.
+ */
+function newestCarriedSuccess(watchdogRuns: CronRunRecord[], job: IngestionMonitorJob, now: Date): string | null {
+  let best: string | null = null;
+  let bestMs = -Infinity;
+  for (const r of watchdogRuns) {
+    if (r.jobName !== job.watchdogJobName) continue; // never read another job's ledger
+    const field = (r.detail ?? "")
+      .split("|")
+      .map((part) => part.trim())
+      .find((part) => part.startsWith("last-success="));
+    if (!field) continue;
+    const value = field.slice("last-success=".length);
+    if (!CARRIED_TIMESTAMP_PATTERN.test(value)) continue; // also rejects the literal "never"
+    const ms = Date.parse(value);
+    if (!Number.isFinite(ms) || ms > now.getTime() + CARRIED_FUTURE_SKEW_MS) continue;
+    if (ms > bestMs) {
+      best = value;
+      bestMs = ms;
+    }
+  }
+  return best;
+}
+
+/**
  * Pure evaluation — no I/O, no clock access, no side effects. Inputs, `now`,
  * and the job's own configuration are all supplied by the caller so this is
  * exhaustively testable and provider-agnostic. Does NOT read
@@ -291,9 +361,21 @@ export function evaluateIngestionHealth(
   const successes = ingestionRuns
     .filter((r) => r.status === "success")
     .map((r) => r.finishedAt)
+    .filter((ts) => Number.isFinite(Date.parse(ts))) // a row with no usable timestamp is not evidence of anything
     .sort();
+  const ingestionLastSuccess = successes.length > 0 ? successes[successes.length - 1] : null;
 
-  const lastSuccessAt = successes.length > 0 ? successes[successes.length - 1] : null;
+  // Prefer the newest valid success across both sources. When the ingestion
+  // window is complete its own newest success is always at least as new as
+  // anything carried (carried values originate from it), so behaviour there is
+  // unchanged; and ties keep the ingestion row's exact string so the episode
+  // key a previous alert was recorded under still matches.
+  const carriedLastSuccess = newestCarriedSuccess(watchdogRuns, job, now);
+  const useCarried =
+    carriedLastSuccess !== null &&
+    (ingestionLastSuccess === null || Date.parse(carriedLastSuccess) > Date.parse(ingestionLastSuccess));
+  const lastSuccessAt = useCarried ? carriedLastSuccess : ingestionLastSuccess;
+  const lastSuccessSource: IngestionHealth["lastSuccessSource"] = lastSuccessAt === null ? null : useCarried ? "watchdog-record" : "ingestion-history";
   const episodeKey = lastSuccessAt ?? "never";
 
   // Latest alert for THIS episode. Alerts written before reminders existed use
@@ -316,6 +398,7 @@ export function evaluateIngestionHealth(
 
   const base = {
     lastSuccessAt,
+    lastSuccessSource,
     expectedCadenceHours: job.expectedIntervalHours,
     staleAfterHours: job.staleAfterHours,
     episodeKey,

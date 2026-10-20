@@ -1236,3 +1236,302 @@ describe("I. reminders — Phase 21 C1", () => {
     }
   });
 });
+
+// Phase 23 — carry the last known success forward from the watchdog's own record
+// once the bounded (50-row) ingestion history no longer contains any success.
+describe("J. success-history carry-forward — Phase 23", () => {
+  const JOB = SBP_MONITOR_JOB;
+  const iso = (hoursFromNow: number) => new Date(NOW.getTime() + hoursFromNow * HOUR).toISOString();
+  const failureAgo = (hours: number) => run(JOB.ingestionJobName, { finishedAt: iso(-hours), status: "failure" });
+  /** A full 50-row ingestion window containing only failures — the last success has been trimmed away. */
+  const fullFailureWindow = () => Array.from({ length: 50 }, (_, i) => failureAgo(i + 1));
+  /** A watchdog row exactly as runIngestionWatchdog writes it. */
+  const wdRow = (hoursAgo: number, detail: string | null, jobName = JOB.watchdogJobName) =>
+    run(jobName, { finishedAt: iso(-hoursAgo), status: "failure", detail });
+  const detailWith = (lastSuccess: string, reason = "no-alert (already alerted for this episode — suppressed)") =>
+    `job=${JOB.ingestionJobName} | state=stale | last-success=${lastSuccess} | age=10d 0h | ${reason}`;
+
+  it("A. a success that has fallen out of the 50-row window is still found via the watchdog's record (not 'never-run')", () => {
+    resetAll();
+    const lastSuccess = iso(-240); // 10 days ago, long gone from the ingestion window
+    const health = evaluateIngestionHealth(fullFailureWindow(), [wdRow(24, detailWith(lastSuccess))], NOW, JOB);
+    expect(health.state).toBe("stale");
+    expect(health.lastSuccessAt).toBe(lastSuccess);
+    expect(health.lastSuccessSource).toBe("watchdog-record");
+    expect(health.ageMs).toBe(240 * HOUR);
+    expect(health.episodeKey).toBe(lastSuccess);
+  });
+
+  it("A2. the alert for that situation says 'stale', not 'never completed successfully'", async () => {
+    resetAll();
+    const lastSuccess = iso(-240);
+    mockHistories({ [JOB.ingestionJobName]: fullFailureWindow(), [JOB.watchdogJobName]: [wdRow(24, detailWith(lastSuccess))] });
+    const result = await runIngestionWatchdog(JOB, NOW);
+    expect(result.alertSent).toBe(true);
+    const [email, key] = sendEmailMock.mock.calls[0];
+    expect(email.subject).toMatch(/stale — no successful run in 10d/);
+    expect(email.subject).not.toMatch(/never completed/);
+    expect(key).toBe(`${JOB.watchdogJobName}-${lastSuccess}`);
+    // And the row it logs keeps the carried value, so the chain continues tomorrow.
+    expect(logCronRunMock.mock.calls[0][3]).toContain(`last-success=${lastSuccess}`);
+  });
+
+  it("A3. a carried success inside the threshold keeps the job healthy", () => {
+    resetAll();
+    const recent = iso(-10);
+    const health = evaluateIngestionHealth(fullFailureWindow(), [wdRow(2, detailWith(recent, "healthy"))], NOW, JOB);
+    expect(health.state).toBe("healthy");
+    expect(health.lastSuccessSource).toBe("watchdog-record");
+  });
+
+  it("B. complete history is unchanged: the ingestion run wins, and an older carried value is ignored", () => {
+    resetAll();
+    const real = iso(-5);
+    const health = evaluateIngestionHealth(
+      [run(JOB.ingestionJobName, { finishedAt: real })],
+      [wdRow(30, detailWith(iso(-200)))],
+      NOW,
+      JOB,
+    );
+    expect(health.lastSuccessAt).toBe(real);
+    expect(health.lastSuccessSource).toBe("ingestion-history");
+    expect(health.state).toBe("healthy");
+  });
+
+  it("B2. with no watchdog record at all, behaviour is exactly the pre-carry-forward behaviour", () => {
+    resetAll();
+    const h = evaluateIngestionHealth([successAgo(JOB.ingestionJobName, 40)], [], NOW, JOB);
+    expect(h.state).toBe("stale");
+    expect(h.lastSuccessSource).toBe("ingestion-history");
+    expect(evaluateIngestionHealth([], [], NOW, JOB).state).toBe("never-run");
+  });
+
+  it("C. the newest valid timestamp wins across both sources, whatever order the rows arrive in", () => {
+    resetAll();
+    // Carried value NEWER than the only success still in the window.
+    const olderIngestion = iso(-100);
+    const newerCarried = iso(-30);
+    const h1 = evaluateIngestionHealth([run(JOB.ingestionJobName, { finishedAt: olderIngestion })], [wdRow(10, detailWith(newerCarried))], NOW, JOB);
+    expect(h1.lastSuccessAt).toBe(newerCarried);
+    expect(h1.lastSuccessSource).toBe("watchdog-record");
+
+    // Several carried values: the newest is chosen, not the first or last row.
+    const rows = [wdRow(5, detailWith(iso(-90))), wdRow(10, detailWith(iso(-20))), wdRow(15, detailWith(iso(-60)))];
+    for (const order of [rows, [...rows].reverse(), [rows[1], rows[0], rows[2]]]) {
+      expect(evaluateIngestionHealth(fullFailureWindow(), order, NOW, JOB).lastSuccessAt).toBe(iso(-20));
+    }
+
+    // An ingestion success newer than every carried value wins.
+    const newestIngestion = iso(-3);
+    const h2 = evaluateIngestionHealth([run(JOB.ingestionJobName, { finishedAt: newestIngestion })], [wdRow(10, detailWith(iso(-20)))], NOW, JOB);
+    expect(h2.lastSuccessAt).toBe(newestIngestion);
+    expect(h2.lastSuccessSource).toBe("ingestion-history");
+  });
+
+  it("C2. a tie keeps the ingestion row's own string (so an existing alert marker still matches)", () => {
+    resetAll();
+    const ingestionString = "2026-08-10T09:00:00.000+00:00";
+    const carriedSameInstant = "2026-08-10T09:00:00.000Z";
+    const h = evaluateIngestionHealth(
+      [run(JOB.ingestionJobName, { finishedAt: ingestionString })],
+      [wdRow(5, detailWith(carriedSameInstant))],
+      NOW,
+      JOB,
+    );
+    expect(h.lastSuccessAt).toBe(ingestionString);
+    expect(h.lastSuccessSource).toBe("ingestion-history");
+  });
+
+  it("D. missing and malformed carried timestamps are ignored safely (they never create a success)", () => {
+    resetAll();
+    const bad = [
+      wdRow(1, null), // no detail at all
+      wdRow(2, ""), // empty detail
+      wdRow(3, `job=${JOB.ingestionJobName} | state=stale | age=3d 0h`), // field absent
+      wdRow(4, detailWith("never")), // the literal the watchdog writes when there is none
+      wdRow(5, detailWith("garbage")),
+      wdRow(6, detailWith("2026-08-10")), // date only, not a full timestamp
+      wdRow(7, detailWith("2026-13-45T99:99:99Z")), // right shape, impossible instant
+      wdRow(8, detailWith("")), // empty value
+      wdRow(9, `last-success=${iso(-50)}extra`), // trailing junk
+    ];
+    const h = evaluateIngestionHealth(fullFailureWindow(), bad, NOW, JOB);
+    expect(h.state).toBe("never-run");
+    expect(h.lastSuccessAt).toBeNull();
+    expect(h.lastSuccessSource).toBeNull();
+    expect(h.episodeKey).toBe("never");
+  });
+
+  it("D2. one malformed row does not hide a valid one next to it", () => {
+    resetAll();
+    const valid = iso(-72);
+    const h = evaluateIngestionHealth(fullFailureWindow(), [wdRow(1, detailWith("garbage")), wdRow(2, detailWith(valid)), wdRow(3, null)], NOW, JOB);
+    expect(h.lastSuccessAt).toBe(valid);
+  });
+
+  it("D3. a future-dated carried value cannot silence an outage; small clock skew is tolerated", () => {
+    resetAll();
+    const farFuture = iso(48);
+    const hFuture = evaluateIngestionHealth(fullFailureWindow(), [wdRow(1, detailWith(farFuture))], NOW, JOB);
+    expect(hFuture.state).toBe("never-run"); // ignored, NOT "healthy for two more days"
+
+    const slightlyAhead = iso(0.5); // 30 min ahead: ingestion-host clock skew
+    const hSkew = evaluateIngestionHealth(fullFailureWindow(), [wdRow(1, detailWith(slightlyAhead))], NOW, JOB);
+    expect(hSkew.lastSuccessAt).toBe(slightlyAhead);
+
+    // A bad future value does not displace a good older one.
+    const good = iso(-60);
+    const hBoth = evaluateIngestionHealth(fullFailureWindow(), [wdRow(1, detailWith(farFuture)), wdRow(2, detailWith(good))], NOW, JOB);
+    expect(hBoth.lastSuccessAt).toBe(good);
+  });
+
+  it("D4. only the FIRST last-success field of a row counts, so later free text (e.g. a provider error) cannot spoof one", () => {
+    resetAll();
+    const real = iso(-100);
+    const spoof = iso(-1);
+    const detail = `job=x | state=stale | last-success=${real} | age=4d 4h | no-alert (alert failed: boom | last-success=${spoof})`;
+    expect(evaluateIngestionHealth(fullFailureWindow(), [wdRow(1, detail)], NOW, JOB).lastSuccessAt).toBe(real);
+  });
+
+  it("D5. another job's watchdog ledger is never read", () => {
+    resetAll();
+    const other = wdRow(1, detailWith(iso(-5)), WORLD_BANK_MONITOR_JOB.watchdogJobName);
+    expect(evaluateIngestionHealth(fullFailureWindow(), [other], NOW, JOB).state).toBe("never-run");
+  });
+
+  it("D6. an ingestion success row with an unusable timestamp is not evidence of health", () => {
+    resetAll();
+    const broken = run(JOB.ingestionJobName, { finishedAt: "not-a-date" });
+    const h = evaluateIngestionHealth([broken], [], NOW, JOB);
+    expect(h.state).toBe("never-run");
+    expect(h.lastSuccessAt).toBeNull();
+  });
+
+  it("E. a genuinely never-successful job stays never-run and still alerts as such", async () => {
+    resetAll();
+    mockHistories({ [JOB.ingestionJobName]: fullFailureWindow(), [JOB.watchdogJobName]: [wdRow(24, detailWith("never"))] });
+    const result = await runIngestionWatchdog(JOB, NOW);
+    expect(result.health.state).toBe("never-run");
+    expect(result.health.lastSuccessSource).toBeNull();
+    expect(result.alertSent).toBe(true);
+    expect(sendEmailMock.mock.calls[0][0].subject).toMatch(/has never completed successfully/);
+    expect(sendEmailMock.mock.calls[0][1]).toBe(`${JOB.watchdogJobName}-never`);
+  });
+
+  it("F. the episode key and reminder cadence stay stable for 60 days of failures, long after the success leaves the 50-row window", async () => {
+    resetAll();
+    const DAY = 24 * HOUR;
+    const lastSuccess = new Date(NOW.getTime() - 40 * HOUR).toISOString(); // stale on day 0
+    let ingestion: CronRunRecord[] = [run(JOB.ingestionJobName, { finishedAt: lastSuccess })];
+    let watchdog: CronRunRecord[] = [];
+    const keys = new Set<string>();
+    const sources = new Set<string | null>();
+    const alertDays: number[] = [];
+    const subjects: string[] = [];
+    let windowLostSuccessOnDay: number | null = null;
+
+    for (let day = 0; day < 60; day++) {
+      const runNow = new Date(NOW.getTime() + day * DAY);
+      // The laptop is on and failing: logon + 08:00 triggers, each with retries -> several failure rows a day. The real
+      // retention trim (newest 50 per job) is applied to both ledgers.
+      for (let k = 0; k < 4; k++) {
+        ingestion.unshift(run(JOB.ingestionJobName, { finishedAt: new Date(runNow.getTime() - (k + 1) * 60_000).toISOString(), status: "failure" }));
+      }
+      ingestion = ingestion.slice(0, 50);
+      if (windowLostSuccessOnDay === null && !ingestion.some((r) => r.status === "success")) windowLostSuccessOnDay = day;
+
+      mockHistories({ [JOB.ingestionJobName]: ingestion, [JOB.watchdogJobName]: watchdog });
+      sendEmailMock.mockClear();
+      logCronRunMock.mockClear();
+      const result = await runIngestionWatchdog(JOB, runNow);
+
+      keys.add(result.health.episodeKey);
+      sources.add(result.health.lastSuccessSource);
+      if (sendEmailMock.mock.calls.length > 0) {
+        alertDays.push(day);
+        subjects.push(sendEmailMock.mock.calls[0][0].subject);
+      }
+      const [, , status, detail] = logCronRunMock.mock.calls[0];
+      watchdog.unshift(run(JOB.watchdogJobName, { finishedAt: new Date(runNow.getTime() + 2000).toISOString(), status, detail }));
+      watchdog = watchdog.slice(0, 50);
+    }
+
+    // The scenario genuinely exercised the problem: the success really did leave the window.
+    expect(windowLostSuccessOnDay).not.toBeNull();
+    expect(windowLostSuccessOnDay!).toBeLessThan(20);
+    expect(ingestion.some((r) => r.status === "success")).toBe(false);
+
+    expect([...keys]).toEqual([lastSuccess]); // ONE episode throughout
+    expect(sources.has("watchdog-record")).toBe(true);
+    expect(alertDays).toEqual(Array.from({ length: 20 }, (_, i) => i * 3)); // initial on day 0, then every third day, no extra alerts
+    expect(subjects[0]).not.toMatch(/^Reminder/);
+    for (const s of subjects.slice(1)) expect(s).toMatch(/^Reminder — /);
+    for (const s of subjects) expect(s).not.toMatch(/never completed/);
+  });
+
+  it("G. recovery after a carried episode ends it; the next failure is a NEW episode with an initial alert", async () => {
+    resetAll();
+    const oldSuccess = iso(-400);
+    const oldAlert = wdRow(80, `${detailWith(oldSuccess)} | alerted-for=${oldSuccess}`);
+
+    // Recovery: a fresh success appears in the ingestion history.
+    const recovery = iso(-2);
+    mockHistories({
+      [JOB.ingestionJobName]: [run(JOB.ingestionJobName, { finishedAt: recovery }), ...fullFailureWindow().slice(0, 49)],
+      [JOB.watchdogJobName]: [oldAlert],
+    });
+    const healthy = await runIngestionWatchdog(JOB, NOW);
+    expect(healthy.health.state).toBe("healthy");
+    expect(healthy.health.lastSuccessAt).toBe(recovery); // newer than the carried 400h-old value
+    expect(healthy.health.lastSuccessSource).toBe("ingestion-history");
+    expect(healthy.alertSent).toBe(false);
+    expect(sendEmailMock).not.toHaveBeenCalled();
+
+    // It later goes stale again: a different episode key, and an INITIAL alert (not a reminder).
+    const later = new Date(NOW.getTime() + 60 * HOUR);
+    const rows = [wdRow(0, detailWith(recovery, "healthy"))];
+    mockHistories({
+      [JOB.ingestionJobName]: [run(JOB.ingestionJobName, { finishedAt: recovery })],
+      [JOB.watchdogJobName]: [...rows, oldAlert],
+    });
+    const again = await runIngestionWatchdog(JOB, later);
+    expect(again.health.state).toBe("stale");
+    expect(again.health.episodeKey).toBe(recovery);
+    expect(again.health.episodeKey).not.toBe(oldSuccess);
+    expect(again.health.alertAlreadySent).toBe(false); // the old episode's marker does not carry over
+    expect(again.alertSent).toBe(true);
+    expect(sendEmailMock.mock.calls[0][0].subject).not.toMatch(/^Reminder/);
+    expect(sendEmailMock.mock.calls[0][1]).toBe(`${JOB.watchdogJobName}-${recovery}`);
+  });
+
+  it("H. identical behaviour for all five monitored jobs", () => {
+    for (const job of MONITORED_INGESTION_JOBS) {
+      resetAll();
+      const lastSuccess = iso(-(job.staleAfterHours + 50));
+      const window = Array.from({ length: 50 }, (_, i) => run(job.ingestionJobName, { finishedAt: iso(-(i + 1)), status: "failure" }));
+      const ledger = [
+        run(job.watchdogJobName, {
+          finishedAt: iso(-24),
+          status: "failure",
+          detail: `job=${job.ingestionJobName} | state=stale | last-success=${lastSuccess} | age=x | no-alert (...)`,
+        }),
+      ];
+      const h = evaluateIngestionHealth(window, ledger, NOW, job);
+      expect(h.state, job.label).toBe("stale");
+      expect(h.lastSuccessAt, job.label).toBe(lastSuccess);
+      expect(h.lastSuccessSource, job.label).toBe("watchdog-record");
+    }
+  });
+
+  it("I. security: carry-forward adds no secret, URL or credential to the email or run log", async () => {
+    resetAll();
+    process.env.SBP_EASYDATA_API_KEY = "SUPER-SECRET-CARRY-KEY";
+    mockHistories({ [JOB.ingestionJobName]: fullFailureWindow(), [JOB.watchdogJobName]: [wdRow(24, detailWith(iso(-240)))] });
+    await runIngestionWatchdog(JOB, NOW);
+    for (const blob of [JSON.stringify(sendEmailMock.mock.calls[0]), String(logCronRunMock.mock.calls[0][3])]) {
+      expect(blob).not.toContain("SUPER-SECRET-CARRY-KEY");
+      expect(blob).not.toContain("easydata.sbp.org.pk");
+      expect(blob).not.toContain("api_key");
+    }
+  });
+});
