@@ -7,6 +7,12 @@ export const ur: Translations = {
     decisionLab: "ڈیسیژن لیب", macroIntelligence: "میکرو انٹیل", macroIntelligenceLong: "میکرو انٹیلی جنس",
   },
 
+  appNav: {
+    moneyRates: "زر اور شرحِ سود", fiscal: "مالیاتی", allIndicators: "تمام اشارے", backToSite: "ویب سائٹ پر واپس",
+    mainNav: "مرکزی نیویگیشن", openMenu: "نیویگیشن مینو کھولیں", closeMenu: "نیویگیشن مینو بند کریں", openSearch: "تلاش", closeSearch: "تلاش بند کریں",
+    skipToContent: "مرکزی مواد پر جائیں", darkMode: "ڈارک موڈ", account: "اکاؤنٹ", currentSection: "موجودہ حصہ", onThisPage: "اس صفحے پر",
+  },
+
   nav: {
     main: "مرکزی", analytics: "تجزیات", premiumTools: "پریمیم ٹولز",
     overview: "جائزہ", riskIntel: "خطرے کی انٹیلی جنس", gdp: "جی ڈی پی", inflation: "مہنگائی",

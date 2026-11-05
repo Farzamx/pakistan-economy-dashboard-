@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Script from "next/script";
 import "./globals.css";
 import BfcacheGuard from "@/components/BfcacheGuard";
 import ConditionalAppChrome from "@/components/ConditionalAppChrome";
@@ -91,21 +90,32 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      data-theme="dark"
+      // Light by default (PEIC redesign Phase 2). Must equal ThemeProvider's
+      // DEFAULT_THEME — ThemeProvider.test.ts enforces it. The script below
+      // replaces it with a visitor's saved choice before first paint.
+      data-theme="light"
       data-scroll-behavior="smooth"
       suppressHydrationWarning
       className="h-full scroll-smooth antialiased"
     >
       <head>
-        {/* Runs before hydration — reads localStorage and sets data-theme on
-            <html> so there is never a flash of wrong theme. Uses next/script
-            with strategy="beforeInteractive" (Next's injection mechanism,
-            not plain React-rendered DOM) rather than a raw <script> tag, so
-            it doesn't trigger React's "script tag" dev warning and is
-            guaranteed to run before any hydration occurs. */}
-        <Script id="theme-init" strategy="beforeInteractive">
-          {`try{var t=localStorage.getItem('dashboard-theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}`}
-        </Script>
+        {/* Applies a visitor's saved theme before the first paint. A plain
+            inline <script> — the pattern in this Next.js version's own guide
+            (docs/01-app/02-guides/preventing-flash-before-hydration.md,
+            "Themes") — because the browser runs it synchronously while
+            parsing <head>. It previously used next/script with
+            strategy="beforeInteractive", which the Script docs describe as
+            non-blocking: measured on production, a visitor who had saved the
+            non-default theme saw the default painted first and the switch
+            only after load. With light now the default (redesign Phase 2),
+            that flash would otherwise have moved onto everyone who chose
+            dark. <html> already has suppressHydrationWarning for the
+            attribute this changes. Script body unchanged. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `try{var t=localStorage.getItem('dashboard-theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}`,
+          }}
+        />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: jsonLdHtml }}

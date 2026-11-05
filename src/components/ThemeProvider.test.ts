@@ -16,6 +16,7 @@ import {
   writeStoredTheme,
   hasExplicitLocalThemeChoice,
   themeFromStorageEvent,
+  DEFAULT_THEME,
 } from "./ThemeProvider";
 
 describe("shouldAdoptRemoteTheme", () => {
@@ -230,6 +231,29 @@ describe("themeFromStorageEvent — the cross-tab rule", () => {
   });
 
   it("falls back to the app default when another tab clears the key", () => {
-    expect(themeFromStorageEvent(THEME_KEY, null)).toBe("dark");
+    expect(themeFromStorageEvent(THEME_KEY, null)).toBe(DEFAULT_THEME);
+    expect(themeFromStorageEvent(THEME_KEY, "garbage")).toBe(DEFAULT_THEME);
+  });
+});
+
+// PEIC redesign Phase 2 — light became the default for visitors with no saved
+// choice. Explicit choices are unaffected (see the storage tests above).
+describe("default theme", () => {
+  it("is light", () => {
+    expect(DEFAULT_THEME).toBe("light");
+  });
+
+  it("matches the data-theme attribute layout.tsx server-renders, so the first paint and React state agree", async () => {
+    const fs = await import("node:fs/promises");
+    const layout = await fs.readFile(new URL("../app/layout.tsx", import.meta.url), "utf-8");
+    const ssrTheme = layout.match(/<html[\s\S]*?data-theme="(light|dark)"/)?.[1];
+    expect(ssrTheme).toBe(DEFAULT_THEME);
+  });
+
+  it("the pre-hydration script still applies a saved choice of either value", async () => {
+    const fs = await import("node:fs/promises");
+    const layout = await fs.readFile(new URL("../app/layout.tsx", import.meta.url), "utf-8");
+    expect(layout).toContain("localStorage.getItem('dashboard-theme')");
+    expect(layout).toMatch(/t==='light'\|\|t==='dark'/);
   });
 });

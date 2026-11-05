@@ -66,9 +66,33 @@ interface Props {
   onLinkClick: (e: React.MouseEvent<HTMLAnchorElement>, href: string) => void;
   placeholder?: string;
   className?: string;
+  /**
+   * Visual treatment only — search behaviour is identical in every variant.
+   *   "legacy"  — the original sidebar styling (default; unchanged).
+   *   "nav"     — sits on the redesigned navy header bar.
+   *   "surface" — sits on a redesigned light/dark surface (drawer, header search row).
+   */
+  variant?: "legacy" | "nav" | "surface";
+  autoFocus?: boolean;
 }
 
-export default function GlobalSearch({ onLinkClick, placeholder, className }: Props) {
+const INPUT_CLASS: Record<NonNullable<Props["variant"]>, string> = {
+  legacy:
+    "w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] py-2 pl-8 pr-3 text-xs text-[var(--text-primary)] outline-none transition-colors placeholder:text-[var(--text-muted)] focus:border-neon-blue/40",
+  nav:
+    "w-full rounded-[var(--pe-radius)] border border-pe-nav-border bg-white/10 py-1.5 ps-8 pe-3 text-[13px] text-pe-nav-text outline-none transition-colors placeholder:text-pe-nav-text-muted focus:bg-white/15",
+  surface:
+    "w-full rounded-[var(--pe-radius)] border border-pe-border-strong bg-pe-surface py-2 ps-8 pe-3 text-[14px] text-pe-text outline-none transition-colors placeholder:text-pe-text-3 focus:border-pe-accent",
+};
+
+const ICON_CLASS: Record<NonNullable<Props["variant"]>, string> = {
+  legacy: "left-3 text-white/30 light:text-slate-400",
+  nav: "start-2.5 text-pe-nav-text-muted",
+  surface: "start-2.5 text-pe-text-3",
+};
+
+export default function GlobalSearch({ onLinkClick, placeholder, className, variant = "legacy", autoFocus }: Props) {
+  const redesigned = variant !== "legacy";
   const { t } = useLanguage();
   const resolvedPlaceholder = placeholder ?? t("search.placeholder");
   const [query, setQuery] = useState("");
@@ -144,7 +168,8 @@ export default function GlobalSearch({ onLinkClick, placeholder, className }: Pr
       <form onSubmit={handleSubmit} role="search">
         <div className="relative">
           <svg
-            className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/30 light:text-slate-400"
+            aria-hidden="true"
+            className={`pointer-events-none absolute top-1/2 h-3.5 w-3.5 -translate-y-1/2 ${ICON_CLASS[variant]}`}
             viewBox="0 0 16 16"
             fill="none"
             stroke="currentColor"
@@ -167,7 +192,9 @@ export default function GlobalSearch({ onLinkClick, placeholder, className }: Pr
             onBlur={() => setTimeout(() => setFocused(false), 120)}
             onKeyDown={handleKeyDown}
             placeholder={resolvedPlaceholder}
-            className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] py-2 pl-8 pr-3 text-xs text-[var(--text-primary)] outline-none transition-colors placeholder:text-[var(--text-muted)] focus:border-neon-blue/40"
+            aria-label={resolvedPlaceholder}
+            autoFocus={autoFocus}
+            className={INPUT_CLASS[variant]}
           />
         </div>
       </form>
@@ -182,10 +209,14 @@ export default function GlobalSearch({ onLinkClick, placeholder, className }: Pr
         <ul
           id={listId}
           role="listbox"
-          className="absolute left-0 right-0 top-full isolate z-40 mt-1.5 max-h-72 overflow-y-auto rounded-xl border border-neon-blue/25 bg-[#05060f] light:bg-white py-1.5 shadow-[0_12px_32px_rgba(0,0,0,0.55),0_0_0_1px_rgba(56,189,248,0.08)] light:shadow-xl"
+          className={
+            redesigned
+              ? "pe-panel absolute inset-x-0 top-full isolate z-40 mt-1 max-h-72 overflow-y-auto rounded-[var(--pe-radius)] border border-pe-border bg-pe-surface py-1 text-pe-text shadow-[var(--pe-shadow-pop)]"
+              : "absolute left-0 right-0 top-full isolate z-40 mt-1.5 max-h-72 overflow-y-auto rounded-xl border border-neon-blue/25 bg-[#05060f] light:bg-white py-1.5 shadow-[0_12px_32px_rgba(0,0,0,0.55),0_0_0_1px_rgba(56,189,248,0.08)] light:shadow-xl"
+          }
         >
           {results.length === 0 ? (
-            <li className="px-3 py-2 text-xs text-[var(--text-muted)]">{t("search.noMatches")}</li>
+            <li className={redesigned ? "px-3 py-2 text-[13px] text-pe-text-3" : "px-3 py-2 text-xs text-[var(--text-muted)]"}>{t("search.noMatches")}</li>
           ) : (
             results.map((entry, i) => (
               <li key={entry.href} id={`${listId}-${i}`} role="option" aria-selected={i === highlightedIndex}>
@@ -193,11 +224,15 @@ export default function GlobalSearch({ onLinkClick, placeholder, className }: Pr
                   href={entry.href}
                   onClick={(e) => go(e, entry.href)}
                   onMouseEnter={() => setHighlightedIndex(i)}
-                  className={`block px-3 py-2 text-xs transition-colors ${
-                    i === highlightedIndex
-                      ? "bg-neon-blue/15 text-neon-blue"
-                      : "text-[var(--text-secondary)] hover:bg-neon-blue/10 hover:text-neon-blue"
-                  }`}
+                  className={
+                    redesigned
+                      ? `block px-3 py-1.5 text-[13px] transition-colors ${i === highlightedIndex ? "bg-pe-surface-2 text-pe-accent" : "text-pe-text-2"}`
+                      : `block px-3 py-2 text-xs transition-colors ${
+                          i === highlightedIndex
+                            ? "bg-neon-blue/15 text-neon-blue"
+                            : "text-[var(--text-secondary)] hover:bg-neon-blue/10 hover:text-neon-blue"
+                        }`
+                  }
                 >
                   {entry.label}
                 </Link>

@@ -7,6 +7,12 @@ export const en: Translations = {
     decisionLab: "Decision Lab", macroIntelligence: "Macro Intel", macroIntelligenceLong: "Macro Intelligence",
   },
 
+  appNav: {
+    moneyRates: "Money & Rates", fiscal: "Fiscal", allIndicators: "All indicators", backToSite: "Back to site",
+    mainNav: "Main", openMenu: "Open navigation menu", closeMenu: "Close navigation menu", openSearch: "Search", closeSearch: "Close search",
+    skipToContent: "Skip to main content", darkMode: "Dark mode", account: "Account", currentSection: "current section", onThisPage: "On this page",
+  },
+
   nav: {
     main: "Main", analytics: "Analytics", premiumTools: "Premium Tools",
     overview: "Overview", riskIntel: "Risk Intel", gdp: "GDP", inflation: "Inflation",

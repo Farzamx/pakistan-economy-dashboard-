@@ -20,10 +20,8 @@ import { AuthProvider } from "@/components/AuthProvider";
 import { PreferencesProvider } from "@/components/PreferencesProvider";
 import { SidebarProvider } from "@/components/SidebarProvider";
 import { LanguageProvider } from "@/components/LanguageProvider";
-import GalaxyBackground from "@/components/GalaxyBackground";
 import MotionProvider from "@/components/MotionProvider";
-import MobileNav from "@/components/MobileNav";
-import TopNav from "@/components/TopNav";
+import AppHeader from "@/components/shell/AppHeader";
 import CreatorBadge from "@/components/CreatorBadge";
 import MobileStickyCta from "@/components/MobileStickyCta";
 import ScrollToTopButton from "@/components/ScrollToTopButton";
@@ -92,10 +90,12 @@ export default function AppShell({ children }: { children: ReactNode }) {
           <AuthProvider>
             <PreferencesProvider>
               <SidebarProvider>
-                <GalaxyBackground />
+                {/* PEIC redesign Phase 2: AppHeader replaces TopNav (desktop
+                    bar), MobileNav (floating hamburger + drawer) and the
+                    desktop Sidebar's navigation. The animated GalaxyBackground
+                    that used to render here is retired from the app shell. */}
                 <MotionProvider>
-                  <MobileNav />
-                  <TopNav />
+                  <AppHeader />
                   {children}
                   <CreatorBadge />
                   <MobileStickyCta />

@@ -140,10 +140,13 @@ export default function Hero({
 
       {briefingReady ? (
         <>
-          {/* Editorial headline — the AI narrative's own first sentence */}
-          <h1 className="text-hero-headline mt-5 max-w-4xl text-white light:text-slate-900">
+          {/* Editorial headline — the AI narrative's own first sentence.
+              An <h2>, not an <h1>, since redesign Phase 3: the /overview page
+              now carries its own page title above this briefing panel, and a
+              document must not have two <h1>s. Styling is unchanged. */}
+          <h2 className="text-hero-headline mt-5 max-w-4xl text-white light:text-slate-900">
             {headline}
-          </h1>
+          </h2>
 
           {/* ── Macro Pulse band — the signature four-figure strip ─────────── */}
           <div className="mt-6 grid grid-cols-2 border-y border-[var(--border-subtle)] sm:grid-cols-4">

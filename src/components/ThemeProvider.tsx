@@ -11,6 +11,16 @@ import {
 
 export type Theme = "dark" | "light";
 
+/**
+ * Theme for a visitor with no saved choice (PEIC redesign Phase 2: light by
+ * default, dark as an explicit opt-in). Must match the data-theme attribute
+ * layout.tsx server-renders on <html>, or a first paint would disagree with
+ * React's state. A saved "dark" is still honoured — by layout.tsx's
+ * pre-hydration script and by the mount effect below — so this only changes
+ * what a visitor who never chose sees.
+ */
+export const DEFAULT_THEME: Theme = "light";
+
 const STORAGE_KEY = "dashboard-theme";
 // Presence (not value) is what matters: set the first time this device ever
 // records an explicit local theme choice, persisted (not just an in-memory
@@ -73,7 +83,7 @@ interface ThemeContextValue {
 }
 
 const ThemeContext = createContext<ThemeContextValue>({
-  theme: "dark",
+  theme: DEFAULT_THEME,
   setTheme: () => {},
 });
 
@@ -138,17 +148,20 @@ function applyThemeAttribute(next: Theme): void {
  */
 export function themeFromStorageEvent(key: string | null, newValue: string | null): Theme | null {
   if (key !== STORAGE_KEY) return null;
-  return newValue === "light" ? "light" : "dark";
+  // A recognised value is adopted as-is; anything else (the key was cleared
+  // in another tab) falls back to the app default, same as a first visit.
+  return newValue === "light" || newValue === "dark" ? newValue : DEFAULT_THEME;
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  // Default to dark — the inline script in layout.tsx already set data-theme
-  // on <html> before React hydrates, so there is no flash.
-  const [theme, setThemeState] = useState<Theme>("dark");
+  // Starts at the default — the inline script in layout.tsx already set
+  // data-theme on <html> before React hydrates (to a saved choice if there is
+  // one), so there is no flash; the effect below brings state in line.
+  const [theme, setThemeState] = useState<Theme>(DEFAULT_THEME);
 
   // On first mount, sync React state with whatever the inline script set.
   useEffect(() => {
-    const resolved: Theme = readStoredTheme() ?? "dark";
+    const resolved: Theme = readStoredTheme() ?? DEFAULT_THEME;
     setThemeState(resolved);
     // Re-assert the attribute rather than trusting the inline script alone:
     // if that script was blocked (CSP, an extension) the document is still

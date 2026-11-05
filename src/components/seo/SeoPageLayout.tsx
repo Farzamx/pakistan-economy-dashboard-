@@ -106,156 +106,159 @@ export default function SeoPageLayout({
   };
 
   return (
-    <div className="min-h-screen w-full px-6 py-8 sm:px-10 lg:px-16">
+    // Redesign Phase 4D: restyled onto the shared design tokens. Every prop,
+    // the JSON-LD graph, the chart component, the freshness badge and the
+    // page's data are unchanged — this is presentation only, so all 38 pages
+    // using this template migrate together with no per-page edits.
+    <div className="min-h-screen w-full bg-pe-bg">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredDataJsonLd).replace(/</g, "\\u003c") }}
       />
 
-      {/* Minimal header — not the dashboard sidebar, just a way back to it.
-          Production polish pass: matches ToolBreadcrumb.tsx's back-link
-          treatment (real icon, larger touch target, focus ring, higher
-          contrast, mobile clearance under MobileNav's fixed hamburger)
-          rather than the previous bare text-xs "←" glyph. */}
-      <div className="mx-auto max-w-4xl pt-16 min-[800px]:pt-0">
-        <div className="flex items-center justify-between">
+      <div className="mx-auto max-w-4xl px-3 py-4 sm:px-4 lg:px-6">
+        <div className="flex items-center justify-between gap-3">
           <Link
             href="/overview"
             aria-label={`Back to ${SITE_NAME}`}
-            className="-ml-2.5 flex items-center gap-1.5 rounded-lg px-2.5 py-3 text-sm font-medium text-white/80 transition-colors hover:bg-white/5 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neon-blue light:text-slate-700 light:hover:bg-slate-900/5 light:hover:text-slate-900"
+            className="-ms-1.5 inline-flex items-center gap-1.5 rounded-[var(--pe-radius)] px-1.5 py-2 text-[13px] font-medium text-pe-text-2 transition-colors hover:bg-pe-surface-2 hover:text-pe-text"
           >
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true" className="shrink-0">
               <path d="M13 8H3M3 8L7.5 3.5M3 8L7.5 12.5" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
             {SITE_NAME}
           </Link>
-          <span className="min-w-0 shrink break-all text-right text-[10px] uppercase tracking-widest text-white/25 light:text-slate-400">
+          <span className="min-w-0 shrink truncate text-end font-mono text-[11px] text-pe-text-3">
             pakeconintel.com{canonicalPath}
           </span>
         </div>
 
-        <h1 className="text-headline mt-8 text-white light:text-slate-900">
-          {title}
-        </h1>
-        <p className="mt-3 max-w-2xl text-sm text-white/60 light:text-slate-500 sm:text-base">
-          {subtitle}
-        </p>
+        <header className="mt-3 border-b border-pe-border pb-4">
+          <h1 className="text-[24px] font-semibold leading-tight tracking-[-0.01em] text-pe-text [text-wrap:balance] sm:text-[28px]">
+            {title}
+          </h1>
+          <p className="mt-1.5 max-w-2xl text-[14px] leading-relaxed text-pe-text-2">{subtitle}</p>
+        </header>
 
-        {/* Current value */}
-        <div className="glass-card mt-8 flex flex-col gap-1 p-6 sm:p-8">
-          <span className="text-xs font-semibold uppercase tracking-[0.3em] text-white/40 light:text-slate-500">
-            {kpiLabel}
-          </span>
-          <div className="flex flex-wrap items-baseline gap-3">
-            <span className="text-display text-white light:text-slate-900">
+        {/* Headline value — the page's primary figure, with its change,
+            freshness verdict and (where provided) supporting stats. */}
+        <div className="mt-3 rounded-[var(--pe-radius)] border border-pe-border bg-pe-surface p-4">
+          <span className="text-[11px] font-medium uppercase tracking-[0.06em] text-pe-text-3">{kpiLabel}</span>
+          <div className="mt-1 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+            <span className="text-[32px] font-semibold leading-none tabular-nums tracking-[-0.01em] text-pe-text sm:text-[38px]">
               {kpiValue}
             </span>
             {kpiChange && kpiTrend && (
-              <span className={`inline-flex items-center gap-1 text-sm font-medium ${TREND_TEXT_COLOR[kpiTrend]}`}>
+              <span className={`inline-flex items-center gap-1 text-[13px] font-medium ${TREND_TEXT_COLOR[kpiTrend]}`}>
                 <TrendArrowIcon trend={kpiTrend} className="h-3.5 w-3.5" />
                 {kpiChange}
               </span>
             )}
           </div>
           {kpiQuality && kpiQuality.freshness ? (
-            <DataQualityBadge kpi={kpiQuality} freshness={kpiQuality.freshness} className="mt-1" />
+            <DataQualityBadge kpi={kpiQuality} freshness={kpiQuality.freshness} className="mt-2" />
           ) : (
-            kpiSourceNote && <span className="mt-1 text-xs text-white/35 light:text-slate-400">{kpiSourceNote}</span>
+            kpiSourceNote && <span className="mt-2 block font-mono text-[11px] text-pe-text-3">{kpiSourceNote}</span>
           )}
 
           {secondaryStats && secondaryStats.length > 0 && (
-            <div className="mt-4 grid grid-cols-2 gap-4 border-t border-white/5 light:border-slate-200 pt-4 sm:grid-cols-3">
+            <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 border-t border-pe-border pt-3 sm:grid-cols-3">
               {secondaryStats.map((stat) => (
                 <div key={stat.label}>
-                  <p className="text-xs text-white/40 light:text-slate-400">{stat.label}</p>
-                  <p className="mt-1 text-lg font-semibold text-white light:text-slate-900">{stat.value}</p>
+                  <dt className="text-[12px] text-pe-text-3">{stat.label}</dt>
+                  <dd className="mt-0.5 text-[15px] font-semibold tabular-nums text-pe-text">{stat.value}</dd>
                 </div>
               ))}
-            </div>
+            </dl>
           )}
         </div>
 
-        {/* Chart */}
-        <div className="glass-card mt-6 p-6 sm:p-8">
-          <p className="mb-2 text-xs font-medium text-white/40 light:text-slate-500">{chartTitle}</p>
-          {chartData ? (
-            <TrendLineChart
-              data={chartData}
-              color={chartColor}
-              unit={chartUnit}
-              gradientId={chartGradientId}
-            />
-          ) : (
-            <p className="rounded-xl border border-white/5 light:border-slate-200 bg-white/[0.02] light:bg-slate-50 px-5 py-4 text-sm text-white/50 light:text-slate-500">
-              {chartUnavailableNote ?? "Chart data is currently unavailable."}
-            </p>
-          )}
-          <p className="mt-3 text-[10px] text-white/25 light:text-slate-400">{chartCaption}</p>
-        </div>
-
-        {/* Explanation */}
-        <section className="glass-card mt-6 p-6 sm:p-8">
-          <h2 className="text-headline text-white light:text-slate-900">What This Means</h2>
-          <div className="mt-3 space-y-3">
-            {explanation.map((p, i) => (
-              <p key={i} className="text-sm leading-relaxed text-white/65 light:text-slate-600">
-                {p}
+        {/* Historical chart — same component, data and time range as before. */}
+        <section className="mt-3 rounded-[var(--pe-radius)] border border-pe-border bg-pe-surface" aria-labelledby="indicator-chart-heading">
+          <h2 id="indicator-chart-heading" className="border-b border-pe-border px-4 py-2.5 text-[13px] font-semibold text-pe-text">
+            {chartTitle}
+          </h2>
+          <div className="p-4">
+            {chartData ? (
+              <TrendLineChart data={chartData} color={chartColor} unit={chartUnit} gradientId={chartGradientId} />
+            ) : (
+              <p className="rounded-[var(--pe-radius)] border border-pe-border bg-pe-surface-2 px-4 py-3 text-[13px] text-pe-text-2">
+                {chartUnavailableNote ?? "Chart data is currently unavailable."}
               </p>
-            ))}
+            )}
+            <p className="mt-2 font-mono text-[11px] leading-relaxed text-pe-text-3">{chartCaption}</p>
           </div>
         </section>
 
-        {/* Why it matters */}
-        <section className="glass-card mt-6 p-6 sm:p-8">
-          <h2 className="text-headline text-white light:text-slate-900">Why It Matters</h2>
-          <div className="mt-3 space-y-3">
-            {whyItMatters.map((p, i) => (
-              <p key={i} className="text-sm leading-relaxed text-white/65 light:text-slate-600">
-                {p}
-              </p>
-            ))}
-          </div>
-        </section>
-
-        {/* FAQ */}
-        <section className="glass-card mt-6 p-6 sm:p-8">
-          <h2 className="text-headline text-white light:text-slate-900">Frequently Asked Questions</h2>
-          <div className="mt-4 space-y-5">
-            {faq.map((item, i) => (
-              <div key={i}>
-                <p className="text-sm font-semibold text-white/85 light:text-slate-800">{item.question}</p>
-                <p className="mt-1.5 text-sm leading-relaxed text-white/60 light:text-slate-600">{item.answer}</p>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* Related pages */}
-        {relatedLinks.length > 0 && (
-          <section className="mt-6">
-            <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-white/35 light:text-slate-500">
-              Related Pages
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {relatedLinks.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className="rounded-full border border-white/10 light:border-slate-200 bg-white/[0.02] light:bg-white px-4 py-2 text-xs font-medium text-white/60 light:text-slate-600 transition-colors hover:border-neon-blue/40 hover:text-white light:hover:text-slate-900"
-                >
-                  {link.label} →
-                </Link>
+        <div className="mt-3 grid grid-cols-1 gap-3 lg:grid-cols-2">
+          <section className="rounded-[var(--pe-radius)] border border-pe-border bg-pe-surface" aria-labelledby="indicator-meaning-heading">
+            <h2 id="indicator-meaning-heading" className="border-b border-pe-border px-4 py-2.5 text-[13px] font-semibold text-pe-text">
+              What this means
+            </h2>
+            <div className="flex flex-col gap-2 p-4">
+              {explanation.map((p, i) => (
+                <p key={i} className="text-[14px] leading-relaxed text-pe-text-2">
+                  {p}
+                </p>
               ))}
             </div>
           </section>
+
+          <section className="rounded-[var(--pe-radius)] border border-pe-border bg-pe-surface" aria-labelledby="indicator-why-heading">
+            <h2 id="indicator-why-heading" className="border-b border-pe-border px-4 py-2.5 text-[13px] font-semibold text-pe-text">
+              Why it matters
+            </h2>
+            <div className="flex flex-col gap-2 p-4">
+              {whyItMatters.map((p, i) => (
+                <p key={i} className="text-[14px] leading-relaxed text-pe-text-2">
+                  {p}
+                </p>
+              ))}
+            </div>
+          </section>
+        </div>
+
+        {/* FAQ — the same questions and answers the JSON-LD above declares. */}
+        <section className="mt-3 rounded-[var(--pe-radius)] border border-pe-border bg-pe-surface" aria-labelledby="indicator-faq-heading">
+          <h2 id="indicator-faq-heading" className="border-b border-pe-border px-4 py-2.5 text-[13px] font-semibold text-pe-text">
+            Frequently asked questions
+          </h2>
+          <dl className="divide-y divide-pe-border">
+            {faq.map((item, i) => (
+              <div key={i} className="px-4 py-3">
+                <dt className="text-[14px] font-medium text-pe-text">{item.question}</dt>
+                <dd className="mt-1 text-[14px] leading-relaxed text-pe-text-2">{item.answer}</dd>
+              </div>
+            ))}
+          </dl>
+        </section>
+
+        {relatedLinks.length > 0 && (
+          <section className="mt-3" aria-labelledby="indicator-related-heading">
+            <h2 id="indicator-related-heading" className="mb-2 text-[11px] font-semibold uppercase tracking-[0.06em] text-pe-text-3">
+              Related pages
+            </h2>
+            <ul className="flex flex-wrap gap-2">
+              {relatedLinks.map((link) => (
+                <li key={link.href}>
+                  <Link
+                    href={link.href}
+                    className="inline-block rounded-[var(--pe-radius)] border border-pe-border bg-pe-surface px-3 py-1.5 text-[13px] text-pe-text-2 transition-colors hover:border-pe-border-strong hover:text-pe-text"
+                  >
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
         )}
 
-        <div className="mt-10 mb-4 text-center">
+        <div className="my-6 flex justify-center">
           <Link
             href="/overview"
-            className="inline-flex items-center gap-2 rounded-lg bg-neon-blue/10 border border-neon-blue/20 px-5 py-2.5 text-sm font-medium text-neon-blue transition-colors hover:bg-neon-blue/20"
+            className="inline-flex items-center gap-2 rounded-[var(--pe-radius)] border border-pe-border bg-pe-surface px-4 py-2 text-[13px] font-medium text-pe-accent transition-colors hover:bg-pe-surface-2"
           >
-            Open the full live dashboard →
+            Open the full dashboard →
           </Link>
         </div>
       </div>

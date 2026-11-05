@@ -153,6 +153,164 @@
 /* ── light: variant — mirrors data-theme="light" ─────────────────────────── */
 @custom-variant light (&:where([data-theme=light], [data-theme=light] *));
 
+/* ── PEIC shell tokens (redesign Phase 2) ─────────────────────────────────
+   A second, parallel token set for the redesigned shell (AppHeader,
+   MobileDrawer, PageHeader, Section) and every page migrated to it in later
+   phases. It deliberately does NOT redefine any token above: unmigrated
+   pages keep rendering exactly as before, in either theme.
+   Light is the default (html[data-theme="light"] from layout.tsx); dark is
+   the explicit opt-in. Every text token below was checked for WCAG AA
+   (4.5:1) against both its surface and page background — the muted grey is
+   #667183 (4.9:1 on white) rather than the first-draft #7A8596, which was
+   3.7:1 and so only passed for large text.
+   Green/red mean "rose/fell versus the previous observation", never
+   "good/bad" — a rising debt ratio is drawn in the same green as rising
+   reserves. */
+:root,
+[data-theme="light"] {
+  --pe-nav: #0B1F3A;
+  --pe-nav-raised: #15305A;      /* hover / open-menu fill on the nav bar */
+  --pe-nav-border: rgba(255, 255, 255, 0.10);
+  --pe-nav-text: #E6ECF5;        /* 13.9:1 on --pe-nav */
+  --pe-nav-text-muted: #AAB7CB;  /*  8.1:1 */
+  --pe-nav-accent: #8DB4FF;      /*  8.0:1 — active underline + focus ring on navy */
+
+  --pe-bg: #F4F6F9;
+  --pe-surface: #FFFFFF;
+  --pe-surface-2: #F0F3F7;       /* row hover, subtle fills */
+  --pe-border: #E2E6EC;
+  --pe-border-strong: #CDD3DC;
+  --pe-text: #0F1B2D;            /* 17.3:1 on surface */
+  --pe-text-2: #4A5668;          /*  7.4:1 */
+  --pe-text-3: #667183;          /*  4.9:1 */
+  --pe-accent: #1F4FA3;          /*  7.8:1 — links, selected state */
+  --pe-up: #0E7A3B;              /*  5.4:1 */
+  --pe-down: #B42318;            /*  6.6:1 */
+  --pe-focus: #1F4FA3;
+  --pe-shadow-pop: 0 8px 24px rgba(15, 27, 45, 0.12), 0 1px 2px rgba(15, 27, 45, 0.08);
+
+  /* Status pills (Phase 3). Severity comes from the project's existing
+     freshness verdict; these are only its colours. Text contrast on its own
+     fill: warning 5.9:1, critical 6.4:1. */
+  --pe-warn-bg: #FEF6E7;
+  --pe-warn-border: #E8C98A;
+  --pe-warn-text: #8A5A00;
+  --pe-crit-bg: #FDF0EE;
+  --pe-crit-border: #EDB3AB;
+  --pe-crit-text: #9B2214;
+
+  --pe-radius-sm: 4px;
+  --pe-radius: 6px;
+  --app-header-h: 3.5rem;        /* AppHeader height (56px) */
+}
+
+[data-theme="dark"] {
+  /* Phase 4 (visual consistency): a neutral near-black scale replaces the
+     navy-tinted dark values this set started with. Those read as blue-grey
+     cards floating on a darker page — two different visual languages on one
+     screen. Every value below is neutral grey, so surfaces differ only in
+     lightness and the page reads as one terminal.
+     Contrast on --pe-surface: text 18.1:1, text-2 9.4:1, text-3 5.3:1,
+     accent 9.0:1, up 10.1:1, down 8.6:1 — all AA, accent also clears the
+     3:1 non-text minimum it needs as the focus ring. */
+  --pe-nav: #0B0B0B;
+  --pe-nav-raised: #1C1C1C;
+  --pe-nav-border: rgba(255, 255, 255, 0.10);
+  --pe-nav-text: #F5F5F5;        /* 18.1:1 */
+  --pe-nav-text-muted: #B3B3B3;  /*  9.4:1 */
+  --pe-nav-accent: #7FB0FF;      /*  9.0:1 */
+
+  --pe-bg: #050505;
+  --pe-surface: #0B0B0B;
+  --pe-surface-2: #161616;
+  --pe-border: #262626;
+  --pe-border-strong: #3A3A3A;
+  --pe-text: #F5F5F5;            /* 18.1:1 on surface */
+  --pe-text-2: #B3B3B3;          /*  9.4:1 */
+  --pe-text-3: #858585;          /*  5.3:1 */
+  --pe-accent: #7FB0FF;          /*  9.0:1 */
+  --pe-up: #4ED18A;              /* 10.1:1 */
+  --pe-down: #FF8A80;            /*  8.6:1 */
+  --pe-focus: #7FB0FF;
+  --pe-shadow-pop: 0 10px 28px rgba(0, 0, 0, 0.65);
+
+  /* Dark equivalents. Phase 4: neutralised to match the near-black scale —
+     the fills are now dark greys with only a trace of hue, so a status pill
+     no longer reads as a coloured card. Text on its own fill stays AA
+     (warning 8.9:1, critical 7.6:1). */
+  --pe-warn-bg: #1F1A0E;
+  --pe-warn-border: #4A3D1C;
+  --pe-warn-text: #F0C063;
+  --pe-crit-bg: #211311;
+  --pe-crit-border: #4D2A25;
+  --pe-crit-text: #FF8A80;
+}
+
+@theme inline {
+  --color-pe-nav: var(--pe-nav);
+  --color-pe-nav-raised: var(--pe-nav-raised);
+  --color-pe-nav-border: var(--pe-nav-border);
+  --color-pe-nav-text: var(--pe-nav-text);
+  --color-pe-nav-text-muted: var(--pe-nav-text-muted);
+  --color-pe-nav-accent: var(--pe-nav-accent);
+  --color-pe-bg: var(--pe-bg);
+  --color-pe-surface: var(--pe-surface);
+  --color-pe-surface-2: var(--pe-surface-2);
+  --color-pe-border: var(--pe-border);
+  --color-pe-border-strong: var(--pe-border-strong);
+  --color-pe-text: var(--pe-text);
+  --color-pe-text-2: var(--pe-text-2);
+  --color-pe-text-3: var(--pe-text-3);
+  --color-pe-accent: var(--pe-accent);
+  --color-pe-up: var(--pe-up);
+  --color-pe-down: var(--pe-down);
+  --color-pe-focus: var(--pe-focus);
+}
+
+/* Focus on the navy bar itself: the global ring (--focus-ring, #2563EB) is
+   ~2.9:1 against navy, too faint to see. Scoped to .pe-on-nav — the bar row
+   — so the white dropdown panels and drawer keep the normal dark ring. */
+.pe-on-nav :focus-visible {
+  outline-color: var(--pe-nav-accent);
+}
+/* …but the dropdown panels hanging off the bar are white surfaces, where the
+   light-blue ring would be ~2:1 again — they get the normal surface ring. */
+.pe-on-nav .pe-panel :focus-visible {
+  outline-color: var(--pe-focus);
+}
+
+/* Containers that only ever receive focus programmatically — the skip-link
+   target (<main>) and a section reached via "On this page" (Phase 2.1) get
+   tabindex="-1" for that. The focus move is for screen readers and so the
+   next Tab continues from there; drawing a ring around an entire section
+   would only be noise. Interactive elements are unaffected. */
+main[tabindex="-1"]:focus,
+main [tabindex="-1"]:focus {
+  outline: none;
+}
+
+/* Sticky-header offset for in-page anchors (Next.js docs: "Scroll offset
+   with sticky headers"). Only below 640px: that is where the new header is
+   new — before Phase 2 phones had a floating button, not a bar, so the
+   existing scroll-mt-[60px] offsets assumed nothing above the sticky ticker.
+   At 640px and up those same elements already use scroll-mt-[120px], which
+   still clears the (now shorter) 56px header plus the ticker, so adding a
+   global offset there would only push anchors further down than before. */
+@media (max-width: 639px) {
+  html:has([data-app-header]) {
+    scroll-padding-top: var(--app-header-h);
+  }
+}
+
+/* The marketing pages (/, /home, /about, /contact, /methodology) paint their
+   own dark background on .marketing-theme, but the area revealed by an
+   over-scroll bounce is <body>, which follows the app theme. With light now
+   the default, that bounce would flash light under a dark page, so pin
+   <body> to the exact colour it had before (the old dark --background). */
+body:has(.marketing-theme) {
+  background-color: #05060f;
+}
+
 body {
   background-color: var(--background);
   color: var(--foreground);

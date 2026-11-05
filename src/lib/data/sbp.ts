@@ -268,6 +268,24 @@ function formatMonthLabel(dateStr: string, style: "long" | "short" = "long"): st
   return `${MONTH_NAMES[Number(month) - 1]} ${yearLabel}`;
 }
 
+/**
+ * "2024-06-30" -> "FY2024" — for ANNUAL fiscal-year series only.
+ *
+ * Pakistan's fiscal year runs July–June, so SBP stamps each annual
+ * observation with its 30 June end date. Running those through
+ * formatMonthLabel produced "Jun 2024", which reads as a single month: the
+ * fiscal-balance card appeared to compare June 2025 against June 2024 when
+ * it was actually comparing two consecutive FULL YEARS (redesign Phase 4C).
+ * The values and the computed difference were always right; only the label
+ * was wrong. A non-June date falls back to the month label rather than being
+ * mislabelled as a fiscal year.
+ */
+function formatFiscalYearLabel(dateStr: string): string {
+  const [year, month] = dateStr.split("-");
+  if (Number(month) !== 6) return formatMonthLabel(dateStr);
+  return `FY${year}`;
+}
+
 /** "2025-12-16" -> "16 Dec 2025" (or "16 Dec '25" with style "short"). */
 function formatDayMonthLabel(dateStr: string, style: "long" | "short" = "long"): string {
   const [year, month, day] = dateStr.split("-");
@@ -684,7 +702,9 @@ function buildPrivateCreditGrowthKpi(series: SbpSeries): Kpi {
 function buildFiscalBalanceKpi(series: SbpSeries): Kpi {
   const latestT = series.latestValue / 1e6;
   const diffT = series.previousValue !== null ? (series.latestValue - series.previousValue) / 1e6 : null;
-  const prevLabel = series.previousDate ? formatMonthLabel(series.previousDate) : null;
+  // Annual fiscal-year series (July–June), stamped by SBP with its 30 June
+  // end date — "FY2024", not "Jun 2024". See formatFiscalYearLabel.
+  const prevLabel = series.previousDate ? formatFiscalYearLabel(series.previousDate) : null;
   return {
     title: "Fiscal Balance",
     value: latestT.toFixed(2),

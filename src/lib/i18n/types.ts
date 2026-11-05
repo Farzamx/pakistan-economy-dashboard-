@@ -23,6 +23,13 @@ export interface Translations {
     decisionLab: string; macroIntelligence: string; macroIntelligenceLong: string;
   };
 
+  /** PEIC redesign Phase 2 — strings used only by the new shell (AppHeader / MobileDrawer). Labels that already existed elsewhere (nav.*, topNav.*, common.*) are reused, not duplicated here. */
+  appNav: {
+    moneyRates: string; fiscal: string; allIndicators: string; backToSite: string;
+    mainNav: string; openMenu: string; closeMenu: string; openSearch: string; closeSearch: string;
+    skipToContent: string; darkMode: string; account: string; currentSection: string; onThisPage: string;
+  };
+
   nav: {
     main: string; analytics: string; premiumTools: string;
     overview: string; riskIntel: string; gdp: string; inflation: string; prices: string;
