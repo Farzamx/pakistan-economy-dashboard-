@@ -11,6 +11,9 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["src/**/*.test.ts", "scripts/**/*.test.ts"],
+    // Phase F.2b-R: no test worker may hold production credentials. Scrubs process.env of every
+    // credential before any test file loads, and fails closed if it cannot.
+    setupFiles: ["./src/lib/testUtils/isolationSetup.ts"],
   },
   resolve: {
     alias: {

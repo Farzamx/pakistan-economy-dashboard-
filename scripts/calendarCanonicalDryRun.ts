@@ -10,15 +10,13 @@
 //
 // Usage: npx tsx scripts/calendarCanonicalDryRun.ts
 
-import { config as loadEnv } from "dotenv";
-loadEnv({ path: ".env.local" });
-
 import { createClient } from "@supabase/supabase-js";
 import { getSbpIndicator, getSbpIndicatorHistory } from "@/lib/data/sbp";
 import { SYNC_TARGETS } from "@/lib/economicCalendar/automation/syncFromSbpEasyData";
 import { validateObservationPeriod } from "@/lib/economicCalendar/observationPeriodValidator";
 import { SERIES_PUBLICATION_META } from "@/lib/economicCalendar/seriesPublicationConfig";
 import { findSamePeriodPriorYear } from "@/lib/yoyMath";
+import { enterScript, runIfEntryPoint } from "@/lib/providers/scriptEntry";
 
 // computeLsmYoY is normally imported from lsmSync.ts, but that module
 // transitively imports canonicalObservation.ts, which imports the
@@ -194,7 +192,14 @@ async function main() {
   }
 }
 
-main().catch((err) => {
-  console.error("ERROR:", err);
-  process.exitCode = 1;
+// Phase F.2b-S: importing this module is inert. The dry run starts — and .env.local is loaded — only when this file
+// is the program being executed (`npx tsx scripts/calendarCanonicalDryRun.ts`; it is not scheduled anywhere).
+// This script's `loadEnv` used to sit above its imports in the source, but tsx hoists imports, so it always ran
+// after them; moving it into the entry block changes nothing about the order in which things happen.
+runIfEntryPoint({ filename: __filename, requireMain: typeof require !== "undefined" && require.main === module }, () => {
+  enterScript("calendarCanonicalDryRun");
+  main().catch((err) => {
+    console.error("ERROR:", err);
+    process.exitCode = 1;
+  });
 });

@@ -34,8 +34,6 @@
 //
 // Usage: npm run ingest:sbp
 
-import { config as loadEnv } from "dotenv";
-import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
@@ -50,6 +48,7 @@ import {
   M2_YOY_GROWTH_PROVIDER_ID,
 } from "@/lib/data/canonicalResolutionConfig";
 import { logCronRun } from "@/lib/cronLogging";
+import { enterScript, runIfEntryPoint } from "@/lib/providers/scriptEntry";
 
 // The 20 homepage KPI indicators, plus any extra series that are real SBP
 // EasyData data rendered on a public page but aren't part of the
@@ -136,8 +135,6 @@ const JOB_NAME = "sbp-local-ingestion";
 const MAX_RETRIES = 2;
 const RETRY_BASE_DELAY_MS = 3000;
 const VALUE_EPSILON = 1e-9;
-
-loadEnv({ path: path.resolve(process.cwd(), ".env.local") });
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -376,7 +373,14 @@ async function main(): Promise<void> {
   process.exit(overallStatus === "failure" ? 1 : 0);
 }
 
-main().catch((err) => {
-  console.error("[ingest:sbp] Fatal error:", err instanceof Error ? (err.stack ?? err.message) : String(err));
-  process.exit(1);
+// Phase F.2b-S: importing this module is inert (ingestSeries and the types stay importable for tests). The job
+// starts — and .env.local is loaded — only when this file is the program being executed: the "PEIC SBP Ingestion"
+// Task Scheduler task (node + tsx cli + this file, daily 08:00 and at logon), `npm run ingest:sbp` and `npx tsx`
+// all qualify. See src/lib/providers/scriptEntry.ts.
+runIfEntryPoint({ filename: __filename, requireMain: typeof require !== "undefined" && require.main === module }, () => {
+  enterScript("ingest:sbp");
+  main().catch((err) => {
+    console.error("[ingest:sbp] Fatal error:", err instanceof Error ? (err.stack ?? err.message) : String(err));
+    process.exit(1);
+  });
 });

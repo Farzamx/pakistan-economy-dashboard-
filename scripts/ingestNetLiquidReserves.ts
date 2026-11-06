@@ -25,18 +25,15 @@
 //
 // Usage: npm run ingest:netliquidreserves
 
-import { config as loadEnv } from "dotenv";
-import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 import { ingestOneSeries } from "@/lib/providers/ingestionOrchestrator";
 import { netLiquidReservesAdapter, NET_LIQUID_RESERVES_INDICATOR_KEY } from "@/lib/providers/netLiquidReservesAdapter";
 import { logCronRun } from "@/lib/cronLogging";
+import { enterScript, runIfEntryPoint } from "@/lib/providers/scriptEntry";
 
 const JOB_NAME = "netliquidreserves-ingestion";
-
-loadEnv({ path: path.resolve(process.cwd(), ".env.local") });
 
 function getSupabase(): SupabaseClient {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -88,7 +85,13 @@ async function main(): Promise<void> {
   process.exit(0);
 }
 
-main().catch((err) => {
-  console.error("[ingest:netliquidreserves] Fatal error:", err instanceof Error ? (err.stack ?? err.message) : String(err));
-  process.exit(1);
+// Phase F.2b-S: importing this module is inert. The job starts (and .env.local is loaded) only when this file is
+// the program being executed — Task Scheduler, `npm run ingest:netliquidreserves` and `npx tsx` all qualify. See
+// src/lib/providers/scriptEntry.ts.
+runIfEntryPoint({ filename: __filename, requireMain: typeof require !== "undefined" && require.main === module }, () => {
+  enterScript("ingest:netliquidreserves");
+  main().catch((err) => {
+    console.error("[ingest:netliquidreserves] Fatal error:", err instanceof Error ? (err.stack ?? err.message) : String(err));
+    process.exit(1);
+  });
 });

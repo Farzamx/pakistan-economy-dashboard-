@@ -20,18 +20,15 @@
 // FRED_MONITOR_JOB for the full schedule/threshold rationale, reconfirmed
 // live in Phase 8.21). Still runnable manually via `npm run ingest:fred`.
 
-import { config as loadEnv } from "dotenv";
-import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 import { ingestManySeries, type IngestJob } from "@/lib/providers/ingestionOrchestrator";
 import { fredAdapter, FRED_SERIES } from "@/lib/providers/fredAdapter";
 import { logCronRun } from "@/lib/cronLogging";
+import { enterScript, runIfEntryPoint } from "@/lib/providers/scriptEntry";
 
 const JOB_NAME = "fred-monthly-ingestion";
-
-loadEnv({ path: path.resolve(process.cwd(), ".env.local") });
 
 function getSupabase(): SupabaseClient {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -103,7 +100,13 @@ async function main(): Promise<void> {
   process.exit(overallStatus === "failure" ? 1 : 0);
 }
 
-main().catch((err) => {
-  console.error("[ingest:fred] Fatal error:", err instanceof Error ? (err.stack ?? err.message) : String(err));
-  process.exit(1);
+// Phase F.2b-S: importing this module is inert. The job starts (and .env.local is loaded) only when this file is
+// the program being executed — Task Scheduler, `npm run ingest:fred` and `npx tsx` all qualify. See
+// src/lib/providers/scriptEntry.ts.
+runIfEntryPoint({ filename: __filename, requireMain: typeof require !== "undefined" && require.main === module }, () => {
+  enterScript("ingest:fred");
+  main().catch((err) => {
+    console.error("[ingest:fred] Fatal error:", err instanceof Error ? (err.stack ?? err.message) : String(err));
+    process.exit(1);
+  });
 });

@@ -19,7 +19,13 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { SbpSeries } from "@/lib/data/sbp";
+import { assertEnvIsolated } from "@/lib/testUtils/productionIsolation";
 import { ingestSeries, type IngestibleSeries } from "./ingestSbp";
+
+// Phase F.2b-S: importing ./ingestSbp is now inert (its start-up sits behind runIfEntryPoint()), so this file
+// needs none of the protection Phase F.2b-R had to add here — the `process.exit` stub and the explanatory block
+// were removed because nothing calls main() any more (verified by removing them and by
+// scripts/ingestScriptsEntrySafety.test.ts, which also proves the import is inert).
 
 const getCanonicalSbpHistoryMock = vi.hoisted(() => vi.fn());
 vi.mock("@/lib/data/sbpCanonicalStore", () => ({
@@ -216,5 +222,13 @@ describe("ingestSeries — Observation Contract provenance (Phase 4)", () => {
     await ingestSeries(supabase as unknown as SupabaseClient, SECRET, RUN_ID, series);
 
     expect(resolveCalls(supabase)[0][1].p_internal_secret).toBe(SECRET);
+  });
+});
+
+describe("isolation (Phase F.2b-R / F.2b-S)", () => {
+  it("after importing ./ingestSbp this worker still holds only dead credentials (defence in depth: the import is inert AND the worker is scrubbed)", () => {
+    expect(() => assertEnvIsolated(process.env as Record<string, string | undefined>)).not.toThrow();
+    expect(process.env.NEXT_PUBLIC_SUPABASE_URL).toBe("http://127.0.0.1:9");
+    expect(process.env.NOTIFICATION_WORKER_SECRET).toMatch(/^dead-/);
   });
 });
