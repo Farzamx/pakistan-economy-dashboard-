@@ -117,15 +117,15 @@ export default function AppHeader() {
             aria-label="PEIC — Pakistan Economic Intelligence Center"
             className="flex h-9 shrink-0 items-center gap-2 rounded-[var(--pe-radius)] px-1.5"
           >
+            {/* Wordmark only. The two-line "Pakistan Economic Intelligence
+                Center" strapline that used to sit beside it at 2xl was
+                competing with the search field for the same row (reference
+                screenshot shows the mark alone); the full name is still the
+                link's accessible name and the <title> of every page. */}
             <span className="text-[18px] font-bold leading-none tracking-[0.04em] text-white">PEIC</span>
-            <span aria-hidden="true" className="hidden border-s border-pe-nav-border ps-2 text-[11px] font-medium leading-tight text-pe-nav-text-muted 2xl:block">
-              Pakistan Economic
-              <br />
-              Intelligence Center
-            </span>
           </Link>
 
-          <nav aria-label={t("appNav.mainNav")} className="ms-3 hidden h-full lg:block">
+          <nav aria-label={t("appNav.mainNav")} className="ms-3 hidden h-full shrink-0 lg:block">
             <ul className="flex h-full items-stretch">
               {APP_NAV.map((entry) => {
                 if (entry.kind === "menu") {
@@ -172,17 +172,27 @@ export default function AppHeader() {
             </ul>
           </nav>
 
-          <div className="ms-auto flex shrink-0 items-center gap-1.5">
-            <div className="hidden w-60 xl:block">
+          {/* Search sits in the header row directly after the navigation
+              items (reference screenshot), not pinned to the far right. It
+              takes the leftover width via flex-1 with a sane max, so the bar
+              reads as one continuous strip: PEIC | nav | search | controls.
+              Inline from lg (where the nav itself appears) rather than xl,
+              so there is no width at which the desktop nav is visible but
+              search is hidden behind a button. */}
+          <div className="ms-3 hidden min-w-0 flex-1 lg:block xl:ms-4">
+            <div className="max-w-[420px]">
               <GlobalSearch variant="nav" onLinkClick={handleSearchLinkClick} />
             </div>
+          </div>
+
+          <div className="ms-auto flex shrink-0 items-center gap-1.5">
             <button
               type="button"
               onClick={() => setSearchOpen((v) => !v)}
               aria-label={searchOpen ? t("appNav.closeSearch") : t("appNav.openSearch")}
               aria-expanded={searchOpen}
               aria-controls="app-header-search"
-              className={`inline-flex h-9 w-9 items-center justify-center rounded-[var(--pe-radius)] text-pe-nav-text hover:bg-pe-nav-raised xl:hidden ${searchOpen ? "bg-pe-nav-raised" : ""}`}
+              className={`inline-flex h-9 w-9 items-center justify-center rounded-[var(--pe-radius)] text-pe-nav-text hover:bg-pe-nav-raised lg:hidden ${searchOpen ? "bg-pe-nav-raised" : ""}`}
             >
               <svg aria-hidden="true" className="h-[18px] w-[18px]" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
                 <circle cx="7" cy="7" r="5" />
@@ -195,7 +205,7 @@ export default function AppHeader() {
         </div>
 
         {searchOpen && (
-          <div id="app-header-search" className="border-t border-pe-nav-border bg-pe-surface px-3 py-2 xl:hidden">
+          <div id="app-header-search" className="border-t border-pe-nav-border bg-pe-surface px-3 py-2 lg:hidden">
             <div className="mx-auto max-w-xl">
               <GlobalSearch variant="surface" autoFocus onLinkClick={handleSearchLinkClick} />
             </div>

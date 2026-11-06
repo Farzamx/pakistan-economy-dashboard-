@@ -185,6 +185,7 @@ export const APP_NAV: TopNavEntry[] = [
         id: "research-main",
         items: [
           { kind: "link", id: "macro-intelligence", href: "/macro-intelligence", labelKey: "topNav.macroIntelligenceLong" },
+          { kind: "link", id: "gdp-workshop", href: "/gdp-breakdown-workshop", label: "GDP Breakdown Workshop" },
           { kind: "link", id: "comparisons", href: "/comparisons", labelKey: "nav.comparisons" },
           { kind: "link", id: "budget", href: "/budget", labelKey: "nav.budgetTracker" },
           { kind: "link", id: "provincial-budget", href: "/provincial-budget", labelKey: "nav.provincialBudget" },
@@ -207,6 +208,7 @@ export const APP_NAV: TopNavEntry[] = [
         id: "tools-main",
         items: [
           { kind: "link", id: "decision-lab", href: "/decision-support-lab", labelKey: "nav.decisionSupportLab" },
+          { kind: "link", id: "download-datasets", href: "/download-datasets", label: "Download Datasets" },
           { kind: "link", id: "academy", href: "/academy", labelKey: "nav.academy" },
           { kind: "link", id: "workshop", href: "/workshop", labelKey: "nav.workshop" },
           { kind: "link", id: "email-alerts", href: "/economic-calendar#email-alerts", labelKey: "nav.freeSubscription" },
