@@ -103,9 +103,20 @@ describe("getNetLiquidReserves — canonical DB primary path", () => {
 
 describe("getNetLiquidReserves — fallback chain", () => {
   it("empty canonical history falls back to the existing live-fetch path, unchanged", async () => {
+    // The observation date is relative to now, as in the "current" test
+    // above. This test's subject is the FALLBACK PATH (empty canonical ->
+    // live fetch), so the live observation has to be one the production
+    // code would actually accept. fxReserves.ts deliberately rejects a
+    // parsed history whose latest point is more than 45 days old (its
+    // Phase 6A wrong-sheet guard), so a hardcoded date silently converts
+    // this into a test of that guard the moment it ages past the window —
+    // which is exactly what happened to the previous "2026-07-31" literal.
+    // Seven days matches the series' real weekly cadence and sits well
+    // inside the window, without weakening the production threshold.
+    const lastWeek = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
     getCanonicalNetLiquidReservesHistoryMock.mockResolvedValueOnce([]);
     fetchFxReservesHistoryFreshMock.mockResolvedValueOnce([
-      { weekEndingDate: "2026-07-31", netSbpReservesM: 17000, netBankReservesM: 500, totalLiquidReservesM: 17500 },
+      { weekEndingDate: lastWeek, netSbpReservesM: 17000, netBankReservesM: 500, totalLiquidReservesM: 17500 },
     ]);
     const result = await getNetLiquidReserves();
     expect(result.kpi.value).toBe("17.0");
