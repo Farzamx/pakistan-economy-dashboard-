@@ -37,7 +37,14 @@ export default async function FiscalDeficitPage() {
       chartColor="#38bdf8"
       chartUnit="T"
       chartGradientId="seoFiscalBalanceGradient"
-      chartCaption="Source: SBP EasyData, annual fiscal year, consolidated federal and provincial government balance."
+      /* Annual-cadence context (Phase D.2). Grounded in seriesRegistry.ts:
+         SBP EasyData reports no release date for any series
+         (expectsReleaseDate = false), so PEIC holds no verified publication
+         date for this one, and the annual freshness tolerance is a generous
+         window rather than a schedule. Stated here so a Stale badge on a
+         once-a-year series is not read as a provider failure or as a claim
+         about the figure itself. The freshness verdict is unchanged. */
+      chartCaption="Source: SBP EasyData, annual fiscal year, consolidated federal and provincial government balance. This series updates only once a year, so the latest observation is normally many months old. PEIC has no verified SBP publication date for it, so freshness is judged against a generous annual tolerance — a “Stale” label means that window has passed, not that the data is wrong or that the provider has failed."
       explanation={[
         "The fiscal balance is the difference between total government revenue (taxes, non-tax receipts) and total government spending (current expenditure, development spending, debt servicing) over a fiscal year (July to June in Pakistan).",
         "A negative number is a fiscal deficit — the government spent more than it collected, and the gap must be financed through domestic or external borrowing.",
