@@ -41,15 +41,70 @@ interface KeywordGroup {
    * "IMF" is too generic a word to assume Pakistan context on its own.
    */
   requiresPakistanContext?: boolean;
+  /**
+   * If true, a Pakistan-based PUBLISHER also satisfies requiresPakistanContext
+   * (see hasImplicitPakistanContext). Set only for terms that are inherently
+   * national — "the budget", "the rupee" in a Pakistani outlet mean Pakistan's.
+   * Deliberately NOT set for IMF, inflation, exports or imports: those are
+   * global words, so a generic wire story about the IMF or world trade does not
+   * become Pakistan-relevant just because Dawn carried it.
+   */
+  acceptsPublisherContext?: boolean;
 }
 
+// Terms that can only mean Pakistan. Deliberately does NOT contain "rupee":
+// Sri Lanka, India, Nepal and others have rupees too, and a bare "rupee" in
+// this list satisfied the very guard meant to stop it — so "Indian rupee
+// falls to record low" read as having Pakistan context. "Pakistani rupee"
+// and "PKR" still qualify through "pakistan" and "pkr".
 const PAKISTAN_CONTEXT_KEYWORDS = [
-  "pakistan", "sbp", "state bank of pakistan", "rupee", "pkr", "psx",
+  "pakistan", "sbp", "state bank of pakistan", "pkr", "psx",
   "islamabad", "karachi", "lahore",
 ];
 
 function hasPakistanContext(text: string): boolean {
   return PAKISTAN_CONTEXT_KEYWORDS.some((kw) => text.includes(kw));
+}
+
+// IMPLICIT PAKISTAN CONTEXT FROM THE PUBLISHER
+// A Pakistani business outlet says "Rupee gains against dollar" or "Budget
+// targets missed" without writing "Pakistan", because its readers know which
+// rupee and which budget. Scoring those on the title alone would file
+// Pakistan's own daily currency story under Global Macro, so a Pakistan-based
+// outlet supplies the context the headline leaves out.
+//
+// Conservative on purpose. Publisher names reach us as free text (Google News
+// titles end " - <Outlet>"), so this is matched on a normalised name against a
+// short list of unambiguous Pakistan-headquartered outlets, and an outlet not
+// on it gets NO implicit context — the safe direction, since the failure it
+// guards against is claiming Pakistan relevance that is not there. "Arab News"
+// is absent while "Arab News PK" is present for exactly that reason.
+const PAKISTAN_DOMESTIC_OUTLETS = [
+  "dawn", "express tribune", "business recorder", "news international",
+  "pakistan today", "propakistani", "investify", "arab news pk", "friday times",
+];
+
+function normalizeOutlet(source: string): string {
+  return source.toLowerCase().trim().replace(/^the\s+/, "");
+}
+
+function isPakistanDomesticOutlet(source: string | undefined): boolean {
+  if (!source) return false;
+  const name = normalizeOutlet(source);
+  // Equal, or the outlet name followed by a section ("Dawn Business").
+  return PAKISTAN_DOMESTIC_OUTLETS.some((o) => name === o || name.startsWith(`${o} `));
+}
+
+// A Pakistani outlet also carries wire stories about its neighbours ("Sri
+// Lanka to present 2027 budget"). When the title names another South Asian
+// country, the outlet no longer implies the story is about Pakistan. Word
+// boundaries matter: "india" must not match "Indiana". This only withholds
+// IMPLICIT context; a title that names Pakistan itself is unaffected, so
+// "India-Pakistan trade talks" still counts.
+const FOREIGN_COUNTRY_PATTERN = /\b(sri lanka(n)?|india(n)?|bangladesh(i)?|nepal(i|ese)?)\b/;
+
+function hasImplicitPakistanContext(text: string, source: string | undefined): boolean {
+  return isPakistanDomesticOutlet(source) && !FOREIGN_COUNTRY_PATTERN.test(text);
 }
 
 // Checked in order; an article's relevance score is the MAX across every
@@ -62,13 +117,30 @@ const GROUPS: KeywordGroup[] = [
   {
     category: "Pakistan Economy",
     score: 10,
+    // Only terms specific to Pakistan belong here. "budget", "rupee",
+    // "remittance", "current account deficit" and "balance of payments" used
+    // to be listed too, but every country has a budget and a balance of
+    // payments, and several have a rupee, so they scored a Pakistan-specific
+    // 10 for India's budget, Nepal's remittances, Kenya's budget and Egypt's
+    // payments crisis. They moved to the guarded group below.
     keywords: [
-      "pakistan", "sbp", "state bank of pakistan", "rupee", "pkr", "psx",
+      "pakistan", "sbp", "state bank of pakistan", "pkr", "psx",
       "kse-100", "kse100", "karachi stock exchange", "islamabad", "karachi",
-      "lahore", "budget", "remittance", "fbr", "current account deficit",
-      "balance of payments", "circular debt", "shehbaz", "ishaq dar",
+      "lahore", "fbr", "circular debt", "shehbaz", "ishaq dar",
       "aurangzeb", "nfc award", "psdp",
     ],
+  },
+  {
+    // Domestic-economy terms that mean Pakistan only when something says the
+    // story is about Pakistan — an explicit Pakistan reference, or a Pakistan-
+    // based publisher (see hasImplicitPakistanContext). Without that context
+    // they fall to Global Macro at 5: still surfaced as an international
+    // story, just no longer claimed as Pakistan's.
+    category: "Pakistan Economy",
+    score: 10,
+    requiresPakistanContext: true,
+    acceptsPublisherContext: true,
+    keywords: ["budget", "rupee", "remittance", "current account deficit", "balance of payments"],
   },
   {
     category: "IMF & Debt",
@@ -163,14 +235,27 @@ export function getSourceReliability(source: string): number {
   return SOURCE_RELIABILITY[source] ?? DEFAULT_SOURCE_RELIABILITY;
 }
 
-export function scoreRelevance(title: string): RelevanceResult {
+export interface RelevanceOptions {
+  /**
+   * The publisher, where known. A Pakistan-based outlet supplies implicit
+   * Pakistan context for headlines that do not spell it out. Omitted, scoring
+   * is title-only and strict — nothing is assumed about where a story is from.
+   */
+  source?: string;
+}
+
+export function scoreRelevance(title: string, options: RelevanceOptions = {}): RelevanceResult {
   const text = title.toLowerCase();
-  const pakistanContext = hasPakistanContext(text);
+  const explicitContext = hasPakistanContext(text);
+  const publisherContext = hasImplicitPakistanContext(text, options.source);
 
   let bestScore = 0;
   let bestCategory: NewsCategory | null = null;
 
   for (const group of GROUPS) {
+    // Publisher context counts only for groups that opt in; every other
+    // guarded group still needs the title itself to name Pakistan.
+    const pakistanContext = explicitContext || (group.acceptsPublisherContext === true && publisherContext);
     const effectiveScore = group.requiresPakistanContext && !pakistanContext ? 5 : group.score;
     const effectiveCategory = group.requiresPakistanContext && !pakistanContext ? "Global Macro" : group.category;
     if (bestScore >= effectiveScore) continue; // already have an equal-or-better match

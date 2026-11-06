@@ -14,6 +14,7 @@ import Section from "@/components/shell/Section";
 import MarketsPanel, { type MarketRow } from "@/components/home/MarketsPanel";
 import PakistanSnapshot from "@/components/home/PakistanSnapshot";
 import HeadlinesList from "@/components/home/HeadlinesList";
+import LatestNewsBody from "@/components/home/LatestNewsBody";
 import UpcomingReleases, { type UpcomingRow } from "@/components/home/UpcomingReleases";
 import MacroBrief from "@/components/home/MacroBrief";
 import IndicatorsTable from "@/components/home/IndicatorsTable";
@@ -40,6 +41,7 @@ import { getFxRates } from "@/lib/data/fxRates";
 import { getTaggedNews } from "@/lib/data/intelligence";
 import { getDxyKpi, getGoldKpi, getSilverKpi } from "@/lib/data/metals";
 import { getNews } from "@/lib/data/news";
+import { LATEST_NEWS_MAX_AGE_HOURS, selectFreshHeadlines } from "@/lib/headlineSelection";
 import { getPakEtfKpi } from "@/lib/data/yfinance";
 import { getSpiHistory } from "@/lib/data/spi";
 import { type RiskModelResult } from "@/lib/riskModels";
@@ -57,25 +59,43 @@ const OVERVIEW_DESCRIPTION =
   "Real-time dashboard tracking Pakistan GDP, inflation, exchange rates, reserves, remittances, financial markets, monetary policy, and economic indicators in one place.";
 const OVERVIEW_SOCIAL_DESCRIPTION = "Real-time dashboard tracking Pakistan's key economic indicators.";
 
-// Phase 8.13B: explicit ISR window, replacing an ACCIDENTAL one. Before this
-// change, this route had no revalidate declaration of its own; `next build`
-// reported a 5-minute (300s) window anyway, entirely as a side effect of
-// src/lib/economicCalendar/economicEventsRepo.ts's unstable_cache(revalidate:
-// 300) calls (getAllScheduledEvents/getHistoricalEvents, used here only for
-// calendar-freshness cross-referencing) being the shortest cache signal
-// anywhere in this page's render tree — Next.js's route-segment revalidate is
-// the minimum of every cache signal it finds, not a deliberate choice anyone
-// made for macro/FX freshness (Phase 8.13A audit finding). 900s (15 min)
-// replaces that accidental dependency with the same explicit, evidence-based
-// value used on "/" and "/home" (see page.tsx's comment) — reused here rather
-// than re-derived because this route renders the exact same getFxRates() live
-// quote and the exact same getAllSbpIndicators() macro data as the marketing
-// pages; there is no basis for a different number. This loosens the page's
-// regeneration from the previous incidental 5 minutes to a deliberate 15 —
-// still well within fxRates.ts's own definition of "genuinely near-real-time"
-// for these specific quotes, and unrelated to how often calendar events
-// themselves need re-checking (economicEventsRepo.ts's own cache is
-// untouched and keeps its independent 300s window).
+// ISR window: DECLARED 900s, EFFECTIVE 300s (5 minutes).
+//
+// These two numbers differ, and the effective one is what `next build` reports
+// for this route ("5m"). Next.js takes the LOWEST revalidate across the
+// route-segment config and every nested fetch / unstable_cache signal in the
+// render tree, so the value below is a ceiling, not an override: the bundled
+// docs (caching-without-cache-components.md, "Route segment config
+// revalidate") say it "does not override the revalidate value set by
+// individual fetch requests" and that a lower nested value raises the route's
+// refresh frequency. The signals in this route's tree, as measured by
+// controlled builds in Phase E.1.1:
+//
+//   300s   src/lib/economicCalendar/economicEventsRepo.ts REVALIDATE_SECONDS
+//          (unstable_cache; getAllScheduledEvents / getHistoricalEvents)
+//          <- the lowest, so this is what sets the effective 5 minutes
+//   600s   src/lib/data/news.ts REVALIDATE_BREAKING (Pakistan/IMF/Fed Google
+//          News queries and PBS releases) <- would be the floor if the 300s
+//          signal were lifted
+//   900s   src/lib/data/fxRates.ts L2_REVALIDATE_SECONDS, and the line below
+//   1500s  src/lib/data/news.ts REVALIDATE_GENERAL (broad business RSS feeds)
+//
+// Measured: lifting only the 300s signal to 900 makes the route 10m; lifting
+// the 600s news signal as well makes it 15m. Raising the number below alone
+// changes nothing while those two signals stay where they are.
+//
+// HISTORY, CORRECTED: an earlier version of this comment (Phase 8.13B) said
+// 900 replaced the accidental 5-minute window with a deliberate 15 and
+// "loosened" regeneration. It did not — the effective window was 5 minutes
+// before that change and still is. The Phase 8.13A finding that the route
+// takes the minimum of every cache signal was right; the conclusion drawn from
+// it was not.
+//
+// DECISION (Phase E.1.1): keep the effective 5 minutes. The declared 900 is
+// left as it is, and neither the calendar nor the breaking-news interval is
+// raised. Getting a real 15 minutes would mean raising BOTH signals, which
+// would also move /macro-intelligence and the /economic-calendar pages from 5m
+// to 15m and make breaking headlines up to 5 minutes staler.
 export const revalidate = 900;
 
 export const metadata: Metadata = {
@@ -534,6 +554,19 @@ export default async function Home() {
   // below renders, just the top few, surfaced near the top of the page.
   const homeHeadlines = taggedNewsResult.items.slice(0, 7);
 
+  // Latest News beside Markets (Phase E.1): the SAME already-fetched,
+  // already-ranked, already-deduped article list — a second pass over one
+  // in-memory array, never a second fetch. getNews() sorts by relevance
+  // (relevanceEngine.ts scores Pakistan-economy stories highest) then by
+  // publication time, and that order is kept. What is added is a freshness
+  // guard: relevance ignores article age, so without it an old article that
+  // ties on score could sit under a "Latest News" heading. See
+  // headlineSelection.ts for why, and for the 48h window being a stated
+  // presentation policy rather than a fact about the feeds.
+  // Uses the page's single render-time clock reading (todayForCalendar) so
+  // the 48h window and the Upcoming releases panel agree on what "now" is.
+  const marketsSideNews = selectFreshHeadlines(taggedNewsResult.items, todayForCalendar.getTime());
+
   // Upcoming releases: the same already-filtered, today-or-later selection
   // the Hero uses (selectUpcomingByDate), widened to 8 rows for this panel.
   const todayIsoForHome = todayForCalendar.toISOString().slice(0, 10);
@@ -590,9 +623,51 @@ export default async function Home() {
             <p className="font-mono text-[11px] text-pe-text-3">Page data checked {pktTimestamp}</p>
           </div>
 
-          <Section id="home-markets" title="Markets" flush>
-            <MarketsPanel rows={homeMarketRows} />
-          </Section>
+          {/* Markets + Latest News (Phase E.1).
+              Two columns from lg (~70/30), stacked below it so the market
+              cards keep the full width they need on tablet and phone. Both
+              panels start at the same grid row, so their headers align.
+              `items-start` stops the news panel stretching to match a taller
+              Markets grid and leaving dead space under the last article. */}
+          <div className="grid grid-cols-1 items-start gap-3 lg:grid-cols-[minmax(0,7fr)_minmax(0,3fr)] lg:items-stretch">
+            <Section id="home-markets" title="Markets" flush>
+              <MarketsPanel rows={homeMarketRows} />
+            </Section>
+
+            {/* From lg the news section is a two-row grid (heading, then the
+                list) with `h-0 min-h-full`: it adds nothing to the row's
+                height, so Markets alone decides how tall the row is, yet it
+                stretches to exactly that height. The list scrolls inside the
+                remaining space, so the two panels' bottom edges line up with
+                no dead space and no arbitrary pixel cap. Below lg it is a
+                normal block stacked under Markets. */}
+            <Section
+              id="home-latest-news"
+              className="lg:grid lg:h-0 lg:min-h-full lg:grid-rows-[auto_minmax(0,1fr)]"
+              title="Latest News"
+              actions={
+                // No /news route exists yet, so this follows appNav.ts's own
+                // convention of pointing "News" at the full Headlines
+                // section further down this page rather than a dead link.
+                // The padding/negative-margin pair enlarges the tap area to
+                // a comfortable size without moving the header layout.
+                <a href="#home-headlines" className="-my-3 inline-block py-3 text-pe-accent hover:underline">
+                  All headlines →
+                </a>
+              }
+              flush
+            >
+              {/* Beside Markets (lg+) the list fills the panel and scrolls on
+                  its own. Below lg the panel is stacked under Markets and
+                  shows in full: a nested scroll area inside a scrolling page
+                  is a scroll trap on touch screens. No auto-scrolling
+                  ticker: it would move text while it is being read, and the
+                  panel has to stay readable more than it has to look live. */}
+              <div className="lg:h-full lg:overflow-y-auto">
+                <LatestNewsBody items={marketsSideNews.items} windowHours={LATEST_NEWS_MAX_AGE_HOURS} />
+              </div>
+            </Section>
+          </div>
 
           <Section
             id="home-snapshot"

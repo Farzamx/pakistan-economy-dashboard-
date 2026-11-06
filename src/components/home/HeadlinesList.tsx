@@ -36,7 +36,27 @@ function formatPublished(iso: string): string | null {
   return `${day} ${month} · ${time} PKT`;
 }
 
-export default function HeadlinesList({ items }: { items: HeadlineRow[] }) {
+export default function HeadlinesList({
+  items,
+  showCategory = false,
+  showSentiment = true,
+}: {
+  items: HeadlineRow[];
+  /**
+   * Show the article's own category (the relevance engine's classification:
+   * Pakistan Economy, Central Banks, Energy, ...). Off by default so the
+   * existing Headlines section renders exactly as before; the compact
+   * Latest News panel opts in.
+   */
+  showCategory?: boolean;
+  /**
+   * Show the AI-assigned sentiment tag. On by default so the existing
+   * Headlines section is unchanged; the compact Latest News panel turns it
+   * off, because beside Markets the metadata row is only ~290-460px wide and
+   * a fourth item made it wrap onto a second line in nearly every row.
+   */
+  showSentiment?: boolean;
+}) {
   if (items.length === 0) {
     return (
       <p className="px-4 py-3 text-[13px] text-pe-text-3">
@@ -49,7 +69,7 @@ export default function HeadlinesList({ items }: { items: HeadlineRow[] }) {
     <ul className="divide-y divide-pe-border">
       {items.map((item) => {
         const published = formatPublished(item.publishedAt);
-        const sentiment = item.intelligence?.sentiment;
+        const sentiment = showSentiment ? item.intelligence?.sentiment : undefined;
         return (
           <li key={item.url}>
             <a
@@ -69,6 +89,12 @@ export default function HeadlinesList({ items }: { items: HeadlineRow[] }) {
                     <time dateTime={item.publishedAt} className="font-mono text-[11px]">
                       {published}
                     </time>
+                  </>
+                )}
+                {showCategory && item.category && (
+                  <>
+                    <span aria-hidden="true">·</span>
+                    <span>{item.category}</span>
                   </>
                 )}
                 {sentiment && (

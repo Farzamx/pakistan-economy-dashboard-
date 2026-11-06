@@ -181,7 +181,11 @@ async function fetchGoogleNewsRss(
 }
 
 function withRelevance(item: RawItem, source: string): NewsItem {
-  const { relevanceScore, category } = scoreRelevance(item.title);
+  // The publisher is passed so a Pakistan-based outlet can supply the
+  // Pakistan context a headline leaves implicit ("Rupee gains against
+  // dollar"); see relevanceEngine.ts. Only the scoring call changed — what is
+  // fetched and how it is parsed are untouched.
+  const { relevanceScore, category } = scoreRelevance(item.title, { source });
   return { ...item, source, category, relevanceScore };
 }
 
