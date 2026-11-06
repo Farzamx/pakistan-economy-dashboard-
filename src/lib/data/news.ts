@@ -208,7 +208,34 @@ const PBS_POSTS_API = "https://www.pbs.gov.pk/wp-json/wp/v2/posts";
 interface PbsPost {
   title: { rendered: string };
   link: string;
+  /** Site-LOCAL time with no timezone suffix, e.g. "2026-11-06T13:00:06" (Karachi). */
   date: string;
+  /** The same instant in UTC with no suffix, e.g. "2026-11-06T08:00:06". */
+  date_gmt?: string;
+}
+
+const NAIVE_ISO = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/;
+
+/**
+ * A timezone-explicit publication time for a PBS post.
+ *
+ * WordPress's `date` field is the site's LOCAL time with no UTC offset. Read as
+ * is, `new Date("2026-11-06T13:00:06")` means 13:00 in whatever timezone the
+ * SERVER runs in: correct on a machine set to Pakistan time, five hours wrong on
+ * Vercel (UTC). Release timestamps then look like they are from the future,
+ * the Overview freshness guard rejects them, and the headline list shows them
+ * five hours late. `date_gmt` is the same instant in UTC, so it is read as UTC
+ * explicitly.
+ *
+ * If `date_gmt` is missing, fall back to the local `date` with Pakistan's
+ * offset. Pakistan has observed no daylight saving since 2009, so +05:00 is
+ * exact, and this stays correct whatever the server's timezone is. A value that
+ * already carries an offset is left alone.
+ */
+function pbsPublishedAt(post: PbsPost): string {
+  if (post.date_gmt && NAIVE_ISO.test(post.date_gmt)) return `${post.date_gmt}Z`;
+  if (NAIVE_ISO.test(post.date)) return `${post.date}+05:00`;
+  return post.date;
 }
 
 function decodePbsTitle(rendered: string): string {
@@ -243,7 +270,7 @@ async function fetchPbsOfficialReleases(revalidateSeconds: number, max = 8): Pro
       title: decodePbsTitle(post.title.rendered),
       url: post.link,
       source: "PBS Official Releases",
-      publishedAt: post.date,
+      publishedAt: pbsPublishedAt(post),
       category: "Pakistan Economy" as const,
       relevanceScore: 10,
     }));
