@@ -1299,3 +1299,268 @@ body {
     transform: none;
   }
 }
+
+/* ── Overview "Latest News" ticker ─────────────────────────────────
+   Markup: components/home/LatestNewsTicker.tsx. Constants: lib/newsTicker.ts.
+
+   PROGRESSIVE ENHANCEMENT. The default below is a plain, static, readable list.
+   The moving belt is layered on only when BOTH hold:
+     - the visitor has not asked for reduced motion, and
+     - the browser supports container-query units (cqw), which size each card to
+       the panel it sits in.
+   Anyone who asks for reduced motion, or whose browser cannot do this, therefore
+   gets the list with no special-casing and no JavaScript fallback.
+
+   WHY THE CARDS ARE NARROWER THAN THE PANEL. A first version made each card
+   exactly as wide as the panel. Rendered, that left a card wholly visible only
+   for the single instant it was aligned: from then on the start of every line
+   scrolled out of view within about a second, so the text was always partly cut
+   off. A card about 62% of the panel's width is fully on screen for roughly ten
+   seconds of each pass, long enough to read, with the next card peeking in at
+   the edge as a cue that the belt is moving.
+
+   HOW THE BELT LOOPS. The cards are rendered twice, back to back, and the track
+   is animated by -50% of its total width (exactly one copy), so when the
+   animation wraps the second copy sits exactly where the first began and nothing
+   jumps. Every card is styled identically, so the frame at the end of a loop and
+   the frame at the start are the same picture.
+
+   OVERFLOW. The track is absolutely positioned inside a viewport that has
+   `container-type: inline-size`. The existing MarketTicker's history documents
+   why: an in-flow `width: max-content` strip inside an overflow:hidden box
+   contributed its min-content width to its ancestors and forced the whole page
+   wider than the viewport. `overflow: clip` (not hidden) also stops the browser
+   from scrolling the box to reveal a focused link, which would knock the belt out
+   of place. Nothing in this block creates a scrollbar. */
+
+.pe-newsticker-viewport {
+  position: relative;
+  overflow: hidden; /* fallback for browsers without overflow: clip */
+  overflow: clip;
+  container-type: inline-size;
+}
+.pe-newsticker-set {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+/* The duplicate copy and the Pause row exist only for the moving belt. */
+.pe-newsticker-set[data-set="duplicate"],
+.pe-newsticker-controls {
+  display: none;
+}
+
+/* -- Static list (the default) -- */
+.pe-newsticker-item {
+  border-top: 1px solid var(--pe-border);
+}
+.pe-newsticker-item:first-child {
+  border-top: 0;
+}
+.pe-newsticker-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 16px;
+  color: inherit;
+  text-decoration: none;
+}
+.pe-newsticker-card:hover {
+  background: var(--pe-surface-2);
+}
+.pe-newsticker-card:focus-visible {
+  outline: 2px solid var(--pe-accent);
+  outline-offset: -2px;
+}
+.pe-newsticker-title {
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.35;
+  color: var(--pe-text);
+}
+.pe-newsticker-card:hover .pe-newsticker-title {
+  color: var(--pe-accent);
+}
+.pe-newsticker-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 8px;
+  font-size: 12px;
+  color: var(--pe-text-3);
+}
+.pe-newsticker-src {
+  font-weight: 500;
+  color: var(--pe-text-2);
+}
+/* A time such as "6 Nov · 13:00 PKT" must never break across lines in the middle
+   (it used to strand "PKT" or a dangling "·" on a line of its own). */
+.pe-newsticker-time {
+  white-space: nowrap;
+}
+
+/* Desktop, static: the panel's height is set by the Markets grid beside it, so
+   the list is capped to the rows that fit (see TICKER_STATIC_VISIBLE_AT_DESKTOP)
+   and each title is bounded, rather than scrolling. */
+@media (min-width: 1024px) {
+  .pe-newsticker {
+    height: 100%;
+  }
+  .pe-newsticker-item[data-extra] {
+    display: none;
+  }
+  .pe-newsticker-title {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+    overflow: hidden;
+  }
+}
+
+/* -- Moving belt (the enhancement) -- */
+@media (prefers-reduced-motion: no-preference) {
+  @supports (width: 1cqw) {
+    /* Beside Markets the root fills the height Markets sets; stacked below lg
+       it sizes itself. The root is a grid: the belt, then a slim control row. */
+    .pe-newsticker[data-animated="true"] {
+      display: grid;
+      grid-template-rows: minmax(0, 1fr) auto;
+      height: 18rem;
+    }
+    @media (min-width: 1024px) {
+      .pe-newsticker[data-animated="true"] {
+        height: 100%;
+      }
+    }
+
+    .pe-newsticker[data-animated="true"] .pe-newsticker-track {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      width: max-content;
+      will-change: transform;
+      animation: pe-newsticker-scroll calc(var(--pe-newsticker-count) * var(--pe-newsticker-seconds)) linear infinite;
+    }
+    .pe-newsticker[data-animated="true"] .pe-newsticker-set,
+    .pe-newsticker[data-animated="true"] .pe-newsticker-set[data-set="duplicate"] {
+      display: flex;
+      flex: none;
+    }
+
+    /* One card is about 62% of the panel, never narrower than 200px and never
+       wider than the panel itself. Every card is styled identically, including
+       the divider, which is what makes the wrap invisible. */
+    .pe-newsticker[data-animated="true"] .pe-newsticker-item,
+    .pe-newsticker[data-animated="true"] .pe-newsticker-item:first-child {
+      flex: 0 0 min(100cqw, max(200px, 62cqw));
+      width: min(100cqw, max(200px, 62cqw));
+      border-top: 0;
+      border-inline-start: 1px solid var(--pe-border);
+    }
+    .pe-newsticker[data-animated="true"] .pe-newsticker-item[data-extra] {
+      display: block; /* the desktop cap above applies to the static list only */
+    }
+
+    /* Card layout: category on top, headline centred, byline at the foot, so the
+       card fills the panel's height instead of floating in it. */
+    .pe-newsticker[data-animated="true"] .pe-newsticker-card {
+      height: 100%;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      row-gap: 12px;
+      padding: 16px;
+    }
+    .pe-newsticker[data-animated="true"] .pe-newsticker-meta {
+      display: contents; /* let category and byline be placed on the card's grid */
+    }
+    .pe-newsticker[data-animated="true"] .pe-newsticker-sep {
+      display: none;
+    }
+    .pe-newsticker[data-animated="true"] .pe-newsticker-cat {
+      grid-row: 1;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .pe-newsticker[data-animated="true"] .pe-newsticker-title {
+      grid-row: 2;
+      align-self: center;
+      /* Scales with the panel so a headline keeps a sensible line length from
+         the 289px column at 1024px up to the 414px one at 1440px. */
+      font-size: clamp(15px, 4.2cqw, 17px);
+      font-weight: 600;
+      line-height: 1.3;
+      /* Bound a very long headline so it cannot push the byline out of the card.
+         The clamp needs the box model below at EVERY width, not only on desktop. */
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 6;
+      line-clamp: 6;
+      overflow: hidden;
+    }
+    /* Publisher on one line, time on the next: in a card this narrow an inline
+       "publisher · time" wrapped unpredictably and left separators stranded at
+       the ends of lines. */
+    .pe-newsticker[data-animated="true"] .pe-newsticker-byline {
+      grid-row: 3;
+      font-size: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .pe-newsticker[data-animated="true"] .pe-newsticker-bsep {
+      display: none;
+    }
+
+    /* Pause: hovering a card, focusing a card, or the Pause control. The Pause
+       control sits OUTSIDE the track, so hovering it deliberately does not
+       pause; otherwise pressing Play while the pointer was still over the panel
+       would appear to do nothing. */
+    .pe-newsticker[data-animated="true"] .pe-newsticker-track:hover,
+    .pe-newsticker[data-animated="true"]:has(.pe-newsticker-card:focus) .pe-newsticker-track,
+    .pe-newsticker[data-animated="true"][data-paused="true"] .pe-newsticker-track {
+      animation-play-state: paused;
+    }
+
+    /* The control row sits under the belt, not over it, so it can never cover a
+       passing card's category label. */
+    .pe-newsticker[data-animated="true"] .pe-newsticker-controls {
+      display: flex;
+      justify-content: flex-end;
+      padding: 6px 8px;
+      border-top: 1px solid var(--pe-border);
+    }
+    .pe-newsticker-toggle {
+      display: inline-flex;
+      align-items: center;
+      min-height: 28px;
+      padding: 0 12px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--pe-text-2);
+      background: var(--pe-surface);
+      border: 1px solid var(--pe-border-strong);
+      border-radius: 999px;
+      cursor: pointer;
+    }
+    .pe-newsticker-toggle:hover {
+      color: var(--pe-text);
+      background: var(--pe-surface-2);
+    }
+    .pe-newsticker-toggle:focus-visible {
+      outline: 2px solid var(--pe-accent);
+      outline-offset: 2px;
+    }
+  }
+}
+
+@keyframes pe-newsticker-scroll {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
+}

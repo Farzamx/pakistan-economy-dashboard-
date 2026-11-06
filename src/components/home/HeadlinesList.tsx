@@ -25,8 +25,11 @@ const SENTIMENT_CLASS: Record<string, string> = {
   Neutral: "text-pe-text-3",
 };
 
-/** "29 Oct · 14:05 PKT" — the article's own publication time, in the site's timezone. */
-function formatPublished(iso: string): string | null {
+/**
+ * "29 Oct · 14:05 PKT" — the article's own publication time, in the site's timezone.
+ * Exported so the Latest News ticker formats times exactly as this list does.
+ */
+export function formatPublished(iso: string): string | null {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return null;
   const opts: Intl.DateTimeFormatOptions = { timeZone: "Asia/Karachi", hour12: false };

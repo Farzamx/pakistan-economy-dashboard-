@@ -657,13 +657,14 @@ export default async function Home() {
               }
               flush
             >
-              {/* Beside Markets (lg+) the list fills the panel and scrolls on
-                  its own. Below lg the panel is stacked under Markets and
-                  shows in full: a nested scroll area inside a scrolling page
-                  is a scroll trap on touch screens. No auto-scrolling
-                  ticker: it would move text while it is being read, and the
-                  panel has to stay readable more than it has to look live. */}
-              <div className="lg:h-full lg:overflow-y-auto">
+              {/* The panel's position, width and height are unchanged: it is
+                  still the right-hand cell of the grid above, still stretched
+                  to Markets' height. Only what is INSIDE it changed — the
+                  scrolling list (and its scrollbar) became a ticker that
+                  never scrolls the panel. Beside Markets (lg+) the ticker
+                  fills the height Markets sets; below lg the panel is stacked
+                  and the ticker sizes itself. See LatestNewsTicker.tsx. */}
+              <div className="lg:h-full">
                 <LatestNewsBody items={marketsSideNews.items} windowHours={LATEST_NEWS_MAX_AGE_HOURS} />
               </div>
             </Section>

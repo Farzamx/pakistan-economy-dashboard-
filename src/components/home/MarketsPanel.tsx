@@ -37,7 +37,18 @@ export default function MarketsPanel({ rows }: { rows: MarketRow[] }) {
     // so every instrument is visible at every width with no scrollbar and
     // nothing hidden. The 1px gap over a border-coloured background draws
     // the separators (no per-cell borders to collapse).
-    <ul className="grid grid-cols-2 gap-px bg-pe-border sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+    //
+    // COLUMN COUNTS ARE CHOSEN SO ROWS ARE COMPLETE. That same gap trick
+    // means an EMPTY grid cell shows the border colour as a solid grey block.
+    // With 15 instruments, 6 columns left 3 empty cells (17.5% of the grid at
+    // 1440px) and 4 columns left 1, so the counts are now ones that divide 15:
+    // 3 from `sm` and 5 from `lg` (15 = 5 x 3), measured to fit with nothing
+    // clipped down to 134px cards at 1024px. Two columns cannot divide an odd
+    // count, so below `sm` the last card, when it would sit alone, spans both
+    // columns instead of leaving a grey cell. Nothing is added, duplicated or
+    // reordered to fill space. If the number of instruments ever changes,
+    // revisit these counts: they are tuned to 15.
+    <ul className="grid grid-cols-2 gap-px bg-pe-border max-sm:[&>li:last-child:nth-child(odd)]:col-span-2 sm:grid-cols-3 lg:grid-cols-5">
       {rows.map(({ label, kpi, href }) => {
         const body = (
           <>
