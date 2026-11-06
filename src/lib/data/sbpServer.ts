@@ -242,7 +242,12 @@ async function applyCanonicalOverrideToHistory(
     const updatedFreshness = evaluateSbpFreshness(key, { ...history.meta, observationDate: canonical.observationDate });
 
     return {
+      // The PBS release value is already denominated in the same display
+      // unit as history.points (verified: trade-balance publishes -3.53,
+      // i.e. B USD, not -3530 Million USD), so it is appended unscaled and
+      // displayUnit carries through unchanged.
       points: [...history.points, { date: canonical.observationDate, value: canonical.value }],
+      displayUnit: history.displayUnit,
       meta: {
         ...history.meta,
         observationDate: canonical.observationDate,

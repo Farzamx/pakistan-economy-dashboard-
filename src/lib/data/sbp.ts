@@ -723,6 +723,21 @@ interface IndicatorConfig {
   frequency: Frequency;
   /** Converts a raw observation value to the unit shown on the trend chart (e.g. Million USD -> Billion USD). */
   toTrendValue: (value: number) => number;
+  /**
+   * The unit `toTrendValue`'s OUTPUT is denominated in — the label that
+   * actually describes the converted magnitude (e.g. "B USD" where
+   * toTrendValue divides Million USD by 1000).
+   *
+   * Declared here, immediately beside the conversion it describes, so the
+   * scaling and its label are one fact in one place. Before this existed,
+   * SbpIndicatorHistory carried the converted VALUE alongside the SOURCE
+   * unit ("Million USD"), so a current-account figure of -0.356 was
+   * exported labelled "Million USD" — reading as -$356 thousand rather
+   * than -$356 million, a 1000x misstatement. The source unit is still
+   * carried separately on meta.unit for provenance; this is what any
+   * consumer displaying the converted points must use.
+   */
+  trendUnit: string;
   buildKpi: (series: SbpSeries) => Kpi;
   fallback: SbpIndicatorSnapshot;
 }
@@ -733,6 +748,7 @@ const CONFIGS: Record<SbpIndicatorKey, IndicatorConfig> = {
     revalidate: REVALIDATE_MONTHLY,
     frequency: "Monthly",
     toTrendValue: (v) => v / 1000,
+    trendUnit: "B USD",
     buildKpi: buildForeignReservesKpi,
     fallback: fallbackForeignReserves,
   },
@@ -741,6 +757,7 @@ const CONFIGS: Record<SbpIndicatorKey, IndicatorConfig> = {
     revalidate: REVALIDATE_MONTHLY,
     frequency: "Monthly",
     toTrendValue: (v) => v / 1000,
+    trendUnit: "B USD",
     buildKpi: buildNetBankReservesKpi,
     fallback: fallbackNetBankReserves,
   },
@@ -749,6 +766,7 @@ const CONFIGS: Record<SbpIndicatorKey, IndicatorConfig> = {
     revalidate: REVALIDATE_MONTHLY,
     frequency: "Monthly",
     toTrendValue: (v) => v,
+    trendUnit: "PKR",
     buildKpi: buildUsdPkrKpi,
     fallback: fallbackUsdPkr,
   },
@@ -757,6 +775,7 @@ const CONFIGS: Record<SbpIndicatorKey, IndicatorConfig> = {
     revalidate: REVALIDATE_AS_NEEDED,
     frequency: "As-Needed",
     toTrendValue: (v) => v,
+    trendUnit: "%",
     buildKpi: buildPolicyRateKpi,
     fallback: fallbackPolicyRate,
   },
@@ -765,6 +784,7 @@ const CONFIGS: Record<SbpIndicatorKey, IndicatorConfig> = {
     revalidate: REVALIDATE_MONTHLY,
     frequency: "Monthly",
     toTrendValue: (v) => v,
+    trendUnit: "%",
     buildKpi: buildCpiInflationKpi,
     fallback: fallbackCpiInflation,
   },
@@ -773,6 +793,7 @@ const CONFIGS: Record<SbpIndicatorKey, IndicatorConfig> = {
     revalidate: REVALIDATE_MONTHLY,
     frequency: "Monthly",
     toTrendValue: (v) => v,
+    trendUnit: "%",
     buildKpi: buildCoreInflationKpi,
     fallback: fallbackCoreInflation,
   },
@@ -781,6 +802,7 @@ const CONFIGS: Record<SbpIndicatorKey, IndicatorConfig> = {
     revalidate: REVALIDATE_MONTHLY,
     frequency: "Monthly",
     toTrendValue: (v) => v,
+    trendUnit: "%",
     buildKpi: buildWpiInflationKpi,
     fallback: fallbackWpiInflation,
   },
@@ -789,6 +811,7 @@ const CONFIGS: Record<SbpIndicatorKey, IndicatorConfig> = {
     revalidate: REVALIDATE_AS_NEEDED,
     frequency: "As-Needed",
     toTrendValue: (v) => v,
+    trendUnit: "%",
     buildKpi: buildTbillYield3mKpi,
     fallback: fallbackTbillYield3m,
   },
@@ -797,6 +820,7 @@ const CONFIGS: Record<SbpIndicatorKey, IndicatorConfig> = {
     revalidate: REVALIDATE_AS_NEEDED,
     frequency: "As-Needed",
     toTrendValue: (v) => v,
+    trendUnit: "%",
     buildKpi: buildPibYield3yKpi,
     fallback: fallbackPibYield3y,
   },
@@ -805,6 +829,7 @@ const CONFIGS: Record<SbpIndicatorKey, IndicatorConfig> = {
     revalidate: REVALIDATE_MONTHLY,
     frequency: "Monthly",
     toTrendValue: (v) => v / 1000,
+    trendUnit: "B USD",
     buildKpi: buildRemittancesKpi,
     fallback: fallbackRemittances,
   },
@@ -813,6 +838,7 @@ const CONFIGS: Record<SbpIndicatorKey, IndicatorConfig> = {
     revalidate: REVALIDATE_MONTHLY,
     frequency: "Monthly",
     toTrendValue: (v) => v / 1000,
+    trendUnit: "B USD",
     buildKpi: buildCurrentAccountKpi,
     fallback: fallbackCurrentAccount,
   },
@@ -821,6 +847,7 @@ const CONFIGS: Record<SbpIndicatorKey, IndicatorConfig> = {
     revalidate: REVALIDATE_MONTHLY,
     frequency: "Monthly",
     toTrendValue: (v) => v / 1000,
+    trendUnit: "B USD",
     buildKpi: buildTradeBalanceKpi,
     fallback: fallbackTradeBalance,
   },
@@ -832,6 +859,7 @@ const CONFIGS: Record<SbpIndicatorKey, IndicatorConfig> = {
     revalidate: REVALIDATE_AS_NEEDED,
     frequency: "Weekly",
     toTrendValue: (v) => v / 1e6,
+    trendUnit: "T PKR",
     buildKpi: buildMoneySupplyM2Kpi,
     fallback: fallbackMoneySupplyM2,
   },
@@ -840,6 +868,7 @@ const CONFIGS: Record<SbpIndicatorKey, IndicatorConfig> = {
     revalidate: REVALIDATE_MONTHLY,
     frequency: "Monthly",
     toTrendValue: (v) => v / 1000,
+    trendUnit: "B USD",
     buildKpi: buildExportsKpi,
     fallback: fallbackExports,
   },
@@ -848,6 +877,7 @@ const CONFIGS: Record<SbpIndicatorKey, IndicatorConfig> = {
     revalidate: REVALIDATE_MONTHLY,
     frequency: "Monthly",
     toTrendValue: (v) => v / 1000,
+    trendUnit: "B USD",
     buildKpi: buildImportsKpi,
     fallback: fallbackImports,
   },
@@ -856,6 +886,7 @@ const CONFIGS: Record<SbpIndicatorKey, IndicatorConfig> = {
     revalidate: REVALIDATE_MONTHLY,
     frequency: "Monthly",
     toTrendValue: (v) => v,
+    trendUnit: "M USD",
     buildKpi: buildFdiInflowsKpi,
     fallback: fallbackFdiInflows,
   },
@@ -864,6 +895,7 @@ const CONFIGS: Record<SbpIndicatorKey, IndicatorConfig> = {
     revalidate: REVALIDATE_MONTHLY,
     frequency: "Monthly",
     toTrendValue: (v) => v,
+    trendUnit: "Index",
     buildKpi: buildReerKpi,
     fallback: fallbackReer,
   },
@@ -872,6 +904,7 @@ const CONFIGS: Record<SbpIndicatorKey, IndicatorConfig> = {
     revalidate: REVALIDATE_MONTHLY,
     frequency: "Monthly",
     toTrendValue: (v) => v,
+    trendUnit: "Index",
     buildKpi: buildLsmKpi,
     fallback: fallbackLsm,
   },
@@ -880,6 +913,7 @@ const CONFIGS: Record<SbpIndicatorKey, IndicatorConfig> = {
     revalidate: REVALIDATE_AS_NEEDED,
     frequency: "Weekly",
     toTrendValue: (v) => v,
+    trendUnit: "% YoY",
     buildKpi: buildPrivateCreditGrowthKpi,
     fallback: fallbackPrivateCreditGrowth,
   },
@@ -888,6 +922,7 @@ const CONFIGS: Record<SbpIndicatorKey, IndicatorConfig> = {
     revalidate: REVALIDATE_MONTHLY,
     frequency: "Annual",
     toTrendValue: (v) => v / 1e6,
+    trendUnit: "T PKR",
     buildKpi: buildFiscalBalanceKpi,
     fallback: fallbackFiscalBalance,
   },
@@ -1223,7 +1258,20 @@ export interface SbpHistoryPoint {
 export interface SbpIndicatorHistory {
   /** Oldest -> newest, full available history, already unit-converted. */
   points: SbpHistoryPoint[];
+  /**
+   * meta.unit is the SOURCE unit as SBP reports it ("Million USD") and is
+   * kept for provenance. It does NOT describe `points`, which are already
+   * converted — use `displayUnit` for anything that renders or exports a
+   * point's value.
+   */
   meta: SbpMeta;
+  /**
+   * The unit `points` are actually denominated in ("B USD", "T PKR", "%").
+   * Comes from the indicator's own `trendUnit`, declared beside the
+   * `toTrendValue` conversion that produced these values, so the two can
+   * never drift apart.
+   */
+  displayUnit: string;
 }
 
 /**
@@ -1242,6 +1290,28 @@ export interface SbpIndicatorHistory {
  * indicator window (24h monthly / 6h as-needed) already used for this
  * series' own `fetch()` call, so no indicator's revalidation window changes.
  */
+/**
+ * The unit each indicator's HISTORY points are denominated in, derived from
+ * the same CONFIGS entry as the conversion that produces them.
+ *
+ * Exported so tests can enumerate the scaled catalogue from configuration
+ * rather than a hand-maintained list — a newly added scaling rule is then
+ * covered automatically instead of silently escaping the unit assertions.
+ */
+export function getSbpIndicatorDisplayUnit(key: SbpIndicatorKey): string {
+  return CONFIGS[key].trendUnit;
+}
+
+/**
+ * The factor an indicator's raw source value is divided by to reach its
+ * display unit (1 when unscaled). Probed through the configured
+ * `toTrendValue` itself, so it can never disagree with the real conversion.
+ */
+export function getSbpIndicatorScaleFactor(key: SbpIndicatorKey): number {
+  const probe = CONFIGS[key].toTrendValue(1_000_000);
+  return probe === 0 ? 1 : Math.round(1_000_000 / probe);
+}
+
 export async function getSbpIndicatorHistory(key: SbpIndicatorKey): Promise<SbpIndicatorHistory> {
   const config = CONFIGS[key];
   const cacheKey = `sbp-indicator-history:${key}`;
@@ -1273,6 +1343,7 @@ export async function getSbpIndicatorHistoryFresh(key: SbpIndicatorKey): Promise
         date: p.date,
         value: Number(config.toTrendValue(p.value).toFixed(4)),
       })),
+      displayUnit: config.trendUnit,
       meta: {
         source: "SBP EasyData",
         seriesKey: series.seriesKey,
@@ -1291,7 +1362,12 @@ export async function getSbpIndicatorHistoryFresh(key: SbpIndicatorKey): Promise
     logSbpError(key, err instanceof Error ? err.message : String(err), "fallback");
     const fb = config.fallback;
     return {
+      // The fallback snapshot's trend values are ALREADY stored in the
+      // converted unit (e.g. -0.23 B USD, 34.84 T PKR), which is why
+      // toTrendValue is deliberately not applied here — so the same
+      // trendUnit describes them correctly.
       points: fb.trend.map((p) => ({ date: parseFallbackMonthLabel(p.month), value: p.value })),
+      displayUnit: config.trendUnit,
       meta: { ...fb.meta, source: "SBP EasyData", sourceStatus: "fallback", freshness: evaluateSbpFreshness(key, fb.meta) },
     };
   }
@@ -1349,7 +1425,12 @@ async function fetchCanonicalIndicatorHistoryUncached(key: SbpIndicatorKey): Pro
     logSbpError(key, "No canonical observations ingested yet — run scripts/ingestSbp.ts", "fallback");
     const fb = config.fallback;
     return {
+      // The fallback snapshot's trend values are ALREADY stored in the
+      // converted unit (e.g. -0.23 B USD, 34.84 T PKR), which is why
+      // toTrendValue is deliberately not applied here — so the same
+      // trendUnit describes them correctly.
       points: fb.trend.map((p) => ({ date: parseFallbackMonthLabel(p.month), value: p.value })),
+      displayUnit: config.trendUnit,
       meta: { ...fb.meta, source: "SBP EasyData", sourceStatus: "fallback", freshness: evaluateSbpFreshness(key, fb.meta) },
     };
   }
@@ -1359,6 +1440,7 @@ async function fetchCanonicalIndicatorHistoryUncached(key: SbpIndicatorKey): Pro
       date: r.observationPeriod,
       value: Number(config.toTrendValue(r.value).toFixed(4)),
     })),
+    displayUnit: config.trendUnit,
     meta: {
       source: "SBP EasyData",
       seriesKey: SERIES_KEYS[key],
