@@ -29,6 +29,10 @@ const FORBIDDEN_IMPORTS = [
   // Phase 13 — historical analytics is the furthest-downstream reader of
   // the engine's persisted output, so the same one-way rule applies.
   "macroIntelligenceHistoricalAnalytics",
+  // Phase C — the presentation view-models re-shape engine and analytics
+  // output for display. Strictly downstream: the engine must never import
+  // them, or a rendering concern could start influencing a classification.
+  "macroIntelligenceViews",
 ];
 
 /**
@@ -97,6 +101,38 @@ describe("intelligence engine has no dependency on persistence (Phase 10.1 archi
     const source = stripComments(readFileSync(join(__dirname, "macroIntelligenceHistoricalAnalytics.ts"), "utf-8"));
     for (const io of ["createClient", "supabase", "fetch(", ".rpc(", "readRecentMacroIntelligenceSnapshots"]) {
       expect(source.includes(io)).toBe(false);
+    }
+  });
+
+  // Phase C — the presentation view-models are the furthest-downstream
+  // reader of all. The same two rules apply, and one more that is the whole
+  // methodological claim of that layer: it must not invent a numeric score
+  // for a categorical state.
+  it("the view-models never reach into the engine's rule modules", () => {
+    const source = readFileSync(join(__dirname, "macroIntelligenceViews.ts"), "utf-8");
+    for (const ruleModule of ["intelligence/evidence", "intelligence/signalDefinitions", "intelligence/trendAnalysis", "intelligence/macroIntelligence"]) {
+      expect(source.includes(ruleModule)).toBe(false);
+    }
+    expect(source.includes("@/lib/intelligence/types")).toBe(true);
+  });
+
+  it("the view-models perform no I/O — the page supplies already-fetched values", () => {
+    const source = stripComments(readFileSync(join(__dirname, "macroIntelligenceViews.ts"), "utf-8"));
+    for (const io of ["createClient", "supabase", "fetch(", ".rpc(", "readRecentMacroIntelligenceSnapshots"]) {
+      expect(source.includes(io)).toBe(false);
+    }
+  });
+
+  it("the view-models define no classification rule, threshold or state-to-number mapping", () => {
+    const source = stripComments(readFileSync(join(__dirname, "macroIntelligenceViews.ts"), "utf-8"));
+    // No parallel rule set: these all belong to the decision layer.
+    for (const rule of ["assessState", "determinePosture", "computeBreadth", "POLARITY_BY_DIMENSION"]) {
+      expect(source.includes(rule)).toBe(false);
+    }
+    // And no ordinal scale invented for the categorical states. A map from
+    // a state name to a number is exactly the thing this layer must not do.
+    for (const stateName of ["tightening", "deteriorating", "accelerating", "pressure-easing", "easing"]) {
+      expect(source).not.toMatch(new RegExp(`["']${stateName}["']\\s*:\\s*-?\\d`));
     }
   });
 

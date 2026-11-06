@@ -23,6 +23,7 @@
 import type { IndicatorObservationEvidence, IntelligenceDimension, IntelligenceSignal, MacroIntelligenceReport, SignalConfidence } from "@/lib/intelligence/types";
 import { FRESHNESS_STATE_LABEL } from "@/lib/freshness/readModel";
 import type { DimensionHistory } from "@/lib/macroIntelligenceHistory";
+import { compressHistoryRuns, displaySummary, isRated } from "@/lib/macroIntelligenceViews";
 
 const CONFIDENCE_BADGE_CLASS: Record<SignalConfidence, string> = {
   High: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
@@ -73,6 +74,11 @@ function EvidenceRow({ evidence }: { evidence: IndicatorObservationEvidence }) {
  * plus a one-line status caption, deliberately smaller/quieter than the
  * current-state headline above it, so history never competes with the
  * live signal for attention.
+ *
+ * Phase C.2 compresses consecutive identical states into runs for
+ * readability. That is a rendering change only: compressHistoryRuns() is
+ * pure, drops nothing, merges nothing across a gap, and the full
+ * snapshot-by-snapshot list stays available in the disclosure.
  */
 function HistoryStrip({ history }: { history: DimensionHistory | null }) {
   if (!history) {
@@ -92,21 +98,59 @@ function HistoryStrip({ history }: { history: DimensionHistory | null }) {
 
   const countLabel = `${history.truncated ? `${history.consecutiveCount}+` : history.consecutiveCount} consecutive snapshot${history.consecutiveCount === 1 ? "" : "s"}`;
 
+  // Phase C.2 — consecutive identical states are collapsed into runs. A
+  // thirty-snapshot run previously rendered as the same word thirty times,
+  // which buried the actual transitions. Purely a readability change: no
+  // point is dropped, reordered, or merged across a gap (A -> B -> A stays
+  // three runs), the stored states are unchanged, and every underlying
+  // snapshot is still listed with its date in the disclosure below.
+  const runs = compressHistoryRuns(history.points);
+
   return (
     <div className="mt-3 border-t border-white/5 pt-3 light:border-black/5">
       <span className="text-label text-white/30 light:text-slate-400">History</span>
+
       <p className="mt-1 text-[11px] leading-relaxed text-white/50 light:text-slate-500">
-        {history.points.map((p, i) => (
-          <span key={`${p.computedAt}-${i}`}>
+        {runs.map((run, i) => (
+          <span key={`${run.points[0].computedAt}-${i}`}>
             {i > 0 && <span aria-hidden="true" className="mx-1 text-white/20 light:text-slate-300">→</span>}
-            {p.state.replace(/-/g, " ")}
+            <span className={run.rated ? undefined : "text-white/35 light:text-slate-400"}>{run.stateLabel}</span>{" "}
+            {/* "N+" where the run reaches the oldest fetched snapshot: its
+                true start is unknown, so a bare N would overstate it. */}
+            <span className="tabular-nums text-white/35 light:text-slate-400">
+              ({run.truncatedStart && runs.length > 1 ? `${run.count}+` : run.count} snapshot{run.count === 1 ? "" : "s"})
+            </span>
           </span>
         ))}
       </p>
+
       <p className="mt-1 text-[11px] text-white/40 light:text-slate-500">
         {history.currentState.replace(/-/g, " ")} · {countLabel}
         {history.previousState && <> · Changed from {history.previousState.replace(/-/g, " ")}</>}
       </p>
+
+      {/* Counts are snapshots, not days: a missed scheduled run would
+          otherwise silently become a claimed duration. */}
+      <p className="mt-1 text-[10px] leading-relaxed text-white/25 light:text-slate-400">
+        Counts are stored snapshots, not days or economic events.
+      </p>
+
+      <details className="group mt-1.5">
+        <summary className="w-fit cursor-pointer list-none text-[10px] font-medium text-white/35 hover:text-white/60 light:text-slate-500 light:hover:text-slate-700">
+          <span className="inline-flex items-center gap-1">
+            All {history.points.length} snapshots
+            <span aria-hidden="true" className="transition-transform group-open:rotate-90">›</span>
+          </span>
+        </summary>
+        <ol className="mt-1.5 flex flex-col gap-0.5">
+          {history.points.map((p, i) => (
+            <li key={`${p.computedAt}-${i}`} className="flex flex-wrap items-baseline gap-x-2 text-[10px] text-white/40 light:text-slate-500">
+              <span className="text-mono-num tabular-nums text-white/30 light:text-slate-400">{p.computedAt.slice(0, 10)}</span>
+              <span>{p.state.replace(/-/g, " ")}</span>
+            </li>
+          ))}
+        </ol>
+      </details>
     </div>
   );
 }
@@ -124,14 +168,32 @@ function SignalCard({ signal, history }: { signal: IntelligenceSignal; history: 
         </span>
       </div>
 
-      <p className="mt-2.5 text-2xl font-semibold leading-tight text-white light:text-slate-900">
-        <span aria-hidden="true" className="mr-2 text-white/30 light:text-slate-400">
-          {DIRECTION_GLYPH[signal.direction]}
-        </span>
-        {signal.state.replace(/-/g, " ")}
-      </p>
+      {/* An unclassifiable dimension is stated as such rather than shown as
+          a large "insufficient data" headline in the same type as a real
+          classification — the absence of a finding should not read like
+          one. The state value itself is unchanged. */}
+      {isRated(signal.state) ? (
+        <p className="mt-2.5 text-2xl font-semibold leading-tight text-white light:text-slate-900">
+          <span aria-hidden="true" className="mr-2 text-white/30 light:text-slate-400">
+            {DIRECTION_GLYPH[signal.direction]}
+          </span>
+          {signal.state.replace(/-/g, " ")}
+        </p>
+      ) : (
+        <p className="mt-2.5 text-base font-medium leading-tight text-white/45 light:text-slate-500">
+          Not classifiable — insufficient evidence
+        </p>
+      )}
 
-      <p className="mt-3 text-[13px] leading-relaxed text-white/65 light:text-slate-600">{signal.summary}</p>
+      {/* Several engine rules interpolate `state` into their summary, and
+          directionWord() yields the literal "insufficient-data" when the
+          observed direction is Unknown — producing prose like "Headline CPI
+          inflation is insufficient-data versus the prior reading." That
+          reads as a finding when the engine made none. displaySummary()
+          passes every genuine sentence through untouched and substitutes a
+          neutral explanation only in that case. The engine's own summary
+          field is unchanged; signalDefinitions.ts is not modified. */}
+      <p className="mt-3 text-[13px] leading-relaxed text-white/65 light:text-slate-600">{displaySummary(signal)}</p>
 
       <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-white/5 pt-3 text-[11px] text-white/35 light:border-black/5 light:text-slate-400">
         <span className="tabular-nums">

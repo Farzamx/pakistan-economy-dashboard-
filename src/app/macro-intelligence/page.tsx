@@ -7,6 +7,7 @@ import RiskIntelligenceSection from "@/components/RiskIntelligenceSection";
 import MacroIntelligenceSection from "@/components/MacroIntelligenceSection";
 import MacroDecisionLayer from "@/components/MacroDecisionLayer";
 import MacroHistoricalAnalytics from "@/components/MacroHistoricalAnalytics";
+import MacroRegimeDashboard from "@/components/MacroRegimeDashboard";
 import { buildMacroIntelligenceReport } from "@/lib/intelligence/macroIntelligence";
 import { readRecentMacroIntelligenceSnapshots } from "@/lib/data/macroIntelligenceSnapshots";
 import { buildHistoryByDimension } from "@/lib/macroIntelligenceHistory";
@@ -351,6 +352,13 @@ export default async function MacroIntelligencePage() {
           )}
 
           <MacroDecisionLayer report={decision} />
+
+          {/* Phase C — a third pure derivation from the values already in
+              hand (report.signals + the same historicalAnalytics object
+              below). No additional query and no new data source: the
+              view-models in lib/macroIntelligenceViews.ts only re-shape
+              engine output for presentation. */}
+          <MacroRegimeDashboard report={report} analytics={historicalAnalytics} />
 
           <MacroHistoricalAnalytics report={historicalAnalytics} />
 
