@@ -12,7 +12,8 @@
     "ingest:worldbank": "tsx scripts/ingestWorldBank.ts",
     "ingest:netliquidreserves": "tsx scripts/ingestNetLiquidReserves.ts",
     "ingest:fred": "tsx scripts/ingestFred.ts",
-    "ingest:yahoogold": "tsx scripts/ingestYahooGold.ts"
+    "ingest:yahoogold": "tsx scripts/ingestYahooGold.ts",
+    "ingest:pbscpigroups": "tsx scripts/ingestPbsCpiGroups.ts"
   },
   "dependencies": {
     "@next/third-parties": "16.2.9",
