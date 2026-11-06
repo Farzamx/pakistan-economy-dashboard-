@@ -295,3 +295,11 @@ watchdog in this phase (unlike `sbp-ingestion-watchdog`) — `cron_run_log`
 is the only current visibility into missed/failed runs. If a genuine
 multi-week silent-gap risk is identified, a dedicated watchdog is a future
 architectural decision, not something to add speculatively here.
+
+## PBS CPI groups ingestion (Phase F.2f) — configured in the repository, NOT registered
+
+A sixth ingestion task, in exactly the shape of the others, is defined in
+[`ops/scheduled-tasks/peic-pbs-cpi-groups-ingestion.xml`](../ops/scheduled-tasks/peic-pbs-cpi-groups-ingestion.xml) (a template with
+placeholders): daily 09:15 on days 1–10 of each month, 17:30 on days 1–5, and a Monday 12:30 floor. **It is not registered, and the script it
+runs still refuses `--write`.** Cadence, retries, locking, monitoring, recovery and the activation checklist are in
+[pbs-cpi-ingestion-operations.md](pbs-cpi-ingestion-operations.md). Read-only status at any time: `npm run check:cpistatus`.
