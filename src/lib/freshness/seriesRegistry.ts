@@ -50,6 +50,9 @@ import type { MarketType } from "@/lib/marketCalendar";
 // documented, deliberate exception to this cross-reference, not silently
 // unified with it.
 import { SERIES_CATALOG } from "@/lib/seriesDefinition";
+// Phase F.2f: the 26 PBS CPI ledger keys. Imported from the dependency-free constants module, NOT from the adapter: this
+// registry sits in a module chain that reaches client bundles (sbp.ts), and must not pull in an XML parser.
+import { PBS_CPI_SERIES, PBS_SDMX_PROVIDER_ID } from "@/lib/providers/pbsCpiSeries";
 
 const FREQUENCY_TO_CADENCE: Record<Frequency, ReleaseCadence> = {
   Monthly: "monthly",
@@ -298,6 +301,36 @@ const YAHOO_GOLD_SERIES_DEFINITIONS: Record<string, SeriesDefinition> = {
   },
 };
 
+// Phase F.2f: the PBS CPI-by-expenditure-group ledger series — EXACTLY the 26 keys the F.2b adapter writes (see
+// src/lib/providers/pbsCpiSeries.ts, the single definition of them). Registered here, the same sanctioned extension point
+// every provider uses — entries only; not a change to evaluateFreshness(), to any threshold, or to any other provider's entry.
+// Nothing reads these entries yet (the Inflation page still reads PBS's file directly); they exist so that whoever does
+// — the ledger-backed page (F.2e), System Health — gets an authoritative verdict instead of inventing one.
+//
+// cadence "monthly": PBS publishes the CPI once a month. A literal, not a SERIES_CATALOG lookup (Phase 8.20's rule is for
+// series the Comparisons feature also uses; these group indices and weights are not comparison-facing).
+// graceDays = CADENCE_GRACE_DAYS.monthly (40): the SAME already-validated monthly figure every other monthly entry reuses
+// (SBP's monthly indicators, fred:*, yahoo:goldMonthly) — a Phase 8.16 binding decision, not a fresh policy call. Against a
+// month-end observation it allows ~40 days, i.e. until about the 10th of the month after next — comfortably beyond PBS's
+// 1st–3rd release plus the one-day lag of the SDMX file, and beyond the one observed release that slipped to the 10th.
+// expectsSourceUpdatedAt: TRUE — unlike SBP, the adapter genuinely populates source_updated_at from the file header's own
+// <Prepared> timestamp (all 1,352 production rows carry it), so a missing value here would be a real defect, not noise.
+// expectsReleaseDate: FALSE — the file exposes no per-observation release date; the ledger stores null, never an inferred one.
+// marketType: deliberately undefined (a monthly statistical release has no market session).
+const PBS_CPI_SERIES_DEFINITIONS: Record<string, SeriesDefinition> = Object.fromEntries(
+  PBS_CPI_SERIES.map((def) => [
+    def.indicatorKey,
+    {
+      seriesId: def.indicatorKey,
+      provider: PBS_SDMX_PROVIDER_ID,
+      cadence: "monthly",
+      graceDays: CADENCE_GRACE_DAYS.monthly,
+      expectsReleaseDate: false,
+      expectsSourceUpdatedAt: true,
+    } satisfies SeriesDefinition,
+  ]),
+);
+
 let cachedRegistry: Map<string, SeriesDefinition> | null = null;
 
 function buildRegistry(): Map<string, SeriesDefinition> {
@@ -316,6 +349,9 @@ function buildRegistry(): Map<string, SeriesDefinition> {
     map.set(def.seriesId, def);
   }
   for (const def of Object.values(YAHOO_GOLD_SERIES_DEFINITIONS)) {
+    map.set(def.seriesId, def);
+  }
+  for (const def of Object.values(PBS_CPI_SERIES_DEFINITIONS)) {
     map.set(def.seriesId, def);
   }
   return map;

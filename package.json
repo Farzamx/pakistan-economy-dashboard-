@@ -13,7 +13,8 @@
     "ingest:netliquidreserves": "tsx scripts/ingestNetLiquidReserves.ts",
     "ingest:fred": "tsx scripts/ingestFred.ts",
     "ingest:yahoogold": "tsx scripts/ingestYahooGold.ts",
-    "ingest:pbscpigroups": "tsx scripts/ingestPbsCpiGroups.ts"
+    "ingest:pbscpigroups": "tsx scripts/ingestPbsCpiGroups.ts",
+    "check:cpistatus": "tsx scripts/checkCpiLedgerStatus.ts"
   },
   "dependencies": {
     "@next/third-parties": "16.2.9",

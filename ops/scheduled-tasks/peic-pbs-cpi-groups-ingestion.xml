@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-16"?>
+<!--
+  PEIC - PBS CPI Groups Ingestion  ·  Windows Task Scheduler definition  ·  Phase F.2f
+
+  STATUS: A TEMPLATE IN THE REPOSITORY. IT IS NOT REGISTERED ANYWHERE. Nothing runs on a schedule because this file exists.
+  It cannot even be registered as-is: the three {{PLACEHOLDERS}} below must be rendered first (docs/pbs-cpi-ingestion-operations.md,
+  "Activation checklist"), and the script it calls still refuses its write option until WRITE_MODE_AUTHORIZED is deliberately set to true.
+
+  WHY THE TASK SCHEDULER. Every PEIC ledger ingestion (SBP, World Bank, Net Liquid Reserves, FRED, Yahoo Gold) is a script run by
+  a Task Scheduler task on the ingestion laptop; this is the sixth, in the same shape, with the same settings. It is deliberately
+  NOT a Vercel cron or a GitHub Action: no second scheduling mechanism.
+
+  WHEN IT RUNS (PKT, UTC+5). PBS publishes the monthly CPI on the 1st-3rd (the project's own calendar: Aug 3, Sep 1, Oct 1, Nov 2;
+  once, on the 10th) and its SDMX file follows by about a day (Oct data: released 2 Nov, file Prepared 3 Nov).
+    - every day 1-10 of the month, 09:15      catches the release within a day, including weekends/holidays and the slip to the 10th
+    - days 1-5 only, also 17:30               catches a same-day file without waiting for the next morning
+    - every Monday, 12:30                     the floor: a release later than day 10, and revisions, are picked up within a week;
+                                              also guarantees a success row at least weekly, which is what the watchdog's 216h
+                                              threshold (src/lib/ingestionWatchdog.ts, PBS_CPI_GROUPS_MONITOR_JOB) is built on
+  About 14-22 runs a month, each ONE request to PBS (26 read RPCs; writes only when the file changed). A run that finds nothing new
+  writes nothing and logs a success (outcome=unchanged).
+
+  OVERLAP. MultipleInstancesPolicy=IgnoreNew stops this task starting twice; the script's own lock file also stops a manual run from
+  overlapping a scheduled one. The closest two triggers are 3h15m apart; the execution limit is 1 hour.
+  RETRIES. There is deliberately NO RestartOnFailure (like the FRED and Yahoo tasks): the script already retries the PBS fetch three
+  times within a run, every failure is logged and visible to the watchdog, and the next trigger is at most a day away in the window.
+
+  StartBoundary 2026-11-09: the first Monday after this phase, so that registering the task before that date means the weekly floor
+  run lands inside the watchdog's 216h window measured from the only run on record (2026-11-06 17:29 UTC).
+-->
+<Task version="1.3" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
+  <RegistrationInfo>
+    <Description>Phase F.2f: PBS CPI-by-group ingestion (26 series into the observation ledger) via scripts/ingestPbsCpiGroups.ts --write. Daily 09:15 on days 1-10, plus 17:30 on days 1-5, plus Mondays 12:30 as a floor.</Description>
+    <URI>\PEIC - PBS CPI Groups Ingestion</URI>
+  </RegistrationInfo>
+  <Principals>
+    <Principal id="Author">
+      <LogonType>InteractiveToken</LogonType>
+    </Principal>
+  </Principals>
+  <Settings>
+    <DisallowStartIfOnBatteries>false</DisallowStartIfOnBatteries>
+    <StopIfGoingOnBatteries>false</StopIfGoingOnBatteries>
+    <ExecutionTimeLimit>PT1H</ExecutionTimeLimit>
+    <MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>
+    <StartWhenAvailable>true</StartWhenAvailable>
+    <WakeToRun>true</WakeToRun>
+    <IdleSettings>
+      <Duration>PT10M</Duration>
+      <WaitTimeout>PT1H</WaitTimeout>
+      <StopOnIdleEnd>true</StopOnIdleEnd>
+      <RestartOnIdle>false</RestartOnIdle>
+    </IdleSettings>
+    <UseUnifiedSchedulingEngine>true</UseUnifiedSchedulingEngine>
+  </Settings>
+  <Triggers>
+    <CalendarTrigger>
+      <StartBoundary>2026-11-09T09:15:00+05:00</StartBoundary>
+      <ScheduleByMonth>
+        <Months>
+          <January />
+          <February />
+          <March />
+          <April />
+          <May />
+          <June />
+          <July />
+          <August />
+          <September />
+          <October />
+          <November />
+          <December />
+        </Months>
+        <DaysOfMonth>
+          <Day>1</Day>
+          <Day>2</Day>
+          <Day>3</Day>
+          <Day>4</Day>
+          <Day>5</Day>
+          <Day>6</Day>
+          <Day>7</Day>
+          <Day>8</Day>
+          <Day>9</Day>
+          <Day>10</Day>
+        </DaysOfMonth>
+      </ScheduleByMonth>
+    </CalendarTrigger>
+    <CalendarTrigger>
+      <StartBoundary>2026-11-09T17:30:00+05:00</StartBoundary>
+      <ScheduleByMonth>
+        <Months>
+          <January />
+          <February />
+          <March />
+          <April />
+          <May />
+          <June />
+          <July />
+          <August />
+          <September />
+          <October />
+          <November />
+          <December />
+        </Months>
+        <DaysOfMonth>
+          <Day>1</Day>
+          <Day>2</Day>
+          <Day>3</Day>
+          <Day>4</Day>
+          <Day>5</Day>
+        </DaysOfMonth>
+      </ScheduleByMonth>
+    </CalendarTrigger>
+    <CalendarTrigger>
+      <StartBoundary>2026-11-09T12:30:00+05:00</StartBoundary>
+      <ScheduleByWeek>
+        <WeeksInterval>1</WeeksInterval>
+        <DaysOfWeek>
+          <Monday />
+        </DaysOfWeek>
+      </ScheduleByWeek>
+    </CalendarTrigger>
+  </Triggers>
+  <Actions Context="Author">
+    <Exec>
+      <Command>{{NODE_EXE}}</Command>
+      <Arguments>"{{REPO_DIR}}\node_modules\tsx\dist\cli.mjs" "{{REPO_DIR}}\scripts\ingestPbsCpiGroups.ts" --write --confirm-write-host {{SUPABASE_HOST}}</Arguments>
+      <WorkingDirectory>{{REPO_DIR}}</WorkingDirectory>
+    </Exec>
+  </Actions>
+</Task>

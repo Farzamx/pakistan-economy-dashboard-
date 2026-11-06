@@ -49,6 +49,7 @@
 
 import { getCronRunHistory, logCronRun, type CronRunRecord } from "@/lib/cronLogging";
 import { sendEmail } from "@/lib/email/resend";
+import { evaluateCpiRunEvidence } from "@/lib/cpiIngestionMonitor";
 
 /**
  * One monitored ingestion job. `jobName` (ingestionJobName/watchdogJobName)
@@ -70,6 +71,21 @@ export interface IngestionMonitorJob {
   staleAfterHours: number;
   /** Shown in alert copy as "how to check/re-run it manually". Optional — omitted rather than guessed if a job has no simple manual command. */
   commandHint?: string;
+  /**
+   * Optional (Phase F.2f). Explains WHY a job is unhealthy from its own cron_run_log history — pure, no I/O, no provider call:
+   * "not running" vs "failing because the provider is down" vs "a release only partly ingested". Its lines are appended to the
+   * alert and a one-token summary to the watchdog's own log row. A job without it behaves EXACTLY as before (the evaluator,
+   * the episode and reminder logic, and the alert text of every existing job are untouched). It cannot change the state or
+   * whether an alert is sent; it only adds explanation, and a failure inside it is swallowed.
+   */
+  diagnose?: (ctx: { ingestionRuns: CronRunRecord[]; now: Date }) => IngestionDiagnosis;
+}
+
+export interface IngestionDiagnosis {
+  /** A short token for the watchdog's log row, e.g. "repeatedly-failing:pbs-unavailable". */
+  summary: string;
+  /** Plain statements for the alert body. Must contain no URLs and no credentials. */
+  lines: string[];
 }
 
 /**
@@ -215,8 +231,45 @@ export const YAHOO_GOLD_MONITOR_JOB: IngestionMonitorJob = {
   commandHint: "npm run ingest:yahoogold",
 };
 
-/** Exactly the jobs currently operational (Phase 8.3/8.4/8.10B/8.10C/8.14/8.18). Do not add a future provider speculatively — extend this array only when a real ingestion job exists for it. */
-export const MONITORED_INGESTION_JOBS: IngestionMonitorJob[] = [SBP_MONITOR_JOB, WORLD_BANK_MONITOR_JOB, NET_LIQUID_RESERVES_MONITOR_JOB, FRED_MONITOR_JOB, YAHOO_GOLD_MONITOR_JOB];
+/**
+ * Phase F.2f. PBS CPI group ingestion (26 series -> the observation ledger). The Task Scheduler definition is
+ * ops/scheduled-tasks/peic-pbs-cpi-groups-ingestion.xml: PBS publishes the monthly CPI on the 1st–3rd (the project's own
+ * calendar: Aug 3, Sep 1, Oct 1, Nov 2; and once on the 10th) and the SDMX file follows by about a day, so the task runs
+ * daily on days 1–10 (09:15, plus 17:30 on days 1–5) and, as a floor, every MONDAY 12:30 for a release that slips past
+ * day 10 and for revisions. A run that finds nothing new still logs a SUCCESS row (outcome=unchanged), so success rows
+ * arrive at least weekly while the task is registered and running.
+ *
+ * expectedIntervalHours / staleAfterHours = 168 / 216, reused VERBATIM from WORLD_BANK_MONITOR_JOB (as Net Liquid FX Reserves
+ * and FRED did): the guaranteed floor is the SAME weekly Monday trigger, on the same laptop, under the same StartWhenAvailable
+ * / WakeToRun / IgnoreNew mechanics, so the Phase 8.6 reasoning applies unchanged — absorb a long-weekend laptop-off period
+ * without alerting on a Monday that catches up a day or two late, yet fire before a second consecutive Monday is missed. The
+ * extra daily runs in the release window only make a miss more visible; they do not move the threshold.
+ *
+ * This job's `diagnose` hook adds the reason to the alert (cpiIngestionMonitor.ts). Whether the LEDGER is current against PBS
+ * is a different question that needs a PBS probe, so it is NOT answered here (this watchdog never calls a provider): see
+ * cpiLedgerCurrency.ts and scripts/checkCpiLedgerStatus.ts.
+ *
+ * ACTIVATION NOTE. Registering this job means the daily watchdog will report it STALE 216h after its last successful run
+ * (the unintended 2026-11-06 run is the only one on record, so: 2026-11-15) if the scheduled task is not yet registered and
+ * running by then. That is the watchdog doing its job; the activation checklist (docs/pbs-cpi-ingestion-operations.md) puts
+ * the task registration BEFORE the deployment that carries this entry.
+ */
+export const PBS_CPI_GROUPS_MONITOR_JOB: IngestionMonitorJob = {
+  // = JOB_NAME in src/lib/providers/pbsCpiGroupsIngestion.ts (a test pins the equality; this module must not import that one).
+  ingestionJobName: "pbs-cpi-groups-ingestion",
+  watchdogJobName: "pbs-cpi-groups-ingestion-watchdog",
+  label: "PBS CPI group ingestion",
+  expectedIntervalHours: 168,
+  staleAfterHours: 216,
+  commandHint: "the 'PEIC - PBS CPI Groups Ingestion' scheduled task (see docs/pbs-cpi-ingestion-operations.md)",
+  diagnose: ({ ingestionRuns, now }) => {
+    const e = evaluateCpiRunEvidence(ingestionRuns, now, { staleAfterHours: PBS_CPI_GROUPS_MONITOR_JOB.staleAfterHours });
+    return { summary: e.cause ? `${e.state}:${e.cause}` : e.state, lines: e.lines };
+  },
+};
+
+/** Exactly the jobs currently operational (Phase 8.3/8.4/8.10B/8.10C/8.14/8.18) plus the PBS CPI job (Phase F.2f, defined but its scheduled task is not yet registered). Do not add a future provider speculatively — extend this array only when a real ingestion job exists for it. */
+export const MONITORED_INGESTION_JOBS: IngestionMonitorJob[] = [SBP_MONITOR_JOB, WORLD_BANK_MONITOR_JOB, NET_LIQUID_RESERVES_MONITOR_JOB, FRED_MONITOR_JOB, YAHOO_GOLD_MONITOR_JOB, PBS_CPI_GROUPS_MONITOR_JOB];
 
 const MS_PER_HOUR = 60 * 60 * 1000;
 
@@ -436,7 +489,7 @@ function escapeHtml(value: string): string {
 }
 
 /** Parameterized on `job` — no provider name/command is hardcoded here anymore (Phase 8.6). */
-function buildAlert(job: IngestionMonitorJob, health: IngestionHealth, isReminder = false): { subject: string; text: string; html: string } {
+function buildAlert(job: IngestionMonitorJob, health: IngestionHealth, isReminder = false, diagnosis: IngestionDiagnosis | null = null): { subject: string; text: string; html: string } {
   const lastSuccess = health.lastSuccessAt ?? "no successful run on record";
   const baseSubject =
     health.state === "never-run"
@@ -460,6 +513,9 @@ function buildAlert(job: IngestionMonitorJob, health: IngestionHealth, isReminde
     `Expected cadence    : every ${health.expectedCadenceHours}h`,
     `Alert threshold     : ${health.staleAfterHours}h`,
     "",
+    // Only for a job that supplies a diagnosis (Phase F.2f). For every other job this contributes nothing, so their alert
+    // text is byte-for-byte what it was.
+    ...(diagnosis && diagnosis.lines.length > 0 ? [...diagnosis.lines, ""] : []),
     "The canonical ledger keeps serving its last ingested values while this",
     "persists, so the site will look normal but the data is ageing.",
     "",
@@ -480,6 +536,24 @@ export interface WatchdogResult {
   alertSent: boolean;
   /** Why an alert was or was not sent — recorded in cron_run_log for auditability. */
   reason: string;
+  /** Present only for a job that supplies a `diagnose` hook (Phase F.2f). */
+  diagnosis?: IngestionDiagnosis;
+}
+
+/**
+ * Runs a job's optional diagnosis. It can only ADD explanation: any failure inside it is swallowed (the watchdog must not
+ * break because an explanation could not be computed), and its output is stripped of URLs before it can reach an email or a log row.
+ */
+function diagnoseSafely(job: IngestionMonitorJob, ingestionRuns: CronRunRecord[], now: Date): IngestionDiagnosis | null {
+  if (!job.diagnose) return null;
+  try {
+    const d = job.diagnose({ ingestionRuns, now });
+    const clean = (s: string) => s.replace(/https?:\/\/\S+/gi, "[url]");
+    return { summary: clean(d.summary).replace(/[|\s]+/g, "-").slice(0, 80), lines: d.lines.map(clean) };
+  } catch (err) {
+    console.error(`[IngestionWatchdog] diagnosis for ${job.ingestionJobName} failed (ignored): ${err instanceof Error ? err.message : String(err)}`);
+    return null;
+  }
 }
 
 /**
@@ -508,6 +582,7 @@ export async function runIngestionWatchdog(job: IngestionMonitorJob, now: Date =
   ]);
 
   const health = evaluateIngestionHealth(ingestionRuns, watchdogRuns, now, job);
+  const diagnosis = diagnoseSafely(job, ingestionRuns, now);
 
   let alertSent = false;
   let reason: string;
@@ -525,7 +600,7 @@ export async function runIngestionWatchdog(job: IngestionMonitorJob, now: Date =
     if (!recipient) {
       reason = "ADMIN_EMAIL not configured — alert skipped";
     } else {
-      const { subject, text, html } = buildAlert(job, health, isReminder);
+      const { subject, text, html } = buildAlert(job, health, isReminder, diagnosis);
       const result = await sendEmail(
         { to: recipient, subject, text, html },
         // Job-scoped idempotency key: incorporates watchdogJobName so two
@@ -565,9 +640,11 @@ export async function runIngestionWatchdog(job: IngestionMonitorJob, now: Date =
     `age=${formatAge(health.ageMs)}`,
     alertSent ? alertMarker(health.episodeKey) : `no-alert (${reason})`,
     ...(alertSent && isReminder ? [`reminder-after=${health.lastAlertAt}`] : []),
+    // After the alert marker and after last-success= (which must stay the FIRST such field: newestCarriedSuccess reads it).
+    ...(diagnosis ? [`diag=${diagnosis.summary}`] : []),
   ].join(" | ");
 
   await logCronRun(job.watchdogJobName, startedAt, health.state === "healthy" ? "success" : "failure", detail);
 
-  return { job, health, alertSent, reason };
+  return diagnosis ? { job, health, alertSent, reason, diagnosis } : { job, health, alertSent, reason };
 }

@@ -24,6 +24,7 @@ const {
   NET_LIQUID_RESERVES_MONITOR_JOB,
   FRED_MONITOR_JOB,
   YAHOO_GOLD_MONITOR_JOB,
+  PBS_CPI_GROUPS_MONITOR_JOB,
   MONITORED_INGESTION_JOBS,
   REMINDER_INTERVAL_HOURS,
 } = await import("@/lib/ingestionWatchdog");
@@ -62,9 +63,13 @@ function resetAll() {
 }
 
 describe("A. registry", () => {
-  it("contains exactly five monitored jobs: SBP, World Bank, Net Liquid FX Reserves, FRED, and Yahoo Gold", () => {
-    expect(MONITORED_INGESTION_JOBS).toHaveLength(5);
-    expect(MONITORED_INGESTION_JOBS).toEqual([SBP_MONITOR_JOB, WORLD_BANK_MONITOR_JOB, NET_LIQUID_RESERVES_MONITOR_JOB, FRED_MONITOR_JOB, YAHOO_GOLD_MONITOR_JOB]);
+  it("contains exactly six monitored jobs: SBP, World Bank, Net Liquid FX Reserves, FRED, Yahoo Gold, and (Phase F.2f) PBS CPI groups", () => {
+    expect(MONITORED_INGESTION_JOBS).toHaveLength(6);
+    expect(MONITORED_INGESTION_JOBS).toEqual([SBP_MONITOR_JOB, WORLD_BANK_MONITOR_JOB, NET_LIQUID_RESERVES_MONITOR_JOB, FRED_MONITOR_JOB, YAHOO_GOLD_MONITOR_JOB, PBS_CPI_GROUPS_MONITOR_JOB]);
+  });
+
+  it("the only job with a diagnosis hook is the PBS CPI job: every other job is wired exactly as before", () => {
+    expect(MONITORED_INGESTION_JOBS.filter((j) => j.diagnose).map((j) => j.ingestionJobName)).toEqual(["pbs-cpi-groups-ingestion"]);
   });
 
   it("every job has a unique ingestionJobName", () => {

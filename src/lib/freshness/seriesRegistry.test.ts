@@ -1,6 +1,11 @@
 import { describe, it, expect } from "vitest";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { getSeriesRegistry, getSeriesDefinition, getSbpSeriesDefinition } from "./seriesRegistry";
 import { getAllSbpIndicatorKeys } from "@/lib/data/sbp";
+import * as adapter from "@/lib/providers/pbsCpiGroupsAdapter";
+import { PBS_CPI_GROUP_COUNT, PBS_CPI_INDICATOR_KEYS, PBS_CPI_SERIES, PBS_SDMX_PROVIDER_ID } from "@/lib/providers/pbsCpiSeries";
+import { CPI_GROUP_COUNT } from "@/lib/inflation/pbsGroups";
 
 describe("seriesRegistry", () => {
   it("registers every SBP indicator plus the extra non-SbpIndicatorKey series plus the Phase 8.3 World Bank pilot plus the Phase 8.12 FRED pilot plus the Phase 8.17 Yahoo Gold pilot", () => {
@@ -11,7 +16,8 @@ describe("seriesRegistry", () => {
     // +3 = (Phase 8.3) the World Bank GDP-growth pilot (Pakistan/India/Bangladesh).
     // +2 = (Phase 8.12) the FRED monthly canonicalization pilot (fedFunds, usCpiInflation).
     // +1 = (Phase 8.17) the Yahoo Gold Monthly canonicalization pilot.
-    expect(registry.size).toBe(sbpKeys.length + 3 + 3 + 2 + 1);
+    // +26 = (Phase F.2f) the PBS CPI-by-group ledger series (1 headline + 12 indices + 12 weights + 1 total weight).
+    expect(registry.size).toBe(sbpKeys.length + 3 + 3 + 2 + 1 + 26);
     for (const key of sbpKeys) {
       expect(registry.has(`sbp:${key}`)).toBe(true);
     }
@@ -82,6 +88,63 @@ describe("seriesRegistry", () => {
     }
     expect(registry.has("yahoo:silverMonthly")).toBe(false);
     expect(registry.has("yahoo:dxyMonthly")).toBe(false);
+  });
+
+  describe("Phase F.2f: the 26 PBS CPI ledger series", () => {
+    it("registers exactly the 26 keys the adapter writes, no more and no fewer", () => {
+      const pbs = [...getSeriesRegistry().values()].filter((d) => d.provider === "pbs-sdmx").map((d) => d.seriesId).sort();
+      expect(pbs).toEqual([...PBS_CPI_INDICATOR_KEYS].sort());
+      expect(pbs).toHaveLength(26);
+    });
+
+    it("every entry: monthly, the reused graceDays=40, honestly expects sourceUpdatedAt (the adapter fills it) but NOT releaseDate (the file has none), no marketType", () => {
+      for (const key of PBS_CPI_INDICATOR_KEYS) {
+        const def = getSeriesDefinition(key);
+        expect(def, key).not.toBeNull();
+        expect(def).toEqual({ seriesId: key, provider: "pbs-sdmx", cadence: "monthly", graceDays: 40, expectsReleaseDate: false, expectsSourceUpdatedAt: true });
+      }
+    });
+
+    it("the grace figure is the SAME constant every other monthly entry uses — no new policy number was introduced", () => {
+      const monthlyGrace = new Set([...getSeriesRegistry().values()].filter((d) => d.cadence === "monthly" && d.provider !== "sbp-easydata").map((d) => d.graceDays));
+      expect([...monthlyGrace]).toEqual([40]);
+    });
+
+    it("the other providers' entries are unchanged (sampled): SBP, World Bank, FRED and Yahoo Gold keep their definitions", () => {
+      expect(getSeriesDefinition("sbp:usdPkr")?.provider).toBe("sbp-easydata");
+      expect(getSeriesDefinition("worldbank:gdpGrowthPak")).toMatchObject({ cadence: "annual", graceDays: 450 });
+      expect(getSeriesDefinition("fred:fedFunds")).toMatchObject({ cadence: "monthly", graceDays: 40, expectsSourceUpdatedAt: false });
+      expect(getSeriesDefinition("yahoo:goldMonthly")).toMatchObject({ cadence: "monthly", graceDays: 40 });
+    });
+
+    it("the registry stays light: it imports the dependency-free series constants, never the XML adapter (it sits in a client-bundle chain)", () => {
+      const src = readFileSync(join(__dirname, "seriesRegistry.ts"), "utf-8");
+      expect(src).toContain('from "@/lib/providers/pbsCpiSeries"');
+      expect(src).not.toMatch(/pbsCpiGroupsAdapter|pbsGroups|ingestionOrchestrator/);
+      const constants = readFileSync(join(__dirname, "..", "providers", "pbsCpiSeries.ts"), "utf-8");
+      expect([...constants.matchAll(/^import /gm)]).toHaveLength(0);
+    });
+
+    it("the adapter re-exports the SAME objects (one definition, not two that could drift)", () => {
+      expect(adapter.PBS_CPI_SERIES).toBe(PBS_CPI_SERIES);
+      expect(adapter.PBS_CPI_INDICATOR_KEYS).toBe(PBS_CPI_INDICATOR_KEYS);
+      expect(adapter.PBS_SDMX_PROVIDER_ID).toBe(PBS_SDMX_PROVIDER_ID);
+      expect(PBS_CPI_GROUP_COUNT).toBe(CPI_GROUP_COUNT);
+    });
+
+    it("the EXISTING freshness engine, unchanged, gives these definitions a sensible verdict on the real production observation (2026-10, Prepared 3 Nov, ingested 6 Nov)", async () => {
+      const { evaluateFreshness } = await import("./freshnessEngine");
+      const def = getSeriesDefinition("pbs:cpiIndexNational") as NonNullable<ReturnType<typeof getSeriesDefinition>>;
+      const obs = { observationPeriod: "2026-10-31", value: 307.6230055276665, releaseDate: null, sourceUpdatedAt: "2026-11-03T06:38:35Z", fetchedAt: "2026-11-06T17:29:30Z", vintage: "2026-11-06T17:29:30Z" };
+      const soon = evaluateFreshness(obs, def, { now: new Date("2026-11-15T12:00:00Z") });
+      const muchLater = evaluateFreshness(obs, def, { now: new Date("2027-01-20T12:00:00Z") });
+      expect(soon.severity).toBe("healthy"); // nothing wrong a fortnight after the release
+      expect(muchLater.state).toBe("stale"); // far past one release cycle plus the 40-day grace, with nothing newer ingested
+      expect(muchLater.severity).toBe("problem");
+      // releaseDate is genuinely null for this source and the definition says so: that must not be held against it
+      expect(def.expectsReleaseDate).toBe(false);
+      expect(soon.reasonCode).not.toMatch(/release-date/i);
+    });
   });
 
   it("returns null for an unknown series id rather than throwing", () => {
