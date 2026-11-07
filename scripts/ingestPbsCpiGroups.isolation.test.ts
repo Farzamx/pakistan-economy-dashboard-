@@ -85,7 +85,10 @@ function absolutise(src: string, dirOfOriginal: string): string {
 }
 
 const PROVIDERS = path.join(ROOT, "src", "lib", "providers");
-const read = (p: string) => readFileSync(p, "utf-8");
+// Line endings are normalised to LF before any text is matched. A fresh Windows checkout (core.autocrlf=true) writes CRLF, and the
+// multi-line anchors below (e.g. "  if (underTest(env)) return false;\n") would then match 0 times. The test must prove the
+// SAME thing whichever line endings the checkout used.
+const read = (p: string) => readFileSync(p, "utf-8").replace(/\r\n/g, "\n");
 
 /** How the mutant gets its PBS file. "network" leaves the real fetch in place (only safe when the run is refused before it). */
 type FetchMode = "network" | "fixture" | "outage";
