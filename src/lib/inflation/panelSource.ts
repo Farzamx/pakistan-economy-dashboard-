@@ -1,4 +1,4 @@
-// Phase F.2e-Prep — PROTOTYPE, NOT WIRED INTO THE PAGE.
+// Phase F.2e-Prep, wired into the Inflation page in the final Inflation milestone (via src/lib/data/cpiGroupPanelSource.ts).
 //
 // Which source supplies the Inflation page's CPI group panel: the PEIC observation ledger (primary) or PBS's live
 // file (fallback)? One decision, made here, in one place, with every outcome named so it can be logged and shown.

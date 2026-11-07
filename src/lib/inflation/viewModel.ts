@@ -19,6 +19,7 @@ import {
   type PolicyDecision,
 } from "@/lib/inflation/analytics";
 import { shiftMonth, toMonthMap, toMonthlyPoints, type MonthKey, type MonthlyPoint } from "@/lib/inflation/periods";
+import type { GroupSourceInfo } from "@/lib/inflation/groupSource";
 import type { CpiGroupPanel } from "@/lib/inflation/pbsGroups";
 
 export interface RawInflationInputs {
@@ -32,10 +33,12 @@ export interface RawInflationInputs {
   index: { observationDate: string; indexValue: number }[] | null;
   /** SBP policy-rate decisions. */
   policy: PolicyDecision[] | null;
-  /** The validated PBS group panel, or null. */
+  /** The validated CPI group panel (from the ledger, or from PBS's file as the fallback), or null. */
   panel: CpiGroupPanel | null;
   /** Why `panel` is null. */
   panelIssues: string[];
+  /** Where `panel` came from and how fresh each part of it is (groupSource.ts). Optional so a caller without that evidence still works. */
+  groupSource?: GroupSourceInfo | null;
   /** The latest 12-group snapshot already in the database (PDF-derived). */
   snapshot: { observationDate: string; groups: { groupNo: number; weightPct: number; yoyPctChange: number }[] } | null;
   /** World Bank annual CPI inflation by ISO3 country code. */
@@ -83,6 +86,8 @@ export interface InflationViewModel {
   horizon: MonthKey | null;
   groups: GroupModel | null;
   panelIssues: string[];
+  /** Which source supplied `groups`, and the six separate freshness facts about it. Null when the caller supplied none. */
+  groupSource: GroupSourceInfo | null;
   /** The database's latest category snapshot, kept for the group sections to use when `groups` is unavailable. */
   snapshot: { month: MonthKey; rows: { groupNo: number; weight: number; yoy: number }[] } | null;
   intl: { series: Record<string, AnnualPoint[]>; lastUpdated: string | null } | null;
@@ -237,6 +242,7 @@ export function buildInflationViewModel(raw: RawInflationInputs): InflationViewM
     horizon: headline.length ? headline[headline.length - 1].month : null,
     groups,
     panelIssues: raw.panelIssues,
+    groupSource: raw.groupSource ?? null,
     snapshot,
     intl: raw.intl,
     checks,

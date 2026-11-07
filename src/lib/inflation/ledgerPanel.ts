@@ -1,4 +1,4 @@
-// Phase F.2e-Prep — PROTOTYPE, NOT WIRED INTO THE PAGE.
+// Phase F.2e-Prep, wired into the Inflation page in the final Inflation milestone (via src/lib/data/cpiGroupPanelSource.ts).
 //
 // Assembles the 26 scalar PBS series that live in the observation ledger
 // (pbs:cpiIndexNational, pbs:cpiGroupIndex01…12, pbs:cpiGroupWeight01…12, pbs:cpiWeightTotal — written by the F.2b

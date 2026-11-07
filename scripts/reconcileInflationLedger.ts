@@ -1,4 +1,4 @@
-// READ-ONLY verification harness for the Inflation page's planned move from live PBS parsing to the observation
+// READ-ONLY verification harness for the Inflation page's move from live PBS parsing to the observation
 // ledger (Phase F.2e-Prep). It changes nothing: no write, no ingestion, no page.
 //
 //   Part A  INDEPENDENT AUDIT of the production ledger — raw read-RPC rows, its own arithmetic, none of the new reader

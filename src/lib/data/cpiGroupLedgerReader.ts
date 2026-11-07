@@ -1,4 +1,4 @@
-// Phase F.2e-Prep — PROTOTYPE, NOT WIRED INTO THE PAGE.
+// Phase F.2e-Prep, wired into the Inflation page in the final Inflation milestone (via src/lib/data/cpiGroupPanelSource.ts).
 //
 // Reads the 26 PBS CPI series from the observation ledger through the EXISTING public read RPC
 // get_canonical_observation_provenance (migration 0052) and hands them to the pure assembler. Nothing here writes;
