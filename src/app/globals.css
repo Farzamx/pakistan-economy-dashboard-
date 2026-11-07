@@ -1564,3 +1564,89 @@ body {
     transform: translate3d(-50%, 0, 0);
   }
 }
+
+/* ── Analytical charts palette (PEIC indicator-page upgrades) ──────────────
+   Generated from src/lib/analytics/vizPalette.ts, which is the source of truth;
+   vizPalette.test.ts asserts these values match it and validates them:
+   contrast against the surface, colour-blind separation of neighbouring series,
+   monotonic ramps and 4.5:1 text on every heatmap class. Edit the .ts file, not
+   this block (it is regenerated from it). Purely additive: no existing token or
+   rule is changed. */
+:root,
+[data-theme="light"] {
+  --pe-viz-blue: #1F4FA3;
+  --pe-viz-orange: #C2410C;
+  --pe-viz-teal: #0F7B84;
+  --pe-viz-purple: #7E3FB0;
+  --pe-viz-amber: #9A6700;
+  --pe-viz-slate: #8A8F98;
+  /* yoy: sequential, % year on year */
+  --pe-heat-yoy-neg: #7FB2DD;
+  --pe-heat-yoy-neg-ink: #0F1B2D;
+  --pe-heat-yoy-0: #FEF0D9;
+  --pe-heat-yoy-0-ink: #0F1B2D;
+  --pe-heat-yoy-1: #FDD49E;
+  --pe-heat-yoy-1-ink: #0F1B2D;
+  --pe-heat-yoy-2: #FCAB6B;
+  --pe-heat-yoy-2-ink: #0F1B2D;
+  --pe-heat-yoy-3: #FC8D59;
+  --pe-heat-yoy-3-ink: #0F1B2D;
+  --pe-heat-yoy-4: #EF6548;
+  --pe-heat-yoy-4-ink: #0F1B2D;
+  --pe-heat-yoy-5: #D7301F;
+  --pe-heat-yoy-5-ink: #FFFFFF;
+  --pe-heat-yoy-6: #990000;
+  --pe-heat-yoy-6-ink: #FFFFFF;
+  /* mom: diverging, % month on month */
+  --pe-heat-mom-n2: #2B6CB0;
+  --pe-heat-mom-n2-ink: #FFFFFF;
+  --pe-heat-mom-n1: #A9CBE8;
+  --pe-heat-mom-n1-ink: #0F1B2D;
+  --pe-heat-mom-0: #EEF0F3;
+  --pe-heat-mom-0-ink: #0F1B2D;
+  --pe-heat-mom-p1: #FDD49E;
+  --pe-heat-mom-p1-ink: #0F1B2D;
+  --pe-heat-mom-p2: #F28B52;
+  --pe-heat-mom-p2-ink: #0F1B2D;
+  --pe-heat-mom-p3: #B8321A;
+  --pe-heat-mom-p3-ink: #FFFFFF;
+}
+
+[data-theme="dark"] {
+  --pe-viz-blue: #7FB0FF;
+  --pe-viz-orange: #FF8A66;
+  --pe-viz-teal: #35C7C2;
+  --pe-viz-purple: #B88AF0;
+  --pe-viz-amber: #EDC24A;
+  --pe-viz-slate: #A9B4C2;
+  /* yoy: sequential, % year on year */
+  --pe-heat-yoy-neg: #2B5F8E;
+  --pe-heat-yoy-neg-ink: #FFFFFF;
+  --pe-heat-yoy-0: #2A2018;
+  --pe-heat-yoy-0-ink: #FFFFFF;
+  --pe-heat-yoy-1: #4A3320;
+  --pe-heat-yoy-1-ink: #FFFFFF;
+  --pe-heat-yoy-2: #6E4A26;
+  --pe-heat-yoy-2-ink: #FFFFFF;
+  --pe-heat-yoy-3: #9A6A2C;
+  --pe-heat-yoy-3-ink: #FFFFFF;
+  --pe-heat-yoy-4: #CF8A3A;
+  --pe-heat-yoy-4-ink: #0F1B2D;
+  --pe-heat-yoy-5: #F2A65A;
+  --pe-heat-yoy-5-ink: #0F1B2D;
+  --pe-heat-yoy-6: #FFD08F;
+  --pe-heat-yoy-6-ink: #0F1B2D;
+  /* mom: diverging, % month on month */
+  --pe-heat-mom-n2: #5B9BDD;
+  --pe-heat-mom-n2-ink: #0F1B2D;
+  --pe-heat-mom-n1: #29507A;
+  --pe-heat-mom-n1-ink: #FFFFFF;
+  --pe-heat-mom-0: #26292E;
+  --pe-heat-mom-0-ink: #FFFFFF;
+  --pe-heat-mom-p1: #5A3C22;
+  --pe-heat-mom-p1-ink: #FFFFFF;
+  --pe-heat-mom-p2: #CC7A35;
+  --pe-heat-mom-p2-ink: #0F1B2D;
+  --pe-heat-mom-p3: #FFA566;
+  --pe-heat-mom-p3-ink: #0F1B2D;
+}
