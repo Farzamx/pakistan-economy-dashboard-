@@ -19,6 +19,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useLanguage } from "@/components/LanguageProvider";
 import { SEO_PAGES } from "@/lib/seoConfig";
+import { CONSOLIDATED_INTO_INFLATION_SLUGS } from "@/lib/appNav";
 
 export interface SearchEntry {
   label: string;
@@ -26,12 +27,15 @@ export interface SearchEntry {
   keywords?: string[];
 }
 
+/** Terms that lead to the Inflation Rate page now that core and food inflation are analysed there. */
+export const INFLATION_RATE_SEARCH_ALIASES = ["Core Inflation", "NFNE", "Food Inflation", "CPI Inflation"];
+
 export const SEARCH_INDEX: SearchEntry[] = [
   { label: "Overview", href: "/overview#overview" },
   { label: "Risk Intelligence", href: "/overview#risk-intelligence" },
   { label: "GDP", href: "/overview#gdp", keywords: ["GDP Growth"] },
   { label: "Inflation", href: "/overview#inflation", keywords: ["CPI"] },
-  { label: "Prices", href: "/overview#price-indices", keywords: ["Core Inflation", "WPI", "Wholesale"] },
+  { label: "Prices", href: "/overview#price-indices", keywords: ["WPI", "Wholesale"] },
   { label: "Monetary Policy", href: "/overview#monetary-policy", keywords: ["Policy Rate", "KIBOR", "T-Bill", "PIB", "Interest Rate"] },
   { label: "Global Markets", href: "/overview#global-markets", keywords: ["Gold", "Oil", "Brent", "WTI"] },
   { label: "Real Economy", href: "/overview#real-economy" },
@@ -53,10 +57,16 @@ export const SEARCH_INDEX: SearchEntry[] = [
   // from the single SEO_PAGES registry so a new page added there is
   // automatically searchable with zero changes needed here. Previously
   // none of these 37 pages were reachable from search at all.
-  ...SEO_PAGES.map((p) => ({ label: p.label, href: `/${p.slug}` })),
+  // Except the pages now covered by the Inflation Rate page (see CONSOLIDATED_INTO_INFLATION_SLUGS): they get no result of their own.
+  // People who still search for them are sent to Inflation Rate, which is where that analysis now is, via the aliases below.
+  ...SEO_PAGES.filter((p) => !(CONSOLIDATED_INTO_INFLATION_SLUGS as readonly string[]).includes(p.slug)).map((p) => ({
+    label: p.label,
+    href: `/${p.slug}`,
+    ...(p.slug === "inflation-rate-pakistan" ? { keywords: INFLATION_RATE_SEARCH_ALIASES } : {}),
+  })),
 ];
 
-function matches(entry: SearchEntry, query: string): boolean {
+export function matches(entry: SearchEntry, query: string): boolean {
   const q = query.toLowerCase();
   if (entry.label.toLowerCase().includes(q)) return true;
   return entry.keywords?.some((k) => k.toLowerCase().includes(q)) ?? false;

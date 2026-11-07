@@ -8,6 +8,7 @@ import fs from "node:fs";
 import path from "node:path";
 import {
   APP_NAV,
+  CONSOLIDATED_INTO_INFLATION_SLUGS,
   INDICATOR_GROUPS,
   INDICATOR_HUB_SLUGS,
   OVERVIEW_SECTIONS,
@@ -81,18 +82,53 @@ describe("registry integrity — no placeholder links", () => {
     for (const l of links) expect(Boolean(l.labelKey || l.label), l.id).toBe(true);
   });
 
-  it("covers every indicator page in SEO_PAGES exactly once (hub pages via the footer)", () => {
+  it("covers every indicator page in SEO_PAGES exactly once (hub pages via the footer; pages consolidated into Inflation Rate not at all)", () => {
     const listed = INDICATOR_GROUPS.flatMap((g) => g.items)
       .filter((i) => i.kind === "link")
       .map((i) => (i.kind === "link" ? hrefPath(i.href).slice(1) : ""));
     for (const page of SEO_PAGES) {
       if ((INDICATOR_HUB_SLUGS as readonly string[]).includes(page.slug)) continue;
-      expect(listed.filter((s) => s === page.slug), page.slug).toHaveLength(1);
+      const expected = (CONSOLIDATED_INTO_INFLATION_SLUGS as readonly string[]).includes(page.slug) ? 0 : 1;
+      expect(listed.filter((s) => s === page.slug), page.slug).toHaveLength(expected);
     }
   });
 
   it("has the approved top-level order", () => {
     expect(APP_NAV.map((e) => e.id)).toEqual(["overview", "indicators", "markets", "calendar", "news", "research", "tools"]);
+  });
+});
+
+describe("Prices menu: Inflation Rate is the one CPI destination", () => {
+  const prices = INDICATOR_GROUPS.find((g) => g.id === "prices");
+  const priceHrefs = (prices?.items ?? []).filter((i) => i.kind === "link").map((i) => (i.kind === "link" ? i.href : ""));
+
+  it("lists exactly Inflation Rate, Wholesale (WPI), Weekly (SPI) and the SPI Index, in that order", () => {
+    expect(priceHrefs).toEqual(["/inflation-rate-pakistan", "/pakistan-wholesale-inflation", "/weekly-inflation-pakistan", "/spi-index-pakistan"]);
+  });
+
+  it("the consolidated pages are exactly core and food inflation — and not WPI, SPI or the SPI index", () => {
+    expect([...CONSOLIDATED_INTO_INFLATION_SLUGS].sort()).toEqual(["pakistan-core-inflation", "pakistan-food-inflation"]);
+    for (const distinct of ["pakistan-wholesale-inflation", "weekly-inflation-pakistan", "spi-index-pakistan", "inflation-rate-pakistan"]) {
+      expect((CONSOLIDATED_INTO_INFLATION_SLUGS as readonly string[]).includes(distinct), distinct).toBe(false);
+    }
+  });
+
+  it("neither consolidated page appears anywhere in the navigation (every menu, the drawer's source, the footer)", () => {
+    const all = allNavLinks().map((l) => hrefPath(l.href));
+    for (const slug of CONSOLIDATED_INTO_INFLATION_SLUGS) expect(all, slug).not.toContain(`/${slug}`);
+    const labels = allNavLinks().map((l) => (l.label ?? "").toLowerCase());
+    expect(labels.some((l) => /core inflation|food inflation/.test(l))).toBe(false);
+  });
+
+  it("direct URLs keep working: both pages still exist, and remain in the SEO registry (sitemap, related links, structured data)", () => {
+    for (const slug of CONSOLIDATED_INTO_INFLATION_SLUGS) {
+      expect(pageExists(slug), `/${slug} must still be routable`).toBe(true);
+      expect(SEO_PAGES.some((p) => p.slug === slug), `${slug} must stay in SEO_PAGES`).toBe(true);
+    }
+  });
+
+  it("every retained Prices shortcut navigates to a real page", () => {
+    for (const href of priceHrefs) expect(pageExists(hrefPath(href)), href).toBe(true);
   });
 });
 

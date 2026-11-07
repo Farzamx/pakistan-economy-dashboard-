@@ -75,14 +75,23 @@ function indicator(slug: string): NavLinkItem {
 /** Indicator pages that are hubs rather than single indicators — linked from the menu footer, not listed as items. */
 export const INDICATOR_HUB_SLUGS = ["pakistan-economic-indicators", "pakistan-economic-dashboard"] as const;
 
+/**
+ * Indicator pages whose analysis now lives inside the Inflation Rate page (/inflation-rate-pakistan covers headline CPI, core NFNE,
+ * food inflation, the 12 CPI expenditure groups and their contributions). They get NO menu entry and NO search result of their own:
+ * Inflation Rate is the one CPI destination, and searching "core inflation" or "food inflation" leads there (GlobalSearch aliases).
+ *
+ * What this list does NOT do: the pages keep their routes (direct URLs, bookmarks and search-engine results still work), their data,
+ * their SEO_PAGES entries (sitemap, related-links, structured data) and their components. WPI, weekly inflation (SPI) and the SPI
+ * index are different statistical measures from monthly CPI and are deliberately NOT in this list.
+ */
+export const CONSOLIDATED_INTO_INFLATION_SLUGS = ["pakistan-core-inflation", "pakistan-food-inflation"] as const;
+
 export const INDICATOR_GROUPS: NavGroup[] = [
   {
     id: "prices",
     labelKey: "nav.prices",
     items: [
       indicator("inflation-rate-pakistan"),
-      indicator("pakistan-core-inflation"),
-      indicator("pakistan-food-inflation"),
       indicator("pakistan-wholesale-inflation"),
       indicator("weekly-inflation-pakistan"),
       indicator("spi-index-pakistan"),
