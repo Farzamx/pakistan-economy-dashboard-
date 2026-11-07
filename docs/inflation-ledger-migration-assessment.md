@@ -1,8 +1,14 @@
 # Inflation page: moving from live PBS parsing to the observation ledger
 
-**Phase F.2e-Prep — assessment and test preparation. Nothing here changes the page, its data source, the database, the
-scheduler or any methodology.** The prototype modules named below exist in the repository, are fully tested, and are
-**not imported by the page**.
+> **Status update — final Inflation milestone (F.3): IMPLEMENTED.** The Inflation page now reads its CPI-group panel from the ledger first and from
+> PBS's file as the fallback, exactly as designed in sections 2–3 and 8–10 below, through `src/lib/data/cpiGroupPanelSource.ts`. This document is kept as the
+> design and verification record; where it says "prototype", "unwired" or "not imported by the page" it describes the F.2e-Prep state, which has been superseded.
+> The reconciliation in section 4 was re-run against production on the day of the switch with the same result (26 series, 52 months, 1,352 observations,
+> 3,211 derived values, maximum difference 0). The architecture as built is described in [inflation-page.md](inflation-page.md). Scheduled ingestion is still
+> **not** active (section 7 remains the operative guidance): that is an operational follow-up, not a page blocker.
+
+**Phase F.2e-Prep — assessment and test preparation (historical).** At the time of writing nothing here changed the page, its data source, the database, the
+scheduler or any methodology; the prototype modules named below existed in the repository, were fully tested, and were **not yet imported by the page**.
 
 | Verified | Result |
 |---|---|
@@ -42,7 +48,7 @@ indices, 12 weights — exactly what `CpiGroupPanel` holds. What it does **not**
 * history before 2022-07 — absent from PBS's file too. Its first month has been 2022-07 in every inspection so far while the file grew at the end (0 of 48 previously seeded months changed between 31 July and 6 November). That is observation, not a guarantee: if PBS ever trims the start, the ledger would simply keep more history than the PBS fallback, and the fallback would show a shorter window;
 * the page's other inputs — SBP headline/core/food/policy series, the `cpi_monthly_index` table, the PDF-derived category snapshot, the World Bank — are **separate sources and unchanged**.
 
-## 2. Reader architecture (prototype, unwired)
+## 2. Reader architecture (built in F.2e-Prep; wired into the page in F.3)
 
 ```
  get_canonical_observation_provenance ×26  ──►  readLedgerSeries()     src/lib/data/cpiGroupLedgerReader.ts   (I/O, never throws)
@@ -193,13 +199,13 @@ The CPI ingestion task and watchdog are **not registered**. Can the ledger-first
 
 ## 8. Files expected to change in the implementation phase
 
-Already in the repository from this phase (new, tested, unwired): `src/lib/inflation/{ledgerPanel,panelSource,ledgerReconciliation}.ts` (+ tests, `__fixtures__/ledgerFixtures.ts`),
+Already in the repository from F.2e-Prep (new, tested; wired into the page by F.3): `src/lib/inflation/{ledgerPanel,panelSource,ledgerReconciliation}.ts` (+ tests, `__fixtures__/ledgerFixtures.ts`),
 `src/lib/data/cpiGroupLedgerReader.ts` (+ test), `scripts/reconcileInflationLedger.ts` (+ test).
 
 To change (bounded):
 | File | Change |
 |---|---|
-| `src/lib/data/cpiGroupPanelSource.ts` **(new, `server-only`)** | wire `readLedgerPanel` + existing `getCpiGroupPanel` + `selectPanel`; emit the log line |
+| `src/lib/data/cpiGroupPanelSource.ts` **(new, `server-only`)** | wire `readLedgerPanel` + existing `getCpiGroupPanel` + `selectPanel`; emit the log line — **done in F.3** (the source evidence is carried by `src/lib/inflation/groupSource.ts`, which also supplies the six freshness facts) |
 | `src/lib/data/inflationPageData.ts` | replace the `getCpiGroupPanel()` call with the resolver; pass `source` into the model |
 | `src/lib/inflation/viewModel.ts` | add `groupSource` to `InflationViewModel` (type + builder) |
 | `src/components/inflation/MethodologySection.tsx` | show `describeSource()` |
@@ -224,7 +230,7 @@ To change (bounded):
 **Rollback**: the change is confined to one call site in `inflationPageData.ts` plus an additive view-model field. Revert that commit (or redeploy the previous one) and the page is
 exactly the F.1/F.2a page; the PBS path was never modified. No data migration to undo; the ledger is untouched either way.
 
-## 10. Bounded implementation plan (needs separate authorisation)
+## 10. Bounded implementation plan (executed in F.3)
 
 0. Decide F.2c ordering (§7). 1. Add `cpiGroupPanelSource.ts` + resolver test (fake ledger/PBS, the §3 matrix through the real wiring). 2. Add `groupSource` to the view model + tests.
 3. Render the label. 4. Switch `inflationPageData.ts`; update the page-contract and failure-policy tests. 5. Run `scripts/reconcileInflationLedger.ts` (must say ALL CHECKS PASSED).
