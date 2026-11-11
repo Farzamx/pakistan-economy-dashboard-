@@ -38,8 +38,15 @@ Read from the live Windows Task Scheduler (read-only), `package.json`, `.github/
 
 Every scheduled action has the same shape: `F:\node.exe "<repo>\node_modules\tsx\dist\cli.mjs" "<repo>\scripts\<name>.ts"`,
 **working directory = the repo root**, user `farza`, interactive logon. No scheduled command uses `npm`.
-**No GitHub Actions workflow runs any of these scripts** (the four workflows call other things; one comment mentions
-`ingestSbp.ts`). **Vercel crons call API routes only** (`vercel.json`). No `.bat`/`.ps1` wrappers exist.
+**No GitHub Actions workflow runs any of the scheduled scripts above** (three of the workflows call other things; one comment
+mentions `ingestSbp.ts`). The one exception is read-only: `.github/workflows/cpi-pbs-runner-probe.yml` (Stage 1 of the GitHub
+Actions evaluation for CPI ingestion) is **dispatch-only** and runs the *default dry run* of `ingestPbsCpiGroups.ts`
+(`npm run ingest:pbscpigroups`, no flag) on a GitHub-hosted runner, to show that the PBS file is reachable and passes the
+production validation from there. It has no schedule, no pull-request or push trigger, no secret, no environment, no database
+credential and no write flag, and it cannot write: the dry run applies its plan to an in-memory ledger only. It is not a
+scheduler for this job and does not register one. `src/lib/cpiIngestionSchedule.test.ts` keeps the script out of every other
+workflow and pins each of these properties for the probe. **Vercel crons call API routes only** (`vercel.json`). No
+`.bat`/`.ps1` wrappers exist.
 
 Exit codes matter for the scheduler (SBP has `RestartCount 3`) and were left alone: `1` for a missing secret / total
 failure / fatal error, `0` otherwise; the calendar dry run uses `process.exitCode = 1`.

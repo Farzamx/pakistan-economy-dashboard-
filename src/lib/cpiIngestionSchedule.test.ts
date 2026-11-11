@@ -52,11 +52,119 @@ describe("the definition is well-formed and uses the project's established task 
     expect(xml).not.toMatch(/supabase\.co|C:\\|F:\\|eyJ|secret|apikey|@\w+\.\w+/i);
   });
 
-  it("is the only task definition in ops/scheduled-tasks, and the repository has no other scheduler for this job", () => {
+  it("is the only task definition in ops/scheduled-tasks, and Vercel has no cron for this job", () => {
     expect(readdirSync(join(ROOT, "ops", "scheduled-tasks"))).toEqual(["peic-pbs-cpi-groups-ingestion.xml"]);
     expect(readFileSync(join(ROOT, "vercel.json"), "utf-8")).not.toMatch(/pbs-?cpi|ingestPbs/i);
-    const workflows = readdirSync(join(ROOT, ".github", "workflows")).map((f) => readFileSync(join(ROOT, ".github", "workflows", f), "utf-8")).join("\n");
-    expect(workflows).not.toMatch(/ingestPbsCpiGroups|ingest:pbscpigroups/);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+// GitHub Actions: the repository has no other scheduler for this job. Exactly ONE workflow may name the ingestion script, and
+// only the read-only Stage 1 runner probe (G.8): dispatch-only, no write flag, no secret, no environment, no schedule. Every
+// other workflow must still be free of the script, exactly as before.
+// ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+const WORKFLOWS_DIR = join(ROOT, ".github", "workflows");
+const PROBE_FILE = "cpi-pbs-runner-probe.yml";
+const SCRIPT_REF = /ingestPbsCpiGroups|ingest:pbscpigroups/;
+const readWorkflow = (name: string) => readFileSync(join(WORKFLOWS_DIR, name), "utf-8");
+
+/** The rule names the probe workflow breaks, ([] = compliant). Comments are ignored: they document, they do not execute. */
+function probeViolations(text: string): string[] {
+  const body = text
+    .split(/\r?\n/)
+    .filter((l) => !/^\s*#/.test(l))
+    .map((l) => l.replace(/\s+#\s.*$/, ""))
+    .join("\n");
+  const v: string[] = [];
+
+  // Triggers: the `on:` block must be exactly `workflow_dispatch:`; nothing automatic, nothing scheduled.
+  const onBlock = /^on:[ \t]*\n((?:[ \t]+.*\n|[ \t]*\n)*)/m.exec(body + "\n")?.[1] ?? "";
+  const onKeys = onBlock.split("\n").map((l) => l.trim()).filter(Boolean);
+  if (onKeys.length !== 1 || onKeys[0] !== "workflow_dispatch:") v.push("trigger: the only trigger must be workflow_dispatch");
+  if (/^\s*schedule\s*:|\bcron\s*:/m.test(body)) v.push("schedule: a recurring trigger is not allowed");
+  if (/pull_request|workflow_run|repository_dispatch|^\s*push\s*:/m.test(body)) v.push("automatic-trigger: pull-request, push, workflow_run and repository_dispatch are not allowed");
+
+  // Writes, credentials, environments.
+  if (/--write|--confirm-write-host/.test(body)) v.push("write-flag: no write or host-confirmation flag");
+  if (/secrets\s*\.|\$\{\{\s*secrets/.test(body)) v.push("secrets: no secret reference");
+  if (/NOTIFICATION_WORKER_SECRET|SUPABASE|\.env\.local|PEIC_CONFIRM_WRITE_HOST/i.test(body)) v.push("credentials: no database credential or env-file reference");
+  if (/^\s*environment\s*:/m.test(body)) v.push("environment: no environment declaration");
+  if (/^\s*concurrency\s*:/m.test(body)) v.push("concurrency: out of Stage 1 scope");
+  if (/continue-on-error/.test(body)) v.push("continue-on-error: failures must not be masked");
+  if (/\bprintenv\b|^\s*env\s*(\||>|$)|set\s+-x|\bdeclare\s+-x\b/m.test(body)) v.push("env-dump: no environment dump or shell tracing");
+
+  // Token, runner, installs.
+  const perms = body.match(/^\s*permissions\s*:/gm) ?? [];
+  if (perms.length !== 1 || !/^permissions:\s*\n\s+contents:\s*read\s*$/m.test(body) || /:\s*write\b/.test(body)) v.push("permissions: exactly `contents: read`, once, at workflow level");
+  if (!/^\s*runs-on:\s*ubuntu-24\.04\s*$/m.test(body)) v.push("runner: ubuntu-24.04 is pinned");
+  if (!/^\s*timeout-minutes:\s*\d+\s*$/m.test(body)) v.push("timeout: a job timeout is required");
+  if (!/persist-credentials:\s*false/.test(body)) v.push("checkout: persist-credentials must be false");
+  if (!/node-version:\s*['"]?24['"]?\s*$/m.test(body)) v.push("node: Node.js 24");
+  if (!/^\s*npm ci --ignore-scripts\s*$/m.test(body)) v.push("install: npm ci --ignore-scripts");
+  const uses = [...body.matchAll(/^\s*(?:-\s*)?uses:\s*(\S+)\s*$/gm)].map((m) => m[1]);
+  const allowedUses = /^actions\/(checkout|setup-node)@[0-9a-f]{40}$/;
+  if (uses.length !== 2 || !uses.every((u) => allowedUses.test(u)) || new Set(uses.map((u) => u.split("@")[0])).size !== 2) v.push("actions: exactly checkout and setup-node, each pinned to a full 40-hex commit SHA");
+
+  // The script: named exactly once, as the plain dry run (no argument, so no flag can ride along).
+  const scriptLines = body.split("\n").filter((l) => SCRIPT_REF.test(l));
+  if (scriptLines.length !== 1 || !/^\s*npm run --silent ingest:pbscpigroups > probe\.log 2>&1 \|\| code=\$\?\s*$/.test(scriptLines[0])) v.push("script: the ingestion script appears once, as the plain default dry run");
+  return v;
+}
+
+describe("GitHub Actions: no workflow may run CPI ingestion except the read-only Stage 1 PBS runner probe", () => {
+  const files = readdirSync(WORKFLOWS_DIR);
+
+  it("every workflow other than the probe is free of the ingestion script, exactly as before", () => {
+    for (const f of files.filter((n) => n !== PROBE_FILE)) expect(readWorkflow(f), f).not.toMatch(SCRIPT_REF);
+  });
+
+  it("the probe exists, and it is the only workflow that names the script", () => {
+    expect(files).toContain(PROBE_FILE);
+    expect(files.filter((f) => SCRIPT_REF.test(readWorkflow(f)))).toEqual([PROBE_FILE]);
+  });
+
+  it("the probe is dispatch-only, read-only and credential-free: no schedule, no pull-request trigger, no write flag, no secret, no environment, pinned actions", () => {
+    expect(probeViolations(readWorkflow(PROBE_FILE))).toEqual([]);
+  });
+
+  describe("each probe rule can fail (a check that cannot fail proves nothing)", () => {
+    const real = readWorkflow(PROBE_FILE).replace(/\r\n/g, "\n"); // a Windows checkout may hold CRLF; the mutations below are written with LF
+    const mutate = (from: string | RegExp, to: string) => {
+      const out = real.replace(from, to);
+      expect(out, `mutation target not found: ${String(from)}`).not.toBe(real);
+      return out;
+    };
+    const cases: [string, string, RegExp][] = [
+      ["adds a schedule", mutate("  workflow_dispatch:\n", "  workflow_dispatch:\n  schedule:\n    - cron: '17 4 * * *'\n"), /^schedule:/],
+      ["adds a pull_request trigger", mutate("  workflow_dispatch:\n", "  workflow_dispatch:\n  pull_request:\n"), /^trigger:/],
+      ["adds a push trigger", mutate("  workflow_dispatch:\n", "  workflow_dispatch:\n  push:\n"), /^automatic-trigger:/],
+      ["replaces the trigger with an inline list", mutate(/^on:\s*\n\s+workflow_dispatch:\s*\n/m, "on: [push]\n"), /^trigger:/],
+      ["passes --write", mutate("ingest:pbscpigroups >", "ingest:pbscpigroups -- --write >"), /^write-flag:/],
+      ["adds any argument to the script", mutate("ingest:pbscpigroups >", "ingest:pbscpigroups -- --ledger live-read >"), /^script:/],
+      ["adds a second script invocation", mutate("      - name: Evaluate and report", "      - name: Again\n        run: npm run ingest:pbscpigroups\n\n      - name: Evaluate and report"), /^script:/],
+      ["references a secret", mutate("PBS_URL: https", "TOKEN: ${{ secrets.ANYTHING }}\n          PBS_URL: https"), /^secrets:/],
+      ["references the worker secret by name", mutate("PBS_URL: https", "NOTIFICATION_WORKER_SECRET: x\n          PBS_URL: https"), /^credentials:/],
+      ["declares an environment", mutate("    runs-on: ubuntu-24.04\n", "    runs-on: ubuntu-24.04\n    environment: production\n"), /^environment:/],
+      ["adds a concurrency group", mutate("    runs-on: ubuntu-24.04\n", "    runs-on: ubuntu-24.04\n    concurrency: x\n"), /^concurrency:/],
+      ["grants write permission", mutate("  contents: read\n", "  contents: write\n"), /^permissions:/],
+      ["adds a second permissions block", mutate("    runs-on: ubuntu-24.04\n", "    runs-on: ubuntu-24.04\n    permissions:\n      contents: read\n"), /^permissions:/],
+      ["floats the runner", mutate("ubuntu-24.04", "ubuntu-latest"), /^runner:/],
+      ["unpins checkout to a tag", mutate(/actions\/checkout@[0-9a-f]{40}/, "actions/checkout@v7"), /^actions:/],
+      ["adds an unlisted action", mutate("      - name: Set up Node.js 24", "      - uses: some/other-action@0123456789abcdef0123456789abcdef01234567\n      - name: Set up Node.js 24"), /^actions:/],
+      ["removes --ignore-scripts", mutate("npm ci --ignore-scripts", "npm ci"), /^install:/],
+      ["lets the checkout keep its credentials", mutate("persist-credentials: false", "persist-credentials: true"), /^checkout:/],
+      ["dumps the environment", mutate("          echo \"curl exit", "          printenv\n          echo \"curl exit"), /^env-dump:/],
+      ["masks a failure", mutate("        if: always()\n", "        if: always()\n        continue-on-error: true\n"), /^continue-on-error:/],
+    ];
+    it.each(cases)("%s", (_name, text, rule) => {
+      expect(probeViolations(text).some((x) => rule.test(x))).toBe(true);
+    });
+
+    it("comments cannot hide a violation, and a rule word inside a comment is not a violation", () => {
+      expect(probeViolations(real + "\n# schedule: not a trigger, only a comment\n# --write\n")).toEqual([]);
+      expect(probeViolations(real + "\nschedule:\n  - cron: '1 1 * * *'\n").some((x) => /^schedule:/.test(x))).toBe(true);
+    });
   });
 });
 

@@ -1,0 +1,146 @@
+# CPI PBS Runner Probe — Stage 1 of the GitHub Actions evaluation for CPI ingestion.
+#
+# WHAT IT DOES
+# From a GitHub-hosted runner it (1) asks PBS for the CPI file once with curl and records only the HTTP status and the
+# response time, and (2) runs the repository's existing DEFAULT dry run, which downloads the same file, validates it with the
+# production loader and reports what a first-run ingestion would contain. The dry run is AUTHORITATIVE; the curl line is a
+# diagnostic only (curl and Node can be treated differently by a remote edge).
+#
+# WHAT IT DELIBERATELY DOES NOT DO
+#   - dispatch only: no schedule, no pull request or push trigger
+#   - no environment, no secrets, no database credentials, no Supabase URL or key: the dry run needs none of them
+#   - never passes a write flag: the dry run applies its planned operations to an in-memory ledger only
+#   - never prints an environment dump; the log carries the dry-run report and the summary below, nothing else
+#   - installs dependencies with lifecycle scripts disabled and persists no checkout credentials
+#
+# The repository is public, so this log and summary are public. src/lib/cpiIngestionSchedule.test.ts pins every rule above for
+# this file and keeps the ingestion script out of every other workflow.
+#
+# Third-party code: only two first-party actions, each pinned to the full commit SHA of the release named beside it.
+
+name: CPI PBS Runner Probe
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  probe:
+    name: Probe the PBS CPI source from a GitHub-hosted runner
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+
+    steps:
+      - name: HTTP status and response time (diagnostic; body discarded)
+        env:
+          PBS_URL: https://www.pbs.gov.pk/wp-content/uploads/2020/07/CPI.xml
+        run: |
+          status="000"
+          seconds="0"
+          curl_exit=0
+          out="$(curl -s -o /dev/null -w '%{http_code} %{time_total}' --max-time 30 "$PBS_URL")" || curl_exit=$?
+          if [ "$curl_exit" -eq 0 ]; then
+            s="${out%% *}"
+            t="${out#* }"
+            case "$s" in [0-9][0-9][0-9]) status="$s" ;; esac
+            case "$t" in ''|*[!0-9.]*) ;; *) seconds="$t" ;; esac
+          fi
+          echo "PROBE_HTTP_STATUS=${status}" >> "$GITHUB_ENV"
+          echo "PROBE_HTTP_SECONDS=${seconds}" >> "$GITHUB_ENV"
+          echo "PROBE_CURL_EXIT=${curl_exit}" >> "$GITHUB_ENV"
+          echo "curl exit ${curl_exit}; HTTP status ${status}; response time ${seconds}s"
+
+      - name: Check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js 24
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+          package-manager-cache: false
+
+      - name: Install dependencies (lifecycle scripts disabled)
+        run: |
+          node_version="$(node --version)"
+          echo "PROBE_NODE_VERSION=${node_version}" >> "$GITHUB_ENV"
+          echo "node ${node_version}"
+          case "$node_version" in v24.*) ;; *) echo "Expected Node 24, got ${node_version}"; exit 1 ;; esac
+          npm ci --ignore-scripts
+
+      - name: Default dry run (no write flag, no database, no environment file)
+        run: |
+          code=0
+          npm run --silent ingest:pbscpigroups > probe.log 2>&1 || code=$?
+          cat probe.log
+          echo "PROBE_DRYRUN_EXIT=${code}" >> "$GITHUB_ENV"
+          exit "$code"
+
+      - name: Evaluate and report
+        if: always()
+        run: |
+          # Fails closed: every expectation must be positively found; a missing log or variable is a failure.
+          pass=1
+          rows=""
+          check() { # name, ok(0/1), detail
+            local mark="PASS"
+            if [ "$2" != "1" ]; then mark="FAIL"; pass=0; fi
+            rows="${rows}| $1 | ${mark} | $3 |"$'\n'
+          }
+
+          http="${PROBE_HTTP_STATUS:-000}"
+          secs="${PROBE_HTTP_SECONDS:-0}"
+          node_v="${PROBE_NODE_VERSION:-unknown}"
+          dry_exit="${PROBE_DRYRUN_EXIT:-missing}"
+
+          obs=""
+          months=""
+          have_log=0
+          if [ -s probe.log ]; then have_log=1; fi
+          check "probe.log present" "$have_log" "$([ "$have_log" = 1 ] && echo 'yes' || echo 'MISSING: the dry run did not produce a report')"
+          check "dry run exit code 0 (authoritative)" "$([ "$dry_exit" = "0" ] && echo 1 || echo 0)" "exit ${dry_exit}"
+
+          if [ "$have_log" = 1 ]; then
+            has() { grep -Eq "$1" probe.log && echo 1 || echo 0; }
+            check "file ACCEPTED" "$(has '=> file ACCEPTED')" "validation verdict line"
+            check "26 series" "$(has '^ +series in source +26 *$')" "planned-operations table"
+            check "base period 2015/2016" "$(has '^ +base period +2015/2016 *$')" "dataset block"
+            check "DATABASE WRITES: 0" "$(has '^DATABASE WRITES: 0( |$)')" "stated by the report"
+            check "no non-zero write claim" "$(grep -Eq 'DATABASE WRITES: [1-9]' probe.log && echo 0 || echo 1)" "no line claims writes"
+            obs="$(grep -E '^ +observations in source +[0-9]+ *$' probe.log | grep -Eo '[0-9]+' | tail -n 1 || true)"
+            months="$(grep -E '^ +coverage ' probe.log | grep -Eo '\([0-9]+ months\)' | grep -Eo '[0-9]+' | head -n 1 || true)"
+            if [ -n "$obs" ] && [ -n "$months" ]; then
+              check "observations = 26 x months" "$([ "$obs" -eq $((26 * months)) ] && echo 1 || echo 0)" "${obs} observations; 26 series x ${months} months = $((26 * months))"
+            else
+              check "observations = 26 x months" 0 "could not read the observation count or the month count from the report"
+            fi
+          fi
+
+          http_note="diagnostic only; curl exit ${PROBE_CURL_EXIT:-unknown}, ${secs}s"
+          {
+            echo "## CPI PBS runner probe"
+            echo
+            echo "| Check | Result | Detail |"
+            echo "|---|---|---|"
+            printf '%s' "$rows"
+            echo
+            echo "- Node.js: \`${node_v}\`"
+            echo "- HTTP status from curl: \`${http}\` (${http_note})"
+            echo "- Observations: \`${obs:-unknown}\`, months: \`${months:-unknown}\`"
+            echo "- Database credentials, secrets and write flags: none were provided or used"
+            echo
+            echo "**Verdict: $([ "$pass" = 1 ] && echo PASS || echo FAIL)**"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          if [ "$http" != "200" ]; then
+            echo "::warning::curl reported HTTP ${http} (diagnostic); the Node dry run is the authoritative result."
+          fi
+          echo "::notice::probe verdict=$([ "$pass" = 1 ] && echo PASS || echo FAIL) node=${node_v} http=${http} observations=${obs:-unknown} months=${months:-unknown}"
+          [ "$pass" = 1 ]
