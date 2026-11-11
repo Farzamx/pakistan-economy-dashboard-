@@ -21,7 +21,7 @@
 
 export interface ProviderFailure {
   /** Plain name of the provider, safe to log and show. */
-  provider: "PBS CPI file" | "World Bank";
+  provider: "PBS CPI file" | "World Bank" | "SBP policy-rate ledger";
   /** Why, in words. Never contains a URL with credentials (neither provider uses any). */
   reason: string;
 }

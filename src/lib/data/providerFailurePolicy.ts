@@ -52,8 +52,9 @@ export function failureModeFor(phase: string | undefined = process.env.NEXT_PHAS
 export class ProviderUnavailableError extends Error {
   readonly failures: readonly ProviderFailure[];
 
-  constructor(failures: readonly ProviderFailure[]) {
-    super(`Inflation page not regenerated; keeping the last good page. ${failures.map((f) => `${f.provider}: ${f.reason}`).join(" | ")}`);
+  /** `pageName` only names the page in the log message; it defaults to the page this policy was written for, so existing messages are unchanged. */
+  constructor(failures: readonly ProviderFailure[], pageName = "Inflation page") {
+    super(`${pageName} not regenerated; keeping the last good page. ${failures.map((f) => `${f.provider}: ${f.reason}`).join(" | ")}`);
     this.name = "ProviderUnavailableError";
     this.failures = failures;
   }
@@ -64,8 +65,8 @@ export class ProviderUnavailableError extends Error {
  * or when the mode is "degrade" (the caller then renders its unavailable
  * states); throws ProviderUnavailableError otherwise.
  */
-export function enforceProviderPolicy(failures: readonly ProviderFailure[], mode: FailureMode = failureModeFor()): void {
+export function enforceProviderPolicy(failures: readonly ProviderFailure[], mode: FailureMode = failureModeFor(), pageName?: string): void {
   if (failures.length === 0) return;
   if (mode === "degrade") return;
-  throw new ProviderUnavailableError(failures);
+  throw new ProviderUnavailableError(failures, pageName);
 }
