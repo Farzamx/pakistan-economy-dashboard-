@@ -7,6 +7,7 @@
 // Server component.
 
 import DataQualityBadge from "@/components/DataQualityBadge";
+import AnimatedFigure from "@/components/policyRate/AnimatedFigure";
 import { Callout } from "@/components/analytics/ChartFrame";
 import { KpiTile } from "@/components/analytics/KpiTile";
 import type { SbpIndicatorResult } from "@/lib/data/sbp";
@@ -27,7 +28,9 @@ export default function OverviewSection({ kpi, model }: { kpi: SbpIndicatorResul
   const last = model.changes[model.changes.length - 1] ?? null;
   const real = model.realHeadline[model.realHeadline.length - 1] ?? null;
   const tb = model.tbillLatest;
-  const tbVsPolicy = tb ? tb.value - s.current.value : null;
+  // Against the policy rate in effect ON the auction day (the rate may have changed since): the date-exact spread, not today's rate.
+  const tbAt = model.tbillSpreadAt.length ? model.tbillSpreadAt[model.tbillSpreadAt.length - 1] : null;
+  const tbVsPolicy = tb && tbAt && tbAt.date === tb.date ? tbAt : null;
   const run = model.cycles[model.cycles.length - 1] ?? null;
 
   return (
@@ -36,7 +39,7 @@ export default function OverviewSection({ kpi, model }: { kpi: SbpIndicatorResul
         <KpiTile
           label="SBP policy rate"
           kind="Policy rate"
-          value={`${k.value}${k.unit ?? "%"}`}
+          value={<AnimatedFigure value={`${k.value}${k.unit ?? "%"}`} />}
           change={k.change}
           period={`In effect since ${formatDate(s.current.since)}`}
           previous={s.previous ? `${pct(s.previous.value)} until ${formatDate(s.previous.until)}` : null}
@@ -48,7 +51,7 @@ export default function OverviewSection({ kpi, model }: { kpi: SbpIndicatorResul
           <KpiTile
             label="Latest rate change"
             kind="Change in pp"
-            value={`${signedPp(last.change)} pp`}
+            value={<AnimatedFigure value={`${signedPp(last.change)} pp`} />}
             period={formatDate(last.date)}
             previous={`${pct(last.from)} to ${pct(last.to)}`}
             source="Derived from the policy-rate history"
@@ -59,7 +62,7 @@ export default function OverviewSection({ kpi, model }: { kpi: SbpIndicatorResul
           <KpiTile
             label="Real policy rate"
             kind="Ex-post, derived"
-            value={pct(real.real)}
+            value={<AnimatedFigure value={pct(real.real)} />}
             period={monthLabel(real.month)}
             previous={`policy ${pct(real.policy)} vs inflation ${pct(real.inflation, 1)}`}
             source="Policy rate and headline CPI inflation (YoY)"
@@ -70,9 +73,9 @@ export default function OverviewSection({ kpi, model }: { kpi: SbpIndicatorResul
           <KpiTile
             label="3-month T-bill yield"
             kind="Market yield"
-            value={pct(tb.value)}
+            value={<AnimatedFigure value={pct(tb.value)} />}
             period={`Auction of ${formatDate(tb.date)}`}
-            change={tbVsPolicy === null ? null : `${signedPp(tbVsPolicy)} pp vs the policy rate`}
+            change={tbVsPolicy === null ? null : `${signedPp(tbVsPolicy.spread)} pp vs the ${pct(tbVsPolicy.policy)} policy rate in effect that day`}
             source="SBP EasyData · set at auction"
             note="A market yield, not the policy rate. Dated by its own auction."
           />

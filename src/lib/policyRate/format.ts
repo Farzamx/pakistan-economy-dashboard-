@@ -30,6 +30,15 @@ export function pct(value: number, decimals = 2): string {
   return `${value < 0 ? "−" : ""}${Math.abs(value).toFixed(decimals)}%`;
 }
 
+/** A length of time given in days: "the same day", "16 days", "11 months", "1.9 years". Months are 30.44 days; below 61 days the days are shown. */
+export function daysText(days: number): string {
+  if (days <= 0) return "the same day";
+  if (days < 61) return days === 1 ? "1 day" : `${days} days`;
+  const months = days / 30.4375;
+  if (months < 24) return `${Math.round(months)} months`;
+  return `${(months / 12).toFixed(1)} years`;
+}
+
 /** "18 months" / "1 month" / "less than a month". */
 export function spanText(months: number): string {
   if (months <= 0) return "within one month";

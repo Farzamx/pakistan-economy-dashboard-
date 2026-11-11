@@ -10,6 +10,7 @@
 import {
   changeRows,
   cleanDecisions,
+  cumulativeChanges,
   cycleOutcomes,
   differenceSeries,
   findCycles,
@@ -17,15 +18,28 @@ import {
   monthRange,
   policyMonthly,
   rateChanges,
+  rateLevels,
   rateStats,
   realPolicyRateSeries,
+  regimeSegments,
+  spreadAtAuctions,
+  summarizeSeries,
+  termSpread,
+  turningPoints,
+  type AuctionSpread,
   type ChangeRow,
+  type CumulativePoint,
   type Cycle,
   type CycleOutcome,
   type PolicyDecision,
   type RateChange,
+  type RateLevel,
   type RateStats,
   type RealRatePoint,
+  type RegimeSegment,
+  type SeriesSummary,
+  type TermSpreadPoint,
+  type TurningPoint,
 } from "@/lib/policyRate/analytics";
 import { formatDate, pct } from "@/lib/policyRate/format";
 import { monthKeyOf, toMonthlyPoints, type MonthKey, type MonthlyPoint } from "@/lib/inflation/periods";
@@ -101,7 +115,33 @@ export interface PolicyRateViewModel {
   usDifferential: MonthlyPoint[];
   source: PolicySourceInfo | null;
   checks: DataCheck[];
+
+  // ── G.9: additions for the charts (all derived here, on the server) ──
+  /** The generation date the time-based figures run to, "YYYY-MM-DD". */
+  asOf: string;
+  /** Every auction exactly as observed (ascending, one per date). Plotted on their own dates, never resampled to months. */
+  tbillAuctions: { date: string; value: number }[];
+  pibAuctions: { date: string; value: number }[];
+  /** Auction yield minus the policy rate in effect ON the auction date, percentage points. */
+  tbillSpreadAt: AuctionSpread[];
+  pibSpreadAt: AuctionSpread[];
+  /** 3-year PIB yield minus the latest 3-month T-bill yield (at most 21 days older), at each PIB auction. Two maturities only. */
+  termSpreadAt: TermSpreadPoint[];
+  /** Each stretch at one rate, and how long it lasted. */
+  levels: RateLevel[];
+  /** Running totals of increases, cuts and the net. */
+  cumulative: CumulativePoint[];
+  /** The time from the first observation to as-of cut into tightening, easing and holding spans. */
+  regimes: RegimeSegment[];
+  turningPoints: TurningPoint[];
+  /** Extremes and sign counts of the real policy rate (against headline and against core). */
+  realSummary: { headline: SeriesSummary | null; core: SeriesSummary | null };
+  /** The gap between Pakistan's and the US policy rate: latest, widest, narrowest, months above zero. */
+  usGapSummary: SeriesSummary | null;
 }
+
+/** The oldest 3-month T-bill auction (in days) a 3-year PIB auction may be paired with in the term spread: bills are auctioned roughly fortnightly. */
+export const TERM_SPREAD_MAX_LAG_DAYS = 21;
 
 function safeMonthly(raw: { date: string; value: number }[] | null): MonthlyPoint[] {
   if (!raw) return [];
@@ -139,6 +179,12 @@ export function buildPolicyRateViewModel(raw: RawPolicyRateInputs): PolicyRateVi
   const tbill = lastObservationPerMonth(raw.tbill ?? []);
   const pib = lastObservationPerMonth(raw.pib ?? []);
   const fedFunds = safeMonthly(raw.fedFunds);
+  // The same cleaning as the policy history (ISO dates, finite values, one row per date, ascending), for observations kept on their own dates.
+  const tbillAuctions = cleanDecisions(raw.tbill ?? []).decisions;
+  const pibAuctions = cleanDecisions(raw.pib ?? []).decisions;
+  const usDifferential = differenceSeries(policy, fedFunds);
+  const first = decisions[0] ?? null;
+  const last = decisions[decisions.length - 1] ?? null;
 
   const checks: DataCheck[] = [];
   if (decisions.length === 0) {
@@ -211,8 +257,23 @@ export function buildPolicyRateViewModel(raw: RawPolicyRateInputs): PolicyRateVi
     tbillSpread: differenceSeries(tbill, policy),
     pibSpread: differenceSeries(pib, policy),
     fedFunds,
-    usDifferential: differenceSeries(policy, fedFunds),
+    usDifferential,
     source: raw.source,
     checks,
+    asOf: raw.asOf,
+    tbillAuctions,
+    pibAuctions,
+    tbillSpreadAt: spreadAtAuctions(tbillAuctions, decisions),
+    pibSpreadAt: spreadAtAuctions(pibAuctions, decisions),
+    termSpreadAt: termSpread(pibAuctions, tbillAuctions, TERM_SPREAD_MAX_LAG_DAYS),
+    levels: rateLevels(decisions, raw.asOf),
+    cumulative: first ? cumulativeChanges(changes, first.date) : [],
+    regimes: first && last ? regimeSegments(cycles, first.date, first.value, raw.asOf, last.date) : [],
+    turningPoints: turningPoints(cycles),
+    realSummary: {
+      headline: summarizeSeries(realHeadline.map((p) => ({ month: p.month, value: p.real }))),
+      core: summarizeSeries(realCore.map((p) => ({ month: p.month, value: p.real }))),
+    },
+    usGapSummary: summarizeSeries(usDifferential),
   };
 }

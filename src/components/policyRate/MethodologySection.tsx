@@ -25,9 +25,15 @@ const FORMULAS: [string, string][] = [
   ["Real policy rate", "((1 + policy rate) ÷ (1 + inflation) − 1) × 100, using year-on-year inflation for the month. The simple difference (policy rate − inflation) is only an approximation and is poor when inflation is high."],
   ["Inflation known at a change", "The CPI of the month before the month of the change: PBS publishes the monthly CPI at the start of the following month, so a decision in October is made with September's figure. If that month is missing the figure is left blank, never the nearest month."],
   ["Time-weighted average", "Σ (rate × days in effect) ÷ total days, from the first observation to the date this page was generated. A rate that lasted two years counts for two years, whatever the number of observations."],
-  ["Market yield each month, and the spread", "For the T-bill and PIB: the last auction of the month (a month with no auction is a gap). Spread = that yield − the policy rate in effect at the month-end."],
+  ["Auction yields and the spread", "Each T-bill and PIB auction is plotted on its own date; nothing is averaged into months. Spread = the auction yield − the policy rate in effect ON that date (an observation takes effect on its own date, so a change made later in the month does not distort it). A line is broken where there was no auction for more than 75 days."],
+  ["Term spread", "At each 3-year PIB auction: the PIB yield − the latest 3-month T-bill yield dated on or before it, provided that bill auction is at most 21 days earlier; otherwise the PIB auction is left out. It is the slope between two maturities, not a yield curve."],
+  ["Tightening, easing and holding", "The time from the first observation to the date this page was generated is cut into spans that do not overlap: each cycle from its first change to its last is tightening or easing, and every other span (before the first change, between two cycles, and since the latest change) is a hold: no change recorded and no run under way. A pause inside a cycle belongs to the cycle."],
+  ["How long a level lasted", "Calendar days from the date the series first records a rate to the date of the next change (to this page's date for the current level). A repeated value does not start a new level. The first level begins where the series begins, so its length is a lower bound."],
+  ["Cumulative increases and cuts", "The running total of all increases and, separately, of all cuts, in percentage points. The net is their sum and equals the current rate minus the first rate in the series."],
   ["Gap to the US", "Pakistan's policy rate in effect at the month-end − the US effective federal funds rate for the month, in percentage points."],
 ];
+
+const auctionSpan = (xs: readonly { date: string }[]) => (xs.length ? `${xs.length} auctions, ${formatDate(xs[0].date)} – ${formatDate(xs[xs.length - 1].date)}` : "no observations");
 
 export default function MethodologySection({ model, generatedAt, relatedLinks }: { model: PolicyRateViewModel; generatedAt: string; relatedLinks: { href: string; label: string }[] }) {
   const s = model.stats;
@@ -41,8 +47,9 @@ export default function MethodologySection({ model, generatedAt, relatedLinks }:
     { series: "Headline CPI inflation (national)", freq: "Monthly", span: coverageText(model.headline), unit: "% year on year", source: "SBP EasyData; PBS release overrides when newer" },
     { series: "Core inflation, NFNE (urban)", freq: "Monthly", span: coverageText(model.core), unit: "% year on year", source: "SBP EasyData; PBS release overrides when newer" },
     { series: "Real policy rate (derived)", freq: "Monthly", span: model.realHeadline.length ? monthsCoverage(model.realHeadline.map((p) => p.month)) : "unavailable on this load", unit: "%", source: "Policy rate and headline or core inflation" },
-    { series: "3-month T-bill yield", freq: "Each auction (last per month shown)", span: coverageText(model.tbill), unit: "%", source: "SBP EasyData" },
-    { series: "3-year PIB yield", freq: "Each auction (last per month shown)", span: coverageText(model.pib), unit: "%", source: "SBP EasyData" },
+    { series: "3-month T-bill yield", freq: "Each auction (plotted on its date)", span: auctionSpan(model.tbillAuctions), unit: "%", source: "SBP EasyData" },
+    { series: "3-year PIB yield", freq: "Each auction (plotted on its date)", span: auctionSpan(model.pibAuctions), unit: "%", source: "SBP EasyData" },
+    { series: "Yield minus policy rate; term spread (derived)", freq: "At each auction", span: model.termSpreadAt.length ? `${model.termSpreadAt.length} PIB auctions paired with a bill auction at most 21 days earlier` : "unavailable on this load", unit: "pp", source: "Derived from the auctions and the policy rate" },
     { series: "US effective federal funds rate", freq: "Monthly", span: coverageText(model.fedFunds), unit: "%", source: "FRED" },
   ];
 
@@ -112,6 +119,7 @@ export default function MethodologySection({ model, generatedAt, relatedLinks }:
           <li>Meetings at which the policy rate was held, and any record of how members voted</li>
           <li>KIBOR, bank deposit rates, lending rates and mortgage rates</li>
           <li>Policy rates of any country other than the United States</li>
+          <li>Government-security maturities other than the 3-month T-bill and the 3-year PIB, so no yield curve</li>
           <li>Inflation expectations or forecasts, so no expected (ex-ante) real rate</li>
           <li>Policy-rate history before {first ? formatDate(first.date) : "the start of the series"}</li>
         </ul>
@@ -162,7 +170,7 @@ export default function MethodologySection({ model, generatedAt, relatedLinks }:
           <li><strong className="font-medium text-pe-text">Short history.</strong> The series PEIC holds begins in {first ? formatDate(first.date) : "May 2016"}. {s ? `It contains ${s.changeCount} changes in ${model.cycles.length} runs` : "It contains few runs"}, so patterns across cycles are suggestive, not conclusive.</li>
           <li><strong className="font-medium text-pe-text">The real rate is backward-looking.</strong> It uses inflation that has already occurred, headline or core (urban only), and no forecast. It is not a market rate and not what savers or borrowers earn or pay.</li>
           <li><strong className="font-medium text-pe-text">Early inflation figures.</strong> The inflation series reflects the current 2015-16 base. Values before 2019 can differ from the figures first published under the earlier base, so the inflation shown beside the earliest rate changes is the series PEIC holds, not necessarily what was reported at the time.</li>
-          <li><strong className="font-medium text-pe-text">Market yields.</strong> Auctions are irregular, so a month can have none, and the last auction of a month is not an average. The 3-month T-bill and 3-year PIB are two points on the yield curve, not &ldquo;the&rdquo; market rate.</li>
+          <li><strong className="font-medium text-pe-text">Market yields.</strong> Auctions are irregular and are drawn on their own dates, so a long stretch with no auction is a break in the line, never a value. The 3-month T-bill and 3-year PIB are two maturities, not &ldquo;the&rdquo; market rate and not a yield curve. A spread compares one auction with the policy rate in effect that day and says nothing about later days.</li>
           <li><strong className="font-medium text-pe-text">One comparable country.</strong> Only the United States is compared. Differences between countries&rsquo; policy rates do not account for different inflation, mandates or exchange-rate regimes.</li>
           <li><strong className="font-medium text-pe-text">No revisions to show.</strong> Each observation holds a single stored version, so there is no revision history to display; if SBP restated a value, the page would show the latest one.</li>
           <li><strong className="font-medium text-pe-text">No causes.</strong> Co-movement of the policy rate with inflation, yields or the US rate is an observation. This page does not show that one caused another, and it makes no forecast.</li>

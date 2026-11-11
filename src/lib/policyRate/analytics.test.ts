@@ -2,19 +2,30 @@
 // The expected figures below were worked out by hand from the 38 SBP observations (see __fixtures__/policyRateHistory.ts), not read back from the code.
 
 import { describe, expect, it } from "vitest";
+import { policyRateAt } from "@/lib/inflation/analytics";
 import {
   changeRows,
   cleanDecisions,
+  cumulativeChanges,
   cycleOutcomes,
   differenceSeries,
   findCycles,
   inflationKnownAt,
   lastObservationPerMonth,
+  longestKnownHold,
   monthRange,
+  policyRateOnDate,
+  rangeStartDate,
   rateChanges,
+  rateLevels,
   rateStats,
   realPolicyRateSeries,
   realRate,
+  regimeSegments,
+  spreadAtAuctions,
+  summarizeSeries,
+  termSpread,
+  turningPoints,
 } from "./analytics";
 import { HEADLINE_2026, REAL_POLICY_RATE, monthly } from "./__fixtures__/policyRateHistory";
 
@@ -293,5 +304,187 @@ describe("aligning irregular and external series", () => {
   it("monthRange is inclusive and crosses year ends", () => {
     expect(monthRange("2025-11", "2026-02")).toEqual(["2025-11", "2025-12", "2026-01", "2026-02"]);
     expect(monthRange("2026-02", "2026-02")).toEqual(["2026-02"]);
+  });
+});
+
+// ═══ G.9: dates, holds, cumulative changes, regimes. Expected figures were worked out independently of this code (a separate script over
+// the 38 real observations, then checked by hand against the history); none is read back from the functions under test. ═══
+
+const AS_OF = "2026-11-11";
+
+describe("the rate in effect ON a date (not at month-end)", () => {
+  const d = real.decisions;
+  it("is the latest observation dated on or before the day, and an observation takes effect on its own date", () => {
+    expect(policyRateOnDate(d, "2016-05-22")).toBeNull(); // the day before the first observation
+    expect(policyRateOnDate(d, "2016-05-23")).toBe(5.75);
+    expect(policyRateOnDate(d, "2026-10-25")).toBe(11.5); // the day before the 26 Oct 2026 increase
+    expect(policyRateOnDate(d, "2026-10-26")).toBe(12);
+    expect(policyRateOnDate(d, AS_OF)).toBe(12);
+  });
+  it("does not blur a change later in the same month, which the month-end rule does", () => {
+    expect(policyRateOnDate(d, "2026-10-14")).toBe(11.5); // an October auction before the increase
+    expect(policyRateAt(d, "2026-10")).toBe(12); // the month-end rule says 12 for all of October
+  });
+});
+
+describe("yield minus the policy rate in effect on the auction day", () => {
+  const d = real.decisions;
+  it("uses the rate in effect that day: the 14 Oct 2026 bill at 11.89% was 0.39 pp ABOVE the 11.50% then in effect, not 0.11 below today's 12%", () => {
+    const [s] = spreadAtAuctions([{ date: "2026-10-14", value: 11.89 }], d);
+    expect(s).toEqual({ date: "2026-10-14", yield: 11.89, policy: 11.5, spread: 0.39 });
+    expect(11.89 - 12).toBeCloseTo(-0.11, 10); // what comparing with today's rate would have said
+  });
+  it("skips auctions before the first policy observation and malformed rows; sorts by date", () => {
+    const out = spreadAtAuctions([{ date: "2026-10-14", value: 11.89 }, { date: "2016-01-06", value: 6.1 }, { date: "bad", value: 1 }, { date: "2016-06-01", value: 5.9 }, { date: "2016-07-01", value: Number.NaN }], d);
+    expect(out.map((x) => x.date)).toEqual(["2016-06-01", "2026-10-14"]);
+    expect(out[0].spread).toBe(0.15); // 5.9 against 5.75
+  });
+  it("an auction on the very day of a change is compared with the NEW rate", () => {
+    expect(spreadAtAuctions([{ date: "2026-10-26", value: 11.9 }], d)[0]).toMatchObject({ policy: 12, spread: -0.1 });
+  });
+});
+
+describe("the term spread between two maturities", () => {
+  const short = [{ date: "2026-09-02", value: 11.5 }, { date: "2026-09-16", value: 11.6 }, { date: "2026-09-30", value: 11.7 }, { date: "2026-10-14", value: 11.89 }];
+  it("pairs each long auction with the latest short auction ON OR BEFORE it, never a later one", () => {
+    const out = termSpread([{ date: "2026-10-07", value: 12.74 }], short);
+    expect(out).toEqual([{ date: "2026-10-07", long: 12.74, short: 11.7, shortDate: "2026-09-30", lagDays: 7, spread: 1.04 }]);
+  });
+  it("a short auction on the same day is used (lag 0), and one the day AFTER is not", () => {
+    expect(termSpread([{ date: "2026-10-14", value: 12.9 }], short)[0]).toMatchObject({ shortDate: "2026-10-14", lagDays: 0, spread: 1.01 });
+    expect(termSpread([{ date: "2026-10-13", value: 12.9 }], short)[0]).toMatchObject({ shortDate: "2026-09-30", lagDays: 13 });
+  });
+  it("leaves out a long auction whose nearest earlier short auction is older than the limit, or that has none (nothing is filled)", () => {
+    expect(termSpread([{ date: "2026-10-30", value: 13 }], short, 21)[0]).toMatchObject({ shortDate: "2026-10-14", lagDays: 16, spread: 1.11 }); // 16 days after 14 Oct is allowed ...
+    expect(termSpread([{ date: "2026-11-30", value: 13 }], short, 21)).toEqual([]); // ... 47 days is not
+    expect(termSpread([{ date: "2026-08-01", value: 13 }], short)).toEqual([]); // before any short auction
+  });
+  it("a limit of 21 days admits 21 and rejects 22", () => {
+    expect(termSpread([{ date: "2026-11-04", value: 13 }], short, 21)).toHaveLength(1); // 14 Oct + 21 d
+    expect(termSpread([{ date: "2026-11-05", value: 13 }], short, 21)).toHaveLength(0);
+  });
+});
+
+describe("how long each rate level lasted (real history, to 11 Nov 2026)", () => {
+  const levels = rateLevels(real.decisions, AS_OF);
+  it("36 levels for 35 changes; the two repeated rows do not start a level", () => {
+    expect(levels).toHaveLength(36);
+    expect(levels.filter((l) => l.until !== null)).toHaveLength(35);
+    expect(levels.filter((l) => l.current)).toHaveLength(1);
+  });
+  it("matches hand-counted durations", () => {
+    const at = (from: string) => levels.find((l) => l.from === from);
+    expect(at("2016-05-23")).toMatchObject({ rate: 5.75, until: "2018-01-29", days: 616, enteredBy: "start" });
+    expect(at("2020-06-26")).toMatchObject({ rate: 7, until: "2021-09-21", days: 452, enteredBy: "cut" });
+    expect(at("2023-06-27")).toMatchObject({ rate: 22, until: "2024-06-11", days: 350, enteredBy: "hike" });
+    expect(at("2020-04-16")).toMatchObject({ rate: 9, until: "2020-05-16", days: 30 }); // the 17 Apr repeat is inside this level
+    expect(at("2026-10-26")).toMatchObject({ rate: 12, until: null, days: 16, current: true });
+  });
+  it("the longest completed hold is the first (616 days); the current level is excluded from 'completed'", () => {
+    const completed = levels.filter((l) => !l.current);
+    expect(completed.reduce((a, b) => (b.days > a.days ? b : a)).from).toBe("2016-05-23");
+  });
+  it("the days of all levels add up to the span from the first observation to the as-of date (a check that can fail)", () => {
+    expect(levels.reduce((s, l) => s + l.days, 0)).toBe(3824);
+  });
+  it("is empty without data, and a single level when the rate never changed", () => {
+    expect(rateLevels([], AS_OF)).toEqual([]);
+    expect(rateLevels([{ date: "2026-01-01", value: 9 }, { date: "2026-02-01", value: 9 }], "2026-03-02")).toEqual([{ rate: 9, from: "2026-01-01", until: null, days: 60, enteredBy: "start", current: true }]);
+  });
+  it("never counts days before the newest observation if the as-of date is earlier than it", () => {
+    const l = rateLevels([{ date: "2026-01-01", value: 9 }, { date: "2026-02-01", value: 10 }], "2026-01-15");
+    expect(l.at(-1)).toMatchObject({ from: "2026-02-01", days: 0 });
+  });
+});
+
+describe("the longest hold whose start is known", () => {
+  const levels = rateLevels(real.decisions, AS_OF);
+  it("is the 452 days at 7.00% (26 Jun 2020 to 21 Sep 2021), not the 616 days at the start of the series, whose beginning is unknown", () => {
+    expect(longestKnownHold(levels)).toMatchObject({ rate: 7, from: "2020-06-26", until: "2021-09-21", days: 452 });
+    expect(Math.max(...levels.map((l) => l.days))).toBe(616); // the start-of-series level IS longer, and is deliberately not chosen
+  });
+  it("ignores the level still in effect and is null when nothing qualifies", () => {
+    expect(longestKnownHold(levels.filter((l) => l.current || l.enteredBy === "start"))).toBeNull();
+    expect(longestKnownHold([])).toBeNull();
+  });
+});
+
+describe("cumulative increases and cuts", () => {
+  const cum = cumulativeChanges(changes, real.decisions[0].date);
+  it("starts at zero on the first date, then one step per change", () => {
+    expect(cum[0]).toEqual({ date: "2016-05-23", increases: 0, cuts: 0, net: 0 });
+    expect(cum).toHaveLength(36);
+  });
+  it("totals 24.00 pp of increases and 17.75 pp of cuts, a net of 6.25 pp (12.00 − 5.75)", () => {
+    expect(cum.at(-1)).toEqual({ date: "2026-10-26", increases: 24, cuts: -17.75, net: 6.25 });
+  });
+  it("increases never fall, cuts never rise, and net always equals their sum", () => {
+    for (let i = 1; i < cum.length; i++) {
+      expect(cum[i].increases).toBeGreaterThanOrEqual(cum[i - 1].increases);
+      expect(cum[i].cuts).toBeLessThanOrEqual(cum[i - 1].cuts);
+      expect(cum[i].net).toBeCloseTo(cum[i].increases + cum[i].cuts, 10);
+    }
+  });
+  it("matches known waypoints: after the 2019-07-17 peak, 7.5 pp up; after the 2020 easing, 7.5 pp up and 6.25 pp down", () => {
+    expect(cum.find((c) => c.date === "2019-07-17")).toMatchObject({ increases: 7.5, cuts: 0, net: 7.5 });
+    expect(cum.find((c) => c.date === "2020-06-26")).toMatchObject({ increases: 7.5, cuts: -6.25, net: 1.25 });
+  });
+});
+
+describe("regimes: tightening, easing and holding", () => {
+  const cycles = findCycles(changes);
+  const segs = regimeSegments(cycles, real.decisions[0].date, real.decisions[0].value, AS_OF, real.decisions.at(-1)?.date);
+  it("alternates holds and the five cycles in time order: hold, T, hold, E, hold, T, hold, E, hold, T, hold", () => {
+    expect(segs.map((s) => s.kind)).toEqual(["hold", "tightening", "hold", "easing", "hold", "tightening", "hold", "easing", "hold", "tightening", "hold"]);
+  });
+  it("matches hand-counted spans", () => {
+    expect(segs[0]).toMatchObject({ kind: "hold", from: "2016-05-23", to: "2018-01-29", days: 616, startRate: 5.75, endRate: 5.75 });
+    expect(segs[1]).toMatchObject({ kind: "tightening", from: "2018-01-29", to: "2019-07-17", days: 534, changes: 9, startRate: 5.75, endRate: 13.25, cycleIndex: 0 });
+    expect(segs[3]).toMatchObject({ kind: "easing", from: "2020-03-18", to: "2020-06-26", days: 100, changes: 5, startRate: 13.25, endRate: 7, cycleIndex: 1 });
+    expect(segs[6]).toMatchObject({ kind: "hold", from: "2023-06-27", to: "2024-06-11", days: 350, startRate: 22, endRate: 22 });
+    expect(segs[9]).toMatchObject({ kind: "tightening", from: "2026-04-28", to: "2026-10-26", days: 181, changes: 2 });
+    expect(segs[10]).toMatchObject({ kind: "hold", from: "2026-10-26", to: AS_OF, days: 16, open: true });
+  });
+  it("is contiguous and covers first date to as-of exactly, with no overlap (a check that can fail)", () => {
+    expect(segs[0].from).toBe("2016-05-23");
+    for (let i = 1; i < segs.length; i++) expect(segs[i].from).toBe(segs[i - 1].to);
+    expect(segs.at(-1)?.to).toBe(AS_OF);
+    expect(segs.reduce((s, x) => s + x.days, 0)).toBe(3824);
+    expect(segs.filter((s) => s.open)).toHaveLength(1);
+  });
+  it("a hold at the very start is omitted when the first change is on the first date's heels, and a single-change cycle has zero length", () => {
+    const only = findCycles(rateChanges(cleanDecisions([{ date: "2026-01-10", value: 9 }, { date: "2026-03-10", value: 10 }]).decisions));
+    const s = regimeSegments(only, "2026-01-10", 9, "2026-03-10", "2026-03-10");
+    expect(s.map((x) => [x.kind, x.days])).toEqual([["hold", 59], ["tightening", 0]]);
+  });
+  it("without cycles the whole span is one open hold", () => {
+    expect(regimeSegments([], "2026-01-01", 9, "2026-01-31")).toEqual([{ kind: "hold", from: "2026-01-01", to: "2026-01-31", days: 30, startRate: 9, endRate: 9, changes: 0, cycleIndex: null, open: true }]);
+  });
+  it("turning points are the rate at the end of each run; only the newest is unconfirmed", () => {
+    const tp = turningPoints(cycles);
+    expect(tp.map((t) => [t.kind, t.rate, t.confirmed])).toEqual([["peak", 13.25, true], ["trough", 7, true], ["peak", 22, true], ["trough", 10.5, true], ["peak", 12, false]]);
+    expect(tp[2].date).toBe("2023-06-27");
+  });
+});
+
+describe("summarising a monthly series", () => {
+  it("finds the latest, the highest and the lowest, resolving ties to the earliest month, and counts months above and below zero", () => {
+    const s = summarizeSeries(monthly("2026-01", [-3, 2, 2, -3, 0, 1]));
+    expect(s?.latest).toEqual({ month: "2026-06", value: 1 });
+    expect(s?.highest).toEqual({ month: "2026-02", value: 2 });
+    expect(s?.lowest).toEqual({ month: "2026-01", value: -3 });
+    expect([s?.above, s?.below, s?.months]).toEqual([3, 2, 6]); // 0 is neither
+  });
+  it("is null for an empty series", () => {
+    expect(summarizeSeries([])).toBeNull();
+  });
+});
+
+describe("the date a range starts on", () => {
+  it("is the first day of the earliest of N calendar months ending with the newest date's month, and null for all", () => {
+    expect(rangeStartDate("2026-10-26", "12")).toBe("2025-11-01");
+    expect(rangeStartDate("2026-10-26", "24")).toBe("2024-11-01");
+    expect(rangeStartDate("2026-01-05", "12")).toBe("2025-02-01");
+    expect(rangeStartDate("2026-10-26", "all")).toBeNull();
   });
 });

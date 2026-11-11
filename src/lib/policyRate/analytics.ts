@@ -317,3 +317,239 @@ export function monthRange(from: MonthKey, to: MonthKey): MonthKey[] {
   for (let i = monthIndex(from); i <= monthIndex(to); i++) out.push(shiftMonth(from, i - monthIndex(from)));
   return out;
 }
+
+// ═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+// G.9 additions: regimes, holding spans, cumulative changes, and date-exact comparisons for series observed on different dates.
+//
+// FREQUENCIES. The policy rate changes on decision dates; CPI is monthly; T-bill and PIB yields are set at auctions on irregular dates
+// (the 3-month bill roughly fortnightly, the 3-year bond roughly monthly with long gaps). Nothing below resamples one onto another's
+// calendar without saying so: a spread is taken ON a stated date, against the rate in effect on that date, and a term spread only pairs
+// two auctions that are close enough in time to be comparable (otherwise the date is left out, not filled).
+// ═════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+export const dayNumberOf = dayNumber;
+
+/** Days between two ISO dates (b − a). */
+export const daysBetween = (a: string, b: string) => dayNumber(b) - dayNumber(a);
+
+/**
+ * The policy rate in effect ON an ISO date: the latest observation dated on or before it (an observation takes effect on its own date).
+ * null before the first observation. Unlike policyRateAt (month-end), this does not blur a change made later in the same month.
+ */
+export function policyRateOnDate(decisions: readonly PolicyDecision[], date: string): number | null {
+  let value: number | null = null;
+  for (const d of decisions) {
+    if (d.date <= date) value = d.value;
+    else break;
+  }
+  return value;
+}
+
+export interface AuctionSpread {
+  date: string;
+  /** The auction yield, %. */
+  yield: number;
+  /** The policy rate in effect on the auction date, %. */
+  policy: number;
+  /** yield − policy, percentage points. */
+  spread: number;
+}
+
+/** For every auction on or after the first policy observation: the yield minus the policy rate in effect that same day. */
+export function spreadAtAuctions(auctions: readonly { date: string; value: number }[], decisions: readonly PolicyDecision[]): AuctionSpread[] {
+  const out: AuctionSpread[] = [];
+  const sorted = [...auctions].filter((a) => ISO_DATE.test(a.date) && Number.isFinite(a.value)).sort((a, b) => a.date.localeCompare(b.date));
+  for (const a of sorted) {
+    const policy = policyRateOnDate(decisions, a.date);
+    if (policy === null) continue;
+    out.push({ date: a.date, yield: a.value, policy, spread: round4(a.value - policy) });
+  }
+  return out;
+}
+
+export interface TermSpreadPoint {
+  /** Date of the longer-maturity auction. */
+  date: string;
+  long: number;
+  /** The most recent shorter-maturity auction on or before `date`, and how many days earlier it was. */
+  short: number;
+  shortDate: string;
+  lagDays: number;
+  /** long − short, percentage points: positive when the longer maturity yields more. */
+  spread: number;
+}
+
+/**
+ * Long-maturity yield minus the short-maturity yield, at each LONG auction, against the latest SHORT auction on or before it (never a
+ * later one) and no more than `maxLagDays` earlier. A long auction with no short auction that close is left out, not filled. This is the
+ * slope between TWO maturities only; it is not a yield curve.
+ */
+export function termSpread(long: readonly { date: string; value: number }[], short: readonly { date: string; value: number }[], maxLagDays = 21): TermSpreadPoint[] {
+  const clean = (xs: readonly { date: string; value: number }[]) => xs.filter((x) => ISO_DATE.test(x.date) && Number.isFinite(x.value)).sort((a, b) => a.date.localeCompare(b.date));
+  const L = clean(long);
+  const S = clean(short);
+  const out: TermSpreadPoint[] = [];
+  let j = -1;
+  for (const l of L) {
+    while (j + 1 < S.length && S[j + 1].date <= l.date) j++;
+    if (j < 0) continue;
+    const lag = daysBetween(S[j].date, l.date);
+    if (lag > maxLagDays) continue;
+    out.push({ date: l.date, long: l.value, short: S[j].value, shortDate: S[j].date, lagDays: lag, spread: round4(l.value - S[j].value) });
+  }
+  return out;
+}
+
+// ── how long each rate level lasted ─────────────────────────────────────────────────────────────────────────────────────
+export interface RateLevel {
+  rate: number;
+  /** The date the series first records this level (a repeated value does not start a new level). */
+  from: string;
+  /** The date of the next change, or null for the level still in effect. */
+  until: string | null;
+  /** Calendar days from `from` to `until` (or to the as-of date for the current level). */
+  days: number;
+  /** How the level began: the first observation, an increase, or a cut. */
+  enteredBy: "start" | Direction;
+  /** True for the level still in effect: its length so far, not a completed hold. */
+  current: boolean;
+}
+
+/** Each stretch during which the policy rate stayed at one value, first observation to as-of. */
+export function rateLevels(decisions: readonly PolicyDecision[], asOf: string): RateLevel[] {
+  if (decisions.length === 0) return [];
+  const end = Math.max(dayNumber(asOf), dayNumber(decisions[decisions.length - 1].date));
+  const levels: RateLevel[] = [];
+  let cur: { rate: number; from: string; enteredBy: RateLevel["enteredBy"] } = { rate: decisions[0].value, from: decisions[0].date, enteredBy: "start" };
+  const close = (until: string | null): void => {
+    levels.push({ rate: cur.rate, from: cur.from, until, days: (until === null ? end : dayNumber(until)) - dayNumber(cur.from), enteredBy: cur.enteredBy, current: until === null });
+  };
+  for (const d of decisions) {
+    if (d.value === cur.rate) continue;
+    close(d.date);
+    cur = { rate: d.value, from: d.date, enteredBy: d.value > cur.rate ? "hike" : "cut" };
+  }
+  close(null);
+  return levels;
+}
+
+/**
+ * The longest COMPLETED level whose start is actually known. The first level begins where the series begins (the rate may have been at
+ * that level for years before PEIC's data starts), so its length is only a lower bound and it is never named "the longest". null if none.
+ */
+export function longestKnownHold(levels: readonly RateLevel[]): RateLevel | null {
+  return levels.filter((l) => !l.current && l.enteredBy !== "start").reduce<RateLevel | null>((best, l) => (best === null || l.days > best.days ? l : best), null);
+}
+
+// ── cumulative changes ──────────────────────────────────────────────────────────────────────────────────────────────────
+export interface CumulativePoint {
+  date: string;
+  /** Running total of increases, pp (never decreases). */
+  increases: number;
+  /** Running total of cuts, pp (zero or negative, never increases). */
+  cuts: number;
+  /** increases + cuts: how far the rate stands from its first recorded level. */
+  net: number;
+}
+
+/** A step series starting at 0 on `firstDate`: the running total of increases, of cuts, and the net, after each change. */
+export function cumulativeChanges(changes: readonly RateChange[], firstDate: string): CumulativePoint[] {
+  const out: CumulativePoint[] = [{ date: firstDate, increases: 0, cuts: 0, net: 0 }];
+  let up = 0;
+  let down = 0;
+  for (const c of changes) {
+    if (c.change > 0) up = round4(up + c.change);
+    else down = round4(down + c.change);
+    out.push({ date: c.date, increases: up, cuts: down, net: round4(up + down) });
+  }
+  return out;
+}
+
+// ── regimes: tightening, easing and holding ─────────────────────────────────────────────────────────────────────────────
+export type RegimeKind = "tightening" | "easing" | "hold";
+
+export interface RegimeSegment {
+  kind: RegimeKind;
+  from: string;
+  to: string;
+  days: number;
+  /** Rate at the start and end of the segment (equal for a hold). */
+  startRate: number;
+  endRate: number;
+  /** Number of rate changes inside a tightening/easing run (0 for a hold). */
+  changes: number;
+  /** Index into the cycles array, or null for a hold. */
+  cycleIndex: number | null;
+  /** True for the segment that runs to the as-of date. */
+  open: boolean;
+}
+
+/**
+ * Cuts the time from the first observation to the as-of date into non-overlapping segments: each cycle (first change to last change)
+ * as "tightening" or "easing", and the spans between them, before the first and after the last, as "hold" (the rate was not changed).
+ * A pause INSIDE a cycle is part of that cycle's segment (see rateLevels for every individual pause). Contiguous by construction.
+ */
+export function regimeSegments(cycles: readonly Cycle[], firstDate: string, firstRate: number, asOf: string, lastObservationDate: string = firstDate): RegimeSegment[] {
+  const end = dayNumber(asOf) >= dayNumber(lastObservationDate) ? asOf : lastObservationDate;
+  const out: RegimeSegment[] = [];
+  let cursor = firstDate;
+  let rate = firstRate;
+  const hold = (to: string, open: boolean) => {
+    if (dayNumber(to) > dayNumber(cursor)) out.push({ kind: "hold", from: cursor, to, days: daysBetween(cursor, to), startRate: rate, endRate: rate, changes: 0, cycleIndex: null, open });
+  };
+  cycles.forEach((c, i) => {
+    hold(c.startDate, false);
+    out.push({ kind: c.direction, from: c.startDate, to: c.endDate, days: daysBetween(c.startDate, c.endDate), startRate: c.startRate, endRate: c.endRate, changes: c.changes, cycleIndex: i, open: false });
+    cursor = c.endDate;
+    rate = c.endRate;
+  });
+  hold(end, true);
+  return out;
+}
+
+export interface TurningPoint {
+  /** Date of the last change in the run, where the next change goes the other way. */
+  date: string;
+  rate: number;
+  kind: "peak" | "trough";
+  cycleIndex: number;
+  /** False for the newest run: no change in the opposite direction has followed it yet, so it may not be a turning point. */
+  confirmed: boolean;
+}
+
+export function turningPoints(cycles: readonly Cycle[]): TurningPoint[] {
+  return cycles.map((c, i) => ({ date: c.endDate, rate: c.endRate, kind: c.direction === "tightening" ? "peak" : "trough", cycleIndex: i, confirmed: !c.latest }));
+}
+
+// ── summaries of a monthly series ───────────────────────────────────────────────────────────────────────────────────────
+export interface SeriesSummary {
+  latest: MonthlyPoint;
+  highest: MonthlyPoint;
+  lowest: MonthlyPoint;
+  months: number;
+  /** Months with a value above zero / below zero. */
+  above: number;
+  below: number;
+}
+
+/** Extremes and sign counts of a monthly series; ties resolve to the EARLIEST month. null for an empty series. */
+export function summarizeSeries(points: readonly MonthlyPoint[]): SeriesSummary | null {
+  if (points.length === 0) return null;
+  let highest = points[0];
+  let lowest = points[0];
+  let above = 0;
+  let below = 0;
+  for (const p of points) {
+    if (p.value > highest.value) highest = p;
+    if (p.value < lowest.value) lowest = p;
+    if (p.value > 0) above++;
+    else if (p.value < 0) below++;
+  }
+  return { latest: points[points.length - 1], highest, lowest, months: points.length, above, below };
+}
+
+/** The first day of the earliest month a range shows, given the newest date: "12" -> the 12 calendar months ending with that date's month. null = all. */
+export function rangeStartDate(newestDate: string, range: "12" | "24" | "60" | "all"): string | null {
+  if (range === "all") return null;
+  return `${shiftMonth(monthKeyOf(newestDate), -(Number(range) - 1))}-01`;
+}

@@ -5,13 +5,15 @@
 // The rate is a STEP: it holds its level until the next change, so the line is drawn as a step and the month-by-month value is the
 // rate in effect at that month-end (the definition of the rate, not interpolation). The bars below are the CHANGES themselves (one bar per
 // change, in percentage points), so the two charts answer different questions: "where is the rate?" and "how big were the moves?".
+// The two dots on the line mark the highest and the lowest rate in the series (when they fall inside the range shown).
 
 import { useMemo, useState } from "react";
 import { Callout, ChartFrame } from "@/components/analytics/ChartFrame";
 import { ControlBar, Key, Segmented } from "@/components/analytics/controls";
 import { MultiLine, SignedBars, type SeriesSpec } from "@/components/analytics/TimeCharts";
+import StatStrip from "@/components/policyRate/StatStrip";
 import { coverageText, mergeSeries, RANGE_OPTIONS, sliceRange, tableRowsFor, type RangeKey } from "@/lib/inflation/chartData";
-import { monthIndex, monthKeyOf } from "@/lib/inflation/periods";
+import { monthIndex, monthKeyOf, shortMonthLabel } from "@/lib/inflation/periods";
 import { formatDate, pct, shortDate, signedPp } from "@/lib/policyRate/format";
 import type { PolicyRateViewModel } from "@/lib/policyRate/viewModel";
 
@@ -19,6 +21,7 @@ const SERIES: SeriesSpec[] = [{ key: "policy", label: "SBP policy rate", color: 
 
 export default function HistorySection({ model }: { model: PolicyRateViewModel }) {
   const [range, setRange] = useState<RangeKey>("all");
+  const s = model.stats;
 
   const policy = useMemo(() => sliceRange(model.policyMonthly, range), [model.policyMonthly, range]);
   const months = useMemo(() => policy.map((p) => p.month), [policy]);
@@ -27,14 +30,34 @@ export default function HistorySection({ model }: { model: PolicyRateViewModel }
     const newest = monthIndex(model.horizon);
     return model.changes.filter((c) => monthIndex(monthKeyOf(c.date)) > newest - Number(range));
   }, [model.changes, model.horizon, range]);
+  const marks = useMemo(() => {
+    if (!s) return [];
+    const inRange = new Set(months);
+    return [s.highest, s.lowest]
+      .map((e) => ({ month: monthKeyOf(e.from), value: e.value }))
+      .filter((e) => inRange.has(e.month))
+      .map((e) => ({ period: shortMonthLabel(e.month), key: "policy", value: e.value }));
+  }, [s, months]);
 
-  if (model.policyMonthly.length === 0) return <Callout tone="limit" title="History is unavailable right now">The policy-rate observations could not be loaded.</Callout>;
+  if (model.policyMonthly.length === 0 || !s) return <Callout tone="limit" title="History is unavailable right now">The policy-rate observations could not be loaded.</Callout>;
+
+  const net = model.cumulative.length ? model.cumulative[model.cumulative.length - 1] : null;
 
   return (
     <div className="flex flex-col gap-7">
+      <StatStrip
+        label="Policy-rate summary"
+        items={[
+          { label: "Current policy rate", value: pct(s.current.value), detail: `in effect since ${formatDate(s.current.since)}` },
+          ...(net ? [{ label: "Net change since the series begins", value: `${signedPp(net.net)} pp`, detail: `${signedPp(net.increases)} pp of increases, ${signedPp(net.cuts)} pp of cuts since ${formatDate(s.firstDate)}` }] : []),
+          ...(s.largestHike ? [{ label: "Largest increase", value: `${signedPp(s.largestHike.change)} pp`, detail: `${formatDate(s.largestHike.date)}, ${pct(s.largestHike.from)} to ${pct(s.largestHike.to)}` }] : []),
+          ...(s.largestCut ? [{ label: "Largest cut", value: `${signedPp(s.largestCut.change)} pp`, detail: `${formatDate(s.largestCut.date)}, ${pct(s.largestCut.from)} to ${pct(s.largestCut.to)}` }] : []),
+        ]}
+      />
+
       <ChartFrame
         title="SBP policy rate over time"
-        howToRead="The rate in effect at the end of each month. It holds its level until the next change, so it moves in steps. A percentage, not an index."
+        howToRead="The rate in effect at the end of each month. It holds its level until the next change, so it moves in steps. The two dots mark the highest and the lowest rate in the series. A percentage, not an index."
         legend={
           <ControlBar>
             <Key items={[{ label: "SBP policy rate", color: "var(--pe-viz-purple)" }]} />
@@ -44,7 +67,7 @@ export default function HistorySection({ model }: { model: PolicyRateViewModel }
         source={`Source: SBP EasyData (policy rate, ${model.decisions.length} observations) · shown as the rate in effect at each month-end · ${coverageText(model.policyMonthly)}`}
         table={{ caption: "Policy rate in effect, by month", head: ["Month", "Policy rate"], rows: tableRowsFor({ policy }, months, 2, "%") }}
       >
-        <MultiLine data={mergeSeries({ policy }, months)} series={SERIES} decimals={2} height={340} ariaLabel={`SBP policy rate over time, ${coverageText(policy)}`} />
+        <MultiLine data={mergeSeries({ policy }, months)} series={SERIES} decimals={2} height={340} ariaLabel={`SBP policy rate over time, ${coverageText(policy)}`} highlight={marks} animate />
       </ChartFrame>
 
       <ChartFrame
@@ -63,6 +86,7 @@ export default function HistorySection({ model }: { model: PolicyRateViewModel }
           negative="teal"
           height={280}
           ariaLabel={`Bar chart of ${changes.length} policy-rate changes in percentage points`}
+          animate
         />
       </ChartFrame>
     </div>

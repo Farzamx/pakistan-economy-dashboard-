@@ -2,7 +2,7 @@
 
 // Recharts-based charts for time and category axes: signed bars, multi-series
 // lines, clustered bars, stacked bars, scatter and histogram. They follow the
-// GDP Workshop's conventions (recharts, --chart-* axis tokens, no animation) and
+// GDP Workshop's conventions (recharts, --chart-* axis tokens, no animation unless a chart opts in with `animate`, and never under prefers-reduced-motion) and
 // add the rules every PEIC analytical chart keeps:
 //   - a zero baseline whenever values can be negative,
 //   - a missing value stays missing (a gap in a line, no bar, "no data" in the
@@ -33,10 +33,14 @@ import {
 import type { TooltipContentProps } from "recharts";
 import type { NameType, ValueType } from "recharts/types/component/DefaultTooltipContent";
 import { formatValue } from "@/lib/analytics/scales";
+import { useSafeReducedMotion } from "@/hooks/useSafeReducedMotion";
 
-const AXIS = { fill: "var(--chart-axis)", fontSize: 11 } as const;
-type Colour = "blue" | "orange" | "teal" | "purple" | "amber" | "slate";
+export const AXIS = { fill: "var(--chart-axis)", fontSize: 11 } as const;
+export type Colour = "blue" | "orange" | "teal" | "purple" | "amber" | "slate";
 export const viz = (name: Colour) => `var(--pe-viz-${name})`;
+
+/** Draw/grow animation settings for a chart that opts in with `animate`. Off for every chart that does not, and always off under prefers-reduced-motion. */
+export const ANIMATION = { duration: 900, easing: "ease-out" as const };
 
 export interface SeriesSpec {
   key: string;
@@ -48,7 +52,7 @@ export interface SeriesSpec {
   step?: boolean;
 }
 
-function Box({ children, ariaLabel, height }: { children: React.ReactNode; ariaLabel: string; height: number }) {
+export function Box({ children, ariaLabel, height }: { children: React.ReactNode; ariaLabel: string; height: number }) {
   return (
     <div className="w-full" style={{ height }} role="img" aria-label={ariaLabel}>
       <ResponsiveContainer width="100%" height="100%">
@@ -58,7 +62,7 @@ function Box({ children, ariaLabel, height }: { children: React.ReactNode; ariaL
   );
 }
 
-const tipBox: React.CSSProperties = {
+export const tipBox: React.CSSProperties = {
   background: "var(--chart-tooltip-bg)",
   border: "1px solid var(--chart-tooltip-border)",
   borderRadius: "var(--pe-radius)",
@@ -67,7 +71,7 @@ const tipBox: React.CSSProperties = {
   boxShadow: "var(--pe-shadow-pop)",
 };
 
-function makeTip(unit: string, decimals: number, series?: SeriesSpec[], extra?: (label: string) => string | null) {
+export function makeTip(unit: string, decimals: number, series?: SeriesSpec[], extra?: (label: string) => string | null) {
   // eslint-disable-next-line react/display-name
   return ({ active, payload, label }: TooltipContentProps<ValueType, NameType>) => {
     if (!active || !payload || payload.length === 0) return null;
@@ -96,7 +100,7 @@ function makeTip(unit: string, decimals: number, series?: SeriesSpec[], extra?: 
   };
 }
 
-const yTick = (unit: string, decimals = 0) => (v: number) => `${formatValue(v, decimals)}${unit}`;
+export const yTick = (unit: string, decimals = 0) => (v: number) => `${formatValue(v, decimals)}${unit}`;
 
 // ───────────────────────────── Signed bars ─────────────────────────────
 
@@ -114,6 +118,7 @@ export function SignedBars({
   positive = "blue",
   negative = "orange",
   ariaLabel,
+  animate = false,
 }: {
   data: BarDatum[];
   metric: string;
@@ -123,7 +128,10 @@ export function SignedBars({
   positive?: Colour;
   negative?: Colour;
   ariaLabel: string;
+  /** Bars grow in (and re-grow when the data changes). Off by default; always off under prefers-reduced-motion. */
+  animate?: boolean;
 }) {
+  const reduced = useSafeReducedMotion();
   if (data.length === 0) return <p className="px-1 py-10 text-center text-[13px] text-pe-text-3">No observations in this range.</p>;
   const spec: SeriesSpec[] = [{ key: "value", label: metric, color: positive }];
   return (
@@ -134,9 +142,9 @@ export function SignedBars({
         <YAxis tickFormatter={yTick(unit)} tick={AXIS} tickLine={false} axisLine={false} width={46} />
         <ReferenceLine y={0} stroke="var(--chart-axis)" strokeWidth={1.25} />
         <Tooltip content={makeTip(unit, decimals, spec)} cursor={{ fill: "var(--chart-cursor)" }} />
-        <Bar dataKey="value" name={metric} radius={[2, 2, 0, 0]} isAnimationActive={false}>
-          {data.map((d) => (
-            <Cell key={d.period} fill={viz(d.value < 0 ? negative : positive)} />
+        <Bar dataKey="value" name={metric} radius={[2, 2, 0, 0]} isAnimationActive={animate && !reduced} animationDuration={ANIMATION.duration} animationEasing={ANIMATION.easing}>
+          {data.map((d, i) => (
+            <Cell key={`${d.period}-${i}`} fill={viz(d.value < 0 ? negative : positive)} />
           ))}
         </Bar>
       </BarChart>
@@ -156,6 +164,7 @@ export function MultiLine({
   decimals = 1,
   ariaLabel,
   highlight,
+  animate = false,
 }: {
   data: LineDatum[];
   series: SeriesSpec[];
@@ -165,7 +174,10 @@ export function MultiLine({
   ariaLabel: string;
   /** A labelled marker on one period/series, e.g. the latest reading. */
   highlight?: { period: string; key: string; value: number }[];
+  /** Lines draw in (and redraw when the data or range changes). Off by default; always off under prefers-reduced-motion. */
+  animate?: boolean;
 }) {
+  const reduced = useSafeReducedMotion();
   if (data.length === 0 || series.length === 0) return <p className="px-1 py-10 text-center text-[13px] text-pe-text-3">No observations in this range.</p>;
   return (
     <Box height={height} ariaLabel={ariaLabel}>
@@ -187,7 +199,9 @@ export function MultiLine({
             dot={false}
             activeDot={{ r: 4, stroke: "var(--pe-surface)", strokeWidth: 1.5 }}
             connectNulls={false}
-            isAnimationActive={false}
+            isAnimationActive={animate && !reduced}
+            animationDuration={ANIMATION.duration}
+            animationEasing={ANIMATION.easing}
           />
         ))}
         {highlight?.map((h) => {

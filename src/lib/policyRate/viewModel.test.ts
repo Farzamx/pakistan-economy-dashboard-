@@ -164,6 +164,65 @@ describe("missing and bad inputs", () => {
   });
 });
 
+describe("G.9: figures for the charts, kept on their own dates", () => {
+  const m = buildPolicyRateViewModel(raw());
+
+  it("carries the as-of date and the auctions exactly as observed, ascending, one per date (not binned to months)", () => {
+    expect(m.asOf).toBe("2026-11-07");
+    expect(m.tbillAuctions.map((a) => a.date)).toEqual(["2026-09-02", "2026-09-30", "2026-10-14"]);
+    expect(m.pibAuctions).toEqual([{ date: "2026-10-07", value: 12.74 }]);
+  });
+
+  it("the spread is taken against the rate in effect ON the auction day: 14 Oct 2026 was +0.39 pp over 11.50%, not −0.11 against today's 12%", () => {
+    expect(m.tbillSpreadAt).toEqual([
+      { date: "2026-09-02", yield: 11.5, policy: 11.5, spread: 0 },
+      { date: "2026-09-30", yield: 11.7, policy: 11.5, spread: 0.2 },
+      { date: "2026-10-14", yield: 11.89, policy: 11.5, spread: 0.39 },
+    ]);
+    expect(m.pibSpreadAt).toEqual([{ date: "2026-10-07", yield: 12.74, policy: 11.5, spread: 1.24 }]);
+    // the older month-end figure is kept unchanged for compatibility, but it is not what the page shows
+    expect(m.tbillSpread.at(-1)?.value).toBe(-0.11);
+  });
+
+  it("the term spread pairs the 7 Oct PIB with the 30 Sep bill (7 days earlier): 12.74 − 11.70 = +1.04 pp", () => {
+    expect(m.termSpreadAt).toEqual([{ date: "2026-10-07", long: 12.74, short: 11.7, shortDate: "2026-09-30", lagDays: 7, spread: 1.04 }]);
+  });
+
+  it("levels, cumulative totals, regimes and turning points come from the real history", () => {
+    expect(m.levels).toHaveLength(36);
+    expect(m.levels.at(-1)).toMatchObject({ rate: 12, current: true, days: 12, from: "2026-10-26" });
+    expect(m.cumulative.at(-1)).toEqual({ date: "2026-10-26", increases: 24, cuts: -17.75, net: 6.25 });
+    expect(m.regimes.map((r) => r.kind)).toEqual(["hold", "tightening", "hold", "easing", "hold", "tightening", "hold", "easing", "hold", "tightening", "hold"]);
+    expect(m.regimes.reduce((s, r) => s + r.days, 0)).toBe(3820); // 23 May 2016 .. 7 Nov 2026
+    expect(m.turningPoints.map((t) => t.rate)).toEqual([13.25, 7, 22, 10.5, 12]);
+  });
+
+  it("summarises the real policy rate and the US gap", () => {
+    expect(m.realSummary.headline?.latest.month).toBe("2026-10");
+    expect(m.realSummary.headline?.months).toBe(10);
+    expect(m.realSummary.core?.months).toBe(10);
+    expect(m.usGapSummary).toMatchObject({ months: 3, above: 3, below: 0, highest: { month: "2026-10", value: 8.12 }, lowest: { month: "2026-08", value: 7.4 } });
+  });
+
+  it("without the optional series it degrades to empty values, not zeros, and the policy-only figures remain", () => {
+    const bare = buildPolicyRateViewModel(raw({ tbill: null, pib: null, fedFunds: null, headline: null, core: null }));
+    expect(bare.tbillAuctions).toEqual([]);
+    expect(bare.termSpreadAt).toEqual([]);
+    expect(bare.realSummary).toEqual({ headline: null, core: null });
+    expect(bare.usGapSummary).toBeNull();
+    expect(bare.levels).toHaveLength(36);
+  });
+
+  it("with no policy data every new field is empty, never invented", () => {
+    const none = buildPolicyRateViewModel(raw({ policy: null }));
+    expect([none.levels, none.cumulative, none.regimes, none.turningPoints, none.tbillSpreadAt]).toEqual([[], [], [], [], []]);
+  });
+
+  it("survives a JSON round trip (it crosses the server/client boundary)", () => {
+    expect(JSON.parse(JSON.stringify(m))).toEqual(m);
+  });
+});
+
 describe("source information passes through untouched", () => {
   it("is carried as given, or null", () => {
     expect(buildPolicyRateViewModel(raw()).source).toEqual(SOURCE);

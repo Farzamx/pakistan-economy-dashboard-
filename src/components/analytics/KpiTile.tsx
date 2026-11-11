@@ -19,7 +19,8 @@ export function KpiTile({
   label: string;
   /** The type of quantity: "Year on year", "Month on month", "Index level" … */
   kind: string;
-  value: string;
+  /** The figure as text, or an element that renders that same text (for example a count-up). */
+  value: ReactNode;
   /** e.g. "10.3% in Sep 2026" */
   previous?: string | null;
   /** e.g. "−0.7 pp vs Sep 2026" */

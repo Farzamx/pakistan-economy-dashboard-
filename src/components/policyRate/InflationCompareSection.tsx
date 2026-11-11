@@ -52,7 +52,7 @@ export default function InflationCompareSection({ model }: { model: PolicyRateVi
         source={`Source: SBP EasyData (policy rate), SBP / PBS (inflation) · headline ${coverageText(model.headline)} · policy rate shown as the rate in effect at each month-end`}
         table={{ caption: "Policy rate and inflation, by month", head: ["Month", ...SERIES.map((s) => s.label)], rows: tableRowsFor(sliced, months, 2, "%") }}
       >
-        <MultiLine data={mergeSeries(sliced, months)} series={SERIES} decimals={2} height={340} ariaLabel="SBP policy rate, headline inflation and core inflation over time" />
+        <MultiLine data={mergeSeries(sliced, months)} series={SERIES} decimals={2} height={340} ariaLabel="SBP policy rate, headline inflation and core inflation over time" animate />
       </ChartFrame>
 
       {outcomes.length > 0 && (

@@ -147,6 +147,33 @@ describe("boundaries of this phase", () => {
   });
 });
 
+describe("animation is restrained: opt-in, and never under prefers-reduced-motion", () => {
+  const animated = ["src/components/analytics/TimeCharts.tsx", "src/components/analytics/DateCharts.tsx", "src/components/analytics/RegimeTimeline.tsx", "src/components/policyRate/AnimatedFigure.tsx"];
+  it("every file that animates reads the reduced-motion preference through the hydration-safe hook", () => {
+    for (const f of animated) expect(read(f), f).toContain("useSafeReducedMotion");
+  });
+  it("no chart animates unless the page asks: Recharts animation is always gated by `animate && !reduced`", () => {
+    for (const f of animated.slice(0, 2)) {
+      const src = read(f);
+      const flags = [...src.matchAll(/isAnimationActive=\{([^}]+)\}/g)].map((m) => m[1]);
+      expect(flags.length, f).toBeGreaterThan(0);
+      for (const flag of flags) expect(flag.trim(), f).toMatch(/^(false|animate && !reduced)$/); // never animated, or animated only when asked and motion is allowed
+      expect(src, f).not.toMatch(/isAnimationActive=\{true\}|isAnimationActive: true|isAnimationActive(?![=:])/);
+    }
+    expect(read("src/components/analytics/DateCharts.tsx")).toContain("isAnimationActive: animate && !reduced");
+  });
+  it("the page's animation lasts under a second and a half in every component", () => {
+    expect(read("src/components/analytics/TimeCharts.tsx")).toMatch(/duration: 900/);
+    expect(read("src/components/analytics/RegimeTimeline.tsx")).toMatch(/1100ms/);
+    expect(read("src/components/policyRate/AnimatedFigure.tsx")).toMatch(/duration = 1100/);
+  });
+  it("the reveal is skipped under reduced motion and the finished chart is what the server renders", () => {
+    const src = read("src/components/analytics/RegimeTimeline.tsx");
+    expect(src).toContain('useState<"static" | "armed" | "play">("static")');
+    expect(src).toMatch(/if \(!animate \|\| reduced/);
+  });
+});
+
 describe("scroll containers", () => {
   it("every overflow wrapper is relative, focusable by keyboard and named", () => {
     for (const f of walk(join(ROOT, "src/components/policyRate"))) {
@@ -187,6 +214,18 @@ describe("honest limits are stated on the page", () => {
   it("says only the US is comparable internationally", () => {
     expect(all).toContain("One comparable country only");
     expect(all).toContain("Policy rates for India, Bangladesh, Sri Lanka or other peers are not held");
+  });
+
+  it("holds two government-security maturities and draws no yield curve, and says so", () => {
+    expect(all).toContain("Two maturities, not a yield curve");
+    expect(all).toContain("so no curve is drawn and no line between the two is implied");
+    expect(all).toContain("Government-security maturities other than the 3-month T-bill and the 3-year PIB, so no yield curve");
+  });
+
+  it("states that yields are compared with the policy rate in effect on the auction day, not resampled to months", () => {
+    expect(all).toContain("not averaged into months");
+    expect(all).toContain("the policy rate in effect ON that date");
+    expect(all).toContain("Holding (no change recorded)");
   });
 
   it("never claims a cause (the one sentence that denies causation is the only exemption)", () => {
