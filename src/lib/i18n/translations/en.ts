@@ -241,7 +241,7 @@ export const en: Translations = {
     fiscalYear: "Fiscal Year",
     totalOutlay: "Total Outlay", fbr: "FBR Revenue", debtShare: "Debt Servicing Share of Budget",
     shareOfBudget: "of Budget",
-    whereDoesGo: "Where Does the Budget Go?",
+    allocationTitle: "Budget Allocation by Category",
     whereDoesGoDesc: "Federal allocations by category — explore how each rupee is divided across priorities.",
     historicalExplorer: "Historical Budget Explorer",
     historicalExplorerDesc: "Track how federal budget allocations have shifted over time.",

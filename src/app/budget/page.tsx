@@ -3,6 +3,9 @@ import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
 import BudgetWorkspace from "@/components/budget/BudgetWorkspace";
 import BudgetToolkit from "@/components/budget/BudgetToolkit";
+import BudgetRibbon from "@/components/budget/BudgetRibbon";
+import BudgetMethodology from "@/components/budget/BudgetMethodology";
+import BudgetSankeySection from "@/components/budget/BudgetSankeySection";
 import { BUDGET_HISTORICAL } from "@/data/budgetHistorical";
 import { getBudgetToolkit } from "@/data/budgetEducation";
 import { SITE_URL, SITE_NAME } from "@/lib/seoConfig";
@@ -29,6 +32,7 @@ const FAQ = [
   { question: "What's the difference between the Budget Workshop and the Comparisons page?", answer: "Comparisons tracks live, frequently-updating indicators like the exchange rate and inflation. The Budget Workshop tracks Pakistan's annual federal budget allocations, which change once a year at most." },
   { question: "Does this cover provincial budgets too?", answer: "No — this is the federal budget only. Each of Pakistan's four provinces publishes its own separate budget, tracked separately in the Provincial Budget Intelligence section of this dashboard." },
   { question: "What does 'fiscal year' mean in Pakistan?", answer: "Pakistan's fiscal year runs from July to June, not January to December. FY2025-26 means July 2025 through June 2026." },
+  { question: "What does the budget flow diagram show?", answer: "It follows one fiscal year's Budget Estimate from where the money comes from (income tax, sales tax, customs, federal excise, the petroleum levy, State Bank profit and other non-tax receipts, plus domestic and external borrowing) into one pool of total resources, and from that pool to the provinces' NFC share and each federal expenditure line, with detail where the Budget in Brief prints it. Borrowing is shown as financing, not revenue, and every ribbon's width is proportional to its amount. Figures are only drawn when they reconcile to the totals the document prints." },
   { question: "Can I download this data?", answer: "Yes — use the PNG or CSV export buttons on the Historical Budget Explorer chart to save the data you're viewing." },
   { question: "Why does Debt Servicing Share of Budget get special attention here?", answer: "Because it's one of the most important, least-discussed facts about Pakistan's finances — interest payments on past borrowing now take up a larger share of the budget than defence, leaving less room for everything else." },
   { question: "How is 'Total Outlay' different from 'Total Expenditure'?", answer: "They mean the same thing in this dataset — both refer to the government's full planned spending for the fiscal year, current and development spending combined." },
@@ -50,15 +54,19 @@ export default function BudgetPage() {
   return (
     <div className="flex min-h-screen w-full">
       <Sidebar />
-      <main className="flex-1 px-6 py-8 sm:px-10 lg:px-16">
+      <main className="min-w-0 flex-1 px-6 py-8 sm:px-10 lg:px-16">
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd).replace(/</g, "\\u003c") }}
         />
         <div className="flex flex-col gap-10">
+          <BudgetRibbon />
+
           {toolkit && <BudgetToolkit toolkit={toolkit} />}
 
-          <BudgetWorkspace years={BUDGET_HISTORICAL.years} />
+          <BudgetWorkspace years={BUDGET_HISTORICAL.years} flowSlot={<BudgetSankeySection />} />
+
+          <BudgetMethodology years={BUDGET_HISTORICAL.years} />
 
           <Link
             href="/provincial-budget"

@@ -21,7 +21,7 @@ function formatRsNumeric(value: number): string {
 }
 
 function TrendArrow({ direction }: { direction: YoyChange["direction"] }) {
-  if (direction === "flat") return <span className="text-white/40 light:text-slate-400">→</span>;
+  if (direction === "flat") return <span className="text-white/55 light:text-slate-500">→</span>;
   const isUp = direction === "up";
   return (
     <svg
@@ -57,7 +57,7 @@ export default function BudgetKpiCard({ title, valueRs, subValue, yoy, fiscalYea
         </span>
       )}
       {yoy ? (
-        <div className={`flex items-center gap-1.5 text-xs font-medium ${yoy.direction === "up" ? "text-emerald-400 light:text-emerald-700" : yoy.direction === "down" ? "text-rose-400 light:text-rose-700" : "text-white/40"}`}>
+        <div className={`flex items-center gap-1.5 text-xs font-medium ${yoy.direction === "up" ? "text-emerald-400 light:text-emerald-700" : yoy.direction === "down" ? "text-rose-400 light:text-rose-700" : "text-white/55 light:text-slate-500"}`}>
           <TrendArrow direction={yoy.direction} />
           <span>{yoy.pct >= 0 ? "+" : ""}{yoy.pct.toFixed(1)}% YoY</span>
         </div>

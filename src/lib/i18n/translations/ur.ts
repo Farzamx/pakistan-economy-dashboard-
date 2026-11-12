@@ -241,7 +241,7 @@ export const ur: Translations = {
     fiscalYear: "مالی سال",
     totalOutlay: "کل اخراجات", fbr: "FBR محصولات", debtShare: "بجٹ میں قرض ادائیگی کا حصہ",
     shareOfBudget: "بجٹ کا",
-    whereDoesGo: "بجٹ کہاں جاتا ہے؟",
+    allocationTitle: "زمرے کے لحاظ سے بجٹ کی تقسیم",
     whereDoesGoDesc: "زمرے کے لحاظ سے وفاقی مختص — ترجیحات میں ہر روپیہ کیسے تقسیم ہوتا ہے۔",
     historicalExplorer: "تاریخی بجٹ ایکسپلورر",
     historicalExplorerDesc: "وقت کے ساتھ وفاقی بجٹ مختصات میں تبدیلیاں ٹریک کریں۔",

@@ -30,8 +30,11 @@ export default function BudgetTrendChart({ points, fields, mode }: BudgetTrendCh
   const cursorStroke = isLight ? "rgba(0, 0, 0, 0.12)" : "rgba(255, 255, 255, 0.15)";
   const legendColor = isLight ? "rgba(0, 0, 0, 0.65)" : "rgba(255, 255, 255, 0.65)";
 
-  const unitSuffix = mode === "pctGdp" ? "%" : "bn";
+  const isPct = mode === "pctGdp" || mode === "shareOutlay";
   const flatData = points.map((p) => ({ fiscalYear: `FY${p.fiscalYear}`, ...p.values }));
+  const formatTick = (v: number) => (isPct ? `${v}%` : Math.abs(v) >= 1000 ? `${+(v / 1000).toFixed(1)}tn` : `${v}bn`);
+  const formatValue = (v: number) => (isPct ? `${v.toFixed(2)}%` : `Rs ${v.toLocaleString("en-US", { maximumFractionDigits: 0 })}bn`);
+  const sparse = points.length <= 3;
 
   return (
     <div ref={containerRef} style={{ minHeight: 340 }} data-testid="budget-trend-chart">
@@ -53,16 +56,13 @@ export default function BudgetTrendChart({ points, fields, mode }: BudgetTrendCh
               tickLine={false}
               axisLine={false}
               width={52}
-              tickFormatter={(v) => `${v}${unitSuffix}`}
+              tickFormatter={formatTick}
             />
             <Tooltip
               contentStyle={{ background: tooltipBg, border: tooltipBorder, borderRadius: "0.75rem", backdropFilter: "blur(16px)" }}
               labelStyle={{ color: tooltipLabel, marginBottom: 4 }}
               cursor={{ stroke: cursorStroke, strokeWidth: 1 }}
-              formatter={(value, name) => [
-                typeof value === "number" ? `${value.toFixed(mode === "pctGdp" ? 2 : 0)}${unitSuffix}` : "No data",
-                String(name),
-              ]}
+              formatter={(value, name) => [typeof value === "number" ? formatValue(value) : "Not itemised", String(name)]}
             />
             <Legend wrapperStyle={{ fontSize: 12, color: legendColor }} iconType="line" />
             {fields.map((field, i) => {
@@ -75,7 +75,8 @@ export default function BudgetTrendChart({ points, fields, mode }: BudgetTrendCh
                   name={meta?.label ?? field}
                   stroke={meta?.color ?? "#94a3b8"}
                   strokeWidth={2}
-                  dot={false}
+                  dot={sparse ? { r: 3 } : false}
+                  activeDot={{ r: 4 }}
                   connectNulls={false}
                   isAnimationActive={!prefersReducedMotion}
                   animationDuration={1200}

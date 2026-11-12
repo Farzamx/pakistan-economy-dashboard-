@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { T } from "@/components/T";
 import BudgetDetailView from "@/components/budget/BudgetDetailView";
 import BudgetToolkit from "@/components/budget/BudgetToolkit";
+import { BudgetSourceRegister } from "@/components/budget/BudgetMethodology";
 import RelatedContent from "@/components/RelatedContent";
 import ProtectedLink from "@/components/ProtectedLink";
 import { BUDGET_CATEGORIES, getBudgetCategoryBySlug, type BudgetCategoryId } from "@/lib/budget/budgetRegistry";
@@ -56,7 +57,6 @@ export default async function BudgetCategoryPage({ params }: PageProps) {
 
   const field = FIELD_BY_CATEGORY_ID[category.id];
   const years = BUDGET_HISTORICAL.years;
-  const latest = years[years.length - 1];
 
   const faqJsonLd = {
     "@context": "https://schema.org",
@@ -129,16 +129,11 @@ export default async function BudgetCategoryPage({ params }: PageProps) {
         <section className="glass-card mt-6 p-6 sm:p-8">
           <h2 className="text-xl font-semibold text-white light:text-slate-900"><T tKey="budget.sourceCitations" /></h2>
           <p className="mt-3 text-sm leading-relaxed text-white/60 light:text-slate-600">
-            <T tKey="budget.budgetEstimateNote" />
+            Every figure on this page is the Budget Estimate (BE) for that fiscal year, transcribed from that year&rsquo;s own official Budget in Brief (Finance Division, Government of Pakistan). Revised estimates and actual outturns are never mixed in.
           </p>
-          <a
-            href={latest.citations.budgetInBrief.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-2 inline-block text-sm text-neon-blue underline-offset-2 hover:underline"
-          >
-            Budget in Brief, FY{latest.fiscalYear} ({latest.citations.budgetInBrief.tables.join(", ")})
-          </a>
+          <div className="mt-4">
+            <BudgetSourceRegister years={years} heading={`Every fiscal year's source for ${category.shortTitle}`} />
+          </div>
         </section>
 
         {related.length > 0 && (

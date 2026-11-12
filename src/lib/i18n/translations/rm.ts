@@ -241,7 +241,7 @@ export const rm: Translations = {
     fiscalYear: "Mali Saal",
     totalOutlay: "Kul Akhraajaat", fbr: "FBR Mahsoolaat", debtShare: "Budget mein Qarz Adaayegi ka Hissa",
     shareOfBudget: "Budget ka",
-    whereDoesGo: "Budget Kahaan Jaata Hai?",
+    allocationTitle: "Category ke Hisaab se Budget ki Taqseem",
     whereDoesGoDesc: "Zumre ke lehaz se wafaqi mukhtasaat — tarjeehaat mein har rupaya kaise taqseem hota hai.",
     historicalExplorer: "Taariekhi Budget Explorer",
     historicalExplorerDesc: "Waqt ke saath wafaqi budget mukhtasaat mein tabdeeliyan track karein.",

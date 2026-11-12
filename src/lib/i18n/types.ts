@@ -174,7 +174,7 @@ export interface Translations {
     provincialTransfers: string; education: string; health: string;
     workshopTitle: string; description: string; fiscalYear: string;
     totalOutlay: string; fbr: string; debtShare: string; shareOfBudget: string;
-    whereDoesGo: string; whereDoesGoDesc: string;
+    allocationTitle: string; whereDoesGoDesc: string;
     historicalExplorer: string; historicalExplorerDesc: string;
     budgetInsights: string; exploreByCategory: string;
     rs100Title: string; rs100Desc: string;
