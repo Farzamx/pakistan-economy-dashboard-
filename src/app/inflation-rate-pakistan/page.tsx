@@ -1,5 +1,6 @@
 ﻿import type { Metadata } from "next";
 import Link from "next/link";
+import { Disclosure, FaqAccordion } from "@/components/shell/Disclosure";
 import Section from "@/components/shell/Section";
 import OverviewSection from "@/components/inflation/OverviewSection";
 import HistorySection from "@/components/inflation/HistorySection";
@@ -203,20 +204,23 @@ export default async function InflationRatePage() {
         </Section>
 
         <Section id="meaning" title="What this means, and why it matters">
-          <div className="grid gap-6 lg:grid-cols-2">
-            <div className="flex flex-col gap-2">
-              <h3 className="text-[13px] font-semibold text-pe-text">What this means</h3>
-              {EXPLANATION.map((t, i) => (
-                <p key={i} className="text-[14px] leading-relaxed text-pe-text-2">{t}</p>
-              ))}
+          <p className="max-w-3xl text-[14px] leading-relaxed text-pe-text-2">{EXPLANATION[0]}</p>
+          <Disclosure summary="How to read the numbers, and why they matter" className="mt-1">
+            <div className="grid gap-6 lg:grid-cols-2">
+              <div className="flex flex-col gap-2">
+                <h3 className="text-[13px] font-semibold text-pe-text">What this means</h3>
+                {EXPLANATION.slice(1).map((t, i) => (
+                  <p key={i} className="text-[14px] leading-relaxed text-pe-text-2">{t}</p>
+                ))}
+              </div>
+              <div className="flex flex-col gap-2">
+                <h3 className="text-[13px] font-semibold text-pe-text">Why it matters</h3>
+                {WHY_IT_MATTERS.map((t, i) => (
+                  <p key={i} className="text-[14px] leading-relaxed text-pe-text-2">{t}</p>
+                ))}
+              </div>
             </div>
-            <div className="flex flex-col gap-2">
-              <h3 className="text-[13px] font-semibold text-pe-text">Why it matters</h3>
-              {WHY_IT_MATTERS.map((t, i) => (
-                <p key={i} className="text-[14px] leading-relaxed text-pe-text-2">{t}</p>
-              ))}
-            </div>
-          </div>
+          </Disclosure>
         </Section>
 
         <Section id="methodology" title="Methodology and data limitations" description="Definitions, formulas, what the data covers and what it cannot show.">
@@ -224,14 +228,7 @@ export default async function InflationRatePage() {
         </Section>
 
         <Section id="faq" title="Frequently asked questions" flush>
-          <dl className="divide-y divide-pe-border">
-            {faq.map((item, i) => (
-              <div key={i} className="px-4 py-3">
-                <dt className="text-[14px] font-medium text-pe-text">{item.question}</dt>
-                <dd className="mt-1 text-[14px] leading-relaxed text-pe-text-2">{item.answer}</dd>
-              </div>
-            ))}
-          </dl>
+          <FaqAccordion items={faq} />
         </Section>
 
         <div className="my-4 flex justify-center">

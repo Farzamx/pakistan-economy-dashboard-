@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { offersMoreThanOverview, publicHref } from "@/lib/accessPolicy";
 import { SITE_URL, SITE_NAME } from "@/lib/seoConfig";
 import DataSourcesModal from "@/components/DataSourcesModal";
 import FloatingAssistant from "@/components/assistant/FloatingAssistant";
@@ -544,11 +545,13 @@ export default async function Home() {
     ] as const
   ).map(([label, kpi]) => {
     const slug = slugForKpi(kpi.title);
-    return { label, kpi, href: slug ? `/${slug}` : undefined };
+    return { label, kpi, href: slug ? (publicHref(`/${slug}`) ?? undefined) : undefined };
   });
 
-  const homeSnapshotTiles = buildSnapshotTiles({ sbp, netLiquidReserves, usdPkrLive: fxRates.usdPkr });
-  const homeIndicatorRows = buildIndicatorRows(sbp);
+  // The tiles and rows keep their figures; a link to a detail page is kept only where the visitor can follow it (access policy, G.14: the Overview is the
+  // only public page), so a closed page's address is not even sent to the browser. An empty href / slug means "no link".
+  const homeSnapshotTiles = buildSnapshotTiles({ sbp, netLiquidReserves, usdPkrLive: fxRates.usdPkr }).map((t) => ({ ...t, href: publicHref(t.href) ?? "" }));
+  const homeIndicatorRows = buildIndicatorRows(sbp).map((r) => (publicHref(`/${r.slug}`) ? r : { ...r, slug: "" }));
 
   // Headlines: the same AI-tagged articles the News & Intelligence section
   // below renders, just the top few, surfaced near the top of the page.
@@ -614,7 +617,7 @@ export default async function Home() {
             `macroIntelligenceReport` the rest of the page uses. No new
             query, no new cache entry, so the route's ISR window and every
             indicator's freshness semantics are unchanged. */}
-        <div className="mx-auto flex max-w-[1600px] flex-col gap-3 px-3 py-4 sm:px-4 lg:px-6">
+        <div id="main-content" tabIndex={-1} className="mx-auto flex max-w-[1600px] flex-col gap-3 px-3 py-4 focus:outline-none sm:px-4 lg:px-6">
           {/* The page's own heading. Visually compact — the data below it is
               the point — but it is the document's single <h1>, which the
               briefing panel further down no longer has to supply. */}
@@ -674,7 +677,7 @@ export default async function Home() {
             id="home-snapshot"
             title="Pakistan snapshot"
             description="Headline indicators, each with the period it reports on and its source."
-            actions={<Link href="/pakistan-economic-indicators" className="text-pe-accent hover:underline">All indicators →</Link>}
+            actions={publicHref("/pakistan-economic-indicators") ? <Link href="/pakistan-economic-indicators" className="text-pe-accent hover:underline">All indicators →</Link> : undefined}
             flush
           >
             <PakistanSnapshot tiles={homeSnapshotTiles} />
@@ -694,7 +697,7 @@ export default async function Home() {
               <Section
                 id="home-releases"
                 title="Upcoming releases"
-                actions={<Link href="/economic-calendar" className="text-pe-accent hover:underline">Calendar →</Link>}
+                actions={publicHref("/economic-calendar") ? <Link href="/economic-calendar" className="text-pe-accent hover:underline">Calendar →</Link> : undefined}
                 flush
               >
                 <UpcomingReleases rows={homeUpcomingRows} todayIso={todayIsoForHome} />
@@ -713,26 +716,32 @@ export default async function Home() {
           <Section
             id="home-indicators"
             title="Pakistan indicators"
-            description="Search or sort. Every row links to that indicator's full history."
+            description={offersMoreThanOverview() ? "Search or sort. Every row links to that indicator's full history." : "Search or sort. Each row carries its period, source and status."}
             flush
           >
             <IndicatorsTable rows={homeIndicatorRows} />
           </Section>
 
-          <Section id="home-explore" title="Explore" flush>
-            <ExploreLinks />
-          </Section>
+          {/* Explore, Provincial budgets and Popular insights only point at other pages. While the Overview is the only public page (accessPolicy.ts)
+              they would link to closed routes, so they are not rendered; the components are kept for a reopening. */}
+          {offersMoreThanOverview() && (
+            <Section id="home-explore" title="Explore" flush>
+              <ExploreLinks />
+            </Section>
+          )}
 
           {/* Kept from the retired legacy block: these have no other home.
               Provincial shortcuts and Popular Insights are navigation into
               existing pages; the Data Sources modal is this page's full
               per-indicator provenance audit, reachable from the one place
               that renders every KPI. */}
-          <Section id="home-provincial" title="Provincial budgets" flush>
-            <ProvincialQuickAccess />
-          </Section>
+          {offersMoreThanOverview() && (
+            <Section id="home-provincial" title="Provincial budgets" flush>
+              <ProvincialQuickAccess />
+            </Section>
+          )}
 
-          <PopularInsights />
+          {offersMoreThanOverview() && <PopularInsights />}
 
           <div className="flex justify-center py-1">
             <DataSourcesModal kpis={allKpis} />

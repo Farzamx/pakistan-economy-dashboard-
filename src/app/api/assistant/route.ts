@@ -11,6 +11,17 @@ import { getFresh, getStale, setCache } from "@/lib/memoryCache";
 import { getPakEtfKpi } from "@/lib/data/yfinance";
 import type { Kpi } from "@/data/kpiData";
 import { searchKnowledgeBase } from "@/lib/knowledgeBaseSearch";
+import {
+  GUARD_LIMITS,
+  assistantGate,
+  assistantRefusal,
+  clientKey,
+  isSameOrigin,
+  paidAssistantDisabled,
+  readJsonBody,
+  sanitizeContext,
+  sanitizeHistory,
+} from "@/lib/assistantGuard";
 
 // ── Performance configuration ──────────────────────────────────────────────
 // Search results are cached so repeat/similar queries within the TTL skip
@@ -24,17 +35,6 @@ const SEARCH_TIMEOUT_WITH_FALLBACK_MS = 2500;
 const SEARCH_TIMEOUT_NO_FALLBACK_MS = 5500;
 
 // ── Types ─────────────────────────────────────────────────────────────────────
-
-interface ConvMessage {
-  role: "user" | "assistant";
-  content: string;
-}
-
-interface RequestBody {
-  message: string;
-  context: DashboardSnapshot;
-  history: ConvMessage[];
-}
 
 export type SourceType =
   | "Dashboard Data"
@@ -461,7 +461,27 @@ function buildCitationItems(
 
 // ── Main Handler ───────────────────────────────────────────────────────────────
 
+/**
+ * The public entry point. This endpoint spends money on behalf of anonymous visitors (a Tavily search and an AI model chain), so before any of the assistant's own
+ * logic runs it enforces the safeguards in src/lib/assistantGuard.ts: same-origin only, a kill switch, validated and size-capped inputs, per-client and per-instance
+ * rate limits (counted only when a paid call is about to run), and a safe error response. Nothing here asks a visitor to log in.
+ */
 export async function POST(request: Request): Promise<Response> {
+  if (!isSameOrigin(request.headers)) return assistantRefusal(403, "forbidden");
+  if (paidAssistantDisabled()) return assistantRefusal(503, "disabled");
+  const slot: { release?: () => void } = {};
+  try {
+    return await handleAssistantRequest(request, slot);
+  } catch (err) {
+    // Never echo internals to the caller: a generic message, and the detail only in the server log.
+    console.error(`[AI/Assistant] unhandled error: ${err instanceof Error ? err.message : "unknown"}`);
+    return assistantRefusal(500, "server_error");
+  } finally {
+    slot.release?.();
+  }
+}
+
+async function handleAssistantRequest(request: Request, slot: { release?: () => void }): Promise<Response> {
   const requestStart = Date.now();
   // Gates on either key, not specifically OpenRouter's — callOpenRouter()
   // (Part 8: this route now shares that client like every other AI
@@ -482,17 +502,15 @@ export async function POST(request: Request): Promise<Response> {
     });
   }
 
-  let body: RequestBody;
-  try {
-    body = (await request.json()) as RequestBody;
-  } catch {
-    return Response.json({ error: "Invalid JSON in request body" }, { status: 400 });
-  }
-
-  const { message, context, history } = body;
-  if (!message?.trim()) {
-    return Response.json({ error: "message is required" }, { status: 400 });
-  }
+  const parsed = await readJsonBody(request, GUARD_LIMITS.maxBodyBytes);
+  if (!parsed.ok) return assistantRefusal(parsed.status, parsed.code);
+  const raw = (parsed.value && typeof parsed.value === "object" ? parsed.value : {}) as Record<string, unknown>;
+  const message = typeof raw.message === "string" ? raw.message : "";
+  if (!message.trim()) return assistantRefusal(400, "message_required");
+  if (message.length > GUARD_LIMITS.maxMessageChars) return assistantRefusal(413, "message_too_long");
+  // The page sends a dashboard snapshot and the chat history; both are client-controlled, so they are rebuilt field by field before they reach the prompt.
+  const context: DashboardSnapshot = sanitizeContext(raw.context);
+  const history = sanitizeHistory(raw.history);
 
   // ── Step 1: Classify ──────────────────────────────────────────────────────
   const routerResult = classifyQuery(message);
@@ -531,6 +549,11 @@ export async function POST(request: Request): Promise<Response> {
     }
     console.log(`[Knowledge Base] MISS — "${message.slice(0, 70)}${message.length > 70 ? "..." : ""}"`);
   }
+
+  // ── Admission: everything below can spend money (Tavily, the AI chain), so it is rate-limited. The knowledge-base answers above cost nothing and are never counted. ──
+  const admission = assistantGate.enter(clientKey(request.headers));
+  if (!admission.ok) return assistantRefusal(admission.status, admission.code, admission.retryAfterSec);
+  slot.release = admission.release;
 
   // ── Step 2: Search (cache-aware) + PAK ETF fallback fetch — run in parallel ──
   // The PAK ETF quote (free Yahoo Finance call, not rate-limited) is fetched

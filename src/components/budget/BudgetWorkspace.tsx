@@ -194,10 +194,14 @@ export default function BudgetWorkspace({ years, flowSlot }: BudgetWorkspaceProp
             <p key={n} className="mt-3 rounded-lg border border-rose-500/30 bg-rose-500/[0.06] p-2.5 text-[11px] text-rose-200 light:text-rose-800">Does not reconcile: {n}</p>
           ))}
           <p className="mt-3 text-[11px] text-[var(--text-muted)]">
-            Percentages are shares of the budget envelope: total outlay plus the provinces&apos; NFC share, which Budget in Brief deducts on the revenue side and does not count in total outlay.
-            {" "}
-            &ldquo;Other&rdquo; is the remainder: grants and transfers, running of civil government, net lending and contingency provisions. In FY2010-11 interest and pension are not itemised, so the bundled slice holds them together with that remainder.{view === "bars" ? " Bar length is relative to the largest slice." : ""} {t("budget.sourceNote")}
+            Percentages are shares of the budget envelope: total outlay plus the provinces&apos; NFC share, which Budget in Brief deducts on the revenue side and does not count in total outlay. {t("budget.sourceNote")}
           </p>
+          <details className="mt-1 text-[11px] text-[var(--text-muted)]" data-testid="budget-allocation-more">
+            <summary className="cursor-pointer select-none text-[var(--text-secondary)] hover:text-[var(--text-primary)]">What &ldquo;Other&rdquo; holds, and the FY2010-11 caveat</summary>
+            <p className="mt-1">
+              &ldquo;Other&rdquo; is the remainder: grants and transfers, running of civil government, net lending and contingency provisions. In FY2010-11 interest and pension are not itemised, so the bundled slice holds them together with that remainder.{view === "bars" ? " Bar length is relative to the largest slice." : ""}
+            </p>
+          </details>
         </div>
       </section>
 

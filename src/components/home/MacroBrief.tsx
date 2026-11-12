@@ -13,6 +13,7 @@
 // misrepresent the analysis.
 
 import Link from "next/link";
+import { isPublicPagePath } from "@/lib/accessPolicy";
 import type { IntelligenceSignal } from "@/lib/intelligence/types";
 
 const INSUFFICIENT = "insufficient-data";
@@ -58,9 +59,11 @@ export default function MacroBrief({ signals, asOf }: { signals: IntelligenceSig
 
       <div className="flex flex-wrap items-center justify-between gap-2 pt-0.5">
         <span className="font-mono text-[11px] text-pe-text-3">Computed {asOf}</span>
-        <Link href="/macro-intelligence" className="text-[13px] font-medium text-pe-accent hover:underline">
-          Full analysis →
-        </Link>
+        {isPublicPagePath("/macro-intelligence") && (
+          <Link href="/macro-intelligence" className="text-[13px] font-medium text-pe-accent hover:underline">
+            Full analysis →
+          </Link>
+        )}
       </div>
     </div>
   );

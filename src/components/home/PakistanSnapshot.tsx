@@ -18,10 +18,20 @@ export interface SnapshotTile {
   /** What the figure measures, in the page's own words. */
   label: string;
   kpi: Kpi;
-  /** Existing indicator detail page. */
+  /** Existing indicator detail page. Empty when the page is not open to the public: the tile is then shown without a link. */
   href: string;
   /** Severity + label from the existing freshness verdict; omitted when the indicator has none. */
   freshness?: { severity: FreshnessResult["severity"]; label: string };
+}
+
+/** A tile is a link to its indicator page when that page is open to the public, otherwise plain content with the same layout. */
+function Tile({ href, children }: { href: string; children: React.ReactNode }) {
+  if (!href) return <div className="flex h-full flex-col gap-1 p-3">{children}</div>;
+  return (
+    <Link href={href} className="flex h-full flex-col gap-1 p-3 hover:bg-pe-surface-2">
+      {children}
+    </Link>
+  );
 }
 
 export default function PakistanSnapshot({ tiles }: { tiles: SnapshotTile[] }) {
@@ -33,7 +43,7 @@ export default function PakistanSnapshot({ tiles }: { tiles: SnapshotTile[] }) {
     <ul className="grid grid-cols-2 gap-px bg-pe-border sm:grid-cols-3 lg:grid-cols-4">
       {tiles.map(({ label, kpi, href, freshness }) => (
         <li key={label} className="bg-pe-surface">
-          <Link href={href} className="flex h-full flex-col gap-1 p-3 hover:bg-pe-surface-2">
+          <Tile href={href}>
             <span className="flex items-start justify-between gap-2">
               <span className="text-[12px] font-medium text-pe-text-2">{label}</span>
               {freshness && freshness.severity !== "healthy" && (
@@ -46,7 +56,7 @@ export default function PakistanSnapshot({ tiles }: { tiles: SnapshotTile[] }) {
             </span>
             <ChangeValue change={kpi.change} className="text-[12px]" />
             <SourceStamp kpi={kpi} className="mt-auto pt-1" />
-          </Link>
+          </Tile>
         </li>
       ))}
     </ul>

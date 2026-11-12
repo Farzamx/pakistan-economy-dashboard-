@@ -4,8 +4,8 @@
 import { describe, expect, it } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
-import { INFLATION_RATE_SEARCH_ALIASES, SEARCH_INDEX, matches } from "./GlobalSearch";
-import { CONSOLIDATED_INTO_INFLATION_SLUGS } from "@/lib/appNav";
+import { BOND_YIELDS_SEARCH_ALIASES, BUDGET_TRACKER_SEARCH_ALIASES, INFLATION_RATE_SEARCH_ALIASES, INTEREST_RATE_SEARCH_ALIASES, SEARCH_INDEX, matches } from "./GlobalSearch";
+import { CONSOLIDATED_INTO_INFLATION_SLUGS, CONSOLIDATED_INTO_INTEREST_RATE_SLUGS } from "@/lib/appNav";
 import { SEO_PAGES } from "@/lib/seoConfig";
 
 const APP = path.resolve(__dirname, "..", "app");
@@ -62,17 +62,51 @@ describe("distinct price indicators stay searchable", () => {
   });
 });
 
+describe("the Fed Funds Rate, bond and budget searches lead to their workshops", () => {
+  it("the Fed Funds page has no entry of its own, and the Interest Rate entry carries its aliases", () => {
+    for (const slug of CONSOLIDATED_INTO_INTEREST_RATE_SLUGS) expect(SEARCH_INDEX.some((e) => e.href === `/${slug}`), slug).toBe(false);
+    expect(SEARCH_INDEX.find((e) => e.href === "/pakistan-interest-rate")?.keywords).toEqual(INTEREST_RATE_SEARCH_ALIASES);
+  });
+
+  it.each(["fed funds", "federal funds rate", "us interest rate", "us policy rate"])("searching %p leads to Pakistan Interest Rate", (q) => {
+    const found = hrefs(q);
+    expect(found).toContain("/pakistan-interest-rate");
+    expect(found).not.toContain("/fed-funds-rate");
+  });
+
+  it.each(["t-bills", "treasury bills", "pib", "yield curve", "government bonds"])("searching %p leads to Bond Yields", (q) => {
+    expect(hrefs(q)).toContain("/pakistan-bond-yields");
+  });
+
+  it("the Bond Yields entry carries its aliases", () => {
+    expect(SEARCH_INDEX.find((e) => e.href === "/pakistan-bond-yields")?.keywords).toEqual(BOND_YIELDS_SEARCH_ALIASES);
+  });
+
+  it.each(["tax money", "debt servicing vs defence", "defence spending", "federal budget"])("searching %p leads to the Budget Tracker", (q) => {
+    expect(hrefs(q)).toContain("/budget");
+  });
+
+  it("the Budget Tracker entry carries its aliases", () => {
+    expect(SEARCH_INDEX.find((e) => e.href === "/budget")?.keywords).toEqual(BUDGET_TRACKER_SEARCH_ALIASES);
+  });
+
+  it("no two results share a destination", () => {
+    const h = SEARCH_INDEX.map((e) => e.href);
+    expect(new Set(h).size).toBe(h.length);
+  });
+});
+
 describe("nothing else about search changed", () => {
   it("every other indicator page is still in the index exactly once", () => {
-    const consolidated = new Set<string>(CONSOLIDATED_INTO_INFLATION_SLUGS);
+    const consolidated = new Set<string>([...CONSOLIDATED_INTO_INFLATION_SLUGS, ...CONSOLIDATED_INTO_INTEREST_RATE_SLUGS]);
     for (const p of SEO_PAGES) {
       const n = SEARCH_INDEX.filter((e) => e.href === `/${p.slug}`).length;
       expect(n, p.slug).toBe(consolidated.has(p.slug) ? 0 : 1);
     }
   });
 
-  it("the index is smaller by exactly the two consolidated pages, and the hand-written entries are untouched", () => {
-    expect(SEARCH_INDEX).toHaveLength(22 + SEO_PAGES.length - CONSOLIDATED_INTO_INFLATION_SLUGS.length);
+  it("the index is smaller by exactly the consolidated pages, and the hand-written entries are untouched", () => {
+    expect(SEARCH_INDEX).toHaveLength(22 + SEO_PAGES.length - CONSOLIDATED_INTO_INFLATION_SLUGS.length - CONSOLIDATED_INTO_INTEREST_RATE_SLUGS.length);
   });
 
   it("unrelated searches are unaffected", () => {

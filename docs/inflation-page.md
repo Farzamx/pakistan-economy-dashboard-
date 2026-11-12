@@ -1,5 +1,7 @@
 # Inflation page: architecture, data, methodology and operations
 
+> **Access (G.14):** this page is currently closed to the public: only the Overview is open, and every other route redirects to `/overview` (see [access-policy.md](access-policy.md)). The implementation, data, tests and this document are unchanged and kept for a possible reopening.
+
 Route: `/inflation-rate-pakistan` (the original route, upgraded in place; no second Inflation route exists, and a test pins that).
 Status: **finished.** See [inflation-completion.md](inflation-completion.md) for the closure summary and the open operational item.
 

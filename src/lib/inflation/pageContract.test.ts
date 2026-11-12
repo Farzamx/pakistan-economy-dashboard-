@@ -75,7 +75,8 @@ describe("SEO is preserved", () => {
   it("keeps the four FAQ questions, rendered visibly and emitted as JSON-LD from the same array", () => {
     for (const q of ["What is Pakistan's current inflation rate?", "What causes inflation in Pakistan?", "What is core inflation and how is it different from CPI?", "How often is Pakistan's inflation data released?"]) expect(page).toContain(q);
     expect(page).toContain("indicatorJsonLd({ title: \"Pakistan Inflation Rate\", canonicalPath: `/${SLUG}`, faq })");
-    expect(page).toContain("{faq.map((item, i) => (");
+    // Rendered from the same array, as an accordion: every answer stays in the page's HTML (a closed <details>), nothing is dropped.
+    expect(page).toContain("<FaqAccordion items={faq} />");
   });
 
   it("the default (24-month) view still matches the description's '24-month trend chart'", () => {

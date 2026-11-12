@@ -2,6 +2,7 @@
 // Nothing here says why the Monetary Policy Committee acted or what will happen next. Server component.
 
 import { Callout } from "@/components/analytics/ChartFrame";
+import { LeadMore } from "@/components/shell/Disclosure";
 import { buildFindings } from "@/lib/policyRate/findings";
 import type { PolicyRateViewModel } from "@/lib/policyRate/viewModel";
 
@@ -14,7 +15,7 @@ export default function FindingsSection({ model }: { model: PolicyRateViewModel 
     <ul className="flex flex-col divide-y divide-pe-border rounded-[var(--pe-radius)] border border-pe-border">
       {findings.map((f) => (
         <li key={f.id} className="px-4 py-3">
-          <p className="text-[14px] leading-relaxed text-pe-text">{f.text}</p>
+          <LeadMore leadClassName="text-[14px] leading-relaxed text-pe-text">{f.text}</LeadMore>
           <p className="mt-1 font-mono text-[11px] text-pe-text-3">
             {f.period} · {f.source}
           </p>

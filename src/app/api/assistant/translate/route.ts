@@ -1,5 +1,15 @@
 import { callOpenRouter } from "@/lib/openRouterClient";
 import { getFresh, setCache } from "@/lib/memoryCache";
+import {
+  GUARD_LIMITS,
+  clientKey,
+  cleanText,
+  isSameOrigin,
+  paidAssistantDisabled,
+  readJsonBody,
+  translateGate,
+  translateRefusal,
+} from "@/lib/assistantGuard";
 
 // Translated tooltip content is static (the ~30 TERMINOLOGY entries never
 // change), so the same text gets requested repeatedly across different users
@@ -105,7 +115,28 @@ function containsVerbatimEnglishRun(original: string, translated: string, minWor
 
 // ── Handler ───────────────────────────────────────────────────────────────────
 
+// Translations kept in the shared (unbounded) cache by this route; past the cap a new translation is still returned, just not remembered.
+const cachedTranslationKeys = new Set<string>();
+
+/**
+ * The public entry point. A paid model call per distinct text, for anonymous visitors, so it is guarded like the assistant (src/lib/assistantGuard.ts): same-origin
+ * only, a kill switch, a text-length cap, per-client and per-instance rate limits (a cached translation is free and never counted), and a safe error response.
+ */
 export async function POST(request: Request): Promise<Response> {
+  if (!isSameOrigin(request.headers)) return translateRefusal(403, "forbidden");
+  if (paidAssistantDisabled()) return translateRefusal(503, "disabled");
+  const slot: { release?: () => void } = {};
+  try {
+    return await handleTranslateRequest(request, slot);
+  } catch (err) {
+    console.error(`[AI/Translate] unhandled error: ${err instanceof Error ? err.message : "unknown"}`);
+    return translateRefusal(500, "server_error");
+  } finally {
+    slot.release?.();
+  }
+}
+
+async function handleTranslateRequest(request: Request, slot: { release?: () => void }): Promise<Response> {
   const requestStart = Date.now();
   if (!process.env.OPENROUTER_API_KEY && !process.env.GROQ_API_KEY) {
     return Response.json({
@@ -113,17 +144,13 @@ export async function POST(request: Request): Promise<Response> {
     });
   }
 
-  let body: { text?: string };
-  try {
-    body = (await request.json()) as { text?: string };
-  } catch {
-    return Response.json({ error: "Invalid JSON" }, { status: 400 });
-  }
-
-  const text = body.text?.trim();
-  if (!text) {
-    return Response.json({ error: "text is required" }, { status: 400 });
-  }
+  const parsed = await readJsonBody(request, GUARD_LIMITS.maxBodyBytes);
+  if (!parsed.ok) return translateRefusal(parsed.status, parsed.code);
+  const rawText = (parsed.value && typeof parsed.value === "object" ? (parsed.value as { text?: unknown }).text : undefined);
+  if (typeof rawText !== "string") return translateRefusal(400, "text_required");
+  if (rawText.length > GUARD_LIMITS.maxTranslateChars) return translateRefusal(413, "text_too_long");
+  const text = cleanText(rawText, GUARD_LIMITS.maxTranslateChars);
+  if (!text) return translateRefusal(400, "text_required");
 
   // Cache hit — zero LLM calls, near-instant.
   const cacheKey = text;
@@ -132,6 +159,11 @@ export async function POST(request: Request): Promise<Response> {
     console.log(`[Timing] translation: ${Date.now() - requestStart}ms (cache hit, ${cached.ageMs}ms old)`);
     return Response.json({ translation: cached.data });
   }
+
+  // Admission: the model call below spends money, so it is rate-limited. The cache hit above is free and is never counted.
+  const admission = translateGate.enter(clientKey(request.headers));
+  if (!admission.ok) return translateRefusal(admission.status, admission.code, admission.retryAfterSec);
+  slot.release = admission.release;
 
   // Shared failover client (Final Production Hardening Part 6 — this route
   // used to reimplement its own OpenRouter-only retry loop, the same
@@ -160,7 +192,10 @@ export async function POST(request: Request): Promise<Response> {
     if (containsVerbatimEnglishRun(text, aiResult.result)) {
       console.warn(`[AI/Translate] ${aiResult.modelUsed} — output may contain untranslated English (quality signal only, not retried)`);
     }
-    setCache(cacheKey, aiResult.result);
+    if (cachedTranslationKeys.has(cacheKey) || cachedTranslationKeys.size < GUARD_LIMITS.maxTranslationCacheEntries) {
+      cachedTranslationKeys.add(cacheKey);
+      setCache(cacheKey, aiResult.result);
+    }
     console.log(`[Timing] translation: ${Date.now() - requestStart}ms — ${aiResult.modelUsed} (${aiResult.provider})`);
     return Response.json({ translation: aiResult.result });
   }

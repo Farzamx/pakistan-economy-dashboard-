@@ -40,6 +40,7 @@ import {
 } from "@/lib/macroIntelligenceViews";
 import CoverageBarChart from "@/components/macro/CoverageBarChart";
 import ConfidenceBarChart from "@/components/macro/ConfidenceBarChart";
+import { LeadMore } from "@/components/shell/Disclosure";
 
 // Reuses MacroIntelligenceSection's palette decision verbatim: confidence is
 // the only severity the engine computes, so confidence is the only thing
@@ -63,7 +64,7 @@ function Panel({ title, caption, children }: { title: string; caption?: string; 
   return (
     <div className="rounded-lg border border-white/10 bg-white/[0.025] p-5 light:border-black/10 light:bg-black/[0.015]">
       <span className="text-label text-white/45 light:text-slate-400">{title}</span>
-      {caption && <p className="mt-1 text-[11px] leading-relaxed text-white/35 light:text-slate-400">{caption}</p>}
+      {caption && <LeadMore className="mt-1" leadClassName="text-[11px] leading-relaxed text-white/35 light:text-slate-400">{caption}</LeadMore>}
       <div className="mt-3">{children}</div>
     </div>
   );

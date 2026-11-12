@@ -458,7 +458,7 @@ export const ur: Translations = {
   },
 
   search: {
-    placeholder: "جی ڈی پی، مہنگائی، بجٹ تلاش کریں...", noMatches: "کوئی نتیجہ نہیں",
+    placeholder: "مارکیٹس، مہنگائی، خبریں تلاش کریں...", noMatches: "کوئی نتیجہ نہیں",
   },
 
   tooltip: {

@@ -1,5 +1,7 @@
 # Interest Rate page: data, architecture, methodology and limits
 
+> **Access (G.14):** this page is currently closed to the public: only the Overview is open, and every other route redirects to `/overview` (see [access-policy.md](access-policy.md)). The implementation, data, tests and this document are unchanged and kept for a possible reopening.
+
 Route: `/pakistan-interest-rate` (the original route, upgraded in place; no second interest-rate route exists, and a test pins that).
 Phase G.1. Built on the pattern of the completed Inflation page ([inflation-page.md](inflation-page.md)).
 

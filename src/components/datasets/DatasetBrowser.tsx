@@ -15,6 +15,7 @@ import { useMemo, useState } from "react";
 // into the browser bundle and fails the Turbopack build. Rows themselves
 // are server-rendered and passed in as props.
 import { DATASET_CATEGORIES, type DatasetCategory } from "@/lib/datasets/datasetCategories";
+import { LeadMore } from "@/components/shell/Disclosure";
 
 export interface DatasetRowView {
   id: string;
@@ -139,18 +140,16 @@ export default function DatasetBrowser({ rows }: { rows: DatasetRowView[] }) {
                       or an annual cadence is understood rather than read as
                       a failed fetch or an economic signal. */}
                   {r.coverageNote && (
-                    <p className="mt-1.5 border-s-2 border-pe-border ps-2 text-[12px] leading-relaxed text-pe-text-3">
-                      {r.coverageNote}
+                    <div className="mt-1.5 border-s-2 border-pe-border ps-2">
+                      <LeadMore leadClassName="text-[12px] leading-relaxed text-pe-text-3">{r.coverageNote}</LeadMore>
                       {r.contextHref && (
-                        <>
-                          {" "}
+                        <p className="text-[12px] leading-relaxed text-pe-text-3">
                           <a href={r.contextHref} className="text-pe-accent underline underline-offset-2">
                             More on this indicator
                           </a>
-                          .
-                        </>
+                        </p>
                       )}
-                    </p>
+                    </div>
                   )}
                   {r.error && <p className="mt-1 text-[12px] text-[var(--pe-crit-text)]">{r.error}</p>}
                 </div>

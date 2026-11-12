@@ -109,9 +109,13 @@ export default function IndicatorsTable({ rows }: { rows: IndicatorRow[] }) {
               visible.map((row) => (
                 <tr key={row.id} className="border-b border-pe-border last:border-0 hover:bg-pe-surface-2">
                   <th scope="row" className="py-1.5 pe-3 ps-4 text-start font-normal">
-                    <Link href={`/${row.slug}`} className="text-pe-text hover:text-pe-accent hover:underline">
-                      {row.name}
-                    </Link>
+                    {row.slug ? (
+                      <Link href={`/${row.slug}`} className="text-pe-text hover:text-pe-accent hover:underline">
+                        {row.name}
+                      </Link>
+                    ) : (
+                      <span className="text-pe-text">{row.name}</span>
+                    )}
                     <span className="block text-[11px] text-pe-text-3">{row.group}</span>
                   </th>
                   <td className="whitespace-nowrap py-1.5 pe-3 ps-3 text-end tabular-nums text-pe-text">

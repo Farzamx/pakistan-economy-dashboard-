@@ -16,6 +16,7 @@ import { useCallback, useId, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
+import { ACCOUNT_UI_ENABLED } from "@/lib/accessPolicy";
 import { useLanguage } from "@/components/LanguageProvider";
 import { handleMenuArrowKeys, useDismiss, useSignOutFlow } from "./shellHooks";
 
@@ -30,6 +31,9 @@ export default function AccountControl() {
   const close = useCallback(() => setOpen(false), []);
   useDismiss(open, close, containerRef, buttonRef);
   const { requestSignOut, signOutModal } = useSignOutFlow();
+
+  // The owner's policy: no login, signup or account anywhere (accessPolicy.ts). The rest of this component is kept for a possible reopening.
+  if (!ACCOUNT_UI_ENABLED) return null;
 
   if (loading) {
     // Reserves the guest button's width so the bar doesn't shift on load.

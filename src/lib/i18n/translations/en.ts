@@ -458,7 +458,7 @@ export const en: Translations = {
   },
 
   search: {
-    placeholder: "Search GDP, Inflation, Budget...", noMatches: "No matches",
+    placeholder: "Search markets, inflation, news...", noMatches: "No matches",
   },
 
   tooltip: {

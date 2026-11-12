@@ -21,7 +21,8 @@ import { usePathname } from "next/navigation";
 import GlobalSearch from "@/components/GlobalSearch";
 import { useAuth } from "@/components/AuthProvider";
 import { useLanguage } from "@/components/LanguageProvider";
-import { APP_NAV, OVERVIEW_PATH, OVERVIEW_SECTIONS, ariaCurrentFor, hrefPath, type ActiveNav, type NavItem } from "@/lib/appNav";
+import { ACCOUNT_UI_ENABLED } from "@/lib/accessPolicy";
+import { OVERVIEW_PATH, OVERVIEW_SECTIONS, PUBLIC_APP_NAV, ariaCurrentFor, hrefPath, type ActiveNav, type NavItem } from "@/lib/appNav";
 import ThemeToggle from "./ThemeToggle";
 import { goToOverviewSection, useSignOutFlow } from "./shellHooks";
 
@@ -185,7 +186,7 @@ export default function MobileDrawer({ open, onClose, active, gate, onAction, ov
 
           <nav aria-label={t("appNav.mainNav")} className="mt-3">
             <ul className="flex flex-col">
-              {APP_NAV.map((entry) => {
+              {PUBLIC_APP_NAV.map((entry) => {
                 if (entry.kind === "link") {
                   const current = ariaCurrentFor(active, entry.id);
                   const showSections = entry.id === "overview" && overviewSections && overviewSections.present.length > 0;
@@ -286,7 +287,7 @@ export default function MobileDrawer({ open, onClose, active, gate, onAction, ov
             <span className="text-[13px] text-pe-text-2">{t("appNav.darkMode")}</span>
             <ThemeToggle className="border border-pe-border text-pe-text-2 hover:bg-pe-surface-2" />
           </div>
-          {!loading && (
+          {ACCOUNT_UI_ENABLED && !loading && (
             <div className="mt-3">
               {user ? (
                 <div className="flex items-center justify-between gap-2">

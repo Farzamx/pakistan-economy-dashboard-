@@ -1,18 +1,28 @@
 import type { MetadataRoute } from "next";
+import { isPublicUrl } from "@/lib/accessPolicy";
 import { SITE_URL, SEO_PAGES } from "@/lib/seoConfig";
 import { COMPARISONS, SECTOR_COMPOSITION } from "@/lib/comparisons/comparisonRegistry";
 import { BUDGET_CATEGORIES, BUDGET_EXTRA_SEO_SLUGS } from "@/lib/budget/budgetRegistry";
 import { PROVINCIAL_SEO_SLUGS } from "@/lib/provincial/provincialBudgetRegistry";
 
-export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+// ACCESS POLICY (G.14): only the Overview page is public, so the sitemap that is PUBLISHED lists only the Overview (see the default export at the bottom). The
+// complete list is kept in fullSitemap() so a closed section can be reopened; it is never served. A sitemap that advertised a closed URL would point crawlers at
+// a redirect.
+export async function fullSitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
 
   return [
     {
-      url: SITE_URL,
+      url: `${SITE_URL}/overview`,
       lastModified: now,
       changeFrequency: "daily",
       priority: 1.0,
+    },
+    {
+      url: SITE_URL,
+      lastModified: now,
+      changeFrequency: "daily",
+      priority: 0.9,
     },
     {
       url: `${SITE_URL}/site-map`,
@@ -74,4 +84,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.7,
     })),
   ];
+}
+
+/** What is published at /sitemap.xml: the complete list, reduced to the pages the access policy opens (today, the Overview alone). */
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  return (await fullSitemap()).filter((entry) => isPublicUrl(entry.url));
 }

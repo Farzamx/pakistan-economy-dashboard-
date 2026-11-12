@@ -6,6 +6,7 @@
 
 import Link from "next/link";
 import { formatUtc } from "@/components/inflation/DataSourceStatus";
+import { Disclosure } from "@/components/shell/Disclosure";
 import { coverageText, monthsCoverage } from "@/lib/inflation/chartData";
 import { formatDate } from "@/lib/policyRate/format";
 import type { PolicyRateViewModel } from "@/lib/policyRate/viewModel";
@@ -63,10 +64,9 @@ export default function MethodologySection({ model, generatedAt, relatedLinks }:
   ];
 
   return (
-    <div className="flex flex-col gap-8">
-      <div>
-        <h3 className="mb-2 text-[14px] font-semibold text-pe-text">What the terms mean</h3>
-        <dl className="grid gap-x-8 gap-y-3 md:grid-cols-2">
+    <div className="flex flex-col gap-4">
+      <Disclosure summary="What the terms mean" className="text-[14px]">
+        <dl className="mt-1 grid gap-x-8 gap-y-3 md:grid-cols-2">
           {DEFS.map(([t, d]) => (
             <div key={t}>
               <dt className="text-[13px] font-medium text-pe-text">{t}</dt>
@@ -74,12 +74,12 @@ export default function MethodologySection({ model, generatedAt, relatedLinks }:
             </div>
           ))}
         </dl>
-      </div>
+      </Disclosure>
 
-      <div>
-        <h3 className="mb-2 text-[14px] font-semibold text-pe-text">How the figures are calculated</h3>
-        <p className="mb-2 max-w-3xl text-[13px] leading-relaxed text-pe-text-2">Anything not published as such is derived, and is labelled &ldquo;derived&rdquo; where it appears. These are the rules.</p>
-        <dl className="flex flex-col divide-y divide-pe-border rounded-[var(--pe-radius)] border border-pe-border">
+      <p className="max-w-3xl text-[13px] leading-relaxed text-pe-text-2">Anything not published as such is derived, and is labelled &ldquo;derived&rdquo; where it appears.</p>
+
+      <Disclosure summary="How the figures are calculated" className="text-[14px]">
+        <dl className="mt-1 flex flex-col divide-y divide-pe-border rounded-[var(--pe-radius)] border border-pe-border">
           {FORMULAS.map(([t, d]) => (
             <div key={t} className="grid gap-1 px-3 py-2.5 md:grid-cols-[16rem_1fr] md:gap-4">
               <dt className="text-[13px] font-medium text-pe-text">{t}</dt>
@@ -87,11 +87,10 @@ export default function MethodologySection({ model, generatedAt, relatedLinks }:
             </div>
           ))}
         </dl>
-      </div>
+      </Disclosure>
 
-      <div>
-        <h3 className="mb-2 text-[14px] font-semibold text-pe-text">Data coverage on this page</h3>
-        <div className="relative overflow-x-auto rounded-[var(--pe-radius)] border border-pe-border" tabIndex={0} role="region" aria-label="Series used on this page (scrolls sideways)">
+      <Disclosure summary="Data coverage on this page, and what is not held" className="text-[14px]">
+        <div className="relative mt-1 overflow-x-auto rounded-[var(--pe-radius)] border border-pe-border" tabIndex={0} role="region" aria-label="Series used on this page (scrolls sideways)">
           <table className="w-full min-w-[720px] border-collapse text-left text-[12.5px]">
             <caption className="sr-only">Series used on this page: frequency, coverage, unit and source</caption>
             <thead className="bg-pe-surface-2 text-pe-text-2">
@@ -123,7 +122,7 @@ export default function MethodologySection({ model, generatedAt, relatedLinks }:
           <li>Inflation expectations or forecasts, so no expected (ex-ante) real rate</li>
           <li>Policy-rate history before {first ? formatDate(first.date) : "the start of the series"}</li>
         </ul>
-      </div>
+      </Disclosure>
 
       <div id="data-status" className="scroll-mt-20">
         <h3 className="mb-2 text-[14px] font-semibold text-pe-text">Where the policy-rate data comes from</h3>
@@ -140,8 +139,7 @@ export default function MethodologySection({ model, generatedAt, relatedLinks }:
         </p>
       </div>
 
-      <div>
-        <h3 className="mb-2 text-[14px] font-semibold text-pe-text">Checks run on this page&rsquo;s data</h3>
+      <Disclosure summary={`Checks run on this page’s data (${model.checks.length})`} className="text-[14px]">
         {model.checks.length === 0 ? (
           <p className="text-[13px] text-pe-text-2">No checks could be run on this load.</p>
         ) : (
@@ -160,7 +158,7 @@ export default function MethodologySection({ model, generatedAt, relatedLinks }:
             ))}
           </ul>
         )}
-      </div>
+      </Disclosure>
 
       <div>
         <h3 className="mb-2 text-[14px] font-semibold text-pe-text">Limitations</h3>

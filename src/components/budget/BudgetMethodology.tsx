@@ -1,5 +1,6 @@
 import type { BudgetYearRecord } from "@/data/budgetHistorical";
 import { BUDGET_NOMINAL_GDP } from "@/data/budgetNominalGdp";
+import { Disclosure } from "@/components/shell/Disclosure";
 
 /**
  * Methodology, definitions, limitations and the per-year source register for the Budget Tracker. Server-rendered static content (no state), so it
@@ -77,9 +78,8 @@ export default function BudgetMethodology({ years }: { years: BudgetYearRecord[]
         </p>
       </div>
 
-      <div>
-        <h3 className="text-sm font-semibold text-white/85 light:text-slate-800">Definitions</h3>
-        <dl className="mt-3 grid gap-x-8 gap-y-3 sm:grid-cols-2">
+      <Disclosure summary={`Definitions (${DEFINITIONS.length})`} testId="budget-definitions">
+        <dl className="mt-2 grid gap-x-8 gap-y-3 sm:grid-cols-2">
           {DEFINITIONS.map((d) => (
             <div key={d.term}>
               <dt className="text-xs font-semibold text-white/80 light:text-slate-700">{d.term}</dt>
@@ -87,7 +87,7 @@ export default function BudgetMethodology({ years }: { years: BudgetYearRecord[]
             </div>
           ))}
         </dl>
-      </div>
+      </Disclosure>
 
       <div>
         <h3 className="text-sm font-semibold text-white/85 light:text-slate-800">Known limitations</h3>
@@ -98,10 +98,11 @@ export default function BudgetMethodology({ years }: { years: BudgetYearRecord[]
         </ul>
       </div>
 
-      <BudgetSourceRegister years={years} />
+      <Disclosure summary={`Source register: ${years.length} fiscal years`} testId="budget-source-register">
+        <BudgetSourceRegister years={years} />
+      </Disclosure>
 
-      <div>
-        <h3 className="text-sm font-semibold text-white/85 light:text-slate-800">Nominal GDP used for &ldquo;% of GDP&rdquo;</h3>
+      <Disclosure summary="Nominal GDP used for &ldquo;% of GDP&rdquo;" testId="budget-gdp-table">
         <p className="mt-1 text-xs text-white/55 light:text-slate-500">Printed in the Budget in Brief for the budget year (Rs billion).</p>
         <div className="mt-3 overflow-x-auto">
           <table className="w-full min-w-[420px] border-collapse text-left text-xs">
@@ -123,7 +124,7 @@ export default function BudgetMethodology({ years }: { years: BudgetYearRecord[]
             </tbody>
           </table>
         </div>
-      </div>
+      </Disclosure>
     </section>
   );
 }

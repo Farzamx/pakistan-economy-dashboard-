@@ -6,6 +6,9 @@
 // Server-compatible (no hooks).
 
 import type { ReactNode } from "react";
+import { LeadMore, splitLead } from "@/components/shell/Disclosure";
+
+export { splitLead };
 
 export interface DataTable {
   caption: string;
@@ -23,7 +26,7 @@ export function ChartFrame({
   className = "",
 }: {
   title: string;
-  /** One sentence on what a mark means and what the chart does NOT show. */
+  /** What a mark means and what the chart does NOT show. A plain string leads with its first sentence; the remaining sentences sit behind "More". */
   howToRead?: ReactNode;
   children: ReactNode;
   legend?: ReactNode;
@@ -35,7 +38,7 @@ export function ChartFrame({
     <figure className={`min-w-0 ${className}`}>
       <figcaption className="mb-2">
         <h3 className="text-[14px] font-semibold text-pe-text">{title}</h3>
-        {howToRead && <p className="mt-0.5 max-w-3xl text-[13px] leading-relaxed text-pe-text-2">{howToRead}</p>}
+        {howToRead && <HowToRead>{howToRead}</HowToRead>}
       </figcaption>
       {legend && <div className="mb-2">{legend}</div>}
       {children}
@@ -79,6 +82,12 @@ export function ChartFrame({
         </details>
       )}
     </figure>
+  );
+}
+
+function HowToRead({ children }: { children: ReactNode }) {
+  return (
+    <LeadMore className="mt-0.5 max-w-3xl text-[13px] leading-relaxed text-pe-text-2">{children}</LeadMore>
   );
 }
 

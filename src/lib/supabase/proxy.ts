@@ -1,3 +1,6 @@
+// NOT IN USE since the access policy (G.14, docs/access-policy.md): src/proxy.ts no longer calls this. Only the Overview is public and there is no login, so
+// no session is refreshed and nothing redirects to /login. Kept unchanged, with the rest of the account code, for a possible future reopening.
+//
 // Session refresh + route protection logic, invoked from the root proxy.ts
 // (Next.js 16 renamed the `middleware.ts` file convention to `proxy.ts` —
 // see proxy.ts for the file-convention requirements; this module is just a

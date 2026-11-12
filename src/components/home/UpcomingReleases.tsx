@@ -9,6 +9,7 @@
 // (see UpcomingReleases.test.ts).
 
 import Link from "next/link";
+import { isPublicPagePath } from "@/lib/accessPolicy";
 import type { ImportanceLevel } from "@/lib/economicCalendar/economicCalendarTypes";
 
 export interface UpcomingRow {
@@ -48,10 +49,15 @@ export default function UpcomingReleases({ rows, todayIso }: { rows: UpcomingRow
   if (displayable.length === 0) {
     return (
       <p className="px-4 py-3 text-[13px] text-pe-text-3">
-        No upcoming releases are scheduled.{" "}
-        <Link href="/economic-calendar" className="text-pe-accent hover:underline">
-          Open the calendar
-        </Link>
+        No upcoming releases are scheduled.
+        {isPublicPagePath("/economic-calendar") && (
+          <>
+            {" "}
+            <Link href="/economic-calendar" className="text-pe-accent hover:underline">
+              Open the calendar
+            </Link>
+          </>
+        )}
       </p>
     );
   }

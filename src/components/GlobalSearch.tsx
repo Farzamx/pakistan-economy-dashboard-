@@ -18,8 +18,9 @@ import { useId, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useLanguage } from "@/components/LanguageProvider";
+import { isPublicPagePath } from "@/lib/accessPolicy";
 import { SEO_PAGES } from "@/lib/seoConfig";
-import { CONSOLIDATED_INTO_INFLATION_SLUGS } from "@/lib/appNav";
+import { CONSOLIDATED_INTO_INFLATION_SLUGS, CONSOLIDATED_INTO_INTEREST_RATE_SLUGS } from "@/lib/appNav";
 
 export interface SearchEntry {
   label: string;
@@ -29,6 +30,15 @@ export interface SearchEntry {
 
 /** Terms that lead to the Inflation Rate page now that core and food inflation are analysed there. */
 export const INFLATION_RATE_SEARCH_ALIASES = ["Core Inflation", "NFNE", "Food Inflation", "CPI Inflation"];
+
+/** Terms that lead to the Pakistan Interest Rate workshop, whose US comparison section now covers the Fed Funds Rate. */
+export const INTEREST_RATE_SEARCH_ALIASES = ["Fed Funds", "Federal Funds Rate", "US Interest Rate", "US Policy Rate"];
+
+/** Terms that lead to the Bond Yields workshop. */
+export const BOND_YIELDS_SEARCH_ALIASES = ["T-Bills", "Treasury Bills", "PIB", "Yield Curve", "Government Bonds", "Auction Yields"];
+
+/** Terms that lead to the Budget Tracker, which now carries the budget explainer pages' content. */
+export const BUDGET_TRACKER_SEARCH_ALIASES = ["Budget", "Federal Budget", "Tax Money", "Where Does the Tax Money Go", "Debt Servicing vs Defence", "Defence Spending", "Budget Sankey"];
 
 export const SEARCH_INDEX: SearchEntry[] = [
   { label: "Overview", href: "/overview#overview" },
@@ -47,7 +57,7 @@ export const SEARCH_INDEX: SearchEntry[] = [
   { label: "News", href: "/overview#news-intelligence" },
   { label: "Economic Calendar", href: "/economic-calendar", keywords: ["SBP Meeting", "CPI Release", "Events", "Calendar"] },
   { label: "Comparisons", href: "/comparisons" },
-  { label: "Budget Tracker", href: "/budget", keywords: ["Budget", "Federal Budget"] },
+  { label: "Budget Tracker", href: "/budget", keywords: BUDGET_TRACKER_SEARCH_ALIASES },
   { label: "Provincial Budget", href: "/provincial-budget", keywords: ["Budget"] },
   { label: "Punjab Budget", href: "/provincial-budget/punjab", keywords: ["Provincial Budget"] },
   { label: "Sindh Budget", href: "/provincial-budget/sindh", keywords: ["Provincial Budget"] },
@@ -59,11 +69,36 @@ export const SEARCH_INDEX: SearchEntry[] = [
   // none of these 37 pages were reachable from search at all.
   // Except the pages now covered by the Inflation Rate page (see CONSOLIDATED_INTO_INFLATION_SLUGS): they get no result of their own.
   // People who still search for them are sent to Inflation Rate, which is where that analysis now is, via the aliases below.
-  ...SEO_PAGES.filter((p) => !(CONSOLIDATED_INTO_INFLATION_SLUGS as readonly string[]).includes(p.slug)).map((p) => ({
+  // Likewise the Fed Funds Rate page, covered by the Interest Rate workshop (CONSOLIDATED_INTO_INTEREST_RATE_SLUGS).
+  ...SEO_PAGES.filter((p) => !(CONSOLIDATED_INTO_INFLATION_SLUGS as readonly string[]).includes(p.slug) && !(CONSOLIDATED_INTO_INTEREST_RATE_SLUGS as readonly string[]).includes(p.slug)).map((p) => ({
     label: p.label,
     href: `/${p.slug}`,
     ...(p.slug === "inflation-rate-pakistan" ? { keywords: INFLATION_RATE_SEARCH_ALIASES } : {}),
+    ...(p.slug === "pakistan-interest-rate" ? { keywords: INTEREST_RATE_SEARCH_ALIASES } : {}),
+    ...(p.slug === "pakistan-bond-yields" ? { keywords: BOND_YIELDS_SEARCH_ALIASES } : {}),
   })),
+];
+
+// ── What a visitor can search (access policy, G.14) ────────────────────────
+// SEARCH_INDEX above is the COMPLETE index, kept whole so a closed section can be reopened. Only the Overview page is public, so search offers only the
+// Overview's own sections. Entries for closed pages are removed by the policy (isPublicPagePath), not by hand, and the legacy "/overview#gdp"-style anchors
+// (sections the Overview no longer has) are replaced by entries for the sections it does have.
+
+/** Overview sections that exist today, searchable by the topics they carry. Every anchor is checked against the page source by a test. */
+const OVERVIEW_SECTION_ENTRIES: SearchEntry[] = [
+  { label: "Overview", href: "/overview#overview" },
+  { label: "Markets", href: "/overview#home-markets", keywords: ["FX Rates", "Exchange Rate", "USD/PKR", "PKR", "Gold", "Silver", "Oil", "Brent", "WTI", "DXY", "Global Markets", "Stock Market", "PSX"] },
+  { label: "Pakistan snapshot", href: "/overview#home-snapshot", keywords: ["Inflation", "CPI", "Core Inflation", "Policy Rate", "Reserves", "Foreign Reserves", "Remittances", "Current Account", "Fiscal Balance"] },
+  { label: "Headlines", href: "/overview#home-headlines", keywords: ["News"] },
+  { label: "Upcoming releases", href: "/overview#home-releases", keywords: ["Calendar", "SBP Meeting", "CPI Release", "Events"] },
+  { label: "Macro intelligence", href: "/overview#home-macro-brief", keywords: ["Macro Brief", "Risk"] },
+  { label: "Pakistan indicators", href: "/overview#home-indicators", keywords: ["Indicators", "WPI", "Wholesale", "T-Bill", "PIB", "Bond Yields", "Interest Rate", "M2", "Money Supply", "Exports", "Imports", "Trade", "LSM", "REER", "FDI"] },
+];
+
+/** The index visitors search: the Overview's sections, plus any full-index entry whose page the policy opens (none besides the Overview while the policy is Overview-only). */
+export const PUBLIC_SEARCH_INDEX: SearchEntry[] = [
+  ...OVERVIEW_SECTION_ENTRIES,
+  ...SEARCH_INDEX.filter((e) => isPublicPagePath(e.href) && !e.href.startsWith("/overview#")),
 ];
 
 export function matches(entry: SearchEntry, query: string): boolean {
@@ -119,7 +154,7 @@ export default function GlobalSearch({ onLinkClick, placeholder, className, vari
   const listId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const results = query.trim() ? SEARCH_INDEX.filter((e) => matches(e, query)).slice(0, 8) : [];
+  const results = query.trim() ? PUBLIC_SEARCH_INDEX.filter((e) => matches(e, query)).slice(0, 8) : [];
   const open = focused && query.trim().length > 0;
 
   if (query !== resetForQuery) {

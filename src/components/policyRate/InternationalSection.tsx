@@ -7,6 +7,7 @@
 // comparison is drawn and none is implied. The gap is a difference between two central-bank policy rates, in percentage points. It is
 // not a forecast of the exchange rate or of capital flows, and it does not compare real rates (the two countries' inflation differs).
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Callout, ChartFrame } from "@/components/analytics/ChartFrame";
 import { ControlBar, Key, Segmented } from "@/components/analytics/controls";
@@ -79,6 +80,10 @@ export default function InternationalSection({ model }: { model: PolicyRateViewM
       >
         <SignedBars data={toBars(gap)} metric="Pakistan minus US policy rate" unit=" pp" decimals={2} height={260} ariaLabel={`Bar chart of the gap between Pakistan's policy rate and the US federal funds rate, ${gap.length} months`} animate />
       </ChartFrame>
+
+      <p className="text-[13px] text-pe-text-2">
+        The US rate on its own, with its history and what it means for Pakistan: <Link href="/fed-funds-rate" className="text-pe-accent hover:underline">US Fed Funds Rate</Link>.
+      </p>
     </div>
   );
 }

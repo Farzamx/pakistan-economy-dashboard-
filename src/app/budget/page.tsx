@@ -3,6 +3,7 @@ import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
 import BudgetWorkspace from "@/components/budget/BudgetWorkspace";
 import BudgetToolkit from "@/components/budget/BudgetToolkit";
+import { FaqAccordion } from "@/components/shell/Disclosure";
 import BudgetRibbon from "@/components/budget/BudgetRibbon";
 import BudgetMethodology from "@/components/budget/BudgetMethodology";
 import BudgetSankeySection from "@/components/budget/BudgetSankeySection";
@@ -62,7 +63,7 @@ export default function BudgetPage() {
         <div className="flex flex-col gap-10">
           <BudgetRibbon />
 
-          {toolkit && <BudgetToolkit toolkit={toolkit} />}
+          {toolkit && <BudgetToolkit toolkit={toolkit} compact />}
 
           <BudgetWorkspace years={BUDGET_HISTORICAL.years} flowSlot={<BudgetSankeySection />} />
 
@@ -81,14 +82,7 @@ export default function BudgetPage() {
 
           <section className="glass-card flex flex-col gap-4 rounded-2xl p-6 sm:p-8">
             <h2 className="text-xl font-semibold text-white light:text-slate-900"><T tKey="budget.faq" /></h2>
-            <div className="space-y-5">
-              {FAQ.map((item, i) => (
-                <div key={i}>
-                  <p className="text-sm font-semibold text-white/85 light:text-slate-800">{item.question}</p>
-                  <p className="mt-1.5 text-sm leading-relaxed text-white/60 light:text-slate-600">{item.answer}</p>
-                </div>
-              ))}
-            </div>
+            <FaqAccordion items={FAQ} className="-mx-4" />
           </section>
         </div>
       </main>

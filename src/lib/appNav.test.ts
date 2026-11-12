@@ -8,7 +8,9 @@ import fs from "node:fs";
 import path from "node:path";
 import {
   APP_NAV,
+  CONSOLIDATED_INTO_BUDGET_HREFS,
   CONSOLIDATED_INTO_INFLATION_SLUGS,
+  CONSOLIDATED_INTO_INTEREST_RATE_SLUGS,
   INDICATOR_GROUPS,
   INDICATOR_HUB_SLUGS,
   OVERVIEW_SECTIONS,
@@ -25,6 +27,9 @@ import { isProtectedPath } from "./protectedSections";
 
 const SRC = path.resolve(__dirname, "..");
 const APP = path.join(SRC, "app");
+
+/** Indicator pages that have no menu entry because a workshop covers them. */
+const CONSOLIDATED_SLUGS: string[] = [...CONSOLIDATED_INTO_INFLATION_SLUGS, ...CONSOLIDATED_INTO_INTEREST_RATE_SLUGS];
 
 function pageExists(routePath: string): boolean {
   return fs.existsSync(path.join(APP, routePath, "page.tsx"));
@@ -82,19 +87,46 @@ describe("registry integrity — no placeholder links", () => {
     for (const l of links) expect(Boolean(l.labelKey || l.label), l.id).toBe(true);
   });
 
-  it("covers every indicator page in SEO_PAGES exactly once (hub pages via the footer; pages consolidated into Inflation Rate not at all)", () => {
+  it("covers every indicator page in SEO_PAGES exactly once (hub pages via the footer; pages consolidated into a workshop not at all)", () => {
     const listed = INDICATOR_GROUPS.flatMap((g) => g.items)
       .filter((i) => i.kind === "link")
       .map((i) => (i.kind === "link" ? hrefPath(i.href).slice(1) : ""));
     for (const page of SEO_PAGES) {
       if ((INDICATOR_HUB_SLUGS as readonly string[]).includes(page.slug)) continue;
-      const expected = (CONSOLIDATED_INTO_INFLATION_SLUGS as readonly string[]).includes(page.slug) ? 0 : 1;
+      const expected = CONSOLIDATED_SLUGS.includes(page.slug) ? 0 : 1;
       expect(listed.filter((s) => s === page.slug), page.slug).toHaveLength(expected);
     }
   });
 
   it("has the approved top-level order", () => {
     expect(APP_NAV.map((e) => e.id)).toEqual(["overview", "indicators", "markets", "calendar", "news", "research", "tools"]);
+  });
+});
+
+describe("Workshop consolidation: Interest Rate covers the Fed Funds Rate, the Budget Tracker covers the budget explainers", () => {
+  const all = allNavLinks().map((l) => hrefPath(l.href));
+
+  it("the Fed Funds Rate page has no menu entry, in any menu, the drawer's source or the footer", () => {
+    expect([...CONSOLIDATED_INTO_INTEREST_RATE_SLUGS]).toEqual(["fed-funds-rate"]);
+    for (const slug of CONSOLIDATED_INTO_INTEREST_RATE_SLUGS) expect(all, slug).not.toContain(`/${slug}`);
+  });
+
+  it("the two budget explainers have no menu entry; Fiscal Deficit (an actual, not budgeted, measure) keeps its own", () => {
+    expect([...CONSOLIDATED_INTO_BUDGET_HREFS]).toEqual(["/budget/where-does-tax-money-go", "/budget/debt-servicing-vs-defence"]);
+    for (const href of CONSOLIDATED_INTO_BUDGET_HREFS) expect(all, href).not.toContain(href);
+    expect(all).toContain("/pakistan-fiscal-deficit");
+  });
+
+  it("the workshops that replace them stay in the menu", () => {
+    for (const href of ["/pakistan-interest-rate", "/budget", "/pakistan-bond-yields", "/inflation-rate-pakistan"]) expect(all, href).toContain(href);
+  });
+
+  it("direct URLs keep working: every consolidated page still exists, and the Fed Funds page stays in the SEO registry", () => {
+    for (const slug of CONSOLIDATED_INTO_INTEREST_RATE_SLUGS) {
+      expect(pageExists(slug), `/${slug} must still be routable`).toBe(true);
+      expect(SEO_PAGES.some((p) => p.slug === slug), `${slug} must stay in SEO_PAGES`).toBe(true);
+    }
+    for (const href of CONSOLIDATED_INTO_BUDGET_HREFS) expect(pageExists(hrefPath(href)), href).toBe(true);
   });
 });
 
@@ -178,8 +210,8 @@ describe("access rules come from isProtectedPath, not the registry", () => {
     for (const id of ["calendar", "comparisons", "budget", "provincial-budget", "email-alerts"]) expect(isProtected(id), id).toBe(true);
   });
 
-  it("public destinations stay public (indicator pages, the Decision Lab hub, budget explainers)", () => {
-    for (const id of ["overview", "ind-inflation-rate-pakistan", "decision-lab", "academy", "macro-intelligence", "budget-tax-money", "gdp-sector-composition"]) {
+  it("public destinations stay public (indicator pages, the Decision Lab hub)", () => {
+    for (const id of ["overview", "ind-inflation-rate-pakistan", "decision-lab", "academy", "macro-intelligence", "gdp-sector-composition"]) {
       expect(isProtected(id), id).toBe(false);
     }
   });
@@ -216,8 +248,10 @@ describe("resolveActiveNav", () => {
     ["/economic-calendar/archive", "calendar", "calendar", "section"],
     ["/macro-intelligence", "research", "macro-intelligence", "page"],
     ["/budget", "research", "budget", "page"],
-    // An exact Indicators entry beats Research › Budget Tracker's section match.
-    ["/budget/where-does-tax-money-go", "indicators", "budget-tax-money", "page"],
+    // The budget explainers have no menu entry of their own: they resolve to the Budget Tracker that covers them.
+    ["/budget/where-does-tax-money-go", "research", "budget", "section"],
+    ["/budget/debt-servicing-vs-defence", "research", "budget", "section"],
+    ["/fed-funds-rate", null, null, null],
     ["/budget/health", "research", "budget", "section"],
     ["/comparisons/gdp-sector-composition", "indicators", "gdp-sector-composition", "page"],
     ["/comparisons/exports-vs-imports", "research", "comparisons", "section"],

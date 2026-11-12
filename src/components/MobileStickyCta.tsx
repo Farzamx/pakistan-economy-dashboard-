@@ -19,6 +19,7 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { useAuth } from "@/components/AuthProvider";
+import { ACCOUNT_UI_ENABLED } from "@/lib/accessPolicy";
 import { useLanguage } from "@/components/LanguageProvider";
 
 const HIDDEN_ON = ["/login", "/signup", "/forgot-password", "/reset-password"];
@@ -87,7 +88,8 @@ export default function MobileStickyCta() {
   }, [pathname]);
 
   const hiddenHere = HIDDEN_ON.some((p) => pathname?.startsWith(p));
-  const show = !loading && !user && !hiddenHere && scrolledPast && !overQuickActions;
+  // No signup anywhere (accessPolicy.ts): the prompt would point at a closed route.
+  const show = ACCOUNT_UI_ENABLED && !loading && !user && !hiddenHere && scrolledPast && !overQuickActions;
 
   return (
     <AnimatePresence>

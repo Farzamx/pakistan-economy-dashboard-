@@ -462,7 +462,7 @@ export const rm: Translations = {
   },
 
   search: {
-    placeholder: "GDP, Mehngai, Budget talaash karein...", noMatches: "Koi nateeja nahin",
+    placeholder: "Markets, Mehngai, Khabrein talaash karein...", noMatches: "Koi nateeja nahin",
   },
 
   tooltip: {

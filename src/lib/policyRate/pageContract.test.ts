@@ -65,7 +65,8 @@ describe("SEO is preserved", () => {
   it("keeps the four original FAQ questions, rendered visibly and emitted as JSON-LD from the same array", () => {
     for (const q of ["What is Pakistan's current interest rate?", "How often does SBP change the interest rate?", "What is KIBOR and how does it relate to the policy rate?", "What was Pakistan's highest-ever interest rate?"]) expect(page).toContain(q);
     expect(page).toContain('indicatorJsonLd({ title: "Pakistan Interest Rate", canonicalPath: `/${SLUG}`, faq })');
-    expect(page).toContain("{faq.map((item, i) => (");
+    // Rendered from the same array, as an accordion: every answer stays in the page's HTML (a closed <details>), nothing is dropped.
+    expect(page).toContain("<FaqAccordion items={faq} />");
   });
 
   it("every number in the FAQ answers is computed from the data, not typed in", () => {

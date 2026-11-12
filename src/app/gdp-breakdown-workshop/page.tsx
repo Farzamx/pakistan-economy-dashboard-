@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Disclosure, FaqAccordion } from "@/components/shell/Disclosure";
 import Section from "@/components/shell/Section";
 import SectorShareAreaChart from "@/components/gdp/SectorShareAreaChart";
 import GrowthBarChart from "@/components/gdp/GrowthBarChart";
@@ -127,10 +128,13 @@ export default async function GdpBreakdownWorkshopPage() {
           )}
 
           <p className="mt-3 text-[13px] leading-relaxed text-pe-text-2">
-            <strong className="font-medium text-pe-text">How to read it:</strong> a rising band means that sector&rsquo;s
-            value added grew faster than the rest of the economy, not that the sector grew in absolute terms. Shares move
-            relative to one another, so one band can rise purely because another fell.
+            <strong className="font-medium text-pe-text">How to read it:</strong>{" "}
+            a rising band means that sector&rsquo;s
+            value added grew faster than the rest of the economy, not that the sector grew in absolute terms.
           </p>
+          <Disclosure summary="Why one band can rise because another fell">
+            Shares move relative to one another, so one band can rise purely because another fell.
+          </Disclosure>
           <SourceLine>
             Source: World Bank (NV.AGR.TOTL.ZS / NV.IND.TOTL.ZS / NV.SRV.TOTL.ZS) · % of GDP, annual ·{" "}
             {periodLabel(sectorPoints) ?? "period unavailable"}
@@ -181,12 +185,16 @@ export default async function GdpBreakdownWorkshopPage() {
           <GrowthBarChart data={quarterBars} metric="Quarterly real GVA growth, YoY (%)" />
           <div className="mt-3 rounded-[var(--pe-radius)] border border-pe-border bg-pe-surface-2 p-3">
             <p className="text-[13px] leading-relaxed text-pe-text-2">
-              <strong className="font-medium text-pe-text">Not the same measure as the annual series above.</strong> This
-              is gross value added (output less intermediate consumption, before net taxes on products), reported by
-              Pakistan&rsquo;s fiscal quarter — FY26 runs July 2025 to June 2026. The annual series is GDP on a calendar-year
-              basis. They answer related questions but are not interchangeable, so they are kept in separate charts and
-              never plotted on one axis.
+              <strong className="font-medium text-pe-text">Not the same measure as the annual series above.</strong>{" "}
+              This
+              is gross value added, reported by Pakistan&rsquo;s fiscal quarter; the annual series is GDP on a calendar-year
+              basis. They are kept in separate charts and never plotted on one axis.
             </p>
+            <Disclosure summary="What gross value added is, and which quarters these are" className="mt-1">
+              Gross value added is output less intermediate consumption, before net taxes on products. Pakistan&rsquo;s
+              fiscal quarters run from July: FY26 runs July 2025 to June 2026. The two series answer related questions but
+              are not interchangeable.
+            </Disclosure>
           </div>
           <SourceLine>
             Source: {quarterly.kpi.source ?? "SBP / PBS"} · real GVA, YoY %, fiscal quarters · available{" "}
@@ -228,14 +236,7 @@ export default async function GdpBreakdownWorkshopPage() {
           title="What this workshop cannot show"
           description="Gaps in the underlying sources, stated plainly rather than filled in."
         >
-          <dl className="flex flex-col gap-3">
-            {GDP_DATA_LIMITATIONS.map((item) => (
-              <div key={item.title}>
-                <dt className="text-[13px] font-medium text-pe-text">{item.title}</dt>
-                <dd className="mt-0.5 text-[13px] leading-relaxed text-pe-text-2">{item.detail}</dd>
-              </div>
-            ))}
-          </dl>
+          <FaqAccordion items={GDP_DATA_LIMITATIONS.map((item) => ({ question: item.title, answer: item.detail }))} className="-mx-4 -mt-1" />
           <p className="mt-3 border-t border-pe-border pt-3 text-[13px] text-pe-text-2">
             For the series this page does cover in more depth, see{" "}
             <Link href="/gdp-growth-pakistan" className="text-pe-accent hover:underline">

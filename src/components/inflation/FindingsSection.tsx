@@ -3,6 +3,7 @@
 // templates (src/lib/inflation/findings.ts), not by a model, and never causal.
 // Server component.
 
+import { LeadMore } from "@/components/shell/Disclosure";
 import { buildFindings } from "@/lib/inflation/findings";
 import type { InflationViewModel } from "@/lib/inflation/viewModel";
 
@@ -19,7 +20,7 @@ export default function FindingsSection({ model }: { model: InflationViewModel }
       <ol className="flex flex-col divide-y divide-pe-border rounded-[var(--pe-radius)] border border-pe-border">
         {findings.map((f) => (
           <li key={f.id} className="px-4 py-3">
-            <p className="text-[14px] leading-relaxed text-pe-text">{f.text}</p>
+            <LeadMore leadClassName="text-[14px] leading-relaxed text-pe-text">{f.text}</LeadMore>
             <p className="mt-1 font-mono text-[11px] text-pe-text-3">
               Period: {f.period} · Basis: {f.basis}
             </p>

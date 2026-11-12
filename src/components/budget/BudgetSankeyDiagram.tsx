@@ -399,17 +399,22 @@ export default function BudgetSankeyDiagram({ years, historicalCoverage }: Budge
             <DetailPanel detail={detail} expandable={!!selectedId && expandable.has(selectedId)} expanded={!!selectedId && expanded.has(selectedId)} onToggleExpand={() => selectedId && toggleExpand(selectedId)} onClear={() => setSelectedRaw(null)} />
           </div>
 
-          <ul className="mt-4 flex flex-col gap-1 text-[11px] leading-relaxed text-[var(--text-muted)]">
+          <ul className="mt-4 flex flex-col gap-1 text-[11px] leading-relaxed text-[var(--text-muted)]" data-testid="budget-sankey-notes">
             <li>
               <span className="font-semibold text-[var(--text-secondary)]">Borrowing is financing, not revenue.</span> Gross federal revenue and borrowing are separate blocks. Borrowing and external loans are shown net of repayments, as Budget in Brief reports them.
             </li>
-            <li>Money is fungible: every source flows into one pool and every use is paid from it, so the diagram does not say that a particular tax or loan pays for a particular item.</li>
-            <li>The provinces&apos; NFC share is part of gross revenue and is deducted before federal spending, so total resources are larger than total federal expenditure by exactly that share.</li>
-            <li>Ribbon width is proportional to the amount on one scale for the whole diagram. A block marked * is a remainder: the printed total minus the printed items drawn beside it. Very small flows are hairlines; hover them or use the table.</li>
             {year.notes.map((n) => (
               <li key={n}>{n}</li>
             ))}
           </ul>
+          <details className="mt-1 text-[11px] text-[var(--text-muted)]" data-testid="budget-sankey-howto">
+            <summary className="cursor-pointer select-none text-[var(--text-secondary)] hover:text-[var(--text-primary)]">How to read the diagram: pooling, the provinces&apos; share, ribbon widths</summary>
+            <ul className="mt-1 flex flex-col gap-1 leading-relaxed">
+              <li>Money is fungible: every source flows into one pool and every use is paid from it, so the diagram does not say that a particular tax or loan pays for a particular item.</li>
+              <li>The provinces&apos; NFC share is part of gross revenue and is deducted before federal spending, so total resources are larger than total federal expenditure by exactly that share.</li>
+              <li>Ribbon width is proportional to the amount on one scale for the whole diagram. A block marked * is a remainder: the printed total minus the printed items drawn beside it. Very small flows are hairlines; hover them or use the table.</li>
+            </ul>
+          </details>
 
           <div className="mt-4 rounded-xl border border-[var(--border-subtle)] p-3 text-[12px] leading-relaxed text-[var(--text-secondary)]" data-testid="budget-sankey-recon-summary">
             <p>
