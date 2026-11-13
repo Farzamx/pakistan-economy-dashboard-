@@ -258,10 +258,12 @@ export interface Translations {
     signingIn: string; creatingAccount: string; sending: string; updating: string;
     logInBtn: string; createAccountBtn: string; sendResetLinkBtn: string; updatePasswordBtn: string;
     accountCreated: string; resetEmailSent: string;
+    callbackFailed: string; passwordUpdated: string;
     termsNote: string;
     benefitBudget: string; benefitCompare: string; benefitProvincial: string;
     benefitPreferences: string; benefitPremium: string;
     guestTitle: string; guestDesc: string;
+    loginRequiredTitle: string; loginRequiredBody: string; loginRequiredFor: string;
   };
 
   subscription: {

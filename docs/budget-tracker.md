@@ -1,6 +1,6 @@
 # Budget Tracker Workshop (`/budget`)
 
-> **Access (G.14):** this page is currently closed to the public: only the Overview is open, and every other route redirects to `/overview` (see [access-policy.md](access-policy.md)). The implementation, data, tests and this document are unchanged and kept for a possible reopening.
+> **Access (G.20):** this page is in the members' area: it appears in the navigation for everyone, but a visitor who is not signed in is sent to the login page (`/login?redirect=…`) and returns here after signing in. Only the Overview, the landing page and the sign-in pages are open to guests (see [access-policy.md](access-policy.md)). The implementation, data and tests are unchanged.
 
 The federal Budget Tracker: 17 fiscal years (FY2010-11 to FY2026-27) of Pakistan's **Budget Estimates**, transcribed by hand from each year's official *Budget in Brief* (Finance Division, finance.gov.pk). This file is the architecture note, data inventory, source register, methodology, limitations, category definitions and update procedure.
 

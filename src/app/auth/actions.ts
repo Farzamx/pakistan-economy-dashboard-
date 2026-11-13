@@ -8,7 +8,8 @@
 // the one case where Next expects an exception to propagate.
 
 import { redirect } from "next/navigation";
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
+import { AFTER_AUTH_COOKIE, safeRedirectPath } from "@/lib/accessPolicy";
 import { createClient } from "@/lib/supabase/server";
 
 export interface AuthActionResult {
@@ -28,14 +29,15 @@ async function getSiteOrigin(): Promise<string> {
 export async function signIn(_prevState: AuthActionResult, formData: FormData): Promise<AuthActionResult> {
   const email = String(formData.get("email") ?? "");
   const password = String(formData.get("password") ?? "");
-  const redirectTo = String(formData.get("redirectTo") ?? "/");
+  // The form field is client-controlled: only a path on this site is followed (open-redirect guard).
+  const redirectTo = safeRedirectPath(formData.get("redirectTo"));
 
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) return { error: error.message };
 
-  redirect(redirectTo || "/");
+  redirect(redirectTo);
 }
 
 export async function signUp(_prevState: AuthActionResult, formData: FormData): Promise<AuthActionResult> {
@@ -52,6 +54,9 @@ export async function signUp(_prevState: AuthActionResult, formData: FormData): 
 
   const supabase = await createClient();
   const origin = await getSiteOrigin();
+  // The page the new member was trying to open. The confirmation e-mail is opened later (often on another tab), so it is remembered in a short-lived
+  // cookie that /auth/callback reads, instead of changing the e-mail link (which Supabase checks against its allowed redirect URLs).
+  const destination = safeRedirectPath(formData.get("redirectTo"));
   const { error } = await supabase.auth.signUp({
     email,
     password,
@@ -60,7 +65,9 @@ export async function signUp(_prevState: AuthActionResult, formData: FormData): 
 
   if (error) return { error: error.message };
 
-  redirect("/login?confirm=1");
+  const jar = await cookies();
+  jar.set(AFTER_AUTH_COOKIE, destination, { httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production", path: "/", maxAge: 60 * 60 });
+  redirect(`/login?confirm=1&redirect=${encodeURIComponent(destination)}`);
 }
 
 export async function requestPasswordReset(_prevState: AuthActionResult, formData: FormData): Promise<AuthActionResult> {
@@ -96,6 +103,9 @@ export async function updatePassword(_prevState: AuthActionResult, formData: For
 
   if (error) return { error: error.message };
 
+  // The reset link signed the member in only so they could choose a new password. End that session (everywhere) and send them to the login page, which confirms
+  // the change and asks for the new password; a signed-in member would otherwise be bounced straight past the confirmation.
+  await supabase.auth.signOut();
   redirect("/login?reset=1");
 }
 

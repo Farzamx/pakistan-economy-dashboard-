@@ -6,9 +6,12 @@
 // if a query doesn't match anything in SEARCH_INDEX, the dropdown just
 // shows "No matches" rather than inventing a destination.
 //
-// Deliberately has no auth/protected-route logic of its own — Budget
-// Tracker and Provincial Budget entries are protected paths, and both
-// Sidebar.tsx and MobileNav.tsx already have a correct, tested click
+// Everyone searches the COMPLETE index, signed in or not (G.21): a guest may find a protected dashboard, workshop or tool. An entry is only a label and an
+// address; no page data is ever part of a result. Choosing a protected result as a guest opens the sign-in dialog instead of the page (the host's handler, below).
+//
+// Deliberately has no auth/protected-route logic of its own — nearly every
+// destination is a protected path, and the shell's useGuestGate (AppHeader,
+// MobileDrawer) already has a correct, tested click
 // handler for that (MobileNav's in particular works around a real race
 // between drawer-unmount and Next's <Link> navigation). Re-implementing a
 // third version here risked reintroducing that bug, so this component
@@ -18,9 +21,10 @@ import { useId, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useLanguage } from "@/components/LanguageProvider";
-import { isPublicPagePath } from "@/lib/accessPolicy";
 import { SEO_PAGES } from "@/lib/seoConfig";
-import { CONSOLIDATED_INTO_INFLATION_SLUGS, CONSOLIDATED_INTO_INTEREST_RATE_SLUGS } from "@/lib/appNav";
+import { APP_NAV, allNavLinks, hrefPath } from "@/lib/appNav";
+import { en } from "@/lib/i18n/translations/en";
+import { SEARCH_DESTINATIONS } from "@/lib/searchDestinations";
 
 export interface SearchEntry {
   label: string;
@@ -28,17 +32,20 @@ export interface SearchEntry {
   keywords?: string[];
 }
 
-/** Terms that lead to the Inflation Rate page now that core and food inflation are analysed there. */
-export const INFLATION_RATE_SEARCH_ALIASES = ["Core Inflation", "NFNE", "Food Inflation", "CPI Inflation"];
+/** Extra terms for the Inflation Rate page (Core and Food Inflation have their own entries). */
+export const INFLATION_RATE_SEARCH_ALIASES = ["CPI Inflation", "Headline Inflation"];
 
-/** Terms that lead to the Pakistan Interest Rate workshop, whose US comparison section now covers the Fed Funds Rate. */
-export const INTEREST_RATE_SEARCH_ALIASES = ["Fed Funds", "Federal Funds Rate", "US Interest Rate", "US Policy Rate"];
+/** Terms that lead to the Fed Funds Rate page. */
+export const FED_FUNDS_SEARCH_ALIASES = ["Federal Funds Rate", "US Interest Rate", "US Policy Rate", "FOMC"];
+
+/** Terms that lead to the Core Inflation and Food Inflation pages. */
+export const CORE_INFLATION_SEARCH_ALIASES = ["NFNE", "Non-Food Non-Energy"];
 
 /** Terms that lead to the Bond Yields workshop. */
 export const BOND_YIELDS_SEARCH_ALIASES = ["T-Bills", "Treasury Bills", "PIB", "Yield Curve", "Government Bonds", "Auction Yields"];
 
-/** Terms that lead to the Budget Tracker, which now carries the budget explainer pages' content. */
-export const BUDGET_TRACKER_SEARCH_ALIASES = ["Budget", "Federal Budget", "Tax Money", "Where Does the Tax Money Go", "Debt Servicing vs Defence", "Defence Spending", "Budget Sankey"];
+/** Terms that lead to the Budget Tracker. (Tax Money and Debt vs Defence have their own entries.) */
+export const BUDGET_TRACKER_SEARCH_ALIASES = ["Budget", "Federal Budget", "Budget Sankey"];
 
 export const SEARCH_INDEX: SearchEntry[] = [
   { label: "Overview", href: "/overview#overview" },
@@ -56,8 +63,11 @@ export const SEARCH_INDEX: SearchEntry[] = [
   { label: "External Sector", href: "/overview#external-sector", keywords: ["Current Account", "Trade Balance"] },
   { label: "News", href: "/overview#news-intelligence" },
   { label: "Economic Calendar", href: "/economic-calendar", keywords: ["SBP Meeting", "CPI Release", "Events", "Calendar"] },
+  { label: "Decision Support Lab", href: "/decision-support-lab", keywords: ["Decision Lab", "Calculators", "Tools"] },
   { label: "Comparisons", href: "/comparisons" },
   { label: "Budget Tracker", href: "/budget", keywords: BUDGET_TRACKER_SEARCH_ALIASES },
+  { label: "Where Does the Tax Money Go?", href: "/budget/where-does-tax-money-go", keywords: ["Tax Money", "Federal Budget", "Budget Explainer", "Budget Tracker"] },
+  { label: "Debt Servicing vs Defence", href: "/budget/debt-servicing-vs-defence", keywords: ["Debt vs Defence", "Defence Spending", "Debt Servicing", "Budget Explainer", "Budget Tracker"] },
   { label: "Provincial Budget", href: "/provincial-budget", keywords: ["Budget"] },
   { label: "Punjab Budget", href: "/provincial-budget/punjab", keywords: ["Provincial Budget"] },
   { label: "Sindh Budget", href: "/provincial-budget/sindh", keywords: ["Provincial Budget"] },
@@ -65,24 +75,22 @@ export const SEARCH_INDEX: SearchEntry[] = [
   { label: "Balochistan Budget", href: "/provincial-budget/balochistan", keywords: ["Provincial Budget"] },
   // Every individual indicator detail page (SeoPageLayout-driven) — derived
   // from the single SEO_PAGES registry so a new page added there is
-  // automatically searchable with zero changes needed here. Previously
-  // none of these 37 pages were reachable from search at all.
-  // Except the pages now covered by the Inflation Rate page (see CONSOLIDATED_INTO_INFLATION_SLUGS): they get no result of their own.
-  // People who still search for them are sent to Inflation Rate, which is where that analysis now is, via the aliases below.
-  // Likewise the Fed Funds Rate page, covered by the Interest Rate workshop (CONSOLIDATED_INTO_INTEREST_RATE_SLUGS).
-  ...SEO_PAGES.filter((p) => !(CONSOLIDATED_INTO_INFLATION_SLUGS as readonly string[]).includes(p.slug) && !(CONSOLIDATED_INTO_INTEREST_RATE_SLUGS as readonly string[]).includes(p.slug)).map((p) => ({
+  // automatically searchable with zero changes needed here. Core Inflation, Food
+  // Inflation and the Fed Funds Rate are listed like every other indicator (G.21).
+  ...SEO_PAGES.map((p) => ({
     label: p.label,
     href: `/${p.slug}`,
     ...(p.slug === "inflation-rate-pakistan" ? { keywords: INFLATION_RATE_SEARCH_ALIASES } : {}),
-    ...(p.slug === "pakistan-interest-rate" ? { keywords: INTEREST_RATE_SEARCH_ALIASES } : {}),
+    ...(p.slug === "fed-funds-rate" ? { keywords: FED_FUNDS_SEARCH_ALIASES } : {}),
+    ...(p.slug === "pakistan-core-inflation" || p.slug === "pakistan-food-inflation" ? { keywords: CORE_INFLATION_SEARCH_ALIASES } : {}),
     ...(p.slug === "pakistan-bond-yields" ? { keywords: BOND_YIELDS_SEARCH_ALIASES } : {}),
+    ...(p.slug === "pakistan-interest-rate" ? { keywords: ["Policy Rate", "SBP Rate"] } : {}),
   })),
 ];
 
-// ── What a visitor can search (access policy, G.14) ────────────────────────
-// SEARCH_INDEX above is the COMPLETE index, kept whole so a closed section can be reopened. Only the Overview page is public, so search offers only the
-// Overview's own sections. Entries for closed pages are removed by the policy (isPublicPagePath), not by hand, and the legacy "/overview#gdp"-style anchors
-// (sections the Overview no longer has) are replaced by entries for the sections it does have.
+// ── What a visitor can search ──────────────────────────────────────────────
+// Everyone searches the complete index, guests included (the navigation is complete for everyone; choosing a protected result signs a guest in first, see
+// onLinkClick below). The legacy "/overview#gdp"-style anchors (sections the Overview no longer has) are replaced by entries for the sections it does have.
 
 /** Overview sections that exist today, searchable by the topics they carry. Every anchor is checked against the page source by a test. */
 const OVERVIEW_SECTION_ENTRIES: SearchEntry[] = [
@@ -95,16 +103,69 @@ const OVERVIEW_SECTION_ENTRIES: SearchEntry[] = [
   { label: "Pakistan indicators", href: "/overview#home-indicators", keywords: ["Indicators", "WPI", "Wholesale", "T-Bill", "PIB", "Bond Yields", "Interest Rate", "M2", "Money Supply", "Exports", "Imports", "Trade", "LSM", "REER", "FDI"] },
 ];
 
-/** The index visitors search: the Overview's sections, plus any full-index entry whose page the policy opens (none besides the Overview while the policy is Overview-only). */
-export const PUBLIC_SEARCH_INDEX: SearchEntry[] = [
+/** English text for a translation key such as "nav.indicators" (search results are not translated, like the rest of this index). */
+function englishText(key: string): string {
+  return (key.split(".").reduce<unknown>((o, k) => (o as Record<string, unknown> | undefined)?.[k], en) as string | undefined) ?? key;
+}
+
+/** Every link in the navigation registry (a menu entry is a search result too), except in-page anchors and the "Back to site" link. */
+const NAV_ENTRIES: SearchEntry[] = allNavLinks(APP_NAV)
+  .filter((l) => !l.href.includes("#") && l.href !== "/home")
+  .map((l) => ({ label: l.label ?? englishText(l.labelKey ?? l.id), href: l.href }));
+
+/** Merge entries that point at the same page: the first label wins, keywords are combined. */
+function mergeByDestination(entries: SearchEntry[]): SearchEntry[] {
+  const byPath = new Map<string, SearchEntry>();
+  for (const e of entries) {
+    const key = e.href.startsWith("/overview#") ? e.href : hrefPath(e.href);
+    const have = byPath.get(key);
+    if (!have) byPath.set(key, { ...e, keywords: e.keywords ? [...e.keywords] : undefined });
+    else if (e.keywords) have.keywords = [...new Set([...(have.keywords ?? []), ...e.keywords])];
+  }
+  return [...byPath.values()];
+}
+
+/**
+ * The index everyone searches, signed in or not: the Overview's real sections, then the hand-written entries, then every navigation link, every indicator
+ * page, and every other existing destination (Decision Lab tools, budget categories, comparisons, provincial pages, information pages).
+ */
+export const SITE_SEARCH_INDEX: SearchEntry[] = mergeByDestination([
   ...OVERVIEW_SECTION_ENTRIES,
-  ...SEARCH_INDEX.filter((e) => isPublicPagePath(e.href) && !e.href.startsWith("/overview#")),
-];
+  ...SEARCH_INDEX.filter((e) => !e.href.startsWith("/overview#")),
+  ...NAV_ENTRIES,
+  ...SEARCH_DESTINATIONS,
+]);
 
 export function matches(entry: SearchEntry, query: string): boolean {
   const q = query.toLowerCase();
   if (entry.label.toLowerCase().includes(q)) return true;
   return entry.keywords?.some((k) => k.toLowerCase().includes(q)) ?? false;
+}
+
+/**
+ * The matches for a query, best first: an exact label, a label that starts with the query, a label word that starts with it, a label that contains it, then keyword
+ * matches (an exact keyword before a partial one); ties keep the index order. Only the best `limit` are shown, so the ordering decides what a visitor sees.
+ */
+export function rankedMatches(entries: SearchEntry[], query: string, limit = 8): SearchEntry[] {
+  const q = query.trim().toLowerCase();
+  if (!q) return [];
+  const score = (e: SearchEntry): number => {
+    const label = e.label.toLowerCase();
+    if (label === q) return 0;
+    if (label.startsWith(q)) return 1;
+    if (label.split(/[^a-z0-9]+/).some((w) => w.startsWith(q))) return 2;
+    if (label.includes(q)) return 3;
+    const kws = (e.keywords ?? []).map((k) => k.toLowerCase());
+    if (kws.includes(q)) return 4;
+    if (kws.some((k) => k.includes(q))) return 5;
+    return Infinity;
+  };
+  return entries
+    .map((e, i) => ({ e, i, s: score(e) }))
+    .filter((x) => x.s !== Infinity)
+    .sort((a, b) => a.s - b.s || a.i - b.i)
+    .slice(0, limit)
+    .map((x) => x.e);
 }
 
 interface Props {
@@ -154,7 +215,7 @@ export default function GlobalSearch({ onLinkClick, placeholder, className, vari
   const listId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const results = query.trim() ? PUBLIC_SEARCH_INDEX.filter((e) => matches(e, query)).slice(0, 8) : [];
+  const results = query.trim() ? rankedMatches(SITE_SEARCH_INDEX, query) : [];
   const open = focused && query.trim().length > 0;
 
   if (query !== resetForQuery) {

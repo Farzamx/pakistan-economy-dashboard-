@@ -1,18 +1,18 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { requireAdmin } from "@/lib/adminAccess";
 import { getSystemHealthSnapshot } from "@/lib/systemHealth";
 import { formatAge, REMINDER_INTERVAL_HOURS } from "@/lib/ingestionWatchdog";
 import type { IngestionHealth, IngestionMonitorJob } from "@/lib/ingestionWatchdog";
 import type { SeriesSourceRanking, Recommendation, SyncTriggerRecord } from "@/lib/systemHealth";
 
 // Internal operational diagnostics — NOT a public page (Production
-// Reliability & Institutional Upgrade, Part 11). Gated on the signed-in
-// user's email matching ADMIN_EMAIL exactly; fails closed (renders a plain
-// 404, not a "you're not authorized" message, so its existence isn't
-// advertised to anyone who stumbles onto the URL) if that env var is
-// unset or the session doesn't match. robots noindex is a secondary,
-// best-effort signal only — the real gate is the auth check below.
+// Reliability & Institutional Upgrade, Part 11). Gated by requireAdmin()
+// (src/lib/adminAccess.ts): a signed-in user whose email is CONFIRMED and
+// whose Supabase user id equals the server-side ADMIN_USER_ID. A guest is
+// sent to login; anyone else gets the ordinary 404 (so the page's existence
+// isn't advertised), and it fails closed if ADMIN_USER_ID is unset.
+// robots noindex is a secondary, best-effort signal only — the real gate is
+// the auth check below.
 export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
@@ -168,12 +168,7 @@ function IngestionHealthCard({ title, description, health }: { title: string; de
 }
 
 export default async function SystemHealthPage() {
-  const adminEmail = process.env.ADMIN_EMAIL;
-  if (!adminEmail) notFound();
-
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user || user.email !== adminEmail) notFound();
+  await requireAdmin("/admin/system-health");
 
   const snapshot = await getSystemHealthSnapshot();
 

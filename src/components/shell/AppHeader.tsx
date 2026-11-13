@@ -20,7 +20,7 @@ import { usePathname } from "next/navigation";
 import GlobalSearch from "@/components/GlobalSearch";
 import SettingsModal from "@/components/SettingsModal";
 import { useLanguage } from "@/components/LanguageProvider";
-import { OVERVIEW_PATH, PUBLIC_APP_NAV, ariaCurrentFor, hrefPath, resolveActiveNav } from "@/lib/appNav";
+import { APP_NAV, OVERVIEW_PATH, ariaCurrentFor, hrefPath, resolveActiveNav } from "@/lib/appNav";
 import AccountControl from "./AccountControl";
 import MobileDrawer from "./MobileDrawer";
 import NavMenu from "./NavMenu";
@@ -31,7 +31,7 @@ import { useGuestGate, useOverviewSections } from "./shellHooks";
 export default function AppHeader() {
   const pathname = usePathname();
   const { t } = useLanguage();
-  const active = resolveActiveNav(pathname, PUBLIC_APP_NAV);
+  const active = resolveActiveNav(pathname);
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -127,7 +127,7 @@ export default function AppHeader() {
 
           <nav aria-label={t("appNav.mainNav")} className="ms-3 hidden h-full shrink-0 lg:block">
             <ul className="flex h-full items-stretch">
-              {PUBLIC_APP_NAV.map((entry) => {
+              {APP_NAV.map((entry) => {
                 if (entry.kind === "menu") {
                   return (
                     <NavMenu

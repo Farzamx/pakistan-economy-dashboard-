@@ -10,13 +10,28 @@ const INITIAL_STATE: AuthActionResult = { error: null };
 const INPUT_CLASS =
   "w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 py-2.5 text-sm text-[var(--text-primary)] outline-none transition-colors placeholder:text-[var(--text-muted)] focus:border-neon-blue/50";
 
-export default function LoginForm({ redirectTo, confirmed }: { redirectTo: string; confirmed: boolean }) {
+/** Why the visitor is on the login page, when it is not a plain visit: the one message shown above the form. */
+export type LoginNotice = "callback-failed" | "password-updated" | null;
+
+export default function LoginForm({ redirectTo, confirmed, notice = null }: { redirectTo: string; confirmed: boolean; notice?: LoginNotice }) {
   const [state, formAction, pending] = useActionState(signIn, INITIAL_STATE);
   const { t } = useLanguage();
 
   return (
     <form action={formAction} className="flex flex-col gap-4">
       <input type="hidden" name="redirectTo" value={redirectTo} />
+
+      {notice === "password-updated" && (
+        <p role="status" data-testid="login-notice-password-updated" className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-2.5 text-sm text-emerald-400">
+          {t("auth.passwordUpdated")}
+        </p>
+      )}
+
+      {notice === "callback-failed" && (
+        <p role="alert" data-testid="login-notice-callback-failed" className="rounded-xl border border-amber-500/25 bg-amber-500/10 px-4 py-2.5 text-sm text-amber-300">
+          {t("auth.callbackFailed")}
+        </p>
+      )}
 
       {confirmed && (
         <p className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-2.5 text-sm text-emerald-400">

@@ -382,12 +382,15 @@ export const en: Translations = {
     logInBtn: "Log In", createAccountBtn: "Create Free Account",
     sendResetLinkBtn: "Send Reset Link", updatePasswordBtn: "Update Password",
     accountCreated: "Account created — check your email to confirm, then sign in below.",
+    callbackFailed: "That link is invalid, has expired, or was opened in a different browser from the one you started in. If you have just confirmed your email address, you can log in below. Otherwise, request a new link.",
+    passwordUpdated: "Your password has been updated. Log in with your new password.",
     resetEmailSent: "If an account exists for that email, a password reset link is on its way.",
     termsNote: "By signing up, you agree this is a free account for accessing dashboard features — no payment is collected.",
     benefitBudget: "Access Budget Workshops", benefitCompare: "Compare Economic Indicators",
     benefitProvincial: "Provincial Budget Intelligence", benefitPreferences: "Save Preferences",
     benefitPremium: "Future Premium Features",
-    guestTitle: "Create Free Account", guestDesc: "Sign in or create a free account to continue.",
+    guestTitle: "Log in to continue", guestDesc: "This section is for registered members. Log in, or create a free account, to open it.",
+    loginRequiredTitle: "Log in to continue", loginRequiredBody: "This section is for registered members. Log in, or create a free account, to open it.", loginRequiredFor: "You asked for",
   },
 
   subscription: {
@@ -458,7 +461,7 @@ export const en: Translations = {
   },
 
   search: {
-    placeholder: "Search markets, inflation, news...", noMatches: "No matches",
+    placeholder: "Search GDP, Inflation, Budget...", noMatches: "No matches",
   },
 
   tooltip: {

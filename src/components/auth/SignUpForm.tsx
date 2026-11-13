@@ -9,12 +9,13 @@ const INITIAL_STATE: AuthActionResult = { error: null };
 const INPUT_CLASS =
   "w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 py-2.5 text-sm text-[var(--text-primary)] outline-none transition-colors placeholder:text-[var(--text-muted)] focus:border-neon-blue/50";
 
-export default function SignUpForm() {
+export default function SignUpForm({ redirectTo }: { redirectTo: string }) {
   const [state, formAction, pending] = useActionState(signUp, INITIAL_STATE);
   const { t } = useLanguage();
 
   return (
     <form action={formAction} className="flex flex-col gap-4">
+      <input type="hidden" name="redirectTo" value={redirectTo} />
       <label className="flex flex-col gap-1.5 text-sm">
         <span className="font-medium text-[var(--text-secondary)]">{t("auth.email")}</span>
         <input type="email" name="email" required autoComplete="email" placeholder={t("auth.emailPlaceholder")} className={INPUT_CLASS} />

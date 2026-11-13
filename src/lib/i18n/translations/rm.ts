@@ -386,12 +386,15 @@ export const rm: Translations = {
     logInBtn: "Log In", createAccountBtn: "Muft Account Banayein",
     sendResetLinkBtn: "Reset Link Bhejein", updatePasswordBtn: "Password Update Karein",
     accountCreated: "Account ban gaya — tasdeeq ke liye apna email check karein, phir neeche sign in karein.",
+    callbackFailed: "Yeh link ghalat hai, expire ho chuka hai, ya us browser mein nahin khola gaya jis mein aap ne shuru kiya tha. Agar aap ne abhi apna email confirm kiya hai to neeche log in karein; warna naya link mangwa lein.",
+    passwordUpdated: "Aap ka password update ho gaya hai. Naye password se log in karein.",
     resetEmailSent: "Agar is email ka account maujood hai to password reset link bhej diya gaya hai.",
     termsNote: "Sign up kar ke aap tasdeeq karte hain ke yeh dashboard tak rasaai ke liye muft account hai — koi adaayegi nahin li jaati.",
     benefitBudget: "Budget Workshop tak Rasaai", benefitCompare: "Maashi Ashariyoon ka Mawazna",
     benefitProvincial: "Soobayi Budget Intelligence", benefitPreferences: "Tarjeehaat Mahfooz Karein",
     benefitPremium: "Mustaqbil ki Premium Khasusiyaat",
-    guestTitle: "Muft Account Banayein", guestDesc: "Jaari rakhne ke liye sign in karein ya muft account banayein.",
+    guestTitle: "Jaari rakhne ke liye log in karein", guestDesc: "Yeh hissa registered members ke liye hai. Ise kholne ke liye log in karein ya muft account banayein.",
+    loginRequiredTitle: "Jaari rakhne ke liye log in karein", loginRequiredBody: "Yeh hissa registered members ke liye hai. Ise kholne ke liye log in karein ya muft account banayein.", loginRequiredFor: "Aap ne yeh manga",
   },
 
   subscription: {
@@ -462,7 +465,7 @@ export const rm: Translations = {
   },
 
   search: {
-    placeholder: "Markets, Mehngai, Khabrein talaash karein...", noMatches: "Koi nateeja nahin",
+    placeholder: "GDP, Mehngai, Budget talaash karein...", noMatches: "Koi nateeja nahin",
   },
 
   tooltip: {

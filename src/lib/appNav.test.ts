@@ -8,9 +8,6 @@ import fs from "node:fs";
 import path from "node:path";
 import {
   APP_NAV,
-  CONSOLIDATED_INTO_BUDGET_HREFS,
-  CONSOLIDATED_INTO_INFLATION_SLUGS,
-  CONSOLIDATED_INTO_INTEREST_RATE_SLUGS,
   INDICATOR_GROUPS,
   INDICATOR_HUB_SLUGS,
   OVERVIEW_SECTIONS,
@@ -27,9 +24,6 @@ import { isProtectedPath } from "./protectedSections";
 
 const SRC = path.resolve(__dirname, "..");
 const APP = path.join(SRC, "app");
-
-/** Indicator pages that have no menu entry because a workshop covers them. */
-const CONSOLIDATED_SLUGS: string[] = [...CONSOLIDATED_INTO_INFLATION_SLUGS, ...CONSOLIDATED_INTO_INTEREST_RATE_SLUGS];
 
 function pageExists(routePath: string): boolean {
   return fs.existsSync(path.join(APP, routePath, "page.tsx"));
@@ -87,14 +81,13 @@ describe("registry integrity — no placeholder links", () => {
     for (const l of links) expect(Boolean(l.labelKey || l.label), l.id).toBe(true);
   });
 
-  it("covers every indicator page in SEO_PAGES exactly once (hub pages via the footer; pages consolidated into a workshop not at all)", () => {
+  it("covers every indicator page in SEO_PAGES exactly once (hub pages via the footer); no indicator is left out of the menu", () => {
     const listed = INDICATOR_GROUPS.flatMap((g) => g.items)
       .filter((i) => i.kind === "link")
       .map((i) => (i.kind === "link" ? hrefPath(i.href).slice(1) : ""));
     for (const page of SEO_PAGES) {
       if ((INDICATOR_HUB_SLUGS as readonly string[]).includes(page.slug)) continue;
-      const expected = CONSOLIDATED_SLUGS.includes(page.slug) ? 0 : 1;
-      expect(listed.filter((s) => s === page.slug), page.slug).toHaveLength(expected);
+      expect(listed.filter((s) => s === page.slug), page.slug).toHaveLength(1);
     }
   });
 
@@ -103,64 +96,51 @@ describe("registry integrity — no placeholder links", () => {
   });
 });
 
-describe("Workshop consolidation: Interest Rate covers the Fed Funds Rate, the Budget Tracker covers the budget explainers", () => {
+// G.21: the owner's rule is explicit — no existing dashboard, indicator, workshop, explainer or analytical tool is removed from the navigation because a visitor
+// is signed out (or for any other reason). Five entries had been taken out by two earlier "consolidation" edits; they are back, at their original positions.
+describe("nothing is missing from the navigation (G.21)", () => {
   const all = allNavLinks().map((l) => hrefPath(l.href));
+  const group = (id: string) => (INDICATOR_GROUPS.find((g) => g.id === id)?.items ?? []).filter((i) => i.kind === "link").map((i) => (i.kind === "link" ? i.href : ""));
 
-  it("the Fed Funds Rate page has no menu entry, in any menu, the drawer's source or the footer", () => {
-    expect([...CONSOLIDATED_INTO_INTEREST_RATE_SLUGS]).toEqual(["fed-funds-rate"]);
-    for (const slug of CONSOLIDATED_INTO_INTEREST_RATE_SLUGS) expect(all, slug).not.toContain(`/${slug}`);
+  it("the Prices menu lists Inflation Rate, Core Inflation, Food Inflation, Wholesale (WPI), Weekly (SPI) and the SPI Index, in that order", () => {
+    expect(group("prices")).toEqual([
+      "/inflation-rate-pakistan", "/pakistan-core-inflation", "/pakistan-food-inflation", "/pakistan-wholesale-inflation", "/weekly-inflation-pakistan", "/spi-index-pakistan",
+    ]);
   });
 
-  it("the two budget explainers have no menu entry; Fiscal Deficit (an actual, not budgeted, measure) keeps its own", () => {
-    expect([...CONSOLIDATED_INTO_BUDGET_HREFS]).toEqual(["/budget/where-does-tax-money-go", "/budget/debt-servicing-vs-defence"]);
-    for (const href of CONSOLIDATED_INTO_BUDGET_HREFS) expect(all, href).not.toContain(href);
-    expect(all).toContain("/pakistan-fiscal-deficit");
+  it("the Fiscal menu lists Fiscal Deficit, Where Does the Tax Money Go? and Debt Servicing vs Defence", () => {
+    expect(group("fiscal")).toEqual(["/pakistan-fiscal-deficit", "/budget/where-does-tax-money-go", "/budget/debt-servicing-vs-defence"]);
   });
 
-  it("the workshops that replace them stay in the menu", () => {
-    for (const href of ["/pakistan-interest-rate", "/budget", "/pakistan-bond-yields", "/inflation-rate-pakistan"]) expect(all, href).toContain(href);
+  it("the Global Markets menu ends with the Fed Funds Rate", () => {
+    const g = group("global-markets");
+    expect(g[g.length - 1]).toBe("/fed-funds-rate");
+    expect(g).toEqual([
+      "/gold-price-pakistan", "/silver-price-pakistan", "/wti-crude-oil-price", "/brent-crude-oil-price", "/natural-gas-price", "/us-dollar-index", "/us-10-year-treasury-yield", "/fed-funds-rate",
+    ]);
   });
 
-  it("direct URLs keep working: every consolidated page still exists, and the Fed Funds page stays in the SEO registry", () => {
-    for (const slug of CONSOLIDATED_INTO_INTEREST_RATE_SLUGS) {
-      expect(pageExists(slug), `/${slug} must still be routable`).toBe(true);
-      expect(SEO_PAGES.some((p) => p.slug === slug), `${slug} must stay in SEO_PAGES`).toBe(true);
-    }
-    for (const href of CONSOLIDATED_INTO_BUDGET_HREFS) expect(pageExists(hrefPath(href)), href).toBe(true);
-  });
-});
-
-describe("Prices menu: Inflation Rate is the one CPI destination", () => {
-  const prices = INDICATOR_GROUPS.find((g) => g.id === "prices");
-  const priceHrefs = (prices?.items ?? []).filter((i) => i.kind === "link").map((i) => (i.kind === "link" ? i.href : ""));
-
-  it("lists exactly Inflation Rate, Wholesale (WPI), Weekly (SPI) and the SPI Index, in that order", () => {
-    expect(priceHrefs).toEqual(["/inflation-rate-pakistan", "/pakistan-wholesale-inflation", "/weekly-inflation-pakistan", "/spi-index-pakistan"]);
-  });
-
-  it("the consolidated pages are exactly core and food inflation — and not WPI, SPI or the SPI index", () => {
-    expect([...CONSOLIDATED_INTO_INFLATION_SLUGS].sort()).toEqual(["pakistan-core-inflation", "pakistan-food-inflation"]);
-    for (const distinct of ["pakistan-wholesale-inflation", "weekly-inflation-pakistan", "spi-index-pakistan", "inflation-rate-pakistan"]) {
-      expect((CONSOLIDATED_INTO_INFLATION_SLUGS as readonly string[]).includes(distinct), distinct).toBe(false);
+  it("every one of the five restored entries is in the navigation, and its page exists", () => {
+    for (const href of ["/pakistan-core-inflation", "/pakistan-food-inflation", "/fed-funds-rate", "/budget/where-does-tax-money-go", "/budget/debt-servicing-vs-defence"]) {
+      expect(all, href).toContain(href);
+      expect(pageExists(hrefPath(href)), href).toBe(true);
     }
   });
 
-  it("neither consolidated page appears anywhere in the navigation (every menu, the drawer's source, the footer)", () => {
-    const all = allNavLinks().map((l) => hrefPath(l.href));
-    for (const slug of CONSOLIDATED_INTO_INFLATION_SLUGS) expect(all, slug).not.toContain(`/${slug}`);
-    const labels = allNavLinks().map((l) => (l.label ?? "").toLowerCase());
-    expect(labels.some((l) => /core inflation|food inflation/.test(l))).toBe(false);
+  it("the workshops that were once said to replace them are still there too", () => {
+    for (const href of ["/pakistan-interest-rate", "/budget", "/pakistan-bond-yields", "/inflation-rate-pakistan", "/pakistan-fiscal-deficit"]) expect(all, href).toContain(href);
   });
 
-  it("direct URLs keep working: both pages still exist, and remain in the SEO registry (sitemap, related links, structured data)", () => {
-    for (const slug of CONSOLIDATED_INTO_INFLATION_SLUGS) {
-      expect(pageExists(slug), `/${slug} must still be routable`).toBe(true);
-      expect(SEO_PAGES.some((p) => p.slug === slug), `${slug} must stay in SEO_PAGES`).toBe(true);
+  it("the navigation never hides an entry by access state: the registry has no consolidation or access filter any more", () => {
+    const source = fs.readFileSync(path.join(SRC, "lib", "appNav.ts"), "utf8");
+    expect(source).not.toMatch(/CONSOLIDATED_INTO|PUBLIC_APP_NAV|filterNavForAccess|isPublicPagePath/);
+  });
+
+  it("every page in SEO_PAGES has a menu entry (hubs through the footer), so no indicator is reachable only by typing its address", () => {
+    for (const page of SEO_PAGES) {
+      if ((INDICATOR_HUB_SLUGS as readonly string[]).includes(page.slug)) continue;
+      expect(all, page.slug).toContain(`/${page.slug}`);
     }
-  });
-
-  it("every retained Prices shortcut navigates to a real page", () => {
-    for (const href of priceHrefs) expect(pageExists(hrefPath(href)), href).toBe(true);
   });
 });
 
@@ -210,10 +190,14 @@ describe("access rules come from isProtectedPath, not the registry", () => {
     for (const id of ["calendar", "comparisons", "budget", "provincial-budget", "email-alerts"]) expect(isProtected(id), id).toBe(true);
   });
 
-  it("public destinations stay public (indicator pages, the Decision Lab hub)", () => {
-    for (const id of ["overview", "ind-inflation-rate-pakistan", "decision-lab", "academy", "macro-intelligence", "gdp-sector-composition"]) {
-      expect(isProtected(id), id).toBe(false);
+  it("the Overview is the only navigation destination open to guests; every dashboard, workshop and tool needs a sign-in (G.20)", () => {
+    expect(isProtected("overview")).toBe(false);
+    for (const id of ["ind-inflation-rate-pakistan", "decision-lab", "academy", "macro-intelligence", "gdp-sector-composition"]) {
+      expect(isProtected(id), id).toBe(true);
     }
+    const open = allNavLinks().filter((l) => !isProtectedPath(hrefPath(l.href))).map((l) => hrefPath(l.href));
+    // the other open destination is "Back to site" (/home), the public landing page
+    expect([...new Set(open)].sort()).toEqual(["/home", "/overview"]);
   });
 });
 
@@ -248,10 +232,12 @@ describe("resolveActiveNav", () => {
     ["/economic-calendar/archive", "calendar", "calendar", "section"],
     ["/macro-intelligence", "research", "macro-intelligence", "page"],
     ["/budget", "research", "budget", "page"],
-    // The budget explainers have no menu entry of their own: they resolve to the Budget Tracker that covers them.
-    ["/budget/where-does-tax-money-go", "research", "budget", "section"],
-    ["/budget/debt-servicing-vs-defence", "research", "budget", "section"],
-    ["/fed-funds-rate", null, null, null],
+    // G.21: the budget explainers, the Fed Funds Rate and Core / Food Inflation have their own menu entries again.
+    ["/budget/where-does-tax-money-go", "indicators", "budget-tax-money", "page"],
+    ["/budget/debt-servicing-vs-defence", "indicators", "budget-debt-vs-defence", "page"],
+    ["/fed-funds-rate", "indicators", "ind-fed-funds-rate", "page"],
+    ["/pakistan-core-inflation", "indicators", "ind-pakistan-core-inflation", "page"],
+    ["/pakistan-food-inflation", "indicators", "ind-pakistan-food-inflation", "page"],
     ["/budget/health", "research", "budget", "section"],
     ["/comparisons/gdp-sector-composition", "indicators", "gdp-sector-composition", "page"],
     ["/comparisons/exports-vs-imports", "research", "comparisons", "section"],

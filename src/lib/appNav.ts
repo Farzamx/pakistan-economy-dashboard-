@@ -13,13 +13,13 @@
 // registry the indicator template and GlobalSearch already use — rather than
 // src/lib/sidebarNav.ts, which only indexed 8 of the 38 indicator pages.
 //
-// Access control is NOT stored here. This file is the COMPLETE registry (kept
-// whole so a closed section can be reopened); what a visitor actually sees is
-// PUBLIC_APP_NAV at the bottom, which is this registry filtered by
-// src/lib/accessPolicy.ts (G.14: only the Overview page is public), and
-// src/proxy.ts enforces the same policy on the server.
+// Access control is NOT stored here, and nothing in this registry is hidden from
+// a signed-out visitor: the navigation is complete for everyone (owner policy,
+// G.20). Whether a destination needs a signed-in user is always asked of
+// isProtectedPath() (src/lib/protectedSections.ts, which asks
+// src/lib/accessPolicy.ts) at click time, so this file can never disagree with
+// src/proxy.ts's server-side enforcement.
 
-import { isPublicPagePath } from "@/lib/accessPolicy";
 import { SEO_PAGES } from "@/lib/seoConfig";
 
 export type NavLinkItem = {
@@ -78,41 +78,14 @@ function indicator(slug: string): NavLinkItem {
 /** Indicator pages that are hubs rather than single indicators — linked from the menu footer, not listed as items. */
 export const INDICATOR_HUB_SLUGS = ["pakistan-economic-indicators", "pakistan-economic-dashboard"] as const;
 
-/**
- * Indicator pages whose analysis now lives inside the Inflation Rate page (/inflation-rate-pakistan covers headline CPI, core NFNE,
- * food inflation, the 12 CPI expenditure groups and their contributions). They get NO menu entry and NO search result of their own:
- * Inflation Rate is the one CPI destination, and searching "core inflation" or "food inflation" leads there (GlobalSearch aliases).
- *
- * What this list does NOT do: the pages keep their routes (direct URLs, bookmarks and search-engine results still work), their data,
- * their SEO_PAGES entries (sitemap, related-links, structured data) and their components. WPI, weekly inflation (SPI) and the SPI
- * index are different statistical measures from monthly CPI and are deliberately NOT in this list.
- */
-export const CONSOLIDATED_INTO_INFLATION_SLUGS = ["pakistan-core-inflation", "pakistan-food-inflation"] as const;
-
-/**
- * The same consolidation for two more cases, so the top bar lists a workshop once instead of the workshop plus every page it already covers.
- *
- * Fed Funds Rate: the Interest Rate workshop has a US-comparison section (the effective federal funds rate beside the SBP policy rate, with the
- * differential), so the US policy rate is reached from Pakistan Interest Rate. The page keeps its route, data, SEO_PAGES entry and a contextual
- * link from that section; searching "fed funds" leads to Pakistan Interest Rate (GlobalSearch aliases).
- */
-export const CONSOLIDATED_INTO_INTEREST_RATE_SLUGS = ["fed-funds-rate"] as const;
-
-/**
- * Budget explainer pages whose content the Budget Tracker now carries (where the money goes, and debt servicing against defence, in its allocation and
- * Sankey views and its debt-servicing and defence categories). They get no menu entry; the routes, content and links from inside the workshop remain.
- *
- * Deliberately NOT in this list: Fiscal Deficit (/pakistan-fiscal-deficit). It shows SBP's ACTUAL consolidated balance, a different measure from the
- * Budget Tracker's budgeted (Budget Estimate) deficit, so it keeps its place as an indicator.
- */
-export const CONSOLIDATED_INTO_BUDGET_HREFS = ["/budget/where-does-tax-money-go", "/budget/debt-servicing-vs-defence"] as const;
-
 export const INDICATOR_GROUPS: NavGroup[] = [
   {
     id: "prices",
     labelKey: "nav.prices",
     items: [
       indicator("inflation-rate-pakistan"),
+      indicator("pakistan-core-inflation"),
+      indicator("pakistan-food-inflation"),
       indicator("pakistan-wholesale-inflation"),
       indicator("weekly-inflation-pakistan"),
       indicator("spi-index-pakistan"),
@@ -152,9 +125,11 @@ export const INDICATOR_GROUPS: NavGroup[] = [
     id: "fiscal",
     labelKey: "appNav.fiscal",
     items: [
-      // The budget explainers (where the tax money goes, debt servicing vs defence) are covered by the Budget Tracker (Research menu) and have no
-      // entry of their own: see CONSOLIDATED_INTO_BUDGET_HREFS.
       indicator("pakistan-fiscal-deficit"),
+      // Federal-budget explainer pages. Fixed English labels are shortened from their page titles ("Where Does Pakistan's Tax Money Actually Go?", "Debt
+      // Servicing vs Defence Spending — Pakistan's Federal Budget"); not in SEO_PAGES because they are budget-workspace content, not indicator-template pages.
+      { kind: "link", id: "budget-tax-money", href: "/budget/where-does-tax-money-go", label: "Where Does the Tax Money Go?" },
+      { kind: "link", id: "budget-debt-vs-defence", href: "/budget/debt-servicing-vs-defence", label: "Debt Servicing vs Defence" },
     ],
   },
   {
@@ -181,7 +156,7 @@ export const INDICATOR_GROUPS: NavGroup[] = [
       indicator("natural-gas-price"),
       indicator("us-dollar-index"),
       indicator("us-10-year-treasury-yield"),
-      // The US Fed Funds Rate is covered by the Interest Rate workshop's US comparison: see CONSOLIDATED_INTO_INTEREST_RATE_SLUGS.
+      indicator("fed-funds-rate"),
     ],
   },
 ];
@@ -356,40 +331,11 @@ export function ariaCurrentFor(active: ActiveNav, linkId: string): "page" | "tru
   return active.match === "page" ? "page" : "true";
 }
 
-// ── Public navigation (access policy, G.14) ────────────────────────────────
-// Only the Overview page is open to the public, so the navigation a visitor
-// sees offers only that. It is derived from the full registry above, never
-// written by hand, so it cannot list a closed destination or drift from the
-// policy. Hiding links is NOT the enforcement: src/proxy.ts is.
-
 /**
- * The registry reduced to the destinations the policy allows. A link survives if it is open; a menu keeps its open links and disappears when none are left;
- * Settings-style actions are dropped (the navigation exposes pages, nothing else).
+ * The menu entry for a page, by path (query and hash ignored), or null when the page has no entry of its own (a detail page, say). Used to say WHICH section a
+ * visitor asked for on the sign-in dialog and page. The label is `labelKey` (translate it) or the fixed `label`.
  */
-export function filterNavForAccess(nav: TopNavEntry[], isOpen: (href: string) => boolean): TopNavEntry[] {
-  const out: TopNavEntry[] = [];
-  for (const entry of nav) {
-    if (entry.kind === "link") {
-      if (isOpen(entry.href)) out.push(entry);
-      continue;
-    }
-    const groups = entry.groups
-      .map((g) => ({ ...g, items: g.items.filter((i): i is NavLinkItem => i.kind === "link" && isOpen(i.href)) }))
-      .filter((g) => g.items.length > 0);
-    const footer = entry.footer && isOpen(entry.footer.href) ? entry.footer : undefined;
-    if (groups.length > 0 || footer) out.push({ ...entry, groups, footer });
-  }
-  return out;
+export function navLinkForPath(pathname: string): NavLinkItem | null {
+  const wanted = hrefPath(pathname);
+  return allNavLinks().find((l) => hrefPath(l.href) === wanted) ?? null;
 }
-
-/**
- * Overview sections that only promote other pages (Explore, Provincial budgets). The Overview does not render them while the site is Overview-only (see
- * offersMoreThanOverview in accessPolicy.ts), and the "On this page" menus list only sections present in the page, so nothing points at them.
- */
-export const NAVIGATION_ONLY_OVERVIEW_SECTION_IDS: readonly string[] = ["home-explore", "home-provincial"];
-
-/** A destination the public may follow from the navigation: a page the policy opens, with no fragment (the Overview's own sections are listed by its "On this page" menu). */
-const isPublicNavHref = (href: string) => isPublicPagePath(href) && !href.includes("#");
-
-/** The navigation visitors see: the Overview, and nothing else while the policy is Overview-only. */
-export const PUBLIC_APP_NAV: TopNavEntry[] = filterNavForAccess(APP_NAV, isPublicNavHref);

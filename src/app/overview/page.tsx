@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { offersMoreThanOverview, publicHref } from "@/lib/accessPolicy";
 import { SITE_URL, SITE_NAME } from "@/lib/seoConfig";
 import DataSourcesModal from "@/components/DataSourcesModal";
 import FloatingAssistant from "@/components/assistant/FloatingAssistant";
@@ -545,13 +544,12 @@ export default async function Home() {
     ] as const
   ).map(([label, kpi]) => {
     const slug = slugForKpi(kpi.title);
-    return { label, kpi, href: slug ? (publicHref(`/${slug}`) ?? undefined) : undefined };
+    return { label, kpi, href: slug ? `/${slug}` : undefined };
   });
 
-  // The tiles and rows keep their figures; a link to a detail page is kept only where the visitor can follow it (access policy, G.14: the Overview is the
-  // only public page), so a closed page's address is not even sent to the browser. An empty href / slug means "no link".
-  const homeSnapshotTiles = buildSnapshotTiles({ sbp, netLiquidReserves, usdPkrLive: fxRates.usdPkr }).map((t) => ({ ...t, href: publicHref(t.href) ?? "" }));
-  const homeIndicatorRows = buildIndicatorRows(sbp).map((r) => (publicHref(`/${r.slug}`) ? r : { ...r, slug: "" }));
+  // Every tile and row links to its indicator page, for guests too: following one signs a guest in first (accessPolicy.ts / proxy.ts).
+  const homeSnapshotTiles = buildSnapshotTiles({ sbp, netLiquidReserves, usdPkrLive: fxRates.usdPkr });
+  const homeIndicatorRows = buildIndicatorRows(sbp);
 
   // Headlines: the same AI-tagged articles the News & Intelligence section
   // below renders, just the top few, surfaced near the top of the page.
@@ -677,7 +675,7 @@ export default async function Home() {
             id="home-snapshot"
             title="Pakistan snapshot"
             description="Headline indicators, each with the period it reports on and its source."
-            actions={publicHref("/pakistan-economic-indicators") ? <Link href="/pakistan-economic-indicators" className="text-pe-accent hover:underline">All indicators →</Link> : undefined}
+            actions={<Link href="/pakistan-economic-indicators" className="text-pe-accent hover:underline">All indicators →</Link>}
             flush
           >
             <PakistanSnapshot tiles={homeSnapshotTiles} />
@@ -697,7 +695,7 @@ export default async function Home() {
               <Section
                 id="home-releases"
                 title="Upcoming releases"
-                actions={publicHref("/economic-calendar") ? <Link href="/economic-calendar" className="text-pe-accent hover:underline">Calendar →</Link> : undefined}
+                actions={<Link href="/economic-calendar" className="text-pe-accent hover:underline">Calendar →</Link>}
                 flush
               >
                 <UpcomingReleases rows={homeUpcomingRows} todayIso={todayIsoForHome} />
@@ -716,32 +714,26 @@ export default async function Home() {
           <Section
             id="home-indicators"
             title="Pakistan indicators"
-            description={offersMoreThanOverview() ? "Search or sort. Every row links to that indicator's full history." : "Search or sort. Each row carries its period, source and status."}
+            description="Search or sort. Every row links to that indicator's full history."
             flush
           >
             <IndicatorsTable rows={homeIndicatorRows} />
           </Section>
 
-          {/* Explore, Provincial budgets and Popular insights only point at other pages. While the Overview is the only public page (accessPolicy.ts)
-              they would link to closed routes, so they are not rendered; the components are kept for a reopening. */}
-          {offersMoreThanOverview() && (
-            <Section id="home-explore" title="Explore" flush>
-              <ExploreLinks />
-            </Section>
-          )}
+          <Section id="home-explore" title="Explore" flush>
+            <ExploreLinks />
+          </Section>
 
           {/* Kept from the retired legacy block: these have no other home.
               Provincial shortcuts and Popular Insights are navigation into
               existing pages; the Data Sources modal is this page's full
               per-indicator provenance audit, reachable from the one place
               that renders every KPI. */}
-          {offersMoreThanOverview() && (
-            <Section id="home-provincial" title="Provincial budgets" flush>
-              <ProvincialQuickAccess />
-            </Section>
-          )}
+          <Section id="home-provincial" title="Provincial budgets" flush>
+            <ProvincialQuickAccess />
+          </Section>
 
-          {offersMoreThanOverview() && <PopularInsights />}
+          <PopularInsights />
 
           <div className="flex justify-center py-1">
             <DataSourcesModal kpis={allKpis} />

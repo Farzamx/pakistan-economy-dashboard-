@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { requireAdmin } from "@/lib/adminAccess";
 import { createPublicDataClient } from "@/lib/supabase/publicDataClient";
 import { getDataIntegrityAlerts } from "@/lib/economicCalendar/dataIntegrityAlerts";
 import { getLatestWeeklyIntelligenceSnapshot } from "@/lib/data/weeklyIntelligence";
@@ -60,12 +59,7 @@ interface SeriesSyncState {
 }
 
 export default async function SyncStatusPage() {
-  const adminEmail = process.env.ADMIN_EMAIL;
-  if (!adminEmail) notFound();
-
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user || user.email !== adminEmail) notFound();
+  const admin = await requireAdmin("/admin/sync-status");
 
   const db = createPublicDataClient();
   const today = new Date().toISOString().slice(0, 10);
@@ -281,7 +275,7 @@ export default async function SyncStatusPage() {
 
         {/* ── Footer ─────────────────────────────────────────────────────── */}
         <p className="text-xs text-slate-600">
-          Internal — not indexed. Auth: {user.email}. Data from{" "}
+          Internal — not indexed. Auth: {admin.email}. Data from{" "}
           <code className="text-slate-500">economic_events</code> and{" "}
           <code className="text-slate-500">economic_event_series</code>.
         </p>

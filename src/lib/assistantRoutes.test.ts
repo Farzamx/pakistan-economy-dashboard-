@@ -377,8 +377,9 @@ describe("/api/assistant/translate", () => {
 describe("the access policy still lets exactly these two endpoints through", () => {
   it("both are open in accessPolicy.ts, and nothing else under /api/assistant", async () => {
     const { decideAccess } = await import("@/lib/accessPolicy");
-    expect(decideAccess("/api/assistant")).toEqual({ action: "allow", kind: "overview-embedded" });
-    expect(decideAccess("/api/assistant/translate")).toEqual({ action: "allow", kind: "overview-embedded" });
-    expect(decideAccess("/api/assistant/other")).toEqual({ action: "not-found" });
+    // G.20: open to guests (the Overview and the landing page embed the assistant); anything else under /api/assistant needs a signed-in session.
+    expect(decideAccess("/api/assistant")).toEqual({ action: "allow", kind: "assistant", session: "skip" });
+    expect(decideAccess("/api/assistant/translate")).toEqual({ action: "allow", kind: "assistant", session: "skip" });
+    expect(decideAccess("/api/assistant/other")).toEqual({ action: "members", surface: "api" });
   });
 });

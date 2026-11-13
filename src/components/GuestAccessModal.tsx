@@ -1,12 +1,11 @@
 "use client";
 
-// Shown instead of navigating when a signed-out visitor clicks a route
-// listed in protectedSections.ts (isProtectedPath) — /settings, plus the
-// premium tools restored to protection after the SEO Phase A regression
-// (Comparisons, Budget, Provincial Budget, Provincial Budget Compare, the 4
-// province workspaces, and Provincial Budget Rankings). The ~40 public
-// informational/SEO detail pages underneath those tools stay public and
-// never trigger this. Same AnimatePresence/backdrop/panel shape as
+// Shown instead of navigating when a signed-out visitor clicks a link to a
+// section that needs a sign-in (isProtectedPath -> src/lib/accessPolicy.ts:
+// every page except the Overview, the landing page and the sign-in pages).
+// It says plainly that login is required, names the section asked for, and
+// offers Log in / Sign up, both carrying ?redirect= so the visitor lands on
+// that section afterwards. Same AnimatePresence/backdrop/panel shape as
 // PsxComingSoonModal.tsx and SettingsModal.tsx, so it feels native to the
 // rest of the dashboard rather than like a bolted-on auth library's default
 // UI. proxy.ts is still the real enforcement (direct URL visits without
@@ -19,6 +18,7 @@ import { useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import Link from "next/link";
 import { useLanguage } from "@/components/LanguageProvider";
+import { hrefPath, navLinkForPath } from "@/lib/appNav";
 
 interface Props {
   open: boolean;
@@ -67,6 +67,8 @@ export default function GuestAccessModal({ open, onClose, destination }: Props) 
   }, [open]);
 
   const redirectQuery = `?redirect=${encodeURIComponent(destination)}`;
+  const asked = navLinkForPath(hrefPath(destination));
+  const askedLabel = asked ? (asked.labelKey ? t(asked.labelKey) : asked.label) : null;
 
   return (
     <AnimatePresence>
@@ -118,6 +120,11 @@ export default function GuestAccessModal({ open, onClose, destination }: Props) 
 
               <h2 className="mt-5 text-lg font-semibold text-[var(--text-primary)]">{t("auth.guestTitle")}</h2>
               <p className="mt-2 text-sm text-[var(--text-muted)]">{t("auth.guestDesc")}</p>
+              {askedLabel && (
+                <p className="mt-2 text-xs text-[var(--text-muted)]" data-testid="guest-modal-destination">
+                  {t("auth.loginRequiredFor")}: <span className="font-medium text-[var(--text-secondary)]">{askedLabel}</span>
+                </p>
+              )}
 
               <ul className="mx-auto mt-5 flex max-w-xs flex-col gap-2 text-left">
                 {benefits.map((b) => (

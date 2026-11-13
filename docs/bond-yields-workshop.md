@@ -1,6 +1,6 @@
 # Bond Yields workshop: data, architecture, methodology and limits
 
-> **Access (G.14):** this page is currently closed to the public: only the Overview is open, and every other route redirects to `/overview` (see [access-policy.md](access-policy.md)). The implementation, data, tests and this document are unchanged and kept for a possible reopening.
+> **Access (G.20):** this page is in the members' area: it appears in the navigation for everyone, but a visitor who is not signed in is sent to the login page (`/login?redirect=…`) and returns here after signing in. Only the Overview, the landing page and the sign-in pages are open to guests (see [access-policy.md](access-policy.md)). The implementation, data and tests are unchanged.
 
 Route: `/pakistan-bond-yields` (the original route, upgraded in place: same URL and canonical, no second bond route).
 Built on the pattern of the Interest Rate page ([interest-rate-page.md](interest-rate-page.md)) and the shared chart toolkit in `src/components/analytics/`.
@@ -145,5 +145,5 @@ Goal: let the ledger (`raw_observations`, `canonical_observations`) carry every 
 
 ## 9. Platform changes made alongside this page
 
-* **Navigation**: the Fed Funds Rate (covered by the Interest Rate workshop's US comparison) and the two budget explainers (covered by the Budget Tracker) no longer have menu entries. Routes, SEO entries and content are unchanged; search aliases lead to the workshops; the Interest Rate page links to the Fed Funds page from its US-comparison section. Fiscal Deficit stays (it is the actual balance; the Budget Tracker shows the budgeted one). The registry is `src/lib/appNav.ts` (`CONSOLIDATED_INTO_*`).
+* **Navigation**: every dashboard, indicator, workshop and explainer has its own menu entry, for guests as well as members (G.21). The Fed Funds Rate, Core Inflation, Food Inflation and the two budget explainers (Where Does the Tax Money Go?, Debt Servicing vs Defence), which an earlier consolidation had taken out of the menus, are back at their original positions. Fiscal Deficit stays (it is the actual balance; the Budget Tracker shows the budgeted one). The registry is `src/lib/appNav.ts`.
 * **Content**: long explanations moved behind labelled disclosures on the Inflation, Interest Rate, Budget, GDP, Download Datasets and Macro Intelligence pages, using shared `Disclosure`, `FaqAccordion` and `LeadMore` (in `src/components/shell/Disclosure.tsx`) and a first-sentence-first `howToRead` in `ChartFrame`. Units, definitions, source attribution, coverage, freshness, missing-data notes, methodology and limitations are kept; their text is in the page's HTML.

@@ -10,7 +10,7 @@
 //   useDismiss     — outside-click / Escape / focus-leave closing for popups
 
 import { useCallback, useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import GuestAccessModal from "@/components/GuestAccessModal";
 import LogoutConfirmModal from "@/components/LogoutConfirmModal";
 import { useAuth } from "@/components/AuthProvider";
@@ -29,6 +29,16 @@ import { OVERVIEW_PATH, OVERVIEW_SECTIONS, activeSectionAt, hrefPath } from "@/l
 export function useGuestGate(): { gate: (e: React.MouseEvent, href: string) => boolean; guestModal: ReactNode } {
   const { user, loading } = useAuth();
   const [destination, setDestination] = useState<string | null>(null);
+
+  // The header (and with it this dialog's state) outlives a client-side navigation. Choosing Log in / Sign up in the dialog navigates to /login or /signup;
+  // without this the dialog would stay open on top of the sign-in form and block it. Any route change closes it (adjusted during render, React's pattern for
+  // resetting state when a value changes, as AppHeader does for its menus).
+  const pathname = usePathname();
+  const [lastPathname, setLastPathname] = useState(pathname);
+  if (pathname !== lastPathname) {
+    setLastPathname(pathname);
+    setDestination(null);
+  }
 
   const gate = useCallback(
     (e: React.MouseEvent, href: string) => {

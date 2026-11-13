@@ -1,68 +1,14 @@
-// Single source of truth for "which sections require a signed-in user" —
-// consumed by src/proxy.ts (server-side enforcement), Sidebar.tsx (desktop
-// click-interception), MobileNav.tsx (mobile drawer interception),
-// ProvincialQuickAccess.tsx (homepage province cards), and ProtectedLink.tsx
-// (the reusable wrapper used for cross-links into these sections from
-// otherwise-public pages — back-to-hub links, "Related" sections, etc.), so
-// none of them can silently drift out of sync with each other.
+// "Which sections require a signed-in user" — the answer now lives in ONE place, src/lib/accessPolicy.ts (G.20). This module keeps the name the original
+// consumers import (Sidebar-era components, the shell's useGuestGate, ProtectedLink, GlobalSearch, MobileNav, ProvincialQuickAccess, the Decision Lab tool
+// cards) and simply asks the policy, so none of them can drift from src/proxy.ts's server-side enforcement.
 //
-// Premium Access Restoration (post SEO Phase A/B): Phase A removed
-// Comparisons/Budget/Provincial Budget from route-level protection entirely
-// so Googlebot could crawl the ~50 informational detail pages built under
-// them. That correctly freed the detail pages, but it also left the actual
-// premium TOOLS — the interactive hub/workspace pages themselves — reachable
-// by anyone, which was never the intent. The fix is not a rollback to the
-// pre-Phase-A blanket prefix match (that would re-protect the detail pages
-// too, undoing the SEO work) — it's protecting exactly the tool pages by
-// their own exact path, while every detail/SEO page stays public.
-//
-// PROTECTED_SECTIONS: prefix-matched (startsWith) — /settings/preferences
-// must match "/settings" despite not being an exact equal, since account
-// pages can grow new sub-routes without each one needing its own entry here.
-//
-// /economic-calendar joined this list (rather than PROTECTED_EXACT_PATHS)
-// deliberately: unlike Comparisons/Budget/Provincial Budget below, where
-// only the hub is gated and the informational detail pages underneath stay
-// public for SEO, the whole Economic Calendar surface — hub, archive list,
-// every /event/[slug] and /archive/[slug] detail page, and the .ics feed
-// routes — is now premium. Prefix-matching gives that "everything under
-// this path" behavior from one entry instead of enumerating every dynamic
-// slug, which isn't possible here anyway.
-//
-// PROTECTED_EXACT_PATHS: exact-matched only, deliberately NOT prefix-matched
-// — these are leaf "tool" pages whose siblings/children (the 16 comparison
-// detail pages under /comparisons, the 8 budget category pages under
-// /budget, the 15 other provincial SEO pages under /provincial-budget) must
-// stay public. Prefix-matching any of these would silently re-protect that
-// public content.
-export const PROTECTED_SECTIONS = ["/settings", "/economic-calendar"];
+// At commit 04acfd4 this file held a short list (Comparisons, Budget and Provincial Budget hubs, the Economic Calendar, the Decision Lab calculators and
+// Settings); everything else was public. The owner's policy is now the opposite default: every page needs a sign-in except the Overview, the landing page
+// and the sign-in pages themselves. See docs/access-policy.md.
 
-export const PROTECTED_EXACT_PATHS = [
-  "/comparisons",
-  "/budget",
-  "/provincial-budget",
-  "/provincial-budget/compare",
-  "/provincial-budget/punjab",
-  "/provincial-budget/sindh",
-  "/provincial-budget/kp",
-  "/provincial-budget/balochistan",
-  "/provincial-budget/rankings",
-];
+import { requiresLogin } from "@/lib/accessPolicy";
 
-// PROTECTED_SUBSECTIONS: the inverse of PROTECTED_EXACT_PATHS's hub-gated
-// shape — here the HUB itself (/decision-support-lab) is deliberately
-// public (Phase 3: "allow viewing the landing page, feature descriptions,
-// screenshots, methodology" for guests), while every route *underneath* it
-// (every calculator: /decision-support-lab/personal-inflation,
-// /budget-allocation, /purchasing-power, and every Income & Wealth tool
-// added after it) requires a signed-in user. Prefix-matched but excluding
-// the bare prefix itself — PROTECTED_SECTIONS' `pathname === prefix` branch
-// would incorrectly gate the hub too, which is exactly the behavior this
-// category exists to avoid.
-export const PROTECTED_SUBSECTIONS = ["/decision-support-lab"];
-
+/** True when a signed-out visitor following this path must sign in first. Accepts a path or an internal href (query and fragment are ignored). */
 export function isProtectedPath(pathname: string): boolean {
-  if (PROTECTED_EXACT_PATHS.includes(pathname)) return true;
-  if (PROTECTED_SECTIONS.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))) return true;
-  return PROTECTED_SUBSECTIONS.some((prefix) => pathname.startsWith(`${prefix}/`));
+  return requiresLogin(pathname);
 }

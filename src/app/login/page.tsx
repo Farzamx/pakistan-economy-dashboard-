@@ -2,24 +2,32 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import AuthShell from "@/components/auth/AuthShell";
-import LoginForm from "@/components/auth/LoginForm";
+import LoginRequiredNotice from "@/components/auth/LoginRequiredNotice";
+import LoginForm, { type LoginNotice } from "@/components/auth/LoginForm";
 import { T } from "@/components/T";
+import { requiresLogin, safeRedirectPath } from "@/lib/accessPolicy";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
   title: "Log In — Pakistan Economic Intelligence Center",
-  description: "Sign in to access Comparisons, the Federal Budget Workshop, and the Provincial Budget Workshop.",
+  description: "Log in to open the Pakistan Economic Intelligence Center dashboards, indicators, workshops and tools.",
   robots: { index: false, follow: false },
 };
 
 interface PageProps {
-  searchParams: Promise<{ redirect?: string; confirm?: string }>;
+  searchParams: Promise<{ redirect?: string; confirm?: string; error?: string; reset?: string }>;
 }
 
 export default async function LoginPage({ searchParams }: PageProps) {
   const params = await searchParams;
-  const redirectTo = params.redirect ?? "/";
+  // Where to go after signing in. Only a path on this site is accepted (open-redirect guard); anything else falls back to the Overview.
+  const redirectTo = safeRedirectPath(params.redirect);
+  // The notice appears only when a guest was sent here from a protected page (not for a plain visit, and not for a redirect to an open page).
+  const loginRequired = params.redirect !== undefined && requiresLogin(redirectTo);
+  const toSignup = params.redirect !== undefined ? `/signup?redirect=${encodeURIComponent(redirectTo)}` : "/signup";
   const confirmed = params.confirm === "1";
+  // One notice at most, and only for the exact values the app itself sends (never the raw query text): a failed e-mail link, or a finished password change.
+  const notice: LoginNotice = params.error === "auth-callback-failed" ? "callback-failed" : params.reset === "1" ? "password-updated" : null;
 
   // Found live during the authenticated-user navigation audit: pressing
   // Back after a successful login lands here (it's a real browser-history
@@ -39,13 +47,14 @@ export default async function LoginPage({ searchParams }: PageProps) {
       footer={
         <>
           <T tKey="auth.noAccountLink" />{" "}
-          <Link href="/signup" className="font-medium text-neon-blue hover:underline">
+          <Link href={toSignup} className="font-medium text-neon-blue hover:underline">
             <T tKey="auth.createOneLink" />
           </Link>
         </>
       }
     >
-      <LoginForm redirectTo={redirectTo} confirmed={confirmed} />
+      {loginRequired && <LoginRequiredNotice destination={redirectTo} />}
+      <LoginForm redirectTo={redirectTo} confirmed={confirmed} notice={notice} />
     </AuthShell>
   );
 }

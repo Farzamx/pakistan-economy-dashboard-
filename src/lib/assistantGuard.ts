@@ -1,7 +1,7 @@
 // Safeguards for the two anonymous, paid-model endpoints the Overview page embeds: /api/assistant and /api/assistant/translate (G.15).
 //
-// WHY. With the Overview-only access policy (accessPolicy.ts) these are the only open endpoints that spend money on a visitor's behalf (a Tavily search and an AI
-// model chain, ending in a billed Groq backstop), and there is no login to tie a visitor to an account. Before this file they had no size limit, no rate limit,
+// WHY. Under the access policy (accessPolicy.ts) these are the only endpoints open to guests that spend money on a visitor's behalf (a Tavily search and an AI
+// model chain, ending in a billed Groq backstop), and a guest has no account to tie a request to. Before this file they had no size limit, no rate limit,
 // no origin check, and trusted the client-sent dashboard context and chat history verbatim (injected into the system prompt, roles included).
 //
 // WHAT. Narrow, in-process safeguards that need no login, no database and no new dependency:

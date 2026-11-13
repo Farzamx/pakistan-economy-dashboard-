@@ -5,9 +5,9 @@ import { COMPARISONS, SECTOR_COMPOSITION } from "@/lib/comparisons/comparisonReg
 import { BUDGET_CATEGORIES, BUDGET_EXTRA_SEO_SLUGS } from "@/lib/budget/budgetRegistry";
 import { PROVINCIAL_SEO_SLUGS } from "@/lib/provincial/provincialBudgetRegistry";
 
-// ACCESS POLICY (G.14): only the Overview page is public, so the sitemap that is PUBLISHED lists only the Overview (see the default export at the bottom). The
-// complete list is kept in fullSitemap() so a closed section can be reopened; it is never served. A sitemap that advertised a closed URL would point crawlers at
-// a redirect.
+// ACCESS POLICY (G.20): every page except the Overview and the landing page needs a sign-in, so the sitemap that is PUBLISHED lists only those (see the default
+// export at the bottom). The complete list is kept in fullSitemap() so a section can be opened to the public later; it is never served. A sitemap that
+// advertised a protected URL would only point crawlers at the sign-in page.
 export async function fullSitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
 
@@ -86,7 +86,7 @@ export async function fullSitemap(): Promise<MetadataRoute.Sitemap> {
   ];
 }
 
-/** What is published at /sitemap.xml: the complete list, reduced to the pages the access policy opens (today, the Overview alone). */
+/** What is published at /sitemap.xml: the complete list, reduced to the pages open to everyone (the Overview and the landing page). */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   return (await fullSitemap()).filter((entry) => isPublicUrl(entry.url));
 }
