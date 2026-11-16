@@ -68,6 +68,15 @@ export function normalizeDatesInText(text: string): string {
     .replace(new RegExp(`\\b(${MONTH_ALT}) (\\d{1,2})\\b(?!,)`, "g"), "$2 $1");
 }
 
+/**
+ * Drops the word "interbank" from a Yahoo FX change string ("-0.03 vs prev close · interbank Nov 16, 2026"). The USDPKR=X / EURPKR=X / GBPPKR=X
+ * quotes (fxRates.ts) are market quotes, not SBP interbank rates; the word comes from the change-string template, not from the data.
+ */
+export function dropInterbank(change: string | null | undefined): string | undefined {
+  if (!change) return undefined;
+  return change.replace(/\s*\binterbank\b\s*/i, " ").replace(/\s+/g, " ").replace(/·\s*·/, "·").trim().replace(/^·\s*/, "");
+}
+
 export const DIRECTION_GLYPH: Record<ChangeDirection, string> = { up: "▲", down: "▼", flat: "◆" };
 
 /** Today's date in Pakistan, "YYYY-MM-DD". */

@@ -4,7 +4,7 @@
 import { describe, expect, it } from "vitest";
 import type { IntelligenceSignal } from "@/lib/intelligence/types";
 import { buildMacroSummary } from "./macroSummary";
-import { addDays, cleanSourceName, endOfWeek, extractMonthYear, formatHeadlineTime, formatObservation, formatShortDay, pktDateIso, splitChange } from "./overviewFormat";
+import { addDays, cleanSourceName, dropInterbank, endOfWeek, extractMonthYear, formatHeadlineTime, formatObservation, formatShortDay, pktDateIso, splitChange } from "./overviewFormat";
 import { buildReleaseRows, groupReleaseRows, nextReleaseBySeries, type ReleaseEventInput } from "./releaseGroups";
 import { splitComparison, statusFor } from "./valueDisplay";
 
@@ -65,6 +65,16 @@ describe("change strings: direction is a glyph, not a colour", () => {
     expect(splitChange("YoY change")).toBeNull();
     expect(splitChange("No prior period")).toBeNull();
     expect(splitChange(undefined)).toBeNull();
+  });
+});
+
+describe("FX market quotes are not labelled interbank", () => {
+  it("drops the word from both shapes of the Yahoo FX change string (fxRates.ts)", () => {
+    expect(dropInterbank("-0.03 vs prev close · interbank Nov 16, 2026")).toBe("-0.03 vs prev close · Nov 16, 2026");
+    expect(splitChange(dropInterbank("-0.03 vs prev close · interbank Nov 16, 2026"))?.text).toBe("0.03 vs prev close · 16 Nov 2026");
+    expect(dropInterbank("interbank · Nov 16, 2026")).toBe("Nov 16, 2026");
+    expect(dropInterbank("+1.25 vs prev close")).toBe("+1.25 vs prev close");
+    expect(dropInterbank(undefined)).toBeUndefined();
   });
 });
 

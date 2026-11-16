@@ -14,7 +14,7 @@ import IndicatorsTable from "@/components/home/IndicatorsTable";
 import { buildIndicatorRows, INDICATOR_CALENDAR_SERIES, slugForKpi } from "@/components/home/buildHomeData";
 import { toNumericValue } from "@/components/home/indicatorRows";
 import { buildMacroSummary } from "@/components/home/macroSummary";
-import { cleanSourceName, formatLongDate, formatObservation, pktDateIso } from "@/components/home/overviewFormat";
+import { cleanSourceName, dropInterbank, formatLongDate, formatObservation, pktDateIso } from "@/components/home/overviewFormat";
 import { buildReleaseRows, groupReleaseRows, nextReleaseBySeries } from "@/components/home/releaseGroups";
 import { statusFor } from "@/components/home/valueDisplay";
 import { getFreshnessStatus } from "@/lib/dataFreshness";
@@ -543,7 +543,7 @@ export default async function Home() {
               value: fxRates.usdPkr.value,
               unit: fxRates.usdPkr.unit,
               // The provider's change string names the rate "interbank"; this tile is the market quote, so the word is dropped here.
-              change: fxRates.usdPkr.change?.replace(/\s*\binterbank\b\s*/i, " ").trim(),
+              change: dropInterbank(fxRates.usdPkr.change),
               period: formatObservation(fxRates.usdPkr.latestDate, "Daily"),
               source: cleanSourceName(fxRates.usdPkr.source),
               footnote: "trend: SBP monthly average",
@@ -637,8 +637,9 @@ export default async function Home() {
       marketCell("KSE-100 proxy (PAK ETF)", pakEtfKpi, "Daily"),
       marketCell("Gold", goldKpi, "Daily"),
       marketCell("Brent crude", brentKpi, "Daily"),
-      marketCell("EUR/PKR", fxRates.eurPkr, "Daily"),
-      marketCell("GBP/PKR", fxRates.gbpPkr, "Daily"),
+      // Yahoo market quotes like USD/PKR (EURPKR=X, GBPPKR=X), not interbank rates: the template's "interbank" is dropped here too.
+      { ...marketCell("EUR/PKR", fxRates.eurPkr, "Daily"), change: dropInterbank(fxRates.eurPkr.change) },
+      { ...marketCell("GBP/PKR", fxRates.gbpPkr, "Daily"), change: dropInterbank(fxRates.gbpPkr.change) },
     ],
     "markets",
   ) ?? [];
