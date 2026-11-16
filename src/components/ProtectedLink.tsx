@@ -10,7 +10,7 @@
 // common case — most of these destinations are public), so it's always
 // safe to use here instead of <Link>. When `href` IS protected and the
 // visitor is signed out, it intercepts the click and shows the same
-// GuestAccessModal Sidebar.tsx/MobileNav.tsx/ProvincialQuickAccess.tsx
+// GuestAccessModal Sidebar.tsx/MobileNav.tsx
 // already use, rather than letting proxy.ts's server-side redirect be the
 // only thing standing between a guest and the login wall (which works, but
 // skips the in-app modal UX every other entry point gets).

@@ -2,13 +2,12 @@
 // Everything tested here is display/selection logic over values the data
 // layer already produced; no economic figure is computed in these modules,
 // so these tests pin exactly the rules a reader depends on: that missing
-// data never reads as zero, and that a change string's direction is taken
-// from the change itself. (The release calendar's date rules are tested in
-// overviewRedesign.test.ts.)
+// data never reads as zero, and that sorting and filtering are stable. (The
+// release calendar's date rules and a change string's direction are tested
+// in overviewRedesign.test.ts.)
 
 import { describe, it, expect } from "vitest";
 import { matchesQuery, sortRows, toNumericValue, type IndicatorRow } from "./indicatorRows";
-import { changeTone } from "./valueDisplay";
 
 // ── Indicators table: sorting, filtering, missing data ────────────────────
 describe("indicators table logic", () => {
@@ -96,29 +95,5 @@ describe("indicators table logic", () => {
     it("does not match unrelated text", () => {
       expect(matchesQuery(r, "remittances")).toBe(false);
     });
-  });
-});
-
-// ── Change direction ──────────────────────────────────────────────────────
-describe("changeTone", () => {
-  it("takes direction from the change string's own sign", () => {
-    expect(changeTone("+0.5 pp vs Aug 2026")).toBe("up");
-    expect(changeTone("-0.8 pp vs Aug 2026")).toBe("down");
-    expect(changeTone("0.0 vs last week")).toBe("flat");
-  });
-
-  it("an unsigned number reads as a rise, matching the existing ticker convention", () => {
-    expect(changeTone("1.2 vs last month")).toBe("up");
-  });
-
-  it("returns null when there is no leading number, so no arrow is invented", () => {
-    expect(changeTone("YoY change")).toBeNull();
-    expect(changeTone("No prior period")).toBeNull();
-    expect(changeTone(undefined)).toBeNull();
-    expect(changeTone("")).toBeNull();
-  });
-
-  it("ignores a number that is not at the start (e.g. a date in the label)", () => {
-    expect(changeTone("vs Aug 2026")).toBeNull();
   });
 });

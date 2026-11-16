@@ -2,35 +2,15 @@
 // (PEIC redesign Phase 3). Server-compatible (no hooks).
 //
 // Every helper here is display-only: it formats values that other code has
-// already computed and never derives an economic figure of its own. The one
-// piece of logic is parsing the leading signed number out of an existing
-// `Kpi.change` string (e.g. "-0.8 pp vs Aug 2026") to decide whether the
-// change reads as up, down or flat — the identical approach makeTickerItem()
-// in the overview page already uses, kept consistent so one change string can
-// never render as "up" in one place and "down" in another.
+// already computed and never derives an economic figure of its own. A change's
+// direction is read from the change string's own leading sign (splitChange in
+// overviewFormat.ts), never from `Kpi.trend`, so one change string can never
+// render as "up" in one place and "down" in another.
 
 import type { FreshnessResult } from "@/lib/freshness/freshnessEngine";
 import { DIRECTION_GLYPH, splitChange } from "./overviewFormat";
 
 export type ChangeTone = "up" | "down" | "flat";
-
-/**
- * The direction encoded in a `Kpi.change` string, or null when the string
- * carries no leading number (e.g. "YoY change", "No prior period").
- *
- * Deliberately NOT `Kpi.trend`: for growth-rate indicators trend means "the
- * level is positive/negative", which can disagree with the direction of the
- * latest move (LSM can have trend="up" while change="-5.1 pp vs last month").
- * The change string is always a delta against the previous period.
- */
-export function changeTone(change: string | undefined): ChangeTone | null {
-  if (!change) return null;
-  const m = change.trim().match(/^([+-]?\d+(?:\.\d+)?)/);
-  if (!m) return null;
-  const n = Number(m[1]);
-  if (!Number.isFinite(n)) return null;
-  return n > 0 ? "up" : n < 0 ? "down" : "flat";
-}
 
 const DIRECTION_WORD: Record<ChangeTone, string> = { up: "Up", down: "Down", flat: "Unchanged" };
 

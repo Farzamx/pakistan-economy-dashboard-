@@ -1,5 +1,5 @@
 // "Which sections require a signed-in user" — the answer now lives in ONE place, src/lib/accessPolicy.ts (G.20). This module keeps the name the original
-// consumers import (Sidebar-era components, the shell's useGuestGate, ProtectedLink, GlobalSearch, MobileNav, ProvincialQuickAccess, the Decision Lab tool
+// consumers import (Sidebar-era components, the shell's useGuestGate, ProtectedLink, GlobalSearch, MobileNav, the Decision Lab tool
 // cards) and simply asks the policy, so none of them can drift from src/proxy.ts's server-side enforcement.
 //
 // At commit 04acfd4 this file held a short list (Comparisons, Budget and Provincial Budget hubs, the Economic Calendar, the Decision Lab calculators and

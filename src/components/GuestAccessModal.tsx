@@ -11,7 +11,7 @@
 // UI. proxy.ts is still the real enforcement (direct URL visits without
 // this modal still redirect to /login) — this is purely the better-UX path
 // for the common case. Rendered from many places now: Sidebar.tsx,
-// MobileNav.tsx, ProvincialQuickAccess.tsx, and every ProtectedLink.tsx
+// MobileNav.tsx, and every ProtectedLink.tsx
 // instance (each owns its own small modal instance rather than sharing one).
 
 import { useEffect } from "react";
