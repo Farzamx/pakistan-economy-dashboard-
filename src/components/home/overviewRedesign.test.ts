@@ -6,7 +6,7 @@ import type { IntelligenceSignal } from "@/lib/intelligence/types";
 import { buildMacroSummary } from "./macroSummary";
 import { addDays, cleanSourceName, endOfWeek, extractMonthYear, formatHeadlineTime, formatObservation, formatShortDay, pktDateIso, splitChange } from "./overviewFormat";
 import { buildReleaseRows, groupReleaseRows, nextReleaseBySeries, type ReleaseEventInput } from "./releaseGroups";
-import { statusFor } from "./valueDisplay";
+import { splitComparison, statusFor } from "./valueDisplay";
 
 describe("one date format", () => {
   it("monthly series show the month, never a month-end day", () => {
@@ -68,15 +68,27 @@ describe("change strings: direction is a glyph, not a colour", () => {
   });
 });
 
+describe("change colour applies to the figure, not the comparison", () => {
+  it("splits the figure from the comparison text", () => {
+    expect(splitComparison("0.50 pp vs 28 Apr 2026")).toEqual({ figure: "0.50 pp", comparison: "vs 28 Apr 2026" });
+    expect(splitComparison("0.03 vs prev close · 16 Nov 2026")).toEqual({ figure: "0.03", comparison: "vs prev close · 16 Nov 2026" });
+    expect(splitComparison("1.9%")).toEqual({ figure: "1.9%", comparison: null });
+  });
+});
+
 describe("status", () => {
-  it("names the freshness engine's verdict; a release on today's calendar is Due today unless the series is already stale", () => {
+  it("names the freshness engine's verdict", () => {
     expect(statusFor("current", false)).toEqual({ tone: "current", label: "Current" });
-    expect(statusFor("current", true)).toEqual({ tone: "due", label: "Due today" });
     expect(statusFor("delayed-release", false)).toEqual({ tone: "delayed", label: "Delayed" });
     expect(statusFor("ingestion-lagging", false).label).toBe("Delayed");
-    expect(statusFor("stale", true)).toEqual({ tone: "stale", label: "Stale" });
+    expect(statusFor("stale", false)).toEqual({ tone: "stale", label: "Stale" });
     expect(statusFor("source-unavailable", false).tone).toBe("stale");
     expect(statusFor(undefined, false).label).toBe("Current");
+  });
+  it("a series with a release on today's calendar is Due today whatever its freshness state (Trade Balance and LSM were showing Stale)", () => {
+    for (const state of ["current", "stale", "delayed-release", "ingestion-lagging", "source-unavailable", undefined] as const) {
+      expect(statusFor(state, true)).toEqual({ tone: "due", label: "Due today" });
+    }
   });
 });
 
@@ -189,14 +201,35 @@ describe("macro summary template", () => {
     expect(s.sentences[0]).toBe("CPI inflation was 9.6% in Oct 2026 against a 12.00% policy rate, a real policy rate of +2.4 pp.");
   });
 
-  it("marks stale and annual inputs on the row, in sentence case with a direction glyph", () => {
-    const s = buildMacroSummary(signals, { growth: { text: "GDP growth 2.5% · 2025", note: "annual data" } }, {});
+  it("marks annual inputs and the page's own stale status on the row, in sentence case with a direction glyph", () => {
+    const s = buildMacroSummary(
+      signals,
+      { growth: { text: "GDP growth 2.5% · 2025", note: "annual data", status: { tone: "stale" } }, inflation: { text: "CPI 9.6%", status: { tone: "delayed" } } },
+      {},
+    );
     const growth = s.rows.find((r) => r.id === "growth")!;
     expect(growth.state).toBe("Accelerating");
     expect(growth.caution).toBe("annual data · stale input");
     expect(growth.glyph).toBe("▲");
-    expect(s.rows.find((r) => r.id === "inflation")?.caution).toBeNull();
+    expect(s.rows.find((r) => r.id === "inflation")?.caution).toBe("delayed input");
     expect(s.rows.find((r) => r.id === "monetary-policy")?.label).toBe("Monetary policy");
+  });
+
+  it("takes freshness ONLY from the page's status for the series it names, never from the engine's other evidence", () => {
+    // The growth signal above carries evidence with availability "Stale"; the page says its input is current (or gives no status): no caution.
+    const current = buildMacroSummary(signals, { growth: { text: "GDP growth 2.5% · 2025", status: { tone: "current" } } }, {});
+    expect(current.rows.find((r) => r.id === "growth")?.caution).toBeNull();
+    const none = buildMacroSummary(signals, { growth: { text: "GDP growth 2.5% · 2025" } }, {});
+    expect(none.rows.find((r) => r.id === "growth")?.caution).toBeNull();
+    // A release due today is not a caution: the new figure is expected, the strip and table already say "Due today".
+    const due = buildMacroSummary(signals, { growth: { text: "x", status: { tone: "due" } } }, {});
+    expect(due.rows.find((r) => r.id === "growth")?.caution).toBeNull();
+  });
+
+  it("Mixed and a policy hold are not directions: they take the neutral glyph whatever the direction field says", () => {
+    const s = buildMacroSummary([sig("market-stress", "Market Stress", "mixed", "Falling"), sig("monetary-policy", "Monetary Policy", "held", "Rising")], {}, {});
+    expect(s.rows.find((r) => r.id === "market-stress")?.glyph).toBe("◆");
+    expect(s.rows.find((r) => r.id === "monetary-policy")?.glyph).toBe("◆");
   });
 
   it("is identical for identical inputs (no randomness, no clock)", () => {

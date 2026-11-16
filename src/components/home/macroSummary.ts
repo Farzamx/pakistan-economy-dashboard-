@@ -14,7 +14,17 @@ export interface DimensionInput {
   text: string;
   /** A note shown in the warning colour, e.g. "annual data". */
   note?: string;
+  /**
+   * The page's status for the series named in `text`: the SAME statusFor() result its tile, strip cell or table row shows. The card never judges
+   * freshness on its own, so it cannot call an input stale that the rest of the page calls current.
+   */
+  status?: { tone: "current" | "due" | "delayed" | "stale" };
 }
+
+const CAUTION_BY_TONE: Partial<Record<"current" | "due" | "delayed" | "stale", string>> = { stale: "stale input", delayed: "delayed input" };
+
+/** States that describe no direction: they take the neutral glyph whatever the engine's arithmetic direction field says. */
+const NON_DIRECTIONAL_STATES = new Set(["mixed", "held"]);
 
 export interface MacroRow {
   id: string;
@@ -92,15 +102,18 @@ export function buildMacroSummary(signals: readonly IntelligenceSignal[], inputs
 
   const rows: MacroRow[] = rated.map((signal) => {
     const input = inputs[signal.id];
-    const stale = signal.evidence.some((e) => e.availability === "Stale");
-    const cautions = [input?.note, stale ? "stale input" : null].filter((c): c is string => Boolean(c));
+    // Not signal.evidence[].availability: a dimension rests on several series (external sector: six) and the engine leaves stale ones out of the
+    // rating altogether, so "any evidence stale" flagged series the row does not show and the rating did not use.
+    const statusCaution = input?.status ? CAUTION_BY_TONE[input.status.tone] : undefined;
+    const cautions = [input?.note, statusCaution].filter((c): c is string => Boolean(c));
+    const direction: ChangeDirection = NON_DIRECTIONAL_STATES.has(signal.state) ? "flat" : (DIRECTION[signal.direction] ?? "flat");
     return {
       id: signal.id,
       label: sentenceCase(signal.label),
       input: input?.text ?? null,
       caution: cautions.length > 0 ? cautions.join(" · ") : null,
       state: readableState(signal.state),
-      glyph: DIRECTION_GLYPH[DIRECTION[signal.direction] ?? "flat"],
+      glyph: DIRECTION_GLYPH[direction],
     };
   });
 

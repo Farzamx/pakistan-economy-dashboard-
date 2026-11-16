@@ -109,6 +109,8 @@ export interface KeyFigure {
   /** A second mono line, e.g. "trend: SBP monthly average". */
   footnote?: string;
   sparkline: number[];
+  /** Draw the sparkline as a step line (a series that moves in discrete steps, e.g. the policy rate). */
+  stepped?: boolean;
   /** Existing indicator page; empty when there is none. */
   href: string;
   /** Shown only when the figure is not current. */
@@ -136,7 +138,7 @@ export function KeyFigureTiles({ tiles }: { tiles: KeyFigure[] }) {
             </span>
             <ChangeValue change={tile.change} className="mt-2 text-[13px]" />
             <span className="mt-3 block min-h-8 flex-1 max-lg:hidden">
-              <Sparkline values={tile.sparkline} label={`${tile.label}: last ${tile.sparkline.length} observations`} />
+              <Sparkline values={tile.sparkline} step={tile.stepped} label={`${tile.label}: last ${tile.sparkline.length} observations`} />
             </span>
             <span className="mt-3 block font-mono text-[11px] leading-relaxed text-pe-text-3">
               {tile.period} · {tile.source}
@@ -182,7 +184,8 @@ export function SecondaryStrip({ cells }: { cells: SecondaryFigure[] }) {
       {cells.map((cell) => {
         const note = (
           <span className={`text-[12px] ${cell.noteTone ? NOTE_CLASS[cell.noteTone] : "text-pe-text-3"}`}>
-            {cell.change && !cell.noteTone && <ChangeValue change={cell.change} className="text-[12px]" />}
+            {/* Compact: the glyph and figure only ("▼ 0.8 pp · Oct 2026"). The comparison would wrap the period onto a second line in a sixth-width cell. */}
+            {cell.change && !cell.noteTone && <ChangeValue change={cell.change} compact className="text-[12px]" />}
             {cell.change && !cell.noteTone && cell.note ? " · " : ""}
             {cell.note}
           </span>

@@ -11,7 +11,7 @@ import { KeyFigureTiles, MacroSummaryCard, MarketsStrip, OverviewHeader, Seconda
 import { OverviewHeadlines, ReleaseCalendar } from "@/components/home/OverviewFeeds";
 import { ExplorePlatform, OverviewFooter } from "@/components/home/ExplorePlatform";
 import IndicatorsTable from "@/components/home/IndicatorsTable";
-import { buildIndicatorRows, slugForKpi } from "@/components/home/buildHomeData";
+import { buildIndicatorRows, INDICATOR_CALENDAR_SERIES, slugForKpi } from "@/components/home/buildHomeData";
 import { toNumericValue } from "@/components/home/indicatorRows";
 import { buildMacroSummary } from "@/components/home/macroSummary";
 import { cleanSourceName, formatLongDate, formatObservation, pktDateIso } from "@/components/home/overviewFormat";
@@ -43,7 +43,7 @@ import { getSpiHistory } from "@/lib/data/spi";
 import { type RiskModelResult } from "@/lib/riskModels";
 import { getHealthStatus, healthLabelToRiskLevel, type HealthModelResult } from "@/lib/economicHealth";
 import type { Kpi } from "@/data/kpiData";
-import type { SbpIndicatorResult } from "@/lib/data/sbp";
+import type { SbpIndicatorKey, SbpIndicatorResult } from "@/lib/data/sbp";
 import type { FreshnessResult } from "@/lib/freshness/freshnessEngine";
 
 const OVERVIEW_URL = `${SITE_URL}/overview`;
@@ -522,20 +522,28 @@ export default async function Home() {
 
   const nextBySeries = guard(() => nextReleaseBySeries(scheduledCalendarEvents, todayIso), "calendar") ?? new Map<string, string>();
   const next = (slug: string) => nextBySeries.get(slug);
+  // One status per SBP series, from the same freshness result and the same calendar map the indicators table uses, so the macro card can never
+  // call a series stale that the table and strip show as current (or the reverse).
+  const statusOfKey = (key: SbpIndicatorKey) => {
+    const slug = INDICATOR_CALENDAR_SERIES[key];
+    return statusFor(sbp[key].meta.freshness.state, slug !== undefined && next(slug) === todayIso);
+  };
 
   // 2b. Key figures. USD/PKR shows the live market quote; its sparkline is SBP's monthly average, the only history in scope for this pair.
   const keyFigures: KeyFigure[] = guard(
     () =>
       [
         tileFor("cpi", "CPI inflation, YoY", sbp.cpiInflation, next("cpi-inflation-release")),
-        tileFor("policy-rate", "SBP policy rate", sbp.policyRate, next("sbp-monetary-policy-committee-meeting")),
+        // The policy rate moves in discrete steps at MPC decisions: drawn as a step line, not a slope between meetings.
+        tileFor("policy-rate", "SBP policy rate", sbp.policyRate, next("sbp-monetary-policy-committee-meeting"), { stepped: true }),
         slugForKpi("USD / PKR")
           ? {
               id: "usd-pkr",
               label: "USD/PKR, market quote",
               value: fxRates.usdPkr.value,
               unit: fxRates.usdPkr.unit,
-              change: fxRates.usdPkr.change,
+              // The provider's change string names the rate "interbank"; this tile is the market quote, so the word is dropped here.
+              change: fxRates.usdPkr.change?.replace(/\s*\binterbank\b\s*/i, " ").trim(),
               period: formatObservation(fxRates.usdPkr.latestDate, "Daily"),
               source: cleanSourceName(fxRates.usdPkr.source),
               footnote: "trend: SBP monthly average",
@@ -563,16 +571,19 @@ export default async function Home() {
       buildMacroSummary(
         macroIntelligenceReport.signals,
         {
-          inflation: { text: `CPI ${sbp.cpiInflation.kpi.value}% · ${formatObservation(sbp.cpiInflation.meta.observationDate, "Monthly")}` },
-          "monetary-policy": { text: `Policy rate ${sbp.policyRate.kpi.value}% · ${formatObservation(sbp.policyRate.meta.observationDate, "Daily")}` },
-          "external-sector": { text: `Remittances ${sbp.remittances.kpi.value}${sbp.remittances.kpi.unit} · ${formatObservation(sbp.remittances.meta.observationDate, "Monthly")}` },
-          "liquidity-credit": { text: `M2 ${sbp.moneySupplyM2.kpi.value}${sbp.moneySupplyM2.kpi.unit} · ${formatObservation(sbp.moneySupplyM2.meta.observationDate, "Monthly")}` },
-          "fiscal-conditions": { text: `Fiscal balance ${sbp.fiscalBalance.kpi.value}${sbp.fiscalBalance.kpi.unit} · ${formatObservation(sbp.fiscalBalance.meta.observationDate, "Annual")}` },
+          // Each row names one series and carries THAT series' page status (statusOfKey), the same one its tile, strip cell or table row shows.
+          inflation: { text: `CPI ${sbp.cpiInflation.kpi.value}% · ${formatObservation(sbp.cpiInflation.meta.observationDate, "Monthly")}`, status: statusOfKey("cpiInflation") },
+          "monetary-policy": { text: `Policy rate ${sbp.policyRate.kpi.value}% · ${formatObservation(sbp.policyRate.meta.observationDate, "Daily")}`, status: statusOfKey("policyRate") },
+          "external-sector": { text: `Remittances ${sbp.remittances.kpi.value}${sbp.remittances.kpi.unit} · ${formatObservation(sbp.remittances.meta.observationDate, "Monthly")}`, status: statusOfKey("remittances") },
+          "liquidity-credit": { text: `M2 ${sbp.moneySupplyM2.kpi.value}${sbp.moneySupplyM2.kpi.unit} · ${formatObservation(sbp.moneySupplyM2.meta.observationDate, "Monthly")}`, status: statusOfKey("moneySupplyM2") },
+          "fiscal-conditions": { text: `Fiscal balance ${sbp.fiscalBalance.kpi.value}${sbp.fiscalBalance.kpi.unit} · ${formatObservation(sbp.fiscalBalance.meta.observationDate, "Annual")}`, status: statusOfKey("fiscalBalance") },
           // The classifier reads World Bank annual GDP growth only (not LSM). Marked as annual so it is not read as a current monthly signal.
           growth: gdpEvidence && gdpEvidence.value !== null
             ? { text: `GDP growth ${gdpEvidence.value.toFixed(1)}% · ${formatObservation(gdpEvidence.observationPeriod, "Monthly").replace(/^[A-Z][a-z]{2} /, "")}`, note: "annual data" }
             : { text: `GDP growth (World Bank) · ${gdpKpi.latestDate ?? ""}`.trim(), note: "annual data" },
-          "market-stress": { text: `USD/PKR ${fxRates.usdPkr.value} · ${formatObservation(fxRates.usdPkr.latestDate, "Daily")}` },
+          // Market stress is classified from gold and the SBP MONTHLY-AVERAGE USD/PKR (macroIntelligence.ts), not the daily market quote in the tile,
+          // so the row names that series, with the status the table's "USD/PKR, SBP monthly average" row shows.
+          "market-stress": { text: `USD/PKR monthly avg ${sbp.usdPkr.kpi.value} · ${formatObservation(sbp.usdPkr.meta.observationDate, "Monthly")}`, status: statusOfKey("usdPkr") },
         },
         {
           cpi: { value: sbp.cpiInflation.kpi.value, period: formatObservation(sbp.cpiInflation.meta.observationDate, "Monthly") },
