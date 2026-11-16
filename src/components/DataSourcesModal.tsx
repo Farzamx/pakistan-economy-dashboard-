@@ -11,6 +11,8 @@ import { useLanguage } from "@/components/LanguageProvider";
 
 interface Props {
   kpis: Kpi[];
+  /** "footer": a plain tokenised link for the Overview footer (legible in both themes). Default: the original bordered button. */
+  appearance?: "default" | "footer";
 }
 
 // Static entries for sources that don't produce Kpi objects. Corrected per
@@ -25,7 +27,7 @@ const STATIC_ENTRIES = [
   { indicator: "AI Sentiment", source: "OpenRouter (free-tier models) + Groq", seriesId: "gpt-oss-20b/120b, Hermes 3 405B, Groq gpt-oss-120b", latestDate: undefined, frequency: undefined },
 ] as const;
 
-export default function DataSourcesModal({ kpis }: Props) {
+export default function DataSourcesModal({ kpis, appearance = "default" }: Props) {
   const [open, setOpen] = useState(false);
   const overlayRef = useRef<HTMLDivElement>(null);
   const { theme } = useTheme();
@@ -50,13 +52,17 @@ export default function DataSourcesModal({ kpis }: Props) {
 
   return (
     <>
-      {/* Trigger button — rendered inline in the hero right slot */}
+      {/* Trigger button. The "footer" appearance uses the page's tokens so it is legible in both themes; the default keeps the original look. */}
       <button
         onClick={() => setOpen(true)}
-        className="flex items-center gap-1.5 rounded-lg border border-[#38bdf8]/20 px-3 py-1.5 text-[11px] font-medium text-[#38bdf8]/55 transition-all hover:border-[#38bdf8]/45 hover:text-[#38bdf8]/90 hover:bg-[#38bdf8]/5"
+        className={
+          appearance === "footer"
+            ? "inline-flex min-h-11 items-center text-[12px] font-medium text-pe-accent hover:underline"
+            : "flex items-center gap-1.5 rounded-lg border border-[#38bdf8]/20 px-3 py-1.5 text-[11px] font-medium text-[#38bdf8]/55 transition-all hover:border-[#38bdf8]/45 hover:text-[#38bdf8]/90 hover:bg-[#38bdf8]/5"
+        }
         aria-label="Open data sources audit table"
       >
-        <span className="text-[9px] opacity-70">⬡</span>
+        {appearance !== "footer" && <span className="text-[9px] opacity-70">⬡</span>}
         {t("modal.dsTitle")}
       </button>
 

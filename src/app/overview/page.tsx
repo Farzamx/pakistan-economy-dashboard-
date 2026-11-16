@@ -1,28 +1,25 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { SITE_URL, SITE_NAME } from "@/lib/seoConfig";
 import DataSourcesModal from "@/components/DataSourcesModal";
 import FloatingAssistant from "@/components/assistant/FloatingAssistant";
 import type { DashboardSnapshot } from "@/lib/assistantContext";
 import { buildMacroIntelligenceReport } from "@/lib/intelligence/macroIntelligence";
-import ProvincialQuickAccess from "@/components/ProvincialQuickAccess";
-import PopularInsights from "@/components/PopularInsights";
 import Sidebar from "@/components/Sidebar";
 import HashScrollRestore from "@/components/HashScrollRestore";
-// Phase 3 homepage — presentation components over data this page already fetches.
-import Section from "@/components/shell/Section";
-import MarketsPanel, { type MarketRow } from "@/components/home/MarketsPanel";
-import PakistanSnapshot from "@/components/home/PakistanSnapshot";
-import HeadlinesList from "@/components/home/HeadlinesList";
-import LatestNewsBody from "@/components/home/LatestNewsBody";
-import UpcomingReleases, { type UpcomingRow } from "@/components/home/UpcomingReleases";
-import MacroBrief from "@/components/home/MacroBrief";
+// Overview sections: presentation components over data this page already fetches.
+import { KeyFigureTiles, MacroSummaryCard, MarketsStrip, OverviewHeader, SecondaryStrip, type KeyFigure, type MarketCell, type SecondaryFigure } from "@/components/home/OverviewSummary";
+import { OverviewHeadlines, ReleaseCalendar } from "@/components/home/OverviewFeeds";
+import { ExplorePlatform, OverviewFooter } from "@/components/home/ExplorePlatform";
 import IndicatorsTable from "@/components/home/IndicatorsTable";
-import ExploreLinks from "@/components/home/ExploreLinks";
-import { buildIndicatorRows, buildSnapshotTiles, slugForKpi } from "@/components/home/buildHomeData";
+import { buildIndicatorRows, slugForKpi } from "@/components/home/buildHomeData";
+import { toNumericValue } from "@/components/home/indicatorRows";
+import { buildMacroSummary } from "@/components/home/macroSummary";
+import { cleanSourceName, formatLongDate, formatObservation, pktDateIso } from "@/components/home/overviewFormat";
+import { buildReleaseRows, groupReleaseRows, nextReleaseBySeries } from "@/components/home/releaseGroups";
+import { statusFor } from "@/components/home/valueDisplay";
 import { getFreshnessStatus } from "@/lib/dataFreshness";
 import { getTrendDirection } from "@/lib/trendDirection";
-import { getMostRecentEvent, selectUpcomingByDate, valueMatchesEventOutcome } from "@/lib/economicCalendar/economicCalendarData";
+import { getMostRecentEvent, valueMatchesEventOutcome } from "@/lib/economicCalendar/economicCalendarData";
 import { getAllScheduledEvents, getHistoricalEvents, toEconomicEvent } from "@/lib/economicCalendar/economicEventsRepo";
 import type { AiEconomicAnalysis } from "@/lib/data/aiEconomicAnalysis";
 import { getLatestWeeklyIntelligenceSnapshot } from "@/lib/data/weeklyIntelligence";
@@ -38,15 +35,16 @@ import {
   getWtiKpi,
 } from "@/lib/data/fred";
 import { getFxRates } from "@/lib/data/fxRates";
-import { getTaggedNews } from "@/lib/data/intelligence";
 import { getDxyKpi, getGoldKpi, getSilverKpi } from "@/lib/data/metals";
 import { getNews } from "@/lib/data/news";
-import { LATEST_NEWS_MAX_AGE_HOURS, selectFreshHeadlines } from "@/lib/headlineSelection";
+import { selectFreshHeadlines } from "@/lib/headlineSelection";
 import { getPakEtfKpi } from "@/lib/data/yfinance";
 import { getSpiHistory } from "@/lib/data/spi";
 import { type RiskModelResult } from "@/lib/riskModels";
 import { getHealthStatus, healthLabelToRiskLevel, type HealthModelResult } from "@/lib/economicHealth";
 import type { Kpi } from "@/data/kpiData";
+import type { SbpIndicatorResult } from "@/lib/data/sbp";
+import type { FreshnessResult } from "@/lib/freshness/freshnessEngine";
 
 const OVERVIEW_URL = `${SITE_URL}/overview`;
 // Was the root layout's site-wide default metadata when this page was
@@ -118,15 +116,6 @@ export const metadata: Metadata = {
   openGraph: { title: SITE_NAME, description: OVERVIEW_SOCIAL_DESCRIPTION, url: OVERVIEW_URL, siteName: SITE_NAME, type: "website" },
   twitter: { card: "summary_large_image", title: SITE_NAME, description: OVERVIEW_SOCIAL_DESCRIPTION },
 };
-
-/** "17 Jun · 18:00 PKT" — used for the Weekly Intelligence Engine's "computed"/"next update" framing. */
-function formatPktDate(d: Date): string {
-  const opts: Intl.DateTimeFormatOptions = { timeZone: "Asia/Karachi", hour12: false };
-  const day = d.toLocaleString("en-GB", { ...opts, day: "numeric" });
-  const month = d.toLocaleString("en-GB", { ...opts, month: "short" });
-  const time = d.toLocaleString("en-GB", { ...opts, hour: "2-digit", minute: "2-digit" });
-  return `${day} ${month} · ${time} PKT`;
-}
 
 export default async function Home() {
   const [gdpKpi, sbp, netLiquidReserves, goldKpi, silverKpi, brentKpi, wtiKpi, naturalGasKpi, dxyKpi, us10yKpi, fedFundsKpi, newsItems, fxRates, pakEtfKpi, quarterlyGdp, spi, scheduledCalendarEvents, historicalCalendarEvents, macroIntelligenceReport] =
@@ -207,16 +196,6 @@ export default async function Home() {
   });
 
 
-  const pktTimestamp = (() => {
-    const d = new Date();
-    const opts: Intl.DateTimeFormatOptions = { timeZone: "Asia/Karachi", hour12: false };
-    const day = d.toLocaleString("en-GB", { ...opts, day: "numeric" });
-    const month = d.toLocaleString("en-GB", { ...opts, month: "short" });
-    const year = d.toLocaleString("en-GB", { ...opts, year: "numeric" });
-    const time = d.toLocaleString("en-GB", { ...opts, hour: "2-digit", minute: "2-digit" });
-    return `${day} ${month} ${year} · ${time} PKT`;
-  })();
-
   // The recession/default data-confidence inputs that lived here moved to
   // /macro-intelligence with the HealthScoreCard and RiskIntelligenceSection
   // they fed (Phase 4 relocation). The models themselves are unchanged.
@@ -281,11 +260,8 @@ export default async function Home() {
   // "Computed"/"next update" framing replaces the old 6h AI-cache-window
   // copy — this is now a weekly cadence, not a rolling cache.
 
-  // ── Layer 2: News Intelligence — tiered cache (news.ts: 10-25 min by
-  // source; AI tagging via getTaggedNews: 30 min) — see news.ts/
-  // intelligence.ts for the full breakdown from the News & Intelligence audit.
-  const newsSourceCount = new Set(newsItems.map((n) => n.source)).size;
-  const taggedNewsResult = await getTaggedNews(newsItems);
+  // ── Headlines: the news feeds' tiered cache (news.ts: 10-25 min by source). The Overview no longer runs the AI sentiment tagger
+  // (getTaggedNews): nothing on the page shows its output, so the call was dropped rather than paid for silently.
 
   // ── Dashboard Snapshot for Floating AI Assistant ─────────────────────────
   const dashboardSnapshot: DashboardSnapshot = {
@@ -512,236 +488,214 @@ export default async function Home() {
   }
   console.log("======================================\n");
 
-  // ── Phase 3 homepage view-models ─────────────────────────────────────────
-  // Every value below is derived from data already fetched in this function.
-  // No fetch, no cache entry, no recomputation of any economic figure.
+  // ── Overview view-models ─────────────────────────────────────────────────
+  // Every value below is derived from data already fetched in this function. No fetch, no cache entry, no recomputation of an economic figure.
+  // Each section's model is built inside its own guard: if one fails, that section renders its error state and the rest of the page still renders.
 
-  // Markets: the instruments the brief names, each linked to its own existing
-  // detail page via the KPI_SEO_SLUG registry (never a hand-typed route).
-  const homeMarketRows: MarketRow[] = (
-    [
-      ["USD/PKR", fxRates.usdPkr],
-      ["EUR/PKR", fxRates.eurPkr],
-      ["GBP/PKR", fxRates.gbpPkr],
-      ["SAR/PKR", fxRates.sarPkr],
-      ["Gold", goldKpi],
-      ["Silver", silverKpi],
-      ["Brent", brentKpi],
-      ["WTI", wtiKpi],
-      // Phase 4A: natural gas, Fed funds and the two Pakistani yields were
-      // only ever on the removed ticker. They are carried over here so the
-      // ticker's removal costs no instrument.
-      ["Nat gas", naturalGasKpi],
-      ["US 10Y", us10yKpi],
-      ["Fed funds", fedFundsKpi],
-      ["DXY", dxyKpi],
-      ["3M T-bill", sbp.tbillYield3m.kpi],
-      ["3Y PIB", sbp.pibYield3y.kpi],
-      // KSE-100 itself requires a commercial PSX data licence (see
-      // yfinance.ts) — this is the Global X MSCI Pakistan ETF, the same real,
-      // free proxy used elsewhere on this dashboard, labelled honestly.
-      ["KSE-100 proxy", pakEtfKpi],
-    ] as const
-  ).map(([label, kpi]) => {
+  const todayIso = pktDateIso(todayForCalendar);
+  const dateLine = formatLongDate(todayIso);
+
+  const sparkOf = (trend: { value: number }[]) => trend.slice(-12).map((p) => p.value);
+  const tileFor = (
+    id: string,
+    label: string,
+    entry: { kpi: Kpi; trend: { value: number }[]; meta: { source: string; frequency: string; observationDate: string; freshness: { state: FreshnessResult["state"] } } },
+    nextDate: string | undefined,
+    extra: Partial<KeyFigure> = {},
+  ): KeyFigure | null => {
+    const slug = slugForKpi(entry.kpi.title);
+    const period = entry.meta.observationDate || entry.kpi.latestDate || null;
+    return {
+      id,
+      label,
+      value: entry.kpi.value,
+      unit: entry.kpi.unit,
+      change: entry.kpi.change,
+      period: formatObservation(period, entry.meta.frequency),
+      source: cleanSourceName(entry.meta.source),
+      sparkline: sparkOf(entry.trend),
+      href: slug ? `/${slug}` : "",
+      status: statusFor(entry.meta.freshness.state, nextDate === todayIso),
+      ...extra,
+    };
+  };
+
+  const nextBySeries = guard(() => nextReleaseBySeries(scheduledCalendarEvents, todayIso), "calendar") ?? new Map<string, string>();
+  const next = (slug: string) => nextBySeries.get(slug);
+
+  // 2b. Key figures. USD/PKR shows the live market quote; its sparkline is SBP's monthly average, the only history in scope for this pair.
+  const keyFigures: KeyFigure[] = guard(
+    () =>
+      [
+        tileFor("cpi", "CPI inflation, YoY", sbp.cpiInflation, next("cpi-inflation-release")),
+        tileFor("policy-rate", "SBP policy rate", sbp.policyRate, next("sbp-monetary-policy-committee-meeting")),
+        slugForKpi("USD / PKR")
+          ? {
+              id: "usd-pkr",
+              label: "USD/PKR, market quote",
+              value: fxRates.usdPkr.value,
+              unit: fxRates.usdPkr.unit,
+              change: fxRates.usdPkr.change,
+              period: formatObservation(fxRates.usdPkr.latestDate, "Daily"),
+              source: cleanSourceName(fxRates.usdPkr.source),
+              footnote: "trend: SBP monthly average",
+              sparkline: sparkOf(sbp.usdPkr.trend),
+              href: `/${slugForKpi("USD / PKR")}`,
+            }
+          : null,
+        tileFor("reserves", "Foreign reserves, SBP", netLiquidReserves, next("sbp-foreign-exchange-reserves")),
+      ].filter((t): t is KeyFigure => t !== null),
+    "key figures",
+  ) ?? [];
+
+  // 2a. Macro Intelligence card: the engine's own classifications, with the figure each rests on (the same values shown in the tiles and strip).
+  const realPolicyRate = (() => {
+    const policy = toNumericValue(sbp.policyRate.kpi.value);
+    const cpi = toNumericValue(sbp.cpiInflation.kpi.value);
+    if (policy === null || cpi === null) return null;
+    const diff = policy - cpi;
+    return `${diff >= 0 ? "+" : "−"}${Math.abs(diff).toFixed(1)}`;
+  })();
+  const gdpSignal = macroIntelligenceReport.signals.find((s) => s.id === "growth");
+  const gdpEvidence = gdpSignal?.evidence.find((e) => e.seriesId === "worldbank:gdpGrowthPak") ?? null;
+  const macroSummary = guard(
+    () =>
+      buildMacroSummary(
+        macroIntelligenceReport.signals,
+        {
+          inflation: { text: `CPI ${sbp.cpiInflation.kpi.value}% · ${formatObservation(sbp.cpiInflation.meta.observationDate, "Monthly")}` },
+          "monetary-policy": { text: `Policy rate ${sbp.policyRate.kpi.value}% · ${formatObservation(sbp.policyRate.meta.observationDate, "Daily")}` },
+          "external-sector": { text: `Remittances ${sbp.remittances.kpi.value}${sbp.remittances.kpi.unit} · ${formatObservation(sbp.remittances.meta.observationDate, "Monthly")}` },
+          "liquidity-credit": { text: `M2 ${sbp.moneySupplyM2.kpi.value}${sbp.moneySupplyM2.kpi.unit} · ${formatObservation(sbp.moneySupplyM2.meta.observationDate, "Monthly")}` },
+          "fiscal-conditions": { text: `Fiscal balance ${sbp.fiscalBalance.kpi.value}${sbp.fiscalBalance.kpi.unit} · ${formatObservation(sbp.fiscalBalance.meta.observationDate, "Annual")}` },
+          // The classifier reads World Bank annual GDP growth only (not LSM). Marked as annual so it is not read as a current monthly signal.
+          growth: gdpEvidence && gdpEvidence.value !== null
+            ? { text: `GDP growth ${gdpEvidence.value.toFixed(1)}% · ${formatObservation(gdpEvidence.observationPeriod, "Monthly").replace(/^[A-Z][a-z]{2} /, "")}`, note: "annual data" }
+            : { text: `GDP growth (World Bank) · ${gdpKpi.latestDate ?? ""}`.trim(), note: "annual data" },
+          "market-stress": { text: `USD/PKR ${fxRates.usdPkr.value} · ${formatObservation(fxRates.usdPkr.latestDate, "Daily")}` },
+        },
+        {
+          cpi: { value: sbp.cpiInflation.kpi.value, period: formatObservation(sbp.cpiInflation.meta.observationDate, "Monthly") },
+          policyRate: { value: sbp.policyRate.kpi.value },
+          realRate: realPolicyRate ?? undefined,
+          remittances: { value: sbp.remittances.kpi.value, unit: sbp.remittances.kpi.unit, period: formatObservation(sbp.remittances.meta.observationDate, "Monthly") },
+        },
+      ),
+    "macro summary",
+  );
+
+  // 3. Secondary figures. The real policy rate is derived here (policy rate minus CPI YoY) and labelled as such.
+  const secondaryFor = (id: string, label: string, entry: SbpIndicatorResult, nextSlug?: string, extra: Partial<SecondaryFigure> = {}): SecondaryFigure => {
+    const slug = slugForKpi(entry.kpi.title);
+    const period = formatObservation(entry.meta.observationDate, entry.meta.frequency);
+    const status = statusFor(entry.meta.freshness.state, nextSlug !== undefined && next(nextSlug) === todayIso);
+    const plain = status.tone === "current";
+    return {
+      id,
+      label,
+      value: entry.kpi.value,
+      unit: entry.kpi.unit,
+      change: plain ? entry.kpi.change : null,
+      note: plain ? period : `${period} · ${status.label.toLowerCase()}`,
+      noteTone: plain ? undefined : status.tone === "due" ? "due" : "warn",
+      href: slug ? `/${slug}` : undefined,
+      ...extra,
+    };
+  };
+  const secondaryFigures: SecondaryFigure[] = guard(
+    () => [
+      secondaryFor("core", "Core inflation", sbp.coreInflation, "core-inflation-release"),
+      ...(realPolicyRate !== null
+        ? [{ id: "real-rate", label: "Real policy rate", value: realPolicyRate, unit: "pp", note: "Policy rate minus CPI", href: `/${slugForKpi("Policy Rate")}` }]
+        : []),
+      secondaryFor("remittances", "Remittances", sbp.remittances, "worker-remittances"),
+      secondaryFor("current-account", "Current account", sbp.currentAccount, "current-account-balance"),
+      secondaryFor("fiscal", "Fiscal balance", sbp.fiscalBalance),
+      secondaryFor("lsm", "LSM growth", sbp.lsm, "large-scale-manufacturing-lsm-growth"),
+    ],
+    "secondary figures",
+  ) ?? [];
+
+  // Markets: a slim strip of five instruments, the same data as before (no new fetch). The full set lives on each instrument's page.
+  const marketCell = (label: string, kpi: Kpi, frequency: string): MarketCell => {
     const slug = slugForKpi(kpi.title);
-    return { label, kpi, href: slug ? `/${slug}` : undefined };
-  });
+    return { label, value: kpi.value, unit: kpi.unit, change: kpi.change, period: formatObservation(kpi.latestDate, frequency), href: slug ? `/${slug}` : undefined };
+  };
+  const marketCells: MarketCell[] = guard(
+    () => [
+      marketCell("KSE-100 proxy (PAK ETF)", pakEtfKpi, "Daily"),
+      marketCell("Gold", goldKpi, "Daily"),
+      marketCell("Brent crude", brentKpi, "Daily"),
+      marketCell("EUR/PKR", fxRates.eurPkr, "Daily"),
+      marketCell("GBP/PKR", fxRates.gbpPkr, "Daily"),
+    ],
+    "markets",
+  ) ?? [];
 
-  // Every tile and row links to its indicator page, for guests too: following one signs a guest in first (accessPolicy.ts / proxy.ts).
-  const homeSnapshotTiles = buildSnapshotTiles({ sbp, netLiquidReserves, usdPkrLive: fxRates.usdPkr });
-  const homeIndicatorRows = buildIndicatorRows(sbp);
+  // 4. Release calendar and headlines.
+  const releaseGroups = guard(() => groupReleaseRows(buildReleaseRows(scheduledCalendarEvents, todayIso), todayIso), "release calendar");
+  const dueTodayLabels = releaseGroups?.today.map((r) => r.pillLabel) ?? [];
+  const newsSourceCount = new Set(newsItems.map((n) => n.source)).size;
+  const headlineItems = guard(() => selectFreshHeadlines(newsItems, todayForCalendar.getTime(), { limit: 6 }).items, "headlines") ?? [];
 
-  // Headlines: the same AI-tagged articles the News & Intelligence section
-  // below renders, just the top few, surfaced near the top of the page.
-  const homeHeadlines = taggedNewsResult.items.slice(0, 7);
+  // 5. Indicators table. The next-release column and "Due today" status come from the calendar; the count in "Show all" comes from the rows.
+  const homeIndicatorRows = guard(() => buildIndicatorRows(sbp, { todayIso, nextBySeries }), "indicators") ?? [];
 
-  // Latest News beside Markets (Phase E.1): the SAME already-fetched,
-  // already-ranked, already-deduped article list — a second pass over one
-  // in-memory array, never a second fetch. getNews() sorts by relevance
-  // (relevanceEngine.ts scores Pakistan-economy stories highest) then by
-  // publication time, and that order is kept. What is added is a freshness
-  // guard: relevance ignores article age, so without it an old article that
-  // ties on score could sit under a "Latest News" heading. See
-  // headlineSelection.ts for why, and for the 48h window being a stated
-  // presentation policy rather than a fact about the feeds.
-  // Uses the page's single render-time clock reading (todayForCalendar) so
-  // the 48h window and the Upcoming releases panel agree on what "now" is.
-  const marketsSideNews = selectFreshHeadlines(taggedNewsResult.items, todayForCalendar.getTime());
-
-  // Upcoming releases: the same already-filtered, today-or-later selection
-  // the Hero uses (selectUpcomingByDate), widened to 8 rows for this panel.
-  const todayIsoForHome = todayForCalendar.toISOString().slice(0, 10);
-  const homeUpcomingRows: UpcomingRow[] = selectUpcomingByDate(scheduledCalendarEvents, todayIsoForHome, 8).map((e) => ({
-    date: e.eventDate,
-    title: e.title,
-    importance: e.importance,
-  }));
-
-  // The engine's own calculatedAt — the moment the classification was
-  // computed, which is distinct from any observation date it rests on.
-  const macroBriefAsOf = formatPktDate(new Date(macroIntelligenceReport.calculatedAt));
-
-  // All Kpi objects — passed to DataSourcesModal for the audit table
-  const allKpis = [
-    ...headlineKpis,
-    ...secondaryKpis,
-    ...globalMarketsKpis,
-    pakEtfKpi,
-    ...liveFxKpis,
-    ...realEconomyKpis,
-    sbp.netBankReserves.kpi,
-  ];
-
+  // Every KPI, for the Data Sources audit table in the footer.
+  const allKpis = [...headlineKpis, ...secondaryKpis, ...globalMarketsKpis, pakEtfKpi, ...liveFxKpis, ...realEconomyKpis, sbp.netBankReserves.kpi];
 
   return (
     <div className="flex min-h-screen w-full">
       <HashScrollRestore />
       <Sidebar />
       <main id="overview" className="min-w-0 flex-1 scroll-mt-[60px] sm:scroll-mt-[120px]">
-        {/* Phase 4A: the sticky MarketTicker that used to sit here has been
-            removed. It showed the same instruments as the Markets panel
-            immediately below (USD/PKR, EUR/PKR, GBP/PKR, SAR/PKR, gold,
-            silver, WTI, Brent, DXY, US 10Y, KSE-100 proxy) and cost the
-            first screen ~56px without adding a figure. The panel below
-            shows each quote WITH its observation date, which the scrolling
-            ribbon could not.
-            MarketTicker itself is untouched and still exported for other
-            surfaces; only this one usage is gone. */}
-        {/* ── Phase 3: economic-data homepage ──────────────────────────────
-            Everything in this block renders from values already fetched
-            above — buildSnapshotTiles/buildIndicatorRows are pure functions
-            over the same `sbp`, `netLiquidReserves`, `fxRates`,
-            `taggedNewsResult`, `scheduledCalendarEvents` and
-            `macroIntelligenceReport` the rest of the page uses. No new
-            query, no new cache entry, so the route's ISR window and every
-            indicator's freshness semantics are unchanged. */}
-        <div id="main-content" tabIndex={-1} className="mx-auto flex max-w-[1600px] flex-col gap-3 px-3 py-4 focus:outline-none sm:px-4 lg:px-6">
-          {/* The page's own heading. Visually compact — the data below it is
-              the point — but it is the document's single <h1>, which the
-              briefing panel further down no longer has to supply. */}
-          <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-            <h1 className="text-[20px] font-semibold tracking-[-0.01em] text-pe-text">Pakistan economic dashboard</h1>
-            <p className="font-mono text-[11px] text-pe-text-3">Page data checked {pktTimestamp}</p>
+        {/* Bottom padding keeps the floating assistant button clear of the last section on both layouts. */}
+        <div id="main-content" tabIndex={-1} className="mx-auto flex max-w-[1280px] flex-col gap-4 px-4 pb-28 pt-6 focus:outline-none lg:gap-5 lg:px-6 lg:pb-32 lg:pt-8">
+          <OverviewHeader dateLine={dateLine} dueToday={dueTodayLabels} />
+
+          {/* Summary row: the two columns stretch to one height. */}
+          <div id="home-snapshot" className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:items-stretch">
+            <MacroSummaryCard id="home-macro-brief" summary={macroSummary} />
+            <section aria-labelledby="home-key-figures-heading" className="flex flex-col gap-3">
+              {/* The tiles carry their own labels; on a phone they sit under the macro card, so a heading says what the block is. */}
+              <h2 id="home-key-figures-heading" className="text-[17px] font-semibold text-pe-text lg:sr-only">Key figures</h2>
+              <KeyFigureTiles tiles={keyFigures} />
+            </section>
           </div>
 
-          {/* Markets + Latest News (Phase E.1).
-              Two columns from lg (~70/30), stacked below it so the market
-              cards keep the full width they need on tablet and phone. Both
-              panels start at the same grid row, so their headers align.
-              `items-start` stops the news panel stretching to match a taller
-              Markets grid and leaving dead space under the last article. */}
-          <div className="grid grid-cols-1 items-start gap-3 lg:grid-cols-[minmax(0,7fr)_minmax(0,3fr)] lg:items-stretch">
-            <Section id="home-markets" title="Markets" flush>
-              <MarketsPanel rows={homeMarketRows} />
-            </Section>
+          <SecondaryStrip cells={secondaryFigures} />
 
-            {/* From lg the news section is a two-row grid (heading, then the
-                list) with `h-0 min-h-full`: it adds nothing to the row's
-                height, so Markets alone decides how tall the row is, yet it
-                stretches to exactly that height. The list scrolls inside the
-                remaining space, so the two panels' bottom edges line up with
-                no dead space and no arbitrary pixel cap. Below lg it is a
-                normal block stacked under Markets. */}
-            <Section
-              id="home-latest-news"
-              className="lg:grid lg:h-0 lg:min-h-full lg:grid-rows-[auto_minmax(0,1fr)]"
-              title="Latest News"
-              actions={
-                // No /news route exists yet, so this follows appNav.ts's own
-                // convention of pointing "News" at the full Headlines
-                // section further down this page rather than a dead link.
-                // The padding/negative-margin pair enlarges the tap area to
-                // a comfortable size without moving the header layout.
-                <a href="#home-headlines" className="-my-3 inline-block py-3 text-pe-accent hover:underline">
-                  All headlines →
-                </a>
-              }
-              flush
-            >
-              {/* The panel's position, width and height are unchanged: it is
-                  still the right-hand cell of the grid above, still stretched
-                  to Markets' height. Only what is INSIDE it changed — the
-                  scrolling list (and its scrollbar) became a ticker that
-                  never scrolls the panel. Beside Markets (lg+) the ticker
-                  fills the height Markets sets; below lg the panel is stacked
-                  and the ticker sizes itself. See LatestNewsTicker.tsx. */}
-              <div className="lg:h-full">
-                <LatestNewsBody items={marketsSideNews.items} windowHours={LATEST_NEWS_MAX_AGE_HOURS} />
-              </div>
-            </Section>
+          <MarketsStrip id="home-markets" cells={marketCells} allHref="/pakistan-stock-market" />
+
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:items-stretch">
+            <ReleaseCalendar id="home-releases" groups={releaseGroups} todayIso={todayIso} />
+            <OverviewHeadlines id="home-headlines" items={headlineItems} todayIso={todayIso} sourceCount={newsSourceCount} />
           </div>
 
-          <Section
-            id="home-snapshot"
-            title="Pakistan snapshot"
-            description="Headline indicators, each with the period it reports on and its source."
-            actions={<Link href="/pakistan-economic-indicators" className="text-pe-accent hover:underline">All indicators →</Link>}
-            flush
-          >
-            <PakistanSnapshot tiles={homeSnapshotTiles} />
-          </Section>
-
-          <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1.35fr_1fr]">
-            <Section
-              id="home-headlines"
-              title="Headlines"
-              description={`${newsSourceCount} sources · tagged by ${taggedNewsResult.modelDisplayName}`}
-              flush
-            >
-              <HeadlinesList items={homeHeadlines} />
-            </Section>
-
-            <div className="flex flex-col gap-3">
-              <Section
-                id="home-releases"
-                title="Upcoming releases"
-                actions={<Link href="/economic-calendar" className="text-pe-accent hover:underline">Calendar →</Link>}
-                flush
-              >
-                <UpcomingReleases rows={homeUpcomingRows} todayIso={todayIsoForHome} />
-              </Section>
-
-              <Section
-                id="home-macro-brief"
-                title="Macro intelligence"
-                description="How each dimension is currently classified."
-              >
-                <MacroBrief signals={macroIntelligenceReport.signals} asOf={macroBriefAsOf} />
-              </Section>
+          <section id="home-indicators" aria-labelledby="home-indicators-heading" className="rounded-[var(--pe-radius)] border border-pe-border bg-pe-surface">
+            <div className="px-4 pb-3 pt-4 lg:px-5 lg:pt-5">
+              <h2 id="home-indicators-heading" className="text-[17px] font-semibold text-pe-text">Indicators</h2>
+              <p className="text-[13px] text-pe-text-2">{homeIndicatorRows.length} series. Every row opens its full history.</p>
             </div>
-          </div>
-
-          <Section
-            id="home-indicators"
-            title="Pakistan indicators"
-            description="Search or sort. Every row links to that indicator's full history."
-            flush
-          >
             <IndicatorsTable rows={homeIndicatorRows} />
-          </Section>
+          </section>
 
-          <Section id="home-explore" title="Explore" flush>
-            <ExploreLinks />
-          </Section>
+          <ExplorePlatform />
 
-          {/* Kept from the retired legacy block: these have no other home.
-              Provincial shortcuts and Popular Insights are navigation into
-              existing pages; the Data Sources modal is this page's full
-              per-indicator provenance audit, reachable from the one place
-              that renders every KPI. */}
-          <Section id="home-provincial" title="Provincial budgets" flush>
-            <ProvincialQuickAccess />
-          </Section>
-
-          <PopularInsights />
-
-          <div className="flex justify-center py-1">
-            <DataSourcesModal kpis={allKpis} />
-          </div>
+          <OverviewFooter sources={<DataSourcesModal kpis={allKpis} appearance="footer" />} />
         </div>
-
       </main>
       <FloatingAssistant context={dashboardSnapshot} />
     </div>
   );
+}
+
+/** Builds one section's view-model; on failure logs it and returns null so that section shows its own error state. */
+function guard<T>(build: () => T, section: string): T | null {
+  try {
+    return build();
+  } catch (err) {
+    console.error(`[overview] ${section} failed to build: ${err instanceof Error ? err.message : String(err)}`);
+    return null;
+  }
 }

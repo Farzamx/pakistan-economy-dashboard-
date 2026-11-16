@@ -232,33 +232,22 @@ describe("the existing Headlines section is unchanged", () => {
   });
 });
 
-describe("the Latest News panel keeps its place on the Overview", () => {
-  // The brief's strict requirement: only what is INSIDE the panel changes. Its
-  // position, its width, its heading and its All headlines link do not.
+describe("the Latest News ticker is no longer on the Overview", () => {
+  // The Overview redesign removed the Markets + Latest News row (the ticker's only placement). The ticker component itself is unchanged and
+  // still tested above; this pins that the page no longer mounts it, so a stale import cannot bring the removed row back unnoticed.
   const page = readFileSync(join(__dirname, "..", "..", "app", "overview", "page.tsx"), "utf-8")
     .replace(/\/\*[\s\S]*?\*\//g, "")
     .replace(/(^|[^:])\/\/.*$/gm, "$1");
 
-  it("is still the right-hand cell of the same ~70/30 grid, stacked below lg", () => {
-    expect(page).toContain("lg:grid-cols-[minmax(0,7fr)_minmax(0,3fr)]");
-    expect(page).toContain("grid-cols-1");
+  it("is not mounted by the page", () => {
+    expect(page).not.toContain("<LatestNewsBody");
+    expect(page).not.toContain('id="home-latest-news"');
   });
 
-  it("comes after Markets in the grid, so it stays on the right", () => {
-    expect(page.indexOf('id="home-markets"')).toBeGreaterThan(-1);
-    expect(page.indexOf('id="home-latest-news"')).toBeGreaterThan(page.indexOf('id="home-markets"'));
-  });
-
-  it("is still stretched to Markets' height, with the same heading and link", () => {
-    expect(page).toContain("lg:grid lg:h-0 lg:min-h-full lg:grid-rows-[auto_minmax(0,1fr)]");
-    expect(page).toContain('title="Latest News"');
-    expect(page).toContain('href="#home-headlines"');
-    expect(page).toContain("All headlines");
-  });
-
-  it("no longer scrolls: the panel body has no scroll container", () => {
-    const panel = page.slice(page.indexOf('id="home-latest-news"'), page.indexOf("</Section>", page.indexOf('id="home-latest-news"')));
-    expect(panel).not.toMatch(/overflow-y-(auto|scroll)|overflow-(auto|scroll)/);
-    expect(panel).toContain("<LatestNewsBody");
+  it("the headlines the page shows carry no sentiment tag and name no model", () => {
+    // The weekly snapshot still carries a model name for the assistant's context object; it must never reach a rendered section.
+    expect(page).not.toMatch(/getTaggedNews|tagged by/);
+    const rendered = page.slice(page.indexOf("return ("));
+    expect(rendered).not.toMatch(/modelDisplayName|modelUsed|sentiment/);
   });
 });

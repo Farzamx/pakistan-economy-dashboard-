@@ -152,14 +152,19 @@ describe("sitemap and robots", () => {
 describe("the Overview page keeps every section and link", () => {
   const src = read("app/overview/page.tsx");
 
-  it("renders Explore, Provincial budgets and Popular insights unconditionally, with a link on every tile and row", () => {
-    expect(src).toMatch(/<Section id="home-explore" title="Explore" flush>/);
-    expect(src).toMatch(/<Section id="home-provincial" title="Provincial budgets" flush>/);
-    expect(src).toMatch(/<PopularInsights \/>/);
+  it("renders Explore the platform (feature cards, provinces, popular questions) unconditionally, with a link on every tile and row", () => {
+    const explore = read("components/home/ExplorePlatform.tsx");
+    expect(src).toMatch(/<ExplorePlatform \/>/);
+    expect(explore).toContain('id="home-explore"');
+    expect(explore).toContain('id="home-provincial"');
+    expect(explore).toContain('id="home-popular"');
+    // Every destination is linked for guests too (ProtectedLink shows the sign-in dialog for members' pages); nothing is hidden or gated here.
+    expect(explore).not.toMatch(/useAuth|offersMoreThanOverview|publicHref|isPublicPagePath/);
     expect(src).not.toMatch(/offersMoreThanOverview|publicHref|isPublicPagePath/);
     expect(src).toMatch(/href: slug \? `\/\$\{slug\}` : undefined/);
-    expect(src).toMatch(/All indicators →/);
-    expect(src).toMatch(/Calendar →/);
+    expect(src).toMatch(/allHref="\/pakistan-stock-market"/);
+    expect(read("components/home/OverviewFeeds.tsx")).toMatch(/All releases →/);
+    expect(read("components/home/OverviewSummary.tsx")).toMatch(/Full calendar →/);
   });
 
   it("is itself open to guests and carries no account gate", () => {

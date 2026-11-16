@@ -117,19 +117,19 @@ describe("the Overview wires the panel safely", () => {
   });
 
   it("reads the render-time clock once rather than adding a second one", () => {
-    // The panel must share the page's existing clock reading, so the
+    // The headlines must share the page's existing clock reading (todayForCalendar), so the
     // freshness window and the rest of the page agree on "now".
-    expect(page).toMatch(/selectFreshHeadlines\(taggedNewsResult\.items, todayForCalendar\.getTime\(\)\)/);
+    expect(page).toMatch(/selectFreshHeadlines\(newsItems, todayForCalendar\.getTime\(\)/);
     expect(page).not.toMatch(/Date\.now\(\)/);
   });
 
-  it("routes the panel through the freshness guard", () => {
+  it("routes the headlines through the freshness guard, never a raw slice of the feed", () => {
     expect(page).toMatch(/selectFreshHeadlines\(/);
-    expect(page).not.toMatch(/marketsSideNews\s*=\s*taggedNewsResult\.items\.slice\(/);
+    expect(page).not.toMatch(/headlineItems\s*=\s*newsItems\.slice\(/);
   });
 
-  it("keeps the existing Headlines section and Markets panel", () => {
+  it("keeps the Headlines section and a Markets strip (the Overview redesign kept both ids)", () => {
     expect(page).toMatch(/id="home-headlines"/);
-    expect(page).toMatch(/<MarketsPanel rows=\{homeMarketRows\}/);
+    expect(page).toMatch(/<MarketsStrip id="home-markets"/);
   });
 });

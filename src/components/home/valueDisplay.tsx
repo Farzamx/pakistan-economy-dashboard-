@@ -12,6 +12,7 @@
 import type { Kpi } from "@/data/kpiData";
 import type { FreshnessResult } from "@/lib/freshness/freshnessEngine";
 import { formatLatestDate } from "@/lib/dataFreshness";
+import { DIRECTION_GLYPH, splitChange } from "./overviewFormat";
 
 export type ChangeTone = "up" | "down" | "flat";
 
@@ -33,29 +34,57 @@ export function changeTone(change: string | undefined): ChangeTone | null {
   return n > 0 ? "up" : n < 0 ? "down" : "flat";
 }
 
-const TONE_CLASS: Record<ChangeTone, string> = {
-  up: "text-pe-up",
-  down: "text-pe-down",
-  flat: "text-pe-text-3",
-};
-
-const TONE_GLYPH: Record<ChangeTone, string> = { up: "▲", down: "▼", flat: "—" };
+const DIRECTION_WORD: Record<ChangeTone, string> = { up: "Up", down: "Down", flat: "Unchanged" };
 
 /**
- * A change string with a direction arrow. Green/red here mean "rose/fell
- * versus the previous observation" — never "good/bad": a rising debt ratio
- * and rising reserves are both green.
+ * A change string with a direction glyph, in the normal text colour.
+ *
+ * Direction is carried by the glyph (▲ / ▼), never by colour: red and green read as "bad" and "good", and a falling inflation rate or a rising policy
+ * rate is neither. Colour on this page is reserved for data status (current, due today, delayed, stale). The sign is dropped from the text because the
+ * glyph already states it ("▼ 0.7 pp vs Sep 2026").
  */
-export function ChangeValue({ change, className = "" }: { change: string | undefined; className?: string }) {
-  const tone = changeTone(change);
+export function ChangeValue({ change, className = "" }: { change: string | undefined | null; className?: string }) {
   if (!change) return null;
-  if (!tone) return <span className={`text-pe-text-3 ${className}`}>{change}</span>;
+  const parts = splitChange(change);
+  // A string with no leading number ("No prior period", a provider's "fallback snapshot — …" sentinel) is not a change: show nothing rather than
+  // print an internal note next to a figure. The status pill and the period line already say when a value is a fallback or stale.
+  if (!parts) return null;
   return (
-    <span className={`inline-flex items-baseline gap-1 tabular-nums ${TONE_CLASS[tone]} ${className}`}>
-      <span aria-hidden="true">{TONE_GLYPH[tone]}</span>
-      {change}
+    <span className={`inline-flex items-baseline gap-1 tabular-nums text-pe-text-2 ${className}`}>
+      <span aria-hidden="true" className="text-[0.8em]">{DIRECTION_GLYPH[parts.direction]}</span>
+      <span className="sr-only">{DIRECTION_WORD[parts.direction]}</span>
+      {parts.text}
     </span>
   );
+}
+
+/** The four data statuses the Overview shows. */
+export type StatusTone = "current" | "due" | "delayed" | "stale";
+
+const STATUS_CLASS: Record<StatusTone, string> = {
+  current: "border-pe-border bg-pe-surface-2 text-pe-up",
+  due: "border-pe-border-strong bg-pe-surface-2 text-pe-accent",
+  delayed: "border-[var(--pe-warn-border)] bg-[var(--pe-warn-bg)] text-[var(--pe-warn-text)]",
+  stale: "border-[var(--pe-warn-border)] bg-[var(--pe-warn-bg)] text-[var(--pe-warn-text)]",
+};
+
+export function StatusPill({ tone, label }: { tone: StatusTone; label: string }) {
+  return (
+    <span className={`inline-flex shrink-0 items-center whitespace-nowrap rounded-full border px-2 py-px text-[11px] font-medium ${STATUS_CLASS[tone]}`}>
+      {label}
+    </span>
+  );
+}
+
+/**
+ * Maps the freshness engine's own state to one of the page's statuses. This does not decide what is stale: it only names the engine's verdict.
+ * A release on today's calendar shows "Due today" unless the engine already calls the series stale.
+ */
+export function statusFor(state: FreshnessResult["state"] | undefined, dueToday: boolean): { tone: StatusTone; label: string } {
+  if (state === "stale" || state === "source-unavailable" || state === "validation-failed") return { tone: "stale", label: "Stale" };
+  if (dueToday) return { tone: "due", label: "Due today" };
+  if (state === "delayed-release" || state === "ingestion-lagging") return { tone: "delayed", label: "Delayed" };
+  return { tone: "current", label: "Current" };
 }
 
 /**

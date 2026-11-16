@@ -26,6 +26,10 @@ export interface IndicatorRow {
   source: string;
   freshnessLabel: string;
   freshnessSeverity: FreshnessSeverity;
+  /** "Today", "1 Dec", or null when no release for this series is on the calendar. Optional: older callers and tests omit it. */
+  nextRelease?: string | null;
+  /** The page's own status (Current / Due today / Delayed / Stale). Falls back to the freshness fields above when omitted. */
+  status?: { tone: "current" | "due" | "delayed" | "stale"; label: string };
 }
 
 export type SortKey = "name" | "value" | "period" | "source" | "freshness";
