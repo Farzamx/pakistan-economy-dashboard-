@@ -9,9 +9,7 @@
 // in the overview page already uses, kept consistent so one change string can
 // never render as "up" in one place and "down" in another.
 
-import type { Kpi } from "@/data/kpiData";
 import type { FreshnessResult } from "@/lib/freshness/freshnessEngine";
-import { formatLatestDate } from "@/lib/dataFreshness";
 import { DIRECTION_GLYPH, splitChange } from "./overviewFormat";
 
 export type ChangeTone = "up" | "down" | "flat";
@@ -97,39 +95,4 @@ export function statusFor(state: FreshnessResult["state"] | undefined, dueToday:
   if (state === "stale" || state === "source-unavailable" || state === "validation-failed") return { tone: "stale", label: "Stale" };
   if (state === "delayed-release" || state === "ingestion-lagging") return { tone: "delayed", label: "Delayed" };
   return { tone: "current", label: "Current" };
-}
-
-/**
- * The one-line provenance stamp: observation period, then source. These are
- * two different things and the distinction matters — the observation date is
- * the period the figure reports on, never when it was fetched.
- */
-export function SourceStamp({ kpi, className = "" }: { kpi: Pick<Kpi, "latestDate" | "frequency" | "source">; className?: string }) {
-  const parts: string[] = [];
-  if (kpi.latestDate) parts.push(formatLatestDate(kpi.latestDate, kpi.frequency));
-  if (kpi.source) parts.push(kpi.source);
-  if (parts.length === 0) return null;
-  return <span className={`font-mono text-[11px] text-pe-text-3 ${className}`}>{parts.join(" · ")}</span>;
-}
-
-/**
- * Freshness pill driven by the project's existing severity verdict. Labels
- * come from the caller (FRESHNESS_STATE_LABEL / the dataFreshness status), so
- * this component never decides what counts as stale.
- */
-export function FreshnessPill({ severity, label }: { severity: FreshnessResult["severity"]; label: string }) {
-  // The engine's three severities. Caution/problem use their own tokens
-  // (defined for both themes in globals.css) rather than Tailwind palette
-  // literals, which would only be legible in one theme.
-  const cls =
-    severity === "healthy"
-      ? "border-pe-border bg-pe-surface-2 text-pe-text-3"
-      : severity === "caution"
-        ? "border-[var(--pe-warn-border)] bg-[var(--pe-warn-bg)] text-[var(--pe-warn-text)]"
-        : "border-[var(--pe-crit-border)] bg-[var(--pe-crit-bg)] text-[var(--pe-crit-text)]";
-  return (
-    <span className={`inline-flex shrink-0 items-center rounded-full border px-1.5 py-px text-[11px] font-medium ${cls}`}>
-      {label}
-    </span>
-  );
 }

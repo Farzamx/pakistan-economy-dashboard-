@@ -12,7 +12,6 @@ import robots from "@/app/robots";
 import sitemap, { fullSitemap } from "@/app/sitemap";
 import { SEARCH_INDEX, SITE_SEARCH_INDEX, matches } from "@/components/GlobalSearch";
 import IndicatorsTable from "@/components/home/IndicatorsTable";
-import PakistanSnapshot, { type SnapshotTile } from "@/components/home/PakistanSnapshot";
 import type { IndicatorRow } from "@/components/home/indicatorRows";
 import { isPublicUrl, requiresLogin } from "@/lib/accessPolicy";
 import { APP_NAV, allNavLinks, hrefPath, navLinkForPath, resolveActiveNav } from "@/lib/appNav";
@@ -179,21 +178,16 @@ describe("the Overview page keeps every section and link", () => {
 });
 
 describe("components render the links they are given", () => {
-  const kpi = { title: "CPI Inflation", value: "9.6", unit: "%", change: "+0.4 pp", source: "SBP", latestDate: "2026-10-01" } as unknown as SnapshotTile["kpi"];
-  const tile = (href: string): SnapshotTile => ({ label: "CPI inflation (YoY)", kpi, href });
   const row = (slug: string): IndicatorRow => ({
     id: "cpi", slug, name: "CPI Inflation", group: "Prices", value: "9.6", unit: "%", numericValue: 9.6, change: null, period: "Oct 2026", observationDate: "2026-10-01",
     source: "SBP", freshnessLabel: "Current", freshnessSeverity: "healthy",
   });
 
-  it("snapshot tiles and indicator rows link to their indicator page", () => {
-    expect(html(createElement(PakistanSnapshot, { tiles: [tile("/inflation-rate-pakistan")] }))).toMatch(/<a [^>]*href="\/inflation-rate-pakistan"/);
+  it("indicator rows link to their indicator page", () => {
     expect(html(createElement(IndicatorsTable, { rows: [row("pakistan-core-inflation")] }))).toContain('href="/pakistan-core-inflation"');
   });
 
-  it("a tile or row without an address still shows its figures (the components stay tolerant)", () => {
-    const bare = html(createElement(PakistanSnapshot, { tiles: [tile("")] }));
-    expect(bare).toContain("9.6");
+  it("a row without an address still shows its figures (the component stays tolerant)", () => {
     expect(html(createElement(IndicatorsTable, { rows: [row("")] }))).toContain("CPI Inflation");
   });
 });

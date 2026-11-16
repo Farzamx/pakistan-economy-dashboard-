@@ -1,80 +1,14 @@
 // PEIC redesign Phase 3 — tests for the homepage's pure presentation logic.
 // Everything tested here is display/selection logic over values the data
 // layer already produced; no economic figure is computed in these modules,
-// so these tests pin exactly the rules a reader depends on: that a past
-// event never appears as upcoming, that missing data never reads as zero,
-// and that a change string's direction is taken from the change itself.
+// so these tests pin exactly the rules a reader depends on: that missing
+// data never reads as zero, and that a change string's direction is taken
+// from the change itself. (The release calendar's date rules are tested in
+// overviewRedesign.test.ts.)
 
 import { describe, it, expect } from "vitest";
-import { selectDisplayableReleases, formatReleaseDate, type UpcomingRow } from "./UpcomingReleases";
 import { matchesQuery, sortRows, toNumericValue, type IndicatorRow } from "./indicatorRows";
 import { changeTone } from "./valueDisplay";
-
-// ── Upcoming releases: the date boundary ──────────────────────────────────
-describe("selectDisplayableReleases", () => {
-  const TODAY = "2026-10-29";
-  const rows: UpcomingRow[] = [
-    { date: "2026-07-27", title: "SBP Monetary Policy Committee Meeting" }, // long past
-    { date: "2026-10-28", title: "Yesterday's release" },
-    { date: "2026-10-29", title: "Today's release" },
-    { date: "2026-10-30", title: "Tomorrow's release" },
-    { date: "2026-12-14", title: "December MPC" },
-  ];
-
-  it("never presents a past event as upcoming", () => {
-    const out = selectDisplayableReleases(rows, TODAY);
-    expect(out.map((r) => r.date)).toEqual(["2026-10-29", "2026-10-30", "2026-12-14"]);
-    expect(out.some((r) => r.date < TODAY)).toBe(false);
-  });
-
-  it("an event dated today IS upcoming (the boundary is inclusive)", () => {
-    expect(selectDisplayableReleases(rows, TODAY).map((r) => r.title)).toContain("Today's release");
-  });
-
-  it("an event dated yesterday is excluded (the boundary is exact, not fuzzy)", () => {
-    expect(selectDisplayableReleases(rows, TODAY).map((r) => r.title)).not.toContain("Yesterday's release");
-  });
-
-  it("orders chronologically regardless of input order", () => {
-    const shuffled = [rows[4], rows[2], rows[3], rows[0]];
-    expect(selectDisplayableReleases(shuffled, TODAY).map((r) => r.date)).toEqual(["2026-10-29", "2026-10-30", "2026-12-14"]);
-  });
-
-  it("drops rows with a missing or malformed date rather than guessing one", () => {
-    const bad = [
-      { date: "", title: "no date" },
-      { date: "soon", title: "not a date" },
-      { date: "2026-13-45", title: "impossible but well-shaped" },
-      { date: undefined as unknown as string, title: "undefined date" },
-      { date: "2026-11-01", title: "valid" },
-    ];
-    const out = selectDisplayableReleases(bad, TODAY);
-    // The impossible-but-well-shaped date sorts as a string; what matters is
-    // that nothing undated or unparseable is presented as a real release.
-    expect(out.map((r) => r.title)).not.toContain("no date");
-    expect(out.map((r) => r.title)).not.toContain("not a date");
-    expect(out.map((r) => r.title)).not.toContain("undefined date");
-    expect(out.map((r) => r.title)).toContain("valid");
-  });
-
-  it("returns an empty list rather than back-filling when nothing is upcoming", () => {
-    expect(selectDisplayableReleases(rows, "2027-01-01")).toEqual([]);
-    expect(selectDisplayableReleases([], TODAY)).toEqual([]);
-  });
-
-  it("does not mutate its input", () => {
-    const input = [...rows];
-    selectDisplayableReleases(input, TODAY);
-    expect(input.map((r) => r.date)).toEqual(rows.map((r) => r.date));
-  });
-
-  it("formatReleaseDate reads a date-only string without a timezone shift", () => {
-    // A naive new Date("2026-10-30") is UTC midnight and can render as the
-    // 29th west of UTC; this must always say the 30th.
-    expect(formatReleaseDate("2026-10-30")).toMatch(/30 Oct/);
-    expect(formatReleaseDate("2026-01-01")).toMatch(/1 Jan/);
-  });
-});
 
 // ── Indicators table: sorting, filtering, missing data ────────────────────
 describe("indicators table logic", () => {

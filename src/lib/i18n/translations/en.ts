@@ -552,21 +552,6 @@ export const en: Translations = {
     statusLabel: "Market Status", updated: "Updated",
   },
 
-  popularInsights: {
-    title: "Popular Insights", explore: "Explore →",
-    comparison: "Comparison", budget: "Budget", provincial: "Provincial",
-    insightPakVsIndia: "Pakistan vs India GDP Growth",
-    insightTaxMoney: "Where Does Pakistan's Tax Money Go?",
-    insightDefence: "Defence Spending",
-    insightEducation: "Education Budget",
-    insightHealth: "Health Budget",
-    insightPunjab: "Punjab Budget",
-    insightSindh: "Sindh Budget",
-    insightDebtDefence: "Debt Servicing vs Defence",
-    insightRankings: "Provincial Budget Rankings",
-    insightExportsImports: "Exports vs Imports",
-  },
-
   pinnedIndicators: {
     title: "Pinned for You",
   },

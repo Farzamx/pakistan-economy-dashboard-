@@ -7,7 +7,6 @@
 // produced, and carries each one's own observation date, source and
 // freshness verdict through to the UI.
 
-import type { Kpi } from "@/data/kpiData";
 import type { SbpIndicatorKey, SbpIndicatorResult } from "@/lib/data/sbp";
 import { FRESHNESS_STATE_LABEL } from "@/lib/freshness/readModel";
 import { cleanSourceName, formatDayMonth, formatObservation } from "./overviewFormat";
@@ -15,7 +14,6 @@ import { statusFor } from "./valueDisplay";
 import { KPI_SEO_SLUG } from "@/lib/seoConfig";
 import type { IndicatorRow } from "./indicatorRows";
 import { toNumericValue } from "./indicatorRows";
-import type { SnapshotTile } from "./PakistanSnapshot";
 
 /** The indicator detail page for a KPI title, via the existing registry. */
 export function slugForKpi(title: string): string | null {
@@ -23,64 +21,6 @@ export function slugForKpi(title: string): string | null {
 }
 
 type SbpMap = Record<SbpIndicatorKey, SbpIndicatorResult>;
-
-/**
- * The snapshot tiles, in the priority order the brief specifies. An entry
- * whose indicator is missing upstream is skipped rather than rendered with a
- * substituted value; a merely STALE indicator is kept, badged with its own
- * freshness state, because hiding it would be less honest than showing it
- * with its real date.
- */
-export function buildSnapshotTiles(args: {
-  sbp: SbpMap;
-  netLiquidReserves: SbpIndicatorResult;
-  /** Live spot USD/PKR (fxRates) — preferred over SBP's monthly average for the headline rate. */
-  usdPkrLive: Kpi;
-}): SnapshotTile[] {
-  const { sbp, netLiquidReserves, usdPkrLive } = args;
-
-  const fromSbp = (key: SbpIndicatorKey, label: string): SnapshotTile | null => {
-    const entry = sbp[key];
-    if (!entry) return null;
-    const slug = slugForKpi(entry.kpi.title);
-    if (!slug) return null;
-    return {
-      label,
-      kpi: entry.kpi,
-      href: `/${slug}`,
-      freshness: { severity: entry.meta.freshness.severity, label: FRESHNESS_STATE_LABEL[entry.meta.freshness.state] },
-    };
-  };
-
-  const reservesSlug = slugForKpi(netLiquidReserves.kpi.title);
-  const usdPkrSlug = slugForKpi("USD / PKR");
-
-  const tiles: (SnapshotTile | null)[] = [
-    fromSbp("cpiInflation", "CPI inflation (YoY)"),
-    fromSbp("coreInflation", "Core inflation (NFNE)"),
-    fromSbp("policyRate", "SBP policy rate"),
-    reservesSlug
-      ? {
-          label: "Foreign reserves (SBP)",
-          kpi: netLiquidReserves.kpi,
-          href: `/${reservesSlug}`,
-          freshness: {
-            severity: netLiquidReserves.meta.freshness.severity,
-            label: FRESHNESS_STATE_LABEL[netLiquidReserves.meta.freshness.state],
-          },
-        }
-      : null,
-    // The live spot quote, not SBP's monthly average — this tile is the
-    // "what is the rupee right now" figure, and it carries its own quote
-    // date via SourceStamp.
-    usdPkrSlug ? { label: "USD/PKR", kpi: usdPkrLive, href: `/${usdPkrSlug}` } : null,
-    fromSbp("currentAccount", "Current account"),
-    fromSbp("remittances", "Remittances"),
-    fromSbp("fiscalBalance", "Fiscal balance"),
-  ];
-
-  return tiles.filter((t): t is SnapshotTile => t !== null);
-}
 
 /** Thematic groups for the indicators table, in display order. */
 const INDICATOR_GROUPS: { group: string; keys: SbpIndicatorKey[] }[] = [

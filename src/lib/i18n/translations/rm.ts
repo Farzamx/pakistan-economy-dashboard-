@@ -556,21 +556,6 @@ export const rm: Translations = {
     statusLabel: "Market ki Soorat-e-Haal", updated: "Update",
   },
 
-  popularInsights: {
-    title: "Maqbool Baseerah", explore: "Daryaaft Karein →",
-    comparison: "Mawazna", budget: "Budget", provincial: "Soobayi",
-    insightPakVsIndia: "Pakistan bnam India GDP Namo",
-    insightTaxMoney: "Hukumat Tax ka Paisa Kahaan Kharch Karti Hai?",
-    insightDefence: "Defence Kharcha Waqt ke Saath",
-    insightEducation: "Taleem par Kharcha Soobon ke Mutabiq",
-    insightHealth: "Sehat par Kharcha: Pakistan bnam Dunya",
-    insightPunjab: "Punjab Budget Breakdown",
-    insightSindh: "Sindh Budget Breakdown",
-    insightDebtDefence: "Qarz Adaayegi bnam Defence",
-    insightRankings: "Pakistan ki Maashi Ranking Duniya Mein",
-    insightExportsImports: "Pakistan ki Baamdad aur Daraamad",
-  },
-
   pinnedIndicators: {
     title: "Aapke Liye Pin Shuda",
   },

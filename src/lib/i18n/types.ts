@@ -374,15 +374,6 @@ export interface Translations {
     statusLabel: string; updated: string;
   };
 
-  popularInsights: {
-    title: string; explore: string;
-    comparison: string; budget: string; provincial: string;
-    insightPakVsIndia: string; insightTaxMoney: string; insightDefence: string;
-    insightEducation: string; insightHealth: string; insightPunjab: string;
-    insightSindh: string; insightDebtDefence: string; insightRankings: string;
-    insightExportsImports: string;
-  };
-
   pinnedIndicators: {
     title: string;
   };

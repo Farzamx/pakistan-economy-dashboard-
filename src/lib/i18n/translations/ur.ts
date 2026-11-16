@@ -552,21 +552,6 @@ export const ur: Translations = {
     statusLabel: "مارکیٹ کی صورتحال", updated: "اپڈیٹ",
   },
 
-  popularInsights: {
-    title: "مقبول بصیرت", explore: "دریافت کریں →",
-    comparison: "موازنہ", budget: "بجٹ", provincial: "صوبائی",
-    insightPakVsIndia: "پاکستان بنام بھارت GDP نمو",
-    insightTaxMoney: "ٹیکس کا پیسہ کہاں جاتا ہے؟",
-    insightDefence: "دفاعی اخراجات",
-    insightEducation: "تعلیمی بجٹ",
-    insightHealth: "صحت کا بجٹ",
-    insightPunjab: "پنجاب بجٹ",
-    insightSindh: "سندھ بجٹ",
-    insightDebtDefence: "قرضہ بمقابلہ دفاع",
-    insightRankings: "صوبائی بجٹ درجہ بندی",
-    insightExportsImports: "برآمدات بمقابلہ درآمدات",
-  },
-
   pinnedIndicators: {
     title: "آپ کے لیے پن شدہ",
   },
