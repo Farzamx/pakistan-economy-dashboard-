@@ -16,21 +16,13 @@
 // are listed in EXCLUDED_DATASETS with the reason, and the page shows them
 // rather than quietly omitting them.
 
-import { getAllSbpIndicatorKeys } from "@/lib/data/sbp";
+import { getAllSbpIndicatorKeys, getSbpIndicatorFrequency } from "@/lib/data/sbp";
 import { DATASET_CATEGORIES, type DatasetCategory } from "./datasetCategories";
+import { frequencyFromDeclared, type FrequencyId, type PeriodKind } from "./datasetFrequency";
 
 // Re-exported so existing importers keep one import site for the catalogue.
 export { DATASET_CATEGORIES };
-export type { DatasetCategory };
-
-/** How a period is written down, so the exporter never reformats a fiscal label into a calendar date. */
-export type PeriodKind =
-  /** A specific observation date, "YYYY-MM-DD". */
-  | "date"
-  /** A calendar year, "2025". */
-  | "year"
-  /** A fiscal year ending 30 June, carried as its own label (e.g. FY2025). */
-  | "fiscalYear";
+export type { DatasetCategory, PeriodKind };
 
 export interface DatasetDefinition {
   /** URL-safe id, used as the download route parameter and the filename stem. */
@@ -38,10 +30,15 @@ export interface DatasetDefinition {
   name: string;
   category: DatasetCategory;
   /** Which loader produces this series. */
-  kind: "sbp" | "spi" | "worldbank-gdp" | "fred";
+  kind: "sbp" | "spi" | "worldbank-gdp" | "fred" | "qgdp";
   /** Loader argument: the SBP key, the World Bank country, or the FRED series id. */
   sourceKey: string;
   periodKind: PeriodKind;
+  /**
+   * The frequency the SOURCE publishes this series at. It is the only frequency the series is ever offered at: nothing is converted, aggregated or
+   * repeated into another one. The page also checks it against the observation dates (resolveFrequency) so a wrong declaration cannot stand.
+   */
+  frequency: FrequencyId;
   /** One-line description of what a reader is downloading. */
   description: string;
   /**
@@ -101,6 +98,12 @@ const SBP_META: Record<string, { name: string; category: DatasetCategory; descri
   fiscalBalance: { name: "Fiscal Balance", category: "Fiscal", description: "Consolidated fiscal balance, annual fiscal year (July–June)." },
 };
 
+function sbpFrequency(key: Parameters<typeof getSbpIndicatorFrequency>[0]): FrequencyId {
+  const id = frequencyFromDeclared(getSbpIndicatorFrequency(key));
+  if (!id) throw new Error(`datasetRegistry: SBP indicator "${key}" declares a frequency the catalogue does not know`);
+  return id;
+}
+
 function sbpDatasets(): DatasetDefinition[] {
   return getAllSbpIndicatorKeys().map((key) => {
     const meta = SBP_META[key];
@@ -116,6 +119,7 @@ function sbpDatasets(): DatasetDefinition[] {
       kind: "sbp" as const,
       sourceKey: key,
       periodKind: SBP_FISCAL_YEAR_KEYS.has(key) ? ("fiscalYear" as const) : ("date" as const),
+      frequency: sbpFrequency(key),
       description: meta.description,
       coverageNote: SBP_COVERAGE_NOTES[key],
     };
@@ -131,6 +135,7 @@ export const DATASETS: DatasetDefinition[] = [
     kind: "spi",
     sourceKey: "spi",
     periodKind: "date",
+    frequency: "weekly",
     description: "Sensitive Price Indicator — index level plus week-on-week and year-on-year change.",
     // Grounded in spi.ts: parseCombinedSpiTable() reads every row of the
     // "Page 1" table in the CURRENT week's PBS report and stops at the
@@ -150,6 +155,7 @@ export const DATASETS: DatasetDefinition[] = [
     kind: "worldbank-gdp",
     sourceKey: "PAK",
     periodKind: "year",
+    frequency: "yearly",
     description: "Annual real GDP growth.",
   },
   {
@@ -159,6 +165,7 @@ export const DATASETS: DatasetDefinition[] = [
     kind: "worldbank-gdp",
     sourceKey: "IND",
     periodKind: "year",
+    frequency: "yearly",
     description: "Annual real GDP growth, for peer comparison.",
   },
   {
@@ -168,11 +175,24 @@ export const DATASETS: DatasetDefinition[] = [
     kind: "worldbank-gdp",
     sourceKey: "BGD",
     periodKind: "year",
+    frequency: "yearly",
     description: "Annual real GDP growth, for peer comparison.",
   },
-  { id: "fred-fed-funds", name: "US Fed Funds Rate", category: "Global", kind: "fred", sourceKey: "fedFunds", periodKind: "date", description: "US federal funds effective rate, monthly." },
-  { id: "fred-us-10y", name: "US 10-Year Treasury Yield", category: "Global", kind: "fred", sourceKey: "us10y", periodKind: "date", description: "US 10-year Treasury constant-maturity yield, monthly." },
-  { id: "fred-us-cpi", name: "US CPI Inflation", category: "Global", kind: "fred", sourceKey: "usCpi", periodKind: "date", description: "US consumer price inflation, year-on-year, monthly." },
+  { id: "fred-fed-funds", name: "US Fed Funds Rate", category: "Global", kind: "fred", sourceKey: "fedFunds", periodKind: "date", frequency: "monthly", description: "US federal funds effective rate, monthly." },
+  { id: "fred-us-10y", name: "US 10-Year Treasury Yield", category: "Global", kind: "fred", sourceKey: "us10y", periodKind: "date", frequency: "monthly", description: "US 10-year Treasury constant-maturity yield, monthly." },
+  { id: "fred-us-cpi", name: "US CPI Inflation", category: "Global", kind: "fred", sourceKey: "usCpi", periodKind: "date", frequency: "monthly", description: "US consumer price inflation, year-on-year, monthly." },
+  {
+    // The only genuinely QUARTERLY series the project holds. Read through the existing getQuarterlyGdpKpi() (SBP's QGDP.xlsx, "Growth_Q" sheet), so a
+    // download is exactly the series the quarterly-GDP card on the Overview already draws. Quarters are fiscal-year quarters (Q1 = July-September).
+    id: "sbp-quarterly-gdp-growth",
+    name: "Quarterly GDP Growth (YoY)",
+    category: "Real economy",
+    kind: "qgdp",
+    sourceKey: "qgdp",
+    periodKind: "quarter",
+    frequency: "quarterly",
+    description: "Year-on-year growth of gross value added, by fiscal-year quarter (Q1 = July-September).",
+  },
 ];
 
 export interface ExcludedDataset {

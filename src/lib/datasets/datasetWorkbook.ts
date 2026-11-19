@@ -48,10 +48,26 @@ export interface SheetBuildResult {
  * the file was generated as two clearly different things, so a reader can
  * never mistake "downloaded today" for "data as of today".
  */
+const PERIOD_HEADER: Record<LoadedDataset["definition"]["periodKind"], string> = {
+  fiscalYear: "Fiscal year",
+  year: "Year",
+  date: "Observation date",
+  quarter: "Quarter end",
+};
+
+/** What a period IS, in words, so fiscal and calendar years (and fiscal quarters) can never be mistaken for one another. */
+const REPORTING_BASIS: Record<LoadedDataset["definition"]["periodKind"], string> = {
+  fiscalYear: "Fiscal year (1 July - 30 June), labelled by the year it ends, e.g. FY2025 = July 2024 to June 2025",
+  year: "Calendar year (1 January - 31 December)",
+  date: "Observation date, as published by the source",
+  quarter: "Fiscal-year quarter (Q1 = July-September, Q4 = April-June); the date shown is the quarter END",
+};
+
 export function buildSheetData(ds: LoadedDataset, generatedAtIso: string): SheetBuildResult {
   const def = ds.definition;
-  const periodHeader =
-    def.periodKind === "fiscalYear" ? "Fiscal year" : def.periodKind === "year" ? "Year" : "Observation date";
+  const periodHeader = PERIOD_HEADER[def.periodKind];
+  // A column for the source's own period wording appears only when the series has one (a quarterly series: "Q3 FY26").
+  const hasLabels = ds.rows.some((r) => r.label);
 
   const aoa: (string | number)[][] = [
     ["PEIC — Pakistan Economic Intelligence Center"],
@@ -59,12 +75,21 @@ export function buildSheetData(ds: LoadedDataset, generatedAtIso: string): Sheet
     ["Description", def.description],
     ["Unit", ds.unit],
     ["Frequency", ds.frequency],
+    ...(ds.frequencyNote ? [["Frequency note", ds.frequencyNote]] : []),
     ["Source", ds.source],
     ["Observations", ds.rows.length],
     [
       "Coverage",
       ds.rows.length > 0 ? `${ds.rows[0].period} to ${ds.rows[ds.rows.length - 1].period}` : "No observations available",
     ],
+    // Present only when a date range was applied: says this file is a slice, and what the whole series holds.
+    ...(ds.selection
+      ? [
+          ["Date filter", `${ds.selection.from ?? "earliest available"} to ${ds.selection.to ?? "latest available"}`],
+          ["Full series coverage", ds.selection.fullCoverage ? `${ds.selection.fullCoverage} (${ds.selection.fullObservations} observations)` : "No observations available"],
+        ]
+      : []),
+    ["Reporting basis", REPORTING_BASIS[def.periodKind]],
     ...(ds.freshnessState ? [["Data status", ds.freshnessState]] : []),
     // Travels with the file so the context is not lost once the workbook
     // leaves the page — a short coverage window or an annual cadence is
@@ -75,15 +100,19 @@ export function buildSheetData(ds: LoadedDataset, generatedAtIso: string): Sheet
     ["File generated", `${generatedAtIso} (download time — NOT an observation date)`],
     ...(ds.error ? [["Note", ds.error]] : []),
     [],
-    [periodHeader, "Value", "Unit", ...ds.extraColumns],
+    hasLabels ? [periodHeader, "Reporting period (source label)", "Value", "Unit", ...ds.extraColumns] : [periodHeader, "Value", "Unit", ...ds.extraColumns],
   ];
   const headerRowIndex = aoa.length - 1;
 
   for (const row of ds.rows) {
-    aoa.push([row.period, row.value, ds.unit, ...ds.extraColumns.map((c) => row.extra?.[c] ?? "")]);
+    aoa.push(
+      hasLabels
+        ? [row.period, row.label ?? "", row.value, ds.unit, ...ds.extraColumns.map((c) => row.extra?.[c] ?? "")]
+        : [row.period, row.value, ds.unit, ...ds.extraColumns.map((c) => row.extra?.[c] ?? "")],
+    );
   }
   if (ds.rows.length === 0) {
-    aoa.push(["No observations available for this series."]);
+    aoa.push([ds.selection ? "No observations fall inside the selected date range." : "No observations available for this series."]);
   }
   return { aoa, headerRowIndex };
 }
@@ -91,7 +120,8 @@ export function buildSheetData(ds: LoadedDataset, generatedAtIso: string): Sheet
 function sheetFromData(ds: LoadedDataset, generatedAtIso: string): XLSX.WorkSheet {
   const { aoa } = buildSheetData(ds, generatedAtIso);
   const sheet = XLSX.utils.aoa_to_sheet(aoa);
-  sheet["!cols"] = [{ wch: 22 }, { wch: 16 }, { wch: 18 }, ...ds.extraColumns.map(() => ({ wch: 12 }))];
+  const labelled = ds.rows.some((r) => r.label);
+  sheet["!cols"] = [{ wch: 22 }, ...(labelled ? [{ wch: 30 }] : []), { wch: 16 }, { wch: 18 }, ...ds.extraColumns.map(() => ({ wch: 12 }))];
   return sheet;
 }
 
@@ -112,14 +142,25 @@ export function buildSingleWorkbook(ds: LoadedDataset, generatedAtIso: string): 
  * request. The contents sheet lists every dataset INCLUDING any that failed
  * to load, so nothing is silently dropped from the bulk file.
  */
-export function buildBulkWorkbook(datasets: LoadedDataset[], generatedAtIso: string): Buffer {
+export interface BulkOptions {
+  /** A single frequency every included dataset shares (e.g. "Monthly"). Omitted for the mixed-frequency workbook, where each sheet keeps its OWN frequency. */
+  frequency?: string;
+  from?: string;
+  to?: string;
+}
+
+export function buildBulkWorkbook(datasets: LoadedDataset[], generatedAtIso: string, options: BulkOptions = {}): Buffer {
   const wb = XLSX.utils.book_new();
 
   const contents: (string | number)[][] = [
     ["PEIC — Pakistan Economic Intelligence Center"],
-    ["All available datasets"],
+    [options.frequency ? `All available ${options.frequency.toLowerCase()} datasets` : "All available datasets"],
     ["File generated", `${generatedAtIso} (download time — NOT an observation date)`],
     ["Datasets included", datasets.length],
+    ...(options.frequency
+      ? [["Frequency", `${options.frequency} only: every sheet in this workbook has ${options.frequency.toLowerCase()} observations; no other frequency is included or derived.`]]
+      : [["Frequency", "Mixed: each sheet keeps the frequency its source publishes (see the Frequency column). Observations are never converted between frequencies."]]),
+    ...(options.from || options.to ? [["Date filter", `${options.from ?? "earliest available"} to ${options.to ?? "latest available"}`]] : []),
     [],
     ["Indicator", "Category", "Unit", "Frequency", "Source", "Observations", "Coverage", "Status"],
   ];

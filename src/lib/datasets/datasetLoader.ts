@@ -10,12 +10,16 @@ import type { SbpIndicatorKey } from "@/lib/data/sbp";
 import { getSpiHistory } from "@/lib/data/spi";
 import { getGdpGrowthHistory, type WorldBankCountryCode } from "@/lib/data/worldBank";
 import { getFedFundsHistory, getUs10yHistory, getUsCpiInflationHistory } from "@/lib/data/fred";
+import { getQuarterlyGdpKpi } from "@/lib/data/quarterlyGdp";
 import type { DatasetDefinition } from "./datasetRegistry";
+import { FREQUENCY_LABEL, quarterLabelToEndDate, resolveFrequency, sortChronologically } from "./datasetFrequency";
 
 export interface DatasetRow {
   /** The period label exactly as the source expresses it — never reformatted. */
   period: string;
   value: number;
+  /** The source's own wording for the period where it differs from `period` (a quarterly series: period "2026-03-31", label "Q3 FY26"). */
+  label?: string;
   /** Extra published columns (e.g. SPI's own WoW/YoY), kept only when the source itself provides them. */
   extra?: Record<string, number>;
 }
@@ -30,8 +34,12 @@ export interface LoadedDataset {
   extraColumns: string[];
   /** The freshness state this project already computed, when the source carries one. */
   freshnessState?: string;
+  /** Set when the declared frequency was corrected because the observation dates show another cadence (so a file never labels a row with a frequency its dates contradict). */
+  frequencyNote?: string;
   /** Set when the series could not be loaded at all. */
   error?: string;
+  /** Present only when a date range was applied (see applyDateRange): what was asked for and what the series holds in full. */
+  selection?: { from?: string; to?: string; fullCoverage: string | null; fullObservations: number };
 }
 
 /** "2025-06-30" -> "FY2025". Pakistan's fiscal year ends 30 June. */
@@ -40,7 +48,24 @@ function toFiscalYearLabel(date: string): string {
   return Number(month) === 6 ? `FY${year}` : date;
 }
 
+/**
+ * A series as the source publishes it, in chronological order. Order is normalised here, once, so every consumer (page, workbook, CSV) agrees; the
+ * values and periods themselves are never touched.
+ */
 export async function loadDataset(def: DatasetDefinition): Promise<LoadedDataset> {
+  const loaded = await loadRaw(def);
+  const rows = sortChronologically(loaded.rows);
+  // A declared frequency is a claim; the observation dates are the evidence. If they clearly disagree (e.g. a series declared weekly that holds one point
+  // a month, as a stored snapshot can), the series is filed, labelled and exported under the cadence it actually has, and the file says why.
+  const resolved = resolveFrequency(loaded.frequency, rows.map((r) => r.period));
+  if (resolved.mismatch && resolved.observed && resolved.declared) {
+    const note = `The source declares this series as ${FREQUENCY_LABEL[resolved.declared].toLowerCase()}, but its observations are spaced ${FREQUENCY_LABEL[resolved.observed].toLowerCase()}, so it is filed and labelled as ${FREQUENCY_LABEL[resolved.observed].toLowerCase()}.`;
+    return { ...loaded, rows, frequency: FREQUENCY_LABEL[resolved.observed], frequencyNote: note };
+  }
+  return { ...loaded, rows };
+}
+
+async function loadRaw(def: DatasetDefinition): Promise<LoadedDataset> {
   const base: Omit<LoadedDataset, "rows" | "unit" | "source" | "frequency"> = { definition: def, extraColumns: [] };
   try {
     switch (def.kind) {
@@ -86,6 +111,25 @@ export async function loadDataset(def: DatasetDefinition): Promise<LoadedDataset
           unit: "Percent",
           source: "World Bank (NY.GDP.MKTP.KD.ZG)",
           frequency: "Annual",
+        };
+      }
+      case "qgdp": {
+        const q = await getQuarterlyGdpKpi();
+        const rows: DatasetRow[] = [];
+        for (const point of q.trend) {
+          // The source's own quarter label ("Q3 FY26") becomes its quarter-END date; the label is kept beside it.
+          const end = quarterLabelToEndDate(point.month);
+          if (end) rows.push({ period: end, value: point.value, label: point.month });
+        }
+        return {
+          ...base,
+          rows,
+          unit: "Percent (YoY)",
+          source: "SBP / PBS (QGDP.xlsx)",
+          frequency: "Quarterly",
+          // The loader falls back to a stored snapshot when SBP's file cannot be read; the file says so rather than passing it off as live.
+          freshnessState: q.isFallback ? "Stored snapshot (live SBP file unavailable)" : undefined,
+          ...(rows.length === 0 ? { error: "The quarterly GDP series could not be read." } : {}),
         };
       }
       case "fred": {

@@ -4,6 +4,7 @@ import Section from "@/components/shell/Section";
 import DatasetBrowser, { type DatasetRowView } from "@/components/datasets/DatasetBrowser";
 import { DATASETS, EXCLUDED_DATASETS } from "@/lib/datasets/datasetRegistry";
 import { loadDataset } from "@/lib/datasets/datasetLoader";
+import { resolveFrequency } from "@/lib/datasets/datasetFrequency";
 import { SITE_URL, SITE_NAME } from "@/lib/seoConfig";
 
 // Download Datasets.
@@ -20,7 +21,7 @@ import { SITE_URL, SITE_NAME } from "@/lib/seoConfig";
 const PAGE_URL = `${SITE_URL}/download-datasets`;
 const TITLE = "Download Pakistan Economic Datasets";
 const DESCRIPTION =
-  "Download Pakistan economic indicators as Excel workbooks — inflation, policy rate, reserves, trade, money supply and more, each with observation periods, units and source attribution.";
+  "Download Pakistan economic indicators as Excel or CSV files — inflation, policy rate, reserves, trade, money supply and more, by yearly, quarterly or monthly frequency, each with observation periods, units and source attribution.";
 
 export const metadata: Metadata = {
   title: `${TITLE} — ${SITE_NAME}`,
@@ -36,7 +37,10 @@ export const revalidate = 3600;
 export default async function DownloadDatasetsPage() {
   const loaded = await Promise.all(DATASETS.map(loadDataset));
 
-  const rows: DatasetRowView[] = loaded.map((ds) => ({
+  const rows: DatasetRowView[] = loaded.map((ds) => {
+    // loadDataset has already corrected a declared frequency that the observation dates contradict; this reads the corrected one.
+    const resolved = resolveFrequency(ds.frequency, ds.rows.map((r) => r.period));
+    return {
     id: ds.definition.id,
     name: ds.definition.name,
     category: ds.definition.category,
@@ -50,7 +54,14 @@ export default async function DownloadDatasetsPage() {
     contextHref: ds.definition.contextHref,
     error: ds.error,
     status: ds.freshnessState,
-  }));
+    periodKind: ds.definition.periodKind,
+    frequencyNote: ds.frequencyNote,
+    frequencyId: resolved.id ?? ds.definition.frequency,
+    // Every observation, exactly as the source published it (period, value and, for quarters, the source's own label): the browser filters these in
+    // place, so the preview and the date range never need a second request and can never disagree with the catalogue.
+    points: ds.rows.map((r) => (r.label ? ([r.period, r.value, r.label] as const) : ([r.period, r.value] as const))),
+    };
+  });
 
   const downloadable = rows.filter((r) => r.observations > 0).length;
   const totalObservations = rows.reduce((n, r) => n + r.observations, 0);
@@ -64,8 +75,9 @@ export default async function DownloadDatasetsPage() {
             Download datasets
           </h1>
           <p className="mt-1.5 max-w-3xl text-[14px] leading-relaxed text-pe-text-2">
-            Every indicator PEIC tracks with a full history, as an Excel workbook. Each file carries the observation
-            period, the value in its original unit, and the source — the same figures shown on the indicator pages, not a
+            Every indicator PEIC tracks with a full history, as an Excel workbook or a CSV file. Choose a frequency to see
+            only the series the source genuinely publishes at that frequency. Each file carries the observation period,
+            the value in its original unit, and the source — the same figures shown on the indicator pages, not a
             separate copy.
           </p>
           <div className="mt-3 flex flex-wrap items-center gap-3">
@@ -85,7 +97,7 @@ export default async function DownloadDatasetsPage() {
         <Section
           id="dataset-list"
           title="Available datasets"
-          description="Search or filter, then download any series individually."
+          description="Select a frequency, narrow the date range, then preview or download any series individually."
           flush
         >
           <DatasetBrowser rows={rows} />
@@ -109,6 +121,23 @@ export default async function DownloadDatasetsPage() {
               mistaken for freshly published data.
             </li>
             <li>Values are numeric cells in their original units — nothing is rescaled, interpolated or gap-filled.</li>
+            <li>
+              <strong className="font-medium text-pe-text">A frequency is a filter, never a conversion.</strong> Yearly shows
+              only annual series, Quarterly only quarterly ones, Monthly only monthly ones. Annual figures are never
+              spread across quarters or months, and monthly figures are never averaged into quarters or years — a series
+              appears only at the frequency its source publishes. A frequency with no series says so.
+            </li>
+            <li>
+              <strong className="font-medium text-pe-text">Fiscal and calendar years are labelled differently.</strong>{" "}
+              <code className="font-mono text-[12px]">FY2025</code> is July 2024 to June 2025;{" "}
+              <code className="font-mono text-[12px]">2025</code> is January to December. Quarterly figures are fiscal-year
+              quarters (Q1 is July–September) and show the quarter-end date beside the source&rsquo;s own label.
+            </li>
+            <li>
+              A date range only removes observations. A file made with one says so in its header, alongside the full range
+              the series covers. Datasets of different frequencies are never merged into one table: the combined CSV is
+              offered only for a single frequency, and the combined workbook keeps one sheet per series.
+            </li>
           </ul>
         </Section>
 
