@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Section from "@/components/shell/Section";
 import DatasetBrowser, { type DatasetRowView } from "@/components/datasets/DatasetBrowser";
+import ResearchDatasets from "@/components/datasets/ResearchDatasets";
 import { DATASETS, EXCLUDED_DATASETS } from "@/lib/datasets/datasetRegistry";
 import { loadDataset } from "@/lib/datasets/datasetLoader";
 import { resolveFrequency } from "@/lib/datasets/datasetFrequency";
@@ -93,6 +94,9 @@ export default async function DownloadDatasetsPage() {
             </span>
           </div>
         </header>
+
+        {/* Curated research files: a separate section, outside the live catalogue and its frequency selector. */}
+        <ResearchDatasets />
 
         <Section
           id="dataset-list"
