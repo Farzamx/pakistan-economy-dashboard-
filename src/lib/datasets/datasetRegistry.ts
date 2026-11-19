@@ -197,7 +197,10 @@ export const DATASETS: DatasetDefinition[] = [
 
 export interface ExcludedDataset {
   name: string;
+  /** The full explanation, shown on request. */
   reason: string;
+  /** One short line for the compact list on the page. */
+  shortReason: string;
 }
 
 /**
@@ -206,10 +209,10 @@ export interface ExcludedDataset {
  * wondering whether the catalogue is simply incomplete.
  */
 export const EXCLUDED_DATASETS: ExcludedDataset[] = [
-  { name: "Gold, silver, WTI, Brent, natural gas, US Dollar Index", reason: "The market data provider supplies only the latest quote to this project — there is no stored history to export." },
-  { name: "Live FX cross-rates (EUR/PKR, GBP/PKR, SAR/PKR)", reason: "Intraday spot quotes with no historical series held by PEIC. The SBP monthly USD/PKR average is available above." },
-  { name: "KSE-100 proxy (Pakistan ETF)", reason: "Latest quote only. Real KSE-100 index history requires a commercial PSX licence." },
-  { name: "Net liquid reserves (weekly Forex_Arch series)", reason: "Held as a short rolling trend rather than a full archive; the monthly SBP reserves series above covers the same measure with full history." },
+  { name: "Gold, silver, WTI, Brent, natural gas, US Dollar Index", shortReason: "Latest quote only; no stored history.", reason: "The market data provider supplies only the latest quote to this project — there is no stored history to export." },
+  { name: "Live FX cross-rates (EUR/PKR, GBP/PKR, SAR/PKR)", shortReason: "Intraday quotes; no history held. The SBP monthly USD/PKR average is available.", reason: "Intraday spot quotes with no historical series held by PEIC. The SBP monthly USD/PKR average is available above." },
+  { name: "KSE-100 proxy (Pakistan ETF)", shortReason: "Latest quote only; index history needs a PSX licence.", reason: "Latest quote only. Real KSE-100 index history requires a commercial PSX licence." },
+  { name: "Net liquid reserves (weekly Forex_Arch series)", shortReason: "Short rolling trend only; monthly SBP reserves cover the same measure.", reason: "Held as a short rolling trend rather than a full archive; the monthly SBP reserves series above covers the same measure with full history." },
 ];
 
 export function getDataset(id: string): DatasetDefinition | undefined {

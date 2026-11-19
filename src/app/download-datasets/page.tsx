@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import Section from "@/components/shell/Section";
 import DatasetBrowser, { type DatasetRowView } from "@/components/datasets/DatasetBrowser";
 import ResearchDatasets from "@/components/datasets/ResearchDatasets";
-import { DATASETS, EXCLUDED_DATASETS } from "@/lib/datasets/datasetRegistry";
+import { HowDownloadsWork, UnavailableSeries } from "@/components/datasets/DatasetPageSections";
+import { DATASETS } from "@/lib/datasets/datasetRegistry";
 import { loadDataset } from "@/lib/datasets/datasetLoader";
 import { resolveFrequency } from "@/lib/datasets/datasetFrequency";
 import { SITE_URL, SITE_NAME } from "@/lib/seoConfig";
@@ -65,107 +64,47 @@ export default async function DownloadDatasetsPage() {
   });
 
   const downloadable = rows.filter((r) => r.observations > 0).length;
-  const totalObservations = rows.reduce((n, r) => n + r.observations, 0);
 
   return (
     <div className="min-h-screen w-full bg-pe-bg">
-      <div className="mx-auto flex max-w-[1200px] flex-col gap-3 px-3 py-4 sm:px-4 lg:px-6">
-        <header className="border-b border-pe-border pb-4">
-          <p className="text-[12px] font-medium uppercase tracking-[0.06em] text-pe-text-3">Data</p>
-          <h1 className="mt-1 text-[24px] font-semibold leading-tight tracking-[-0.01em] text-pe-text [text-wrap:balance] sm:text-[28px]">
-            Download datasets
-          </h1>
-          <p className="mt-1.5 max-w-3xl text-[14px] leading-relaxed text-pe-text-2">
-            Every indicator PEIC tracks with a full history, as an Excel workbook or a CSV file. Choose a frequency to see
-            only the series the source genuinely publishes at that frequency. Each file carries the observation period,
-            the value in its original unit, and the source — the same figures shown on the indicator pages, not a
-            separate copy.
-          </p>
-          <div className="mt-3 flex flex-wrap items-center gap-3">
-            <a
-              href="/api/datasets/all"
-              download
-              className="inline-flex items-center rounded-[var(--pe-radius)] border border-pe-accent bg-pe-surface px-3.5 py-2 text-[13px] font-semibold text-pe-accent transition-colors hover:bg-pe-surface-2"
-            >
-              Download all {downloadable} datasets (.xlsx)
-            </a>
-            <span className="font-mono text-[11px] text-pe-text-3">
-              one workbook · one sheet per indicator · {totalObservations.toLocaleString("en-GB")} observations
-            </span>
+      <div className="mx-auto flex max-w-[1200px] flex-col gap-8 px-3 py-6 sm:px-4 lg:gap-10 lg:px-6">
+        <header className="flex flex-col gap-4 border-b border-pe-border pb-6 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-[12px] font-medium uppercase tracking-[0.06em] text-pe-text-3">Data</p>
+            <h1 className="mt-1 text-[24px] font-semibold leading-tight tracking-[-0.01em] text-pe-text [text-wrap:balance] sm:text-[28px]">
+              Download Datasets
+            </h1>
+            <p className="mt-1.5 max-w-3xl text-[14px] leading-relaxed text-pe-text-2 [text-wrap:pretty]">
+              Download historical Pakistani economic indicators in Excel and CSV formats. Filter by frequency and date range.
+            </p>
           </div>
+          {/* Secondary on purpose: the page is for choosing a series; this is the shortcut for everything at once. */}
+          <a
+            href="/api/datasets/all"
+            download
+            title="One workbook, one sheet per indicator, every observation"
+            className="inline-flex h-9 shrink-0 items-center justify-center self-start rounded-[var(--pe-radius)] border border-pe-border-strong px-3.5 text-[13px] font-medium text-pe-text transition-colors hover:bg-pe-surface-2 sm:self-auto"
+          >
+            Download all {downloadable} datasets (.xlsx)
+          </a>
         </header>
 
         {/* Curated research files: a separate section, outside the live catalogue and its frequency selector. */}
         <ResearchDatasets />
 
-        <Section
-          id="dataset-list"
-          title="Available datasets"
-          description="Select a frequency, narrow the date range, then preview or download any series individually."
-          flush
-        >
+        <section id="dataset-list" aria-labelledby="dataset-list-heading">
+          <div className="mb-3">
+            <h2 id="dataset-list-heading" className="text-[17px] font-semibold text-pe-text">
+              Available datasets
+            </h2>
+            <p className="mt-0.5 text-[13px] text-pe-text-2">Live indicators. Pick a frequency and date range, then preview or download any series.</p>
+          </div>
           <DatasetBrowser rows={rows} />
-        </Section>
+        </section>
 
-        <Section id="dataset-notes" title="What's in each file" description="And what these files deliberately do not do.">
-          <ul className="flex list-disc flex-col gap-1.5 ps-5 text-[13px] leading-relaxed text-pe-text-2">
-            <li>
-              A header block naming the indicator, unit, frequency, source, observation count and coverage, then one row
-              per observation.
-            </li>
-            <li>
-              <strong className="font-medium text-pe-text">Observation periods are kept as the source publishes them.</strong>{" "}
-              Dated observations stay as dates, calendar years stay as years, and fiscal years stay as{" "}
-              <code className="font-mono text-[12px]">FY2025</code> — they are never converted into calendar dates, which
-              would invent a precision the source never published.
-            </li>
-            <li>
-              Every file separates the <strong className="font-medium text-pe-text">observation period</strong> from the{" "}
-              <strong className="font-medium text-pe-text">download time</strong>, so a freshly downloaded file is never
-              mistaken for freshly published data.
-            </li>
-            <li>Values are numeric cells in their original units — nothing is rescaled, interpolated or gap-filled.</li>
-            <li>
-              <strong className="font-medium text-pe-text">A frequency is a filter, never a conversion.</strong> Yearly shows
-              only annual series, Quarterly only quarterly ones, Monthly only monthly ones. Annual figures are never
-              spread across quarters or months, and monthly figures are never averaged into quarters or years — a series
-              appears only at the frequency its source publishes. A frequency with no series says so.
-            </li>
-            <li>
-              <strong className="font-medium text-pe-text">Fiscal and calendar years are labelled differently.</strong>{" "}
-              <code className="font-mono text-[12px]">FY2025</code> is July 2024 to June 2025;{" "}
-              <code className="font-mono text-[12px]">2025</code> is January to December. Quarterly figures are fiscal-year
-              quarters (Q1 is July–September) and show the quarter-end date beside the source&rsquo;s own label.
-            </li>
-            <li>
-              A date range only removes observations. A file made with one says so in its header, alongside the full range
-              the series covers. Datasets of different frequencies are never merged into one table: the combined CSV is
-              offered only for a single frequency, and the combined workbook keeps one sheet per series.
-            </li>
-          </ul>
-        </Section>
+        <HowDownloadsWork />
 
-        <Section
-          id="dataset-exclusions"
-          title="Series that cannot be downloaded"
-          description="Shown here rather than quietly left out of the list."
-        >
-          <dl className="flex flex-col gap-2.5">
-            {EXCLUDED_DATASETS.map((x) => (
-              <div key={x.name}>
-                <dt className="text-[13px] font-medium text-pe-text">{x.name}</dt>
-                <dd className="mt-0.5 text-[13px] leading-relaxed text-pe-text-2">{x.reason}</dd>
-              </div>
-            ))}
-          </dl>
-          <p className="mt-3 border-t border-pe-border pt-3 text-[13px] text-pe-text-2">
-            Looking for a specific indicator?{" "}
-            <Link href="/pakistan-economic-indicators" className="text-pe-accent hover:underline">
-              Browse all indicators
-            </Link>
-            .
-          </p>
-        </Section>
+        <UnavailableSeries />
       </div>
     </div>
   );

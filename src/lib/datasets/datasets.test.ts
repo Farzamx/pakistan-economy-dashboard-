@@ -72,6 +72,14 @@ describe("registry coverage", () => {
     for (const quoteOnly of ["gold", "kse-100", "cross-rate"]) expect(text, quoteOnly).toContain(quoteOnly);
   });
 
+  it("gives every excluded series one short reason for the page, with the full reason kept behind a disclosure", () => {
+    for (const x of EXCLUDED_DATASETS) {
+      expect(x.shortReason.length, x.name).toBeGreaterThan(10);
+      expect(x.shortReason.length, x.name).toBeLessThan(x.reason.length);
+      expect(x.shortReason.length, x.name).toBeLessThanOrEqual(110);
+    }
+  });
+
   it("fiscal-year handling is declared only for the annual fiscal series", () => {
     expect(getDataset("sbp-fiscal-balance")?.periodKind).toBe("fiscalYear");
     expect(getDataset("sbp-cpi-inflation")?.periodKind).toBe("date");

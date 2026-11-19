@@ -9,8 +9,9 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import * as XLSX from "xlsx";
 import ResearchDatasetsSection from "@/components/datasets/ResearchDatasets";
+import { HowDownloadsWork, UnavailableSeries } from "@/components/datasets/DatasetPageSections";
 import { requiresLogin } from "@/lib/accessPolicy";
-import { DATASETS, getDataset } from "./datasetRegistry";
+import { DATASETS, EXCLUDED_DATASETS, getDataset } from "./datasetRegistry";
 import { offeredFrequencies, countByFrequency } from "./datasetFrequency";
 import { PAKISTAN_30_YEAR as D, RESEARCH_DATASETS, formatFileSize, researchFileHref } from "./researchDatasets";
 
@@ -184,7 +185,7 @@ describe("the page section", () => {
     expect(html).toContain("An annual historical dataset covering Pakistan&#x27;s macroeconomic performance");
   });
   it("displays coverage, frequency, variables, observations and source institutions", () => {
-    for (const s of ["FY1995-96 to FY2024-25", "Annual", ">64<", "30 fiscal years", "World Bank, IMF, Ministry of Finance, State Bank of Pakistan"]) expect(html, s).toContain(s);
+    for (const s of ["FY1995-96 to FY2024-25", "Annual", "64 variables", "30 annual observations", "World Bank, IMF, Ministry of Finance, State Bank of Pakistan"]) expect(html, s).toContain(s);
   });
   it("offers the four main downloads plus the optional derived CSV, each a download link to its own file", () => {
     for (const f of D.files) {
@@ -196,7 +197,7 @@ describe("the page section", () => {
     expect(html).toContain("CSV dataset (.csv)");
     expect(html).toContain("Codebook (.pdf)");
     expect(html).toContain("SPSS import syntax (.sps)");
-    expect(html).toContain("Optional:");
+    expect(html).toContain("Also available:");
   });
   it("has no frequency selector and no quarterly or monthly download", () => {
     expect(html).not.toContain("Select data frequency");
@@ -204,6 +205,11 @@ describe("the page section", () => {
     expect(html).not.toMatch(/href="[^"]*(frequency=|quarterly|monthly)/i);
     expect(html).not.toContain("/api/datasets");
     expect(html).toContain("not offered quarterly or monthly");
+  });
+  it("keeps the technical notes in a collapsible \"Dataset notes\", not removed", () => {
+    expect(html).toContain("<details");
+    expect(html).toContain("Dataset notes");
+    for (const n of D.notes) expect(html).toContain(n.slice(0, 40).replace(/'/g, "&#x27;"));
   });
   it("says the build scripts and raw downloads cited in the files are not published", () => {
     expect(html).toContain("kept internally and are not published here");
@@ -244,5 +250,30 @@ describe("nothing private is in the published files", () => {
     const blobs = [text("csv"), text("csv-derived"), text("sps"), cells.join("\n")];
     const pattern = /C:\\+ECONOMY|C:\\+Users|farza|@gmail|ECONOMY DASHBOARD|\.env\b|api[_-]?key|secret|password|supabase/i;
     for (const b of blobs) expect(pattern.exec(b)?.[0]).toBeUndefined();
+  });
+});
+
+describe("the supporting page sections (How downloads work, Not available)", () => {
+  const html = renderToStaticMarkup(createElement(HowDownloadsWork)) + renderToStaticMarkup(createElement(UnavailableSeries));
+
+  it("keeps every rule that used to be listed, now behind one collapsible", () => {
+    expect(html).toContain("How downloads work");
+    for (const s of [
+      "Original observation periods are kept",
+      "FY2025",
+      "never interpolated or gap-filled",
+      "Frequency selection filters; it never converts",
+      "A date range only removes observations",
+      "Combined CSV files never mix frequencies",
+    ])
+      expect(html, s).toContain(s);
+  });
+  it("names every unavailable series with a short reason, keeps the full reason and the Browse all indicators link", () => {
+    for (const x of EXCLUDED_DATASETS) {
+      expect(html).toContain(x.name);
+      expect(html).toContain(x.shortReason.replace(/'/g, "&#x27;"));
+    }
+    expect(html).toContain('href="/pakistan-economic-indicators"');
+    expect(html).toContain("Browse all indicators");
   });
 });
