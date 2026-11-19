@@ -10,7 +10,7 @@ export const ur: Translations = {
   appNav: {
     moneyRates: "زر اور شرحِ سود", fiscal: "مالیاتی", allIndicators: "تمام اشارے", backToSite: "ویب سائٹ پر واپس",
     mainNav: "مرکزی نیویگیشن", openMenu: "نیویگیشن مینو کھولیں", closeMenu: "نیویگیشن مینو بند کریں", openSearch: "تلاش", closeSearch: "تلاش بند کریں",
-    skipToContent: "مرکزی مواد پر جائیں", darkMode: "ڈارک موڈ", account: "اکاؤنٹ", currentSection: "موجودہ حصہ", onThisPage: "اس صفحے پر",
+    skipToContent: "مرکزی مواد پر جائیں", darkMode: "ڈارک موڈ", account: "اکاؤنٹ", currentSection: "موجودہ حصہ", onThisPage: "اس صفحے پر", downloadDatasets: "ڈیٹا سیٹس ڈاؤن لوڈ کریں",
   },
 
   nav: {

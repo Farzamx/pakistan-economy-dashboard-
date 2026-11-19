@@ -21,6 +21,21 @@ const NAV_LINKS = [
 
 const SCROLL_THRESHOLD = 80;
 
+// The same shortcut the app header carries (DownloadDatasetsButton), in this site's own tokens. A plain link to the one existing page: a signed-out
+// visitor is sent to sign-in with the page as the destination by src/proxy.ts, exactly as for any other protected link.
+const DOWNLOAD_HREF = "/download-datasets";
+const DOWNLOAD_LABEL = "Download Datasets";
+
+function DownloadIcon({ size }: { size: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M12 3v12" />
+      <path d="m7 11 5 5 5-5" />
+      <path d="M5 20h14" />
+    </svg>
+  );
+}
+
 export default function MarketingNav() {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
@@ -99,28 +114,45 @@ export default function MarketingNav() {
           </Link>
         ))}
       </nav>
-      <Link
-        href="/login"
-        className="hidden text-sm font-medium text-[var(--muted)] transition-colors hover:text-[var(--paper)] min-[1024px]:block"
-        style={{ fontFamily: "var(--font-marketing-body)" }}
-      >
-        Sign in
-      </Link>
+      <div className="hidden items-center gap-6 min-[1024px]:flex" style={{ fontFamily: "var(--font-marketing-body)" }}>
+        <Link
+          href={DOWNLOAD_HREF}
+          data-download-datasets-shortcut
+          className="inline-flex items-center gap-2 rounded-lg border border-[var(--paper)]/25 px-3 py-1.5 text-sm font-medium text-[var(--paper)]/90 transition-colors hover:border-[var(--paper)]/50 hover:text-[var(--paper)]"
+        >
+          <DownloadIcon size={15} />
+          {DOWNLOAD_LABEL}
+        </Link>
+        <Link href="/login" className="text-sm font-medium text-[var(--muted)] transition-colors hover:text-[var(--paper)]">
+          Sign in
+        </Link>
+      </div>
 
-      {/* Mobile hamburger */}
-      <button
-        ref={triggerRef}
-        type="button"
-        aria-label="Open menu"
-        aria-expanded={open}
-        aria-controls="marketing-mobile-drawer"
-        onClick={() => setOpen(true)}
-        className="flex h-11 w-11 items-center justify-center rounded-lg text-[var(--paper)] min-[1024px]:hidden"
-      >
-        <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
-          <path d="M3 6h16M3 11h16M3 16h16" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-        </svg>
-      </button>
+      {/* Mobile: the download shortcut (icon, full accessible name) beside the hamburger */}
+      <div className="flex items-center gap-1 min-[1024px]:hidden">
+        <Link
+          href={DOWNLOAD_HREF}
+          aria-label={DOWNLOAD_LABEL}
+          title={DOWNLOAD_LABEL}
+          data-download-datasets-shortcut
+          className="flex h-11 w-11 items-center justify-center rounded-lg text-[var(--paper)]"
+        >
+          <DownloadIcon size={20} />
+        </Link>
+        <button
+          ref={triggerRef}
+          type="button"
+          aria-label="Open menu"
+          aria-expanded={open}
+          aria-controls="marketing-mobile-drawer"
+          onClick={() => setOpen(true)}
+          className="flex h-11 w-11 items-center justify-center rounded-lg text-[var(--paper)]"
+        >
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+            <path d="M3 6h16M3 11h16M3 16h16" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+          </svg>
+        </button>
+      </div>
 
       {/* Mobile full-screen drawer */}
       {open && (
@@ -163,6 +195,9 @@ export default function MarketingNav() {
                   {link.label}
                 </Link>
               ))}
+              <Link href={DOWNLOAD_HREF} onClick={closeDrawer} className="min-h-[44px] py-3 text-[20px] font-medium text-[var(--paper)]">
+                {DOWNLOAD_LABEL}
+              </Link>
               <Link href="/login" onClick={closeDrawer} className="min-h-[44px] py-3 text-[20px] font-medium text-[var(--muted)]">
                 Sign in
               </Link>

@@ -27,7 +27,7 @@ export interface Translations {
   appNav: {
     moneyRates: string; fiscal: string; allIndicators: string; backToSite: string;
     mainNav: string; openMenu: string; closeMenu: string; openSearch: string; closeSearch: string;
-    skipToContent: string; darkMode: string; account: string; currentSection: string; onThisPage: string;
+    skipToContent: string; darkMode: string; account: string; currentSection: string; onThisPage: string; downloadDatasets: string;
   };
 
   nav: {

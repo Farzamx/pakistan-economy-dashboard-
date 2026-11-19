@@ -5,7 +5,7 @@
 // navigation tree, search, auth card and Settings entry point with one
 // compact navy bar:
 //
-//   PEIC | Overview  Indicators▾  Markets  Calendar  News  Research▾  Tools▾ | search  theme  account
+//   PEIC | Overview  Indicators▾  Markets  Calendar  News  Research▾  Tools▾ | search  [Download Datasets]  theme  account
 //
 // Breakpoints: the full bar from 1024px (lg); below that a menu button opens
 // MobileDrawer with the same APP_NAV entries. Inline search from 1280px (xl);
@@ -22,6 +22,7 @@ import SettingsModal from "@/components/SettingsModal";
 import { useLanguage } from "@/components/LanguageProvider";
 import { APP_NAV, OVERVIEW_PATH, ariaCurrentFor, hrefPath, resolveActiveNav } from "@/lib/appNav";
 import AccountControl from "./AccountControl";
+import DownloadDatasetsButton from "./DownloadDatasetsButton";
 import MobileDrawer from "./MobileDrawer";
 import NavMenu from "./NavMenu";
 import OverviewNavItem from "./OverviewNavItem";
@@ -199,6 +200,8 @@ export default function AppHeader() {
                 <path d="M11 11l3.5 3.5" />
               </svg>
             </button>
+            {/* Always-visible shortcut to the Download Datasets page; the bar is sticky, so it stays on screen while scrolling. */}
+            <DownloadDatasetsButton onLinkClick={gate} />
             <ThemeToggle className="text-pe-nav-text hover:bg-pe-nav-raised" />
             <AccountControl />
           </div>

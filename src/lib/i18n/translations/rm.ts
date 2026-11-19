@@ -10,7 +10,7 @@ export const rm: Translations = {
   appNav: {
     moneyRates: "Zar aur Sharah-e-Sood", fiscal: "Maliyati", allIndicators: "Tamam Indicators", backToSite: "Website par wapas",
     mainNav: "Markazi Navigation", openMenu: "Navigation menu kholein", closeMenu: "Navigation menu band karein", openSearch: "Talash", closeSearch: "Talash band karein",
-    skipToContent: "Markazi mawad par jayein", darkMode: "Dark Mode", account: "Account", currentSection: "maujooda hissa", onThisPage: "Is safhe par",
+    skipToContent: "Markazi mawad par jayein", darkMode: "Dark Mode", account: "Account", currentSection: "maujooda hissa", onThisPage: "Is safhe par", downloadDatasets: "Download Datasets",
   },
 
   nav: {

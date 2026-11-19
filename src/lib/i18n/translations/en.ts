@@ -10,7 +10,7 @@ export const en: Translations = {
   appNav: {
     moneyRates: "Money & Rates", fiscal: "Fiscal", allIndicators: "All indicators", backToSite: "Back to site",
     mainNav: "Main", openMenu: "Open navigation menu", closeMenu: "Close navigation menu", openSearch: "Search", closeSearch: "Close search",
-    skipToContent: "Skip to main content", darkMode: "Dark mode", account: "Account", currentSection: "current section", onThisPage: "On this page",
+    skipToContent: "Skip to main content", darkMode: "Dark mode", account: "Account", currentSection: "current section", onThisPage: "On this page", downloadDatasets: "Download Datasets",
   },
 
   nav: {

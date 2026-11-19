@@ -232,6 +232,8 @@ export const APP_NAV: TopNavEntry[] = [
 // (HideableSection) is simply absent from the DOM and skipped at runtime.
 
 export const OVERVIEW_PATH = "/overview";
+/** The one Download Datasets page, reached from the Tools menu and from the header's always-visible shortcut (DownloadDatasetsButton). */
+export const DOWNLOAD_DATASETS_PATH = "/download-datasets";
 
 // Phase 5 (homepage consolidation): the legacy per-indicator sections this
 // list used to index (gdp, reserves, inflation, …) no longer exist on
