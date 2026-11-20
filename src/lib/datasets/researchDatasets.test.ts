@@ -32,7 +32,7 @@ describe("the published files are exactly the validated deliverables", () => {
   it("the directory holds the five intended files and nothing else (no scripts, no raw downloads)", () => {
     const onDisk = fs.readdirSync(DIR).sort();
     expect(onDisk).toEqual(D.files.map((f) => f.filename).sort());
-    expect(fs.readdirSync(path.join(ROOT, "public", "research-datasets"))).toEqual([D.directory]);
+    expect(fs.readdirSync(path.join(ROOT, "public", "research-datasets")).sort()).toEqual(RESEARCH_DATASETS.map((d) => d.directory).sort()); // one directory per dataset, nothing else
     for (const name of onDisk) expect(name, name).toMatch(/^Pakistan_Macroeconomic_Data_[A-Za-z0-9_]+\.(xlsx|csv|pdf|sps)$/);
   });
 
@@ -249,7 +249,8 @@ describe("the page section", () => {
       expect(html).toContain(`href="${researchFileHref(D, f)}"`);
       expect(html).toContain(`download="${f.filename}"`);
     }
-    expect((html.match(/data-research-file=/g) ?? []).length).toBe(5);
+    const card = html.slice(html.indexOf(`data-research-dataset="${D.id}"`), html.indexOf('data-research-dataset="pakistan-m2-interest-rates"')); // this dataset's card only
+    expect((card.match(/data-research-file=/g) ?? []).length).toBe(5);
     expect(html).toContain("Excel workbook (.xlsx)");
     expect(html).toContain("CSV dataset (.csv)");
     expect(html).toContain("Codebook (.pdf)");
@@ -299,7 +300,7 @@ describe("kept separate from the live catalogue and its frequency filters", () =
     expect(page.indexOf("<ResearchDatasets />")).toBeLessThan(page.indexOf("<DatasetBrowser"));
     const browser = fs.readFileSync(path.join(ROOT, "src", "components", "datasets", "DatasetBrowser.tsx"), "utf-8");
     expect(browser).not.toMatch(/researchDatasets|ResearchDatasets/);
-    expect(RESEARCH_DATASETS).toHaveLength(1);
+    expect(RESEARCH_DATASETS.map((d) => d.id)).toEqual([D.id, "pakistan-m2-interest-rates"]);
   });
 });
 
