@@ -63,8 +63,8 @@ export default async function DxyPage() {
           answer: `The US Dollar Index currently stands at ${dxyKpi.value}, according to ${dxyKpi.source ?? "Yahoo Finance"}.`,
         },
         {
-          question: "Why might the chart below not match the live price at the top?",
-          answer: "The value at the top refreshes live throughout the day. The historical chart plots monthly closing values from Yahoo Finance, so its most recent point can be up to several weeks old — it's built for viewing the long-term trend, not for reading today's value.",
+          question: "Why might the historical chart not match the live price?",
+          answer: "The live value updates throughout the day. The historical chart plots monthly closing values from Yahoo Finance, so its most recent point can be up to several weeks old — it's built for viewing the long-term trend, not for reading today's value.",
         },
         {
           question: "Does DXY include the Pakistani Rupee?",

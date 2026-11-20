@@ -82,8 +82,8 @@ export default async function GoldPricePage() {
           answer: `The international gold spot price is currently $${goldKpi.value} per troy ounce, which converts to approximately ₨${pkrPerGram.toLocaleString("en-PK", { maximumFractionDigits: 0 })} per gram or ₨${pkrPerTola.toLocaleString("en-PK", { maximumFractionDigits: 0 })} per tola at the live USD/PKR rate. This is a computed conversion of the international price, not a local Sarafa Bazaar retail quote, which typically includes additional premiums.`,
         },
         {
-          question: "Why might the chart below not match the live price at the top?",
-          answer: "The price at the top refreshes live throughout the day. The historical chart plots monthly closing prices from Yahoo Finance, so its most recent point can be up to several weeks old — it's built for viewing the long-term trend, not for reading today's price.",
+          question: "Why might the historical chart not match the live price?",
+          answer: "The live price updates throughout the day. The historical chart plots monthly closing prices from Yahoo Finance, so its most recent point can be up to several weeks old — it's built for viewing the long-term trend, not for reading today's price.",
         },
         {
           question: "Why does the local gold price in Pakistani markets differ from this figure?",
