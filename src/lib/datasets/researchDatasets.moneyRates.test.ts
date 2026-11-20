@@ -235,9 +235,49 @@ describe("the page section", () => {
     }
     const end = html.length;
     expect((card.slice(0, end).match(/data-research-file=/g) ?? []).length).toBe(8);
-    expect(card).toContain("Individual variables:");
+    expect(card).toContain("Individual variable downloads");
     expect((card.match(/data-research-file="csv-variable"/g) ?? []).length).toBe(4);
-    for (const s of ["Combined CSV", "Codebook &amp; methodology", "SPSS syntax", "M2 growth", "SBP policy rate", "CPI inflation", "Real policy rate"]) expect(card, s).toContain(s);
+  });
+  it("labels every download with its file format, exactly as agreed", () => {
+    const labels: Record<string, string> = {
+      "Pakistan_M2_Interest_Rates_Dataset_v1.xlsx": "Download Excel Workbook (.xlsx)",
+      "Pakistan_M2_Interest_Rates_Combined_v1.csv": "Download Combined Dataset (.csv)",
+      "Pakistan_M2_Interest_Rates_Codebook_v1.pdf": "Download Codebook &amp; Methodology (.pdf)",
+      "Pakistan_M2_Interest_Rates_Import_v1.sps": "Download SPSS Syntax (.sps)",
+      "Pakistan_M2_Growth_v1.csv": "M2 Growth — CSV",
+      "Pakistan_SBP_Policy_Rate_v1.csv": "SBP Policy Rate — CSV",
+      "Pakistan_CPI_Inflation_v1.csv": "CPI Inflation — CSV",
+      "Pakistan_Real_Policy_Rate_v1.csv": "Real Policy Rate — CSV",
+    };
+    expect(Object.keys(labels).sort()).toEqual(D.files.map((f) => f.filename).sort());
+    for (const [filename, label] of Object.entries(labels)) {
+      const a = card.slice(card.indexOf(`download="${filename}"`));
+      const anchor = a.slice(0, a.indexOf("</a>"));
+      expect(anchor, filename).toContain(`>${label}<span class="sr-only">`); // the visible text of that very link
+    }
+    // two headed groups: the four main downloads, then the four single-variable CSVs
+    const main = card.slice(card.indexOf('data-research-group="main"'), card.indexOf('data-research-group="individual"'));
+    expect((main.match(/data-research-file=/g) ?? []).length).toBe(4);
+    expect(card.slice(card.indexOf('data-research-group="individual"'), card.indexOf("<details")).match(/data-research-file="csv-variable"/g)).toHaveLength(4);
+    expect(card).toContain("Main downloads");
+    // no format selector: every file is the only format offered for what it is
+    expect(card).not.toMatch(/<select|role="radiogroup"|aria-pressed/);
+  });
+  it("the displayed format is the file's real format: label, link extension and the file's own signature all agree", () => {
+    const fmt = (f: { filename: string }) => f.filename.split(".").pop()!;
+    for (const f of D.files) {
+      const buf = read(f);
+      const ext = fmt(f);
+      if (ext === "xlsx") expect(buf.subarray(0, 4).toString("latin1"), f.filename).toBe("PK\x03\x04");
+      if (ext === "pdf") expect(buf.subarray(0, 5).toString("latin1"), f.filename).toBe("%PDF-");
+      if (ext === "csv") expect(buf.includes(0) || buf.subarray(0, 2).toString("latin1") === "PK", f.filename).toBe(false);
+      if (ext === "sps") expect(buf.toString("utf-8"), f.filename).toContain("GET DATA");
+      const shown = f.kind === "csv-variable" ? "CSV" : `(.${ext})`;
+      const html = renderToStaticMarkup(createElement(ResearchDatasetsSection));
+      const a = html.slice(html.indexOf(`download="${f.filename}"`));
+      expect(a.slice(0, a.indexOf("</a>")), f.filename).toContain(shown);
+      expect(a.slice(0, 200)).toContain(`.${ext}"`); // the href and download attribute end in the same extension
+    }
   });
   it("keeps the methodology and missing-data notes in a collapsible \"Dataset notes\", with coverage by variable", () => {
     const details = card.slice(card.indexOf("<details"));
@@ -280,5 +320,68 @@ describe("nothing private is in the published files", () => {
     const blobs = [...D.files.filter((f) => /\.(csv|sps)$/.test(f.filename)).map(text), cells.join("\n"), pdfText];
     const pattern = /C:\\+ECONOMY|C:\\+Users|farza|@gmail|ECONOMY DASHBOARD|\.env\b|api[_-]?key|secret|password|supabase|\.venv|scripts[\\/]|m2r_|\.py\b/i;
     for (const b of blobs) expect(pattern.exec(b)?.[0]).toBeUndefined();
+  }, 60_000);
+});
+
+describe("annual frequency: every published file holds annual fiscal-year observations only", () => {
+  const MONTH_OR_DATE = /\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*[-\s/]?\d{2,4}\b|\b\d{4}-\d{2}-\d{2}\b|\b\d{1,2}\/\d{1,2}\/\d{2,4}\b/i;
+  const csvs = D.files.filter((f) => f.filename.endsWith(".csv"));
+
+  it("all five CSVs have exactly 30 rows, one per fiscal year FY1995-96 to FY2024-25, with no duplicate, gap or 2026 year", () => {
+    expect(csvs).toHaveLength(5);
+    for (const f of csvs) {
+      const rows = parseCsv(text(f));
+      expect(rows.length - 1, f.filename).toBe(30);
+      expect(rows.slice(1).map((r) => Number(r[0])), f.filename).toEqual(Array.from({ length: 30 }, (_, i) => 1996 + i));
+      expect(rows.slice(1).map((r) => r[1]), f.filename).toEqual(Array.from({ length: 30 }, (_, i) => `FY${1995 + i}-${String((1996 + i) % 100).padStart(2, "0")}`));
+      expect(text(f), f.filename).not.toMatch(/2026|FY2025-26/);
+    }
+  });
+  it("no CSV has a date, month, quarter or week column, and no cell holds a date or month", () => {
+    for (const f of csvs) {
+      const rows = parseCsv(text(f));
+      expect(rows[0].slice(0, 2)).toEqual(["year", "fiscal_year"]);
+      for (const h of rows[0]) expect(h, f.filename).not.toMatch(/month|quarter|date|week|day/i);
+      for (const r of rows) for (const c of r) expect(c, `${f.filename}: ${c}`).not.toMatch(MONTH_OR_DATE);
+    }
+  });
+  it("observation counts: M2 growth 29, policy rate 30, CPI 30, real rate 30; combined 119 values (FY2019-20 M2 growth the only blank)", () => {
+    const n = (name: string) => parseCsv(text(D.files.find((f) => f.filename === name)!)).slice(1).filter((r) => r[2] !== "").length;
+    expect([n("Pakistan_M2_Growth_v1.csv"), n("Pakistan_SBP_Policy_Rate_v1.csv"), n("Pakistan_CPI_Inflation_v1.csv"), n("Pakistan_Real_Policy_Rate_v1.csv")]).toEqual([29, 30, 30, 30]);
+    expect(BODY.reduce((a, r) => a + r.slice(2).filter((c) => c !== "").length, 0)).toBe(119);
+  });
+  it("the workbook's combined and four variable sheets are annual: 30 rows, FY1995-96 to FY2024-25, no dates, no duplicates", () => {
+    const wb = XLSX.read(read(file("xlsx")), { type: "buffer", cellDates: true });
+    for (const sheet of ["Combined Dataset", "M2 Growth", "SBP Policy Rate", "CPI Inflation", "Real Interest Rate"]) {
+      const rows = XLSX.utils.sheet_to_json<unknown[]>(wb.Sheets[sheet], { header: 1, defval: null }) as unknown[][];
+      expect(rows.length - 1, sheet).toBe(30);
+      expect(rows.slice(1).map((r) => r[0]), sheet).toEqual(Array.from({ length: 30 }, (_, i) => 1996 + i));
+      expect(rows.flat().some((c) => c instanceof Date), sheet).toBe(false);
+      // Data columns hold no date or month. The optional free-text "note" column may name a date in prose (e.g. "the June 1995 stock"), and nowhere else may.
+      const noteCol = rows[0].indexOf("note");
+      for (const r of rows) r.forEach((c, j) => { if (j !== noteCol && typeof c === "string") expect(c, `${sheet}: ${c}`).not.toMatch(MONTH_OR_DATE); });
+      expect(rows[0].filter((h) => h !== "note").every((h) => /^(year|fiscal_year|m2_growth_pct|sbp_policy_rate_pct|cpi_inflation_pct|real_policy_rate_pct)$/.test(String(h))), sheet).toBe(true);
+    }
+  });
+  it("the policy-rate sheet is one weighted average per fiscal year: the calculation worksheet lists rate-effective periods (SBP effective dates) and exactly one fiscal-year average row per year", () => {
+    const wb = XLSX.read(read(file("xlsx")), { type: "buffer" });
+    const rows = (XLSX.utils.sheet_to_json<unknown[]>(wb.Sheets["Policy Rate Calculation"], { header: 1, defval: null }) as unknown[][]).slice(1);
+    const avg = rows.filter((r) => typeof r[6] === "string" && (r[6] as string).startsWith("FISCAL-YEAR AVERAGE"));
+    expect(avg.map((r) => r[0])).toEqual(Array.from({ length: 30 }, (_, i) => 1996 + i));
+    const pol = col("sbp_policy_rate_pct");
+    avg.forEach((r, i) => expect(Math.abs((r[5] as number) - Number(pol[i])), `FY${r[0]}`).toBeLessThan(0.0051));
+    // every period begins on 1 July or on a date SBP changed the rate: never on a monthly boundary chosen for convenience
+    const starts = rows.filter((r) => r[2]).map((r) => String(r[2]));
+    expect(starts.every((s) => /^\d{4}-\d{2}-\d{2}$/.test(s))).toBe(true);
+    expect(starts.filter((s) => s.endsWith("-07-01"))).toHaveLength(30);
+  });
+  it("the codebook says the data are annual, and its only dates are the worked-example rate periods", async () => {
+    const { getDocumentProxy, extractText } = await import("unpdf");
+    const pdf = await getDocumentProxy(new Uint8Array(read(file("pdf"))));
+    const { text: t } = await extractText(pdf, { mergePages: true });
+    expect(t.replace(/\s+/g, " ")).toContain("30 annual observations");
+    const iso = t.match(/(?<![\w-])\d{4}-\d{2}-\d{2}(?![\w-])/g) ?? [];
+    expect(iso).toHaveLength(14);
+    expect([iso.slice().sort()[0], iso.slice().sort()[13]]).toEqual(["2024-07-01", "2025-06-30"]);
   }, 60_000);
 });

@@ -10,7 +10,7 @@
 import { RESEARCH_DATASETS, formatFileSize, researchFileHref, type ResearchCompleteness, type ResearchDataset, type ResearchFile } from "@/lib/datasets/researchDatasets";
 
 const buttonBase =
-  "inline-flex h-9 items-center justify-center gap-1.5 rounded-[var(--pe-radius)] border px-3.5 text-[13px] font-medium transition-colors";
+  "inline-flex min-h-9 max-w-full items-center justify-center gap-1.5 rounded-[var(--pe-radius)] border px-3.5 py-1.5 text-center text-[13px] font-medium transition-colors";
 const primary = `${buttonBase} border-pe-accent text-pe-accent hover:bg-pe-surface-2`;
 const secondary = `${buttonBase} border-pe-border-strong text-pe-text hover:bg-pe-surface-2`;
 
@@ -160,18 +160,27 @@ export default function ResearchDatasets() {
                 </p>
               )}
 
-              <div className="mt-4 flex flex-wrap items-center gap-2" role="group" aria-label={`Download ${d.title}`}>
+              {perVariable.length > 0 && (
+                <h4 className="mt-4 text-[12px] font-semibold text-pe-text" data-research-group="main">
+                  Main downloads
+                </h4>
+              )}
+              <div className={`${perVariable.length > 0 ? "mt-1.5" : "mt-4"} flex flex-wrap items-center gap-2`} role="group" aria-label={`Download ${d.title}`}>
                 {main.map((f, i) => (
                   <FileButton key={f.kind} dataset={d} file={f} className={i < 2 ? primary : secondary} />
                 ))}
               </div>
               {perVariable.length > 0 && (
-                <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0 text-[12px] text-pe-text-3" data-research-individual-files>
-                  Individual variables:
-                  {perVariable.map((f) => (
-                    <FileButton key={f.filename} dataset={d} file={f} className="inline-flex min-h-9 items-center text-pe-accent underline underline-offset-2 hover:no-underline" />
-                  ))}
-                </p>
+                <>
+                  <h4 className="mt-4 text-[12px] font-semibold text-pe-text" data-research-group="individual">
+                    Individual variable downloads
+                  </h4>
+                  <div className="mt-1.5 flex flex-wrap items-center gap-2" role="group" aria-label={`Download one variable of ${d.title} as CSV`} data-research-individual-files>
+                    {perVariable.map((f) => (
+                      <FileButton key={f.filename} dataset={d} file={f} className={secondary} />
+                    ))}
+                  </div>
+                </>
               )}
               {extras.length > 0 && (
                 <p className="mt-1 flex flex-wrap items-center gap-x-1.5 text-[12px] text-pe-text-3">

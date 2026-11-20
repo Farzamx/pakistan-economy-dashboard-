@@ -249,6 +249,7 @@ export const PAKISTAN_M2_INTEREST_RATES: ResearchDataset = {
     {
       kind: "xlsx",
       label: "Excel workbook (.xlsx)",
+      shortLabel: "Download Excel Workbook (.xlsx)",
       filename: "Pakistan_M2_Interest_Rates_Dataset_v1.xlsx",
       description: "Combined dataset and one sheet per variable, with the calculation sheets, data dictionary, sources, coverage and validation results.",
       bytes: 34679,
@@ -257,7 +258,7 @@ export const PAKISTAN_M2_INTEREST_RATES: ResearchDataset = {
     {
       kind: "csv",
       label: "Combined variables (.csv)",
-      shortLabel: "Combined CSV",
+      shortLabel: "Download Combined Dataset (.csv)",
       filename: "Pakistan_M2_Interest_Rates_Combined_v1.csv",
       description: "All four variables, one row per fiscal year, ready for Excel and SPSS. Blank cells where there is no verifiable observation.",
       bytes: 1229,
@@ -266,7 +267,7 @@ export const PAKISTAN_M2_INTEREST_RATES: ResearchDataset = {
     {
       kind: "pdf",
       label: "Codebook and methodology (.pdf)",
-      shortLabel: "Codebook & methodology",
+      shortLabel: "Download Codebook & Methodology (.pdf)",
       filename: "Pakistan_M2_Interest_Rates_Codebook_v1.pdf",
       description: "Definitions, units, sources, calculation methods, coverage, missing-data notes, limitations and validation summary.",
       bytes: 15772,
@@ -275,6 +276,7 @@ export const PAKISTAN_M2_INTEREST_RATES: ResearchDataset = {
     {
       kind: "sps",
       label: "SPSS import syntax (.sps)",
+      shortLabel: "Download SPSS Syntax (.sps)",
       filename: "Pakistan_M2_Interest_Rates_Import_v1.sps",
       description: "Reads the combined CSV into IBM SPSS Statistics with every variable labelled. Edit the folder in its FILE line first.",
       bytes: 1451,
@@ -283,7 +285,7 @@ export const PAKISTAN_M2_INTEREST_RATES: ResearchDataset = {
     {
       kind: "csv-variable",
       label: "M2 growth (.csv)",
-      shortLabel: "M2 growth",
+      shortLabel: "M2 Growth — CSV",
       filename: "Pakistan_M2_Growth_v1.csv",
       description: "M2 growth alone: year, fiscal year and m2_growth_pct.",
       bytes: 681,
@@ -292,7 +294,7 @@ export const PAKISTAN_M2_INTEREST_RATES: ResearchDataset = {
     {
       kind: "csv-variable",
       label: "SBP policy rate (.csv)",
-      shortLabel: "SBP policy rate",
+      shortLabel: "SBP Policy Rate — CSV",
       filename: "Pakistan_SBP_Policy_Rate_v1.csv",
       description: "SBP policy rate alone: year, fiscal year and sbp_policy_rate_pct.",
       bytes: 685,
@@ -301,7 +303,7 @@ export const PAKISTAN_M2_INTEREST_RATES: ResearchDataset = {
     {
       kind: "csv-variable",
       label: "CPI inflation (.csv)",
-      shortLabel: "CPI inflation",
+      shortLabel: "CPI Inflation — CSV",
       filename: "Pakistan_CPI_Inflation_v1.csv",
       description: "CPI inflation alone: year, fiscal year and cpi_inflation_pct.",
       bytes: 677,
@@ -310,7 +312,7 @@ export const PAKISTAN_M2_INTEREST_RATES: ResearchDataset = {
     {
       kind: "csv-variable",
       label: "Real policy rate (.csv)",
-      shortLabel: "Real policy rate",
+      shortLabel: "Real Policy Rate — CSV",
       filename: "Pakistan_Real_Policy_Rate_v1.csv",
       description: "Approximate ex-post real policy rate alone: year, fiscal year and real_policy_rate_pct.",
       bytes: 680,
