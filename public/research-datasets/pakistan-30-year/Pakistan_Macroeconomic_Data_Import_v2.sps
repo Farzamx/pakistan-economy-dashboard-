@@ -1,10 +1,10 @@
-* PEIC Pakistan macroeconomic dataset, FY1995-96 to FY2024-25: import into IBM SPSS Statistics.
+* PEIC Pakistan macroeconomic dataset VERSION 2 (2026-11-20), FY1995-96 to FY2024-25: import into IBM SPSS Statistics.
 * 1. Edit the folder in the FILE subcommand to where you saved the CSV.  2. Run all (Ctrl+A, then the Run button).
 * Blank cells in the CSV become system-missing. Nothing is interpolated.
 
 GET DATA
   /TYPE=TXT
-  /FILE="C:\path\to\Pakistan_Macroeconomic_Data_30_Years.csv"
+  /FILE="C:\path\to\Pakistan_Macroeconomic_Data_30_Years_v2.csv"
   /ENCODING='UTF8'
   /DELIMITERS=","
   /QUALIFIER='"'
@@ -15,6 +15,7 @@ GET DATA
     fiscal_year A12
     cpi_inflation_pct_fy_weo F22.6
     cpi_inflation_pct_cy_wb F22.6
+    food_inflation_pct_fy_pbs_base1990_91 F22.6
     food_inflation_pct_fy_pbs_base2000_01 F22.6
     food_inflation_pct_fy_pbs_base2007_08 F22.6
     food_inflation_pct_fy_pbs_base2015_16 F22.6
@@ -53,10 +54,12 @@ GET DATA
     public_debt_gross_pct_gdp_fy_weo F22.6
     public_debt_net_pct_gdp_fy_weo F22.6
     tax_revenue_consol_pkr_mn_fy_mof F22.6
+    tax_revenue_consol_pkr_mn_fy_sbp F22.6
     revenue_consol_pkr_mn_fy_mof F22.6
     expenditure_consol_pkr_mn_fy_mof F22.6
     interest_payments_consol_pkr_mn_fy_mof F22.6
     development_exp_consol_pkr_mn_fy_mof F22.6
+    development_exp_consol_pkr_mn_fy_sbp F22.6
     exports_goods_services_usd_fy_wb F22.6
     imports_goods_services_usd_fy_wb F22.6
     trade_balance_goods_services_usd_fy_wb F22.6
@@ -65,11 +68,15 @@ GET DATA
     current_account_balance_usd_bn_fy_weo F22.6
     current_account_balance_pct_gdp_fy_weo F22.6
     current_account_balance_pct_gdp_fy_mof F22.6
+    current_account_balance_usd_mn_fy_sbp F22.6
     fdi_net_inflows_usd_cy_wb F22.6
     reserves_total_incl_gold_usd_cy_end_wb F22.6
     reserves_sbp_total_usd_mn_fy_end_june_sbp F22.6
+    external_debt_liabilities_usd_mn_fy_end_june_sbp F22.6
+    external_debt_stocks_usd_cy_end_wb F22.6
     workers_remittances_usd_cy_wb F22.6
     workers_remittances_pct_gdp_fy_mof F22.6
+    workers_remittances_usd_mn_fy_sbp F22.6
     poverty_headcount_national_pct_wb F22.6
     poverty_headcount_215usd_pct_wb F22.6
     agriculture_value_added_pct_gdp_fy_wb F22.6
@@ -86,6 +93,7 @@ VARIABLE LABELS
   fiscal_year "Fiscal year label (July-June)"
   cpi_inflation_pct_fy_weo "CPI inflation, average consumer prices [% change; Fiscal year (July-June), labelled by the year it ends]"
   cpi_inflation_pct_cy_wb "CPI inflation, calendar year (World Bank) [% change; Calendar year (January-December)]"
+  food_inflation_pct_fy_pbs_base1990_91 "Food CPI inflation, PBS base 1990-91 [% change; Fiscal year (July-June), labelled by the year it ends]"
   food_inflation_pct_fy_pbs_base2000_01 "Food CPI inflation, PBS base 2000-01 [% change; Fiscal year (July-June), labelled by the year it ends]"
   food_inflation_pct_fy_pbs_base2007_08 "Food CPI inflation, PBS base 2007-08 [% change; Fiscal year (July-June), labelled by the year it ends]"
   food_inflation_pct_fy_pbs_base2015_16 "Food CPI inflation, PBS base 2015-16 [% change; Fiscal year (July-June), labelled by the year it ends]"
@@ -124,10 +132,12 @@ VARIABLE LABELS
   public_debt_gross_pct_gdp_fy_weo "General government gross debt, % of GDP [% of GDP; Fiscal year (July-June), labelled by the year it ends]"
   public_debt_net_pct_gdp_fy_weo "General government net debt, % of GDP [% of GDP; Fiscal year (July-June), labelled by the year it ends]"
   tax_revenue_consol_pkr_mn_fy_mof "Tax revenue, consolidated federal + provincial [PKR million; Fiscal year (July-June), labelled by the year it ends]"
+  tax_revenue_consol_pkr_mn_fy_sbp "Tax revenue, consolidated federal + provincial (SBP Handbook, alternative) [PKR million; Fiscal year (July-June), labelled by the year it ends]"
   revenue_consol_pkr_mn_fy_mof "Total revenue, consolidated federal + provincial [PKR million; Fiscal year (July-June), labelled by the year it ends]"
   expenditure_consol_pkr_mn_fy_mof "Total expenditure, consolidated federal + provincial [PKR million; Fiscal year (July-June), labelled by the year it ends]"
   interest_payments_consol_pkr_mn_fy_mof "Mark-up (interest) payments, consolidated federal + provincial [PKR million; Fiscal year (July-June), labelled by the year it ends]"
   development_exp_consol_pkr_mn_fy_mof "Development expenditure, consolidated federal + provincial [PKR million; Fiscal year (July-June), labelled by the year it ends]"
+  development_exp_consol_pkr_mn_fy_sbp "Development expenditure, consolidated (SBP Handbook, alternative) [PKR million; Fiscal year (July-June), labelled by the year it ends]"
   exports_goods_services_usd_fy_wb "Exports of goods and services, current US$ [US$; Fiscal year (July-June), labelled by the year it ends]"
   imports_goods_services_usd_fy_wb "Imports of goods and services, current US$ [US$; Fiscal year (July-June), labelled by the year it ends]"
   trade_balance_goods_services_usd_fy_wb "External balance on goods and services, current US$ [US$; Fiscal year (July-June), labelled by the year it ends]"
@@ -136,11 +146,15 @@ VARIABLE LABELS
   current_account_balance_usd_bn_fy_weo "Current account balance, US$ billion (IMF WEO) [US$ billion; Fiscal year (July-June), labelled by the year it ends]"
   current_account_balance_pct_gdp_fy_weo "Current account balance, % of GDP (IMF WEO) [% of GDP; Fiscal year (July-June), labelled by the year it ends]"
   current_account_balance_pct_gdp_fy_mof "Current account balance, % of GDP (official, fiscal year) [% of GDP; Fiscal year (July-June), labelled by the year it ends]"
+  current_account_balance_usd_mn_fy_sbp "Current account balance, fiscal year (SBP) [US$ million; Fiscal year (July-June), labelled by the year it ends]"
   fdi_net_inflows_usd_cy_wb "Foreign direct investment, net inflows, current US$ [US$; Calendar year (January-December)]"
   reserves_total_incl_gold_usd_cy_end_wb "Total reserves incl. gold, end of calendar year [US$; Calendar year (January-December) end (31 December)]"
   reserves_sbp_total_usd_mn_fy_end_june_sbp "Foreign exchange reserves held and controlled by SBP, total (cash + gold), last day of June [US$ million; Value on 30 June (end of fiscal year)]"
+  external_debt_liabilities_usd_mn_fy_end_june_sbp "External debt and liabilities, total, end of June (SBP) [US$ million; Value on 30 June (end of fiscal year)]"
+  external_debt_stocks_usd_cy_end_wb "External debt stocks, total, end of calendar year (World Bank IDS) [US$; Calendar year (January-December) end (31 December)]"
   workers_remittances_usd_cy_wb "Workers' remittances received, current US$ [US$; Calendar year (January-December)]"
   workers_remittances_pct_gdp_fy_mof "Workers' remittances, % of GDP (official, fiscal year) [% of GDP; Fiscal year (July-June), labelled by the year it ends]"
+  workers_remittances_usd_mn_fy_sbp "Workers' remittances, fiscal year (SBP) [US$ million; Fiscal year (July-June), labelled by the year it ends]"
   poverty_headcount_national_pct_wb "Poverty headcount ratio at national poverty lines [% of population; Household-survey year (as labelled by the World Bank)]"
   poverty_headcount_215usd_pct_wb "Poverty headcount ratio at US$2.15 a day (2017 PPP) [% of population; Household-survey year (as labelled by the World Bank)]"
   agriculture_value_added_pct_gdp_fy_wb "Agriculture, forestry and fishing value added, % of GDP [% of GDP; Fiscal year (July-June), labelled by the year it ends]"
@@ -153,6 +167,7 @@ VARIABLE LABELS
 VARIABLE LEVEL year (SCALE).
 VARIABLE LEVEL cpi_inflation_pct_fy_weo (SCALE).
 VARIABLE LEVEL cpi_inflation_pct_cy_wb (SCALE).
+VARIABLE LEVEL food_inflation_pct_fy_pbs_base1990_91 (SCALE).
 VARIABLE LEVEL food_inflation_pct_fy_pbs_base2000_01 (SCALE).
 VARIABLE LEVEL food_inflation_pct_fy_pbs_base2007_08 (SCALE).
 VARIABLE LEVEL food_inflation_pct_fy_pbs_base2015_16 (SCALE).
@@ -191,10 +206,12 @@ VARIABLE LEVEL primary_balance_pct_gdp_fy_weo (SCALE).
 VARIABLE LEVEL public_debt_gross_pct_gdp_fy_weo (SCALE).
 VARIABLE LEVEL public_debt_net_pct_gdp_fy_weo (SCALE).
 VARIABLE LEVEL tax_revenue_consol_pkr_mn_fy_mof (SCALE).
+VARIABLE LEVEL tax_revenue_consol_pkr_mn_fy_sbp (SCALE).
 VARIABLE LEVEL revenue_consol_pkr_mn_fy_mof (SCALE).
 VARIABLE LEVEL expenditure_consol_pkr_mn_fy_mof (SCALE).
 VARIABLE LEVEL interest_payments_consol_pkr_mn_fy_mof (SCALE).
 VARIABLE LEVEL development_exp_consol_pkr_mn_fy_mof (SCALE).
+VARIABLE LEVEL development_exp_consol_pkr_mn_fy_sbp (SCALE).
 VARIABLE LEVEL exports_goods_services_usd_fy_wb (SCALE).
 VARIABLE LEVEL imports_goods_services_usd_fy_wb (SCALE).
 VARIABLE LEVEL trade_balance_goods_services_usd_fy_wb (SCALE).
@@ -203,11 +220,15 @@ VARIABLE LEVEL current_account_balance_pct_gdp_cy_wb (SCALE).
 VARIABLE LEVEL current_account_balance_usd_bn_fy_weo (SCALE).
 VARIABLE LEVEL current_account_balance_pct_gdp_fy_weo (SCALE).
 VARIABLE LEVEL current_account_balance_pct_gdp_fy_mof (SCALE).
+VARIABLE LEVEL current_account_balance_usd_mn_fy_sbp (SCALE).
 VARIABLE LEVEL fdi_net_inflows_usd_cy_wb (SCALE).
 VARIABLE LEVEL reserves_total_incl_gold_usd_cy_end_wb (SCALE).
 VARIABLE LEVEL reserves_sbp_total_usd_mn_fy_end_june_sbp (SCALE).
+VARIABLE LEVEL external_debt_liabilities_usd_mn_fy_end_june_sbp (SCALE).
+VARIABLE LEVEL external_debt_stocks_usd_cy_end_wb (SCALE).
 VARIABLE LEVEL workers_remittances_usd_cy_wb (SCALE).
 VARIABLE LEVEL workers_remittances_pct_gdp_fy_mof (SCALE).
+VARIABLE LEVEL workers_remittances_usd_mn_fy_sbp (SCALE).
 VARIABLE LEVEL poverty_headcount_national_pct_wb (SCALE).
 VARIABLE LEVEL poverty_headcount_215usd_pct_wb (SCALE).
 VARIABLE LEVEL agriculture_value_added_pct_gdp_fy_wb (SCALE).

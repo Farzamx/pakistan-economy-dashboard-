@@ -35,6 +35,39 @@ function FileButton({ dataset, file, className }: { dataset: ResearchDataset; fi
   );
 }
 
+const fmtInt = (n: number) => n.toLocaleString("en-US");
+
+/** The "Coverage at a glance" table: what is complete, what is partial, and why every blank cell is blank. All figures come from d.completeness. */
+function CoverageGlance({ d }: { d: ResearchDataset }) {
+  const c = d.completeness;
+  const m = c.missingBy;
+  const structural = m.beforeSeriesExists + m.otherCpiBaseColumn + m.noSurvey;
+  const stops = m.sourceStopped + m.notYetPublished;
+  const unresolved = m.needsReconciliation + m.unverified + m.tbillTooFewMonths;
+  const rows: { label: string; value: string; detail: string; indent?: boolean }[] = [
+    { label: "Complete historical coverage", value: `${c.completeVariables} variables`, detail: `observed in all ${d.observations} fiscal years` },
+    { label: "Partial historical coverage", value: `${c.partialVariables} variables`, detail: "observed in some, not all, of the 30 years" },
+    { label: "Blank cells", value: fmtInt(c.missing), detail: `of ${fmtInt(c.cells)} variable-year cells; ${fmtInt(c.observationsAvailable)} hold an observation` },
+    { label: "Structural", value: fmtInt(structural), detail: `not data loss, never filled: before the series exists (${m.beforeSeriesExists}), outside a CPI base-year block (${m.otherCpiBaseColumn}), no household survey that year (${m.noSurvey})`, indent: true },
+    { label: "Companion column", value: fmtInt(m.companionColumn), detail: "covered by the other classification of the same indicator (Ministry of Finance primary, SBP alternative); not spliced", indent: true },
+    { label: "Source stops or not yet published", value: fmtInt(stops), detail: `series ended at its source (${m.sourceStopped}) or year not yet published (${m.notYetPublished})`, indent: true },
+    { label: "Unresolved gaps", value: fmtInt(unresolved), detail: `would need a reconciliation not yet made (${m.needsReconciliation}), candidate values not verifiable (${m.unverified}), T-bill 2018 with only 6 of 12 months (${m.tbillTooFewMonths})`, indent: true },
+  ];
+  return (
+    <dl aria-label="Coverage at a glance" className="mt-2 grid grid-cols-[minmax(0,1fr)_auto] gap-x-4 text-[12px] leading-relaxed">
+      {rows.map((r) => (
+        <div key={r.label} className={`col-span-2 grid grid-cols-subgrid gap-x-4 border-t border-pe-border py-1.5 first:border-t-0 ${r.indent ? "ps-4" : ""}`}>
+          <dt className="min-w-0">
+            <span className={r.indent ? "text-pe-text" : "font-medium text-pe-text"}>{r.label}</span>
+            <span className="block text-pe-text-3">{r.detail}</span>
+          </dt>
+          <dd className="text-end font-medium tabular-nums text-pe-text">{r.value}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
 function Stat({ children, wrap }: { children: React.ReactNode; wrap?: boolean }) {
   return <li className={wrap ? "min-w-0" : "whitespace-nowrap"}>{children}</li>;
 }
@@ -58,6 +91,9 @@ export default function ResearchDatasets() {
               <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
                 <h3 className="text-[16px] font-semibold leading-snug text-pe-text">{d.title}</h3>
                 <span className="rounded-full border border-pe-border bg-pe-surface-2 px-2 py-px text-[11px] font-medium text-pe-text-2">{d.frequencyLabel}</span>
+                <span className="rounded-full border border-pe-border bg-pe-surface-2 px-2 py-px text-[11px] font-medium text-pe-text-2" data-research-version>
+                  {d.completeness.version}
+                </span>
               </div>
               <p className="mt-1.5 max-w-3xl text-[13px] leading-relaxed text-pe-text-2">{d.description}</p>
 
@@ -68,6 +104,8 @@ export default function ResearchDatasets() {
                 <Stat>
                   {d.observations} {d.frequencyLabel.toLowerCase()} observations
                 </Stat>
+                <Stat>{`${d.completeness.completeVariables} of ${d.variables} variables complete`}</Stat>
+                <Stat>{`${fmtInt(d.completeness.observationsAvailable)} of ${fmtInt(d.completeness.cells)} variable-years available`}</Stat>
                 <Stat wrap>
                   <span className="font-normal text-pe-text-2">Sources: </span>
                   {d.sources.join(", ")}
@@ -93,7 +131,9 @@ export default function ResearchDatasets() {
                   <svg viewBox="0 0 10 10" aria-hidden="true" className="h-2.5 w-2.5 transition-transform group-open:rotate-90"><path d="M3 1.5 7 5 3 8.5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
                   Dataset notes
                 </summary>
-                <ul className="mt-2 flex list-disc flex-col gap-1.5 ps-5 text-[12px] leading-relaxed text-pe-text-2">
+                <h4 className="mt-2 text-[12px] font-semibold text-pe-text">Coverage at a glance</h4>
+                <CoverageGlance d={d} />
+                <ul className="mt-3 flex list-disc flex-col gap-1.5 ps-5 text-[12px] leading-relaxed text-pe-text-2">
                   {d.notes.map((n) => (
                     <li key={n}>{n}</li>
                   ))}

@@ -36,6 +36,13 @@ describe("the published files are exactly the validated deliverables", () => {
     for (const name of onDisk) expect(name, name).toMatch(/^Pakistan_Macroeconomic_Data_[A-Za-z0-9_]+\.(xlsx|csv|pdf|sps)$/);
   });
 
+  it("is Version 2: every file carries the _v2 suffix, and no Version 1 file or internal working file is published", () => {
+    const onDisk = fs.readdirSync(DIR);
+    for (const name of onDisk) expect(name, name).toMatch(/_v2\.(xlsx|csv|pdf|sps)$/);
+    for (const name of onDisk) expect(name, name).not.toMatch(/Change_Log|Provenance|Coverage_Matrix|Methodology|audit|raw|discovery|\.md$|\.py$|\.mjs$|\.json$/i);
+    expect(onDisk.filter((n) => !/_v2\./.test(n))).toEqual([]);
+  });
+
   it("every file has the recorded size and SHA-256: not a byte has changed since validation", () => {
     for (const f of D.files) {
       const buf = fs.readFileSync(path.join(DIR, f.filename));
@@ -60,10 +67,10 @@ describe("the CSV holds 30 annual observations", () => {
     expect(BODY[29][1]).toBe("FY2024-25");
     expect(new Set(BODY.map((r) => r[0])).size).toBe(30); // no duplicated year
   });
-  it("has 64 variables besides year and fiscal_year, with unique SPSS-safe names", () => {
+  it("has 71 variables besides year and fiscal_year, with unique SPSS-safe names", () => {
     expect(HEADER.slice(0, 2)).toEqual(["year", "fiscal_year"]);
-    expect(VARIABLES).toHaveLength(64);
-    expect(new Set(VARIABLES.map((v) => v.toLowerCase())).size).toBe(64);
+    expect(VARIABLES).toHaveLength(71);
+    expect(new Set(VARIABLES.map((v) => v.toLowerCase())).size).toBe(71);
     for (const v of VARIABLES) expect(v).toMatch(/^[A-Za-z][A-Za-z0-9_]{0,63}$/);
   });
   it("is rectangular, numeric where it has a value, and blank (never zero-filled) where the source has none", () => {
@@ -72,11 +79,11 @@ describe("the CSV holds 30 annual observations", () => {
       for (const c of r.slice(2)) if (c !== "") expect(Number.isFinite(Number(c)), c).toBe(true);
     }
     const filled = BODY.reduce((n, r) => n + r.slice(2).filter((c) => c !== "").length, 0);
-    expect(filled).toBe(1565); // the figure the codebook states
-    expect(filled).toBeLessThan(30 * 64);
+    expect(filled).toBe(1856); // the figure the codebook states
+    expect(filled).toBeLessThan(30 * 71);
   });
   it("has no scientific notation", () => expect(text("csv")).not.toMatch(/\d[eE][+-]?\d/));
-  it("the derived CSV has the same 30 years and 22 derived variables", () => {
+  it("the derived CSV has the same 30 years and 25 derived variables", () => {
     expect(derived).toHaveLength(31);
     expect(derived.slice(1).map((r) => r[0])).toEqual(BODY.map((r) => r[0]));
     expect(derived[0].slice(0, 2)).toEqual(["year", "fiscal_year"]);
@@ -87,7 +94,7 @@ describe("the CSV holds 30 annual observations", () => {
 describe("the workbook agrees with the CSV", () => {
   const wb = XLSX.read(read("xlsx"), { type: "buffer" });
   it("has the expected sheets", () => {
-    expect(wb.SheetNames).toEqual(["Master Dataset", "Data Dictionary", "Sources", "Data Quality", "Derived Variables"]);
+    expect(wb.SheetNames).toEqual(["Master Dataset", "Data Dictionary", "Sources", "Data Quality", "Derived Variables", "Change Log", "Observation Provenance", "Coverage Matrix", "Version Comparison"]);
   });
   const master = XLSX.utils.sheet_to_json<unknown[]>(wb.Sheets["Master Dataset"], { header: 1, defval: null }) as unknown[][];
   it("the Master Dataset sheet is the CSV, cell for cell, with numbers stored as numbers", () => {
@@ -148,7 +155,8 @@ describe("the codebook matches the dataset", () => {
     const squashed = t.replace(/\s+/g, "");
     expect(flat).toContain(`${D.variables} master variables`);
     expect(flat).toContain(D.coverage);
-    expect(flat).toContain("1565 of 1920");
+    expect(flat).toContain("1856 of 2130");
+    expect(flat).toContain("Version 2");
     expect(flat).toContain("Derived variables");
     expect(flat).toContain("separate sheet");
     const missing = VARIABLES.filter((v) => !squashed.includes(v));
@@ -165,6 +173,55 @@ describe("the metadata on the page is true of the files", () => {
     expect(D.derivedVariables).toBe(derived[0].length - 2);
     expect(D.frequencyLabel).toBe("Annual");
     expect(D.sources).toEqual(["World Bank", "IMF", "Ministry of Finance", "State Bank of Pakistan"]);
+  });
+  describe("Version 2 completeness figures are recomputed from the published files", () => {
+    const c = D.completeness;
+    const counts = VARIABLES.map((_, j) => BODY.filter((r) => r[j + 2] !== "").length);
+    it("cells, available observations, missing cells, complete and partial variables match the CSV", () => {
+      expect(c.cells).toBe(VARIABLES.length * BODY.length);
+      expect(c.observationsAvailable).toBe(counts.reduce((a, b) => a + b, 0));
+      expect(c.missing).toBe(c.cells - c.observationsAvailable);
+      expect(c.completeVariables).toBe(counts.filter((n) => n === 30).length);
+      expect(c.partialVariables).toBe(counts.filter((n) => n > 0 && n < 30).length);
+      expect(c.completeVariables + c.partialVariables).toBe(D.variables); // no variable is empty
+    });
+    it("the reasons for every blank cell add up to the blank cells, and equal the workbook's own Coverage Matrix", () => {
+      const wb = XLSX.read(read("xlsx"), { type: "buffer" });
+      const rows = XLSX.utils.sheet_to_json<unknown[]>(wb.Sheets["Coverage Matrix"], { header: 1, defval: null }) as unknown[][];
+      const code: Record<string, number> = {};
+      let variables = 0;
+      for (const r of rows.slice(1)) {
+        if (typeof r[0] !== "string" || !["Complete (30/30)", "Partial"].includes(String(r[6]))) continue;
+        variables++;
+        for (const cell of r.slice(7)) if (typeof cell === "string" && /^(PRE|BASE|SURVEY|ALT|DISC|LAG|REC|UNV|GAP)$/.test(cell)) code[cell] = (code[cell] ?? 0) + 1;
+      }
+      const m = c.missingBy;
+      expect(variables).toBe(D.variables);
+      expect(code).toEqual({ PRE: m.beforeSeriesExists, BASE: m.otherCpiBaseColumn, SURVEY: m.noSurvey, ALT: m.companionColumn, DISC: m.sourceStopped, LAG: m.notYetPublished, REC: m.needsReconciliation, UNV: m.unverified, GAP: m.tbillTooFewMonths });
+      expect(Object.values(m).reduce((a, b) => a + b, 0)).toBe(c.missing);
+    });
+    it("the workbook's Version Comparison sheet states the same totals", () => {
+      const wb = XLSX.read(read("xlsx"), { type: "buffer" });
+      const rows = XLSX.utils.sheet_to_json<unknown[]>(wb.Sheets["Version Comparison"], { header: 1, defval: null }) as unknown[][];
+      const v2 = (label: string) => rows.find((r) => r[0] === label)?.[2];
+      expect(v2("Master variables")).toBe(D.variables);
+      expect(v2("Variable-year cells")).toBe(c.cells);
+      expect(v2("Observations present")).toBe(c.observationsAvailable);
+      expect(v2("Missing cells")).toBe(c.missing);
+      expect(v2("Variables complete (30/30)")).toBe(c.completeVariables);
+      expect(v2("Variables partial")).toBe(c.partialVariables);
+      expect(v2("Derived variables")).toBe(D.derivedVariables);
+    });
+    it("never claims the 71 variables all have 30 years", () => {
+      expect(c.completeVariables).toBeLessThan(D.variables);
+      const html = renderToStaticMarkup(createElement(ResearchDatasetsSection));
+      expect(html).not.toMatch(/71 variables[^<]{0,20}(30|thirty)[- ]year/i);
+      expect(html).not.toMatch(/all 71 variables/i);
+    });
+    it("names the version, and the change log is reachable from the workbook note", () => {
+      expect(c.version).toBe("Version 2");
+      expect(D.notes.join(" ")).toContain("Change Log");
+    });
   });
   it("is offered at ONE frequency, yearly: no quarterly or monthly option exists for it", () => {
     expect(D.availableFrequencies).toEqual(["yearly"]);
@@ -185,7 +242,7 @@ describe("the page section", () => {
     expect(html).toContain("An annual historical dataset covering Pakistan&#x27;s macroeconomic performance");
   });
   it("displays coverage, frequency, variables, observations and source institutions", () => {
-    for (const s of ["FY1995-96 to FY2024-25", "Annual", "64 variables", "30 annual observations", "World Bank, IMF, Ministry of Finance, State Bank of Pakistan"]) expect(html, s).toContain(s);
+    for (const s of ["FY1995-96 to FY2024-25", "Annual", "71 variables", "30 annual observations", "Version 2", "45 of 71 variables complete", "1,856 of 2,130 variable-years available", "World Bank, IMF, Ministry of Finance, State Bank of Pakistan"]) expect(html, s).toContain(s);
   });
   it("offers the four main downloads plus the optional derived CSV, each a download link to its own file", () => {
     for (const f of D.files) {
@@ -198,6 +255,16 @@ describe("the page section", () => {
     expect(html).toContain("Codebook (.pdf)");
     expect(html).toContain("SPSS import syntax (.sps)");
     expect(html).toContain("Also available:");
+  });
+  it("explains coverage: complete, partial, structural, companion, source-stopped and unresolved, plus CPI bases and fiscal vs calendar", () => {
+    for (const s of ["Coverage at a glance", "Complete historical coverage", "45 variables", "Partial historical coverage", "26 variables", "Blank cells", "274", "Structural", "169",
+      "Companion column", "56", "Source stops or not yet published", "29", "Unresolved gaps", "20", "never filled"]) expect(html, s).toContain(s);
+    const flat = D.notes.join(" ");
+    expect(flat).toMatch(/four PBS CPI base years/);
+    expect(flat).toMatch(/never spliced/);
+    expect(flat).toMatch(/fiscal-year \(_fy_\) or calendar-year \(_cy_\)/);
+    expect(flat).toMatch(/end-June[^.]*end-December/);
+    expect(flat).toMatch(/BPM4 to FY2002, BPM6 from FY2003/);
   });
   it("has no frequency selector and no quarterly or monthly download", () => {
     expect(html).not.toContain("Select data frequency");
