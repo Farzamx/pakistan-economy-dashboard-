@@ -1,9 +1,10 @@
 "use client";
 
 import InfoTooltip from "@/components/InfoTooltip";
+import { LeadMore } from "@/components/shell/Disclosure";
 
 const DEFAULT_NOTE =
-  "\"Other (Combined Categories)\" includes multiple categories such as administration, pensions not separately itemized, grants, public services, debt obligations, and miscellaneous expenditures. This province's own published budget document does not break these down individually.";
+  "\"Other\" combines items this province's own budget document does not itemize: administration, unitemized pensions, grants, public services, debt obligations and miscellaneous spending.";
 
 interface OtherSpendingNoteProps {
   /** The source document's own description of what remains in "Other" for this specific year, when one was found during the audit — falls back to a generic explanation otherwise. */
@@ -15,7 +16,9 @@ export default function OtherSpendingNote({ residualNote }: OtherSpendingNotePro
   return (
     <div className="mt-3 flex items-start gap-2 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface)] px-4 py-3">
       <InfoTooltip termKey="other-spending" size="xs" />
-      <p className="text-xs leading-relaxed text-[var(--text-muted)]">{residualNote ?? DEFAULT_NOTE}</p>
+      <LeadMore className="min-w-0" leadClassName="text-xs leading-relaxed text-[var(--text-muted)]">
+        {residualNote ?? DEFAULT_NOTE}
+      </LeadMore>
     </div>
   );
 }

@@ -48,7 +48,7 @@ export default async function ExternalDebtPage() {
     <SeoPageLayout
       canonicalPath={`/${SLUG}`}
       title="Pakistan External Debt"
-      subtitle="Total outstanding external debt and liabilities owed by Pakistan's public and private sectors to foreign creditors."
+      subtitle="Outstanding external debt and liabilities of Pakistan's public and private sectors."
       kpiLabel="Total External Debt & Liabilities (Quarterly)"
       kpiValue={latest ? `$${latest.value.toFixed(1)}B` : "Unavailable"}
       kpiChange={diff !== null ? `${diff >= 0 ? "+" : ""}$${diff.toFixed(1)}B vs previous quarter` : undefined}

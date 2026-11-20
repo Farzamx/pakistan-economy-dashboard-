@@ -33,7 +33,7 @@ export default async function Us10yPage() {
     <SeoPageLayout
       canonicalPath={`/${SLUG}`}
       title="US 10-Year Treasury Yield"
-      subtitle="The yield on 10-year US government debt — the world's reference 'risk-free' rate, against which the return investors demand for holding emerging-market assets like Pakistani bonds is ultimately measured."
+      subtitle="The yield on 10-year US Treasuries: the global benchmark against which emerging-market returns are measured."
       kpiLabel="US 10-Year Treasury Yield"
       kpiValue={`${us10yKpi.value}%`}
       kpiChange={us10yKpi.change}

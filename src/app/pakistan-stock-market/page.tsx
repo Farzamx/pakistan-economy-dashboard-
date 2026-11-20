@@ -24,7 +24,7 @@ export default async function PakistanStockMarketPage() {
     <SeoPageLayout
       canonicalPath={`/${SLUG}`}
       title="Pakistan Stock Market"
-      subtitle="PSX (Pakistan Stock Exchange) is Pakistan's sole stock exchange, home to the benchmark KSE-100 index and the Shariah-compliant KMI-30."
+      subtitle="The Pakistan Stock Exchange (PSX): the KSE-100 benchmark and the Shariah-compliant KMI-30."
       kpiLabel={pakEtf ? "Pakistan ETF Proxy (NYSE: PAK)" : "KSE-100 Index"}
       kpiValue={pakEtf ? `$${pakEtf.value}` : "Data Unavailable"}
       kpiChange={pakEtf?.change}

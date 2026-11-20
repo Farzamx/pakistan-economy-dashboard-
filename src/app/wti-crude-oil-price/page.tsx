@@ -34,7 +34,7 @@ export default async function WtiPage() {
     <SeoPageLayout
       canonicalPath={`/${SLUG}`}
       title="WTI Crude Oil Price"
-      subtitle="West Texas Intermediate — the US benchmark crude oil price, and one of the two global oil benchmarks (alongside Brent) that shape the landed cost of the petroleum Pakistan imports."
+      subtitle="West Texas Intermediate, the US crude benchmark that, with Brent, shapes Pakistan's oil import costs."
       kpiLabel="WTI Crude Oil (Live)"
       kpiValue={`$${wtiKpi.value}/bbl`}
       kpiChange={wtiKpi.change}

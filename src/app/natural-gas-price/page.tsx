@@ -34,7 +34,7 @@ export default async function NaturalGasPage() {
     <SeoPageLayout
       canonicalPath={`/${SLUG}`}
       title="Natural Gas Price"
-      subtitle="Henry Hub natural gas futures — the US benchmark price, and a widely used reference point for the global LNG market Pakistan increasingly relies on to meet its own gas shortfall."
+      subtitle="Henry Hub natural gas futures: the US benchmark and a reference for the LNG Pakistan imports."
       kpiLabel="Natural Gas (Henry Hub, Live)"
       kpiValue={`$${natGasKpi.value}/MMBtu`}
       kpiChange={natGasKpi.change}

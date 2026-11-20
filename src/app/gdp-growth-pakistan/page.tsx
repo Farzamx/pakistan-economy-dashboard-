@@ -35,7 +35,7 @@ export default async function GdpGrowthPage() {
     <SeoPageLayout
       canonicalPath={`/${SLUG}`}
       title="Pakistan GDP Growth Rate"
-      subtitle="The annual and quarterly growth rate of Pakistan's total economic output — agriculture, industry, and services combined."
+      subtitle="Annual and quarterly growth of Pakistan's total output: agriculture, industry and services."
       kpiLabel="Annual GDP Growth (Latest)"
       kpiValue={`${gdpKpi.value}%`}
       kpiChange={gdpKpi.change}

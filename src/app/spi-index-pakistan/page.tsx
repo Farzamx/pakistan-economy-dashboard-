@@ -44,7 +44,7 @@ export default async function SpiIndexPage() {
     <SeoPageLayout
       canonicalPath={`/${SLUG}`}
       title="Pakistan SPI Index"
-      subtitle="The raw level of PBS's weekly Sensitive Price Indicator — base 2015-16=100 — the underlying index that the SPI inflation rate is calculated from."
+      subtitle="The level of PBS's weekly Sensitive Price Indicator (base 2015-16=100), from which SPI inflation is calculated."
       kpiLabel="SPI Index — Combined Group (Base 2015-16=100)"
       kpiValue={latest ? latest.value.toFixed(2) : "Unavailable"}
       kpiChange={indexDiff !== null ? `${indexDiff >= 0 ? "+" : ""}${indexDiff.toFixed(2)} vs previous week` : undefined}

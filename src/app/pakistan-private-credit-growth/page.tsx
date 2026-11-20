@@ -24,7 +24,7 @@ export default async function PrivateCreditGrowthPage() {
     <SeoPageLayout
       canonicalPath={`/${SLUG}`}
       title="Pakistan Private Sector Credit Growth"
-      subtitle="Year-over-year growth in bank lending to private businesses and consumers — a direct read on how willing (and able) Pakistan's private sector is to borrow, invest, and spend."
+      subtitle="Year-over-year growth in bank lending to private businesses and households."
       kpiLabel="Private Sector Credit Growth (YoY)"
       kpiValue={`${credit.kpi.value}%`}
       kpiChange={credit.kpi.change}

@@ -142,7 +142,7 @@ export default async function InterestRatePage() {
           </nav>
         </header>
 
-        <Section id="overview" title="Policy rate overview" description="The current rate, the latest change, the real rate and a market yield, each labelled for what it is.">
+        <Section id="overview" title="Policy rate overview" description="The current rate, the latest change, the real rate and a market yield.">
           <OverviewSection kpi={kpi} model={model} />
         </Section>
 
@@ -150,27 +150,27 @@ export default async function InterestRatePage() {
           <HistorySection model={model} />
         </Section>
 
-        <Section id="changes" title="Rate-change history" description="Every date on which SBP's series records a new rate. Meetings that held the rate are not in the series.">
+        <Section id="changes" title="Rate-change history" description="Each date SBP's series records a new rate. Meetings that held the rate are not included.">
           <DecisionsSection model={model} />
         </Section>
 
-        <Section id="cycles" title="Tightening and easing cycles" description="Runs of increases and runs of cuts, and the highest, lowest and average rate.">
+        <Section id="cycles" title="Tightening and easing cycles" description="Runs of increases and cuts, with the highest, lowest and average rate.">
           <CyclesSection model={model} />
         </Section>
 
-        <Section id="real" title="Nominal and real policy rate" description="The policy rate set against inflation that has already happened. Ex-post, not a market or expected real rate.">
+        <Section id="real" title="Nominal and real policy rate" description="Policy rate minus inflation that has already happened (ex-post, not an expected real rate).">
           <RealRateSection model={model} />
         </Section>
 
-        <Section id="inflation" title="Policy rate and inflation" description="The two on one time axis, and what inflation was around each cycle — shown together, not linked.">
+        <Section id="inflation" title="Policy rate and inflation" description="Both on one time axis, with inflation around each cycle (shown together, not modelled).">
           <InflationCompareSection model={model} />
         </Section>
 
-        <Section id="market" title="Policy rate and market yields" description="The policy rate beside T-bill and PIB auction yields: different instruments, kept apart.">
+        <Section id="market" title="Policy rate and market yields" description="The policy rate beside T-bill and PIB auction yields (different instruments).">
           <MarketRatesSection model={model} />
         </Section>
 
-        <Section id="international" title="Pakistan and the United States" description="The one comparable policy rate PEIC holds: the US effective federal funds rate.">
+        <Section id="international" title="Pakistan and the United States" description="Compared with the US effective federal funds rate.">
           <InternationalSection model={model} />
         </Section>
 
@@ -178,9 +178,9 @@ export default async function InterestRatePage() {
           <FindingsSection model={model} />
         </Section>
 
-        <Section id="meaning" title="What this means, and why it matters">
+        <Section id="meaning" title="About the policy rate">
           <p className="max-w-3xl text-[14px] leading-relaxed text-pe-text-2">{EXPLANATION[0]}</p>
-          <Disclosure summary="How the rate is used, and why it matters" className="mt-1">
+          <Disclosure summary="More: how the rate is used and why it matters" className="mt-1">
             <div className="grid gap-6 lg:grid-cols-2">
               <div className="flex flex-col gap-2">
                 <h3 className="text-[13px] font-semibold text-pe-text">What this means</h3>
@@ -198,7 +198,7 @@ export default async function InterestRatePage() {
           </Disclosure>
         </Section>
 
-        <Section id="methodology" title="Methodology and data limitations" description="Definitions, formulas, what the data covers and what it cannot show.">
+        <Section id="methodology" title="Methodology and limitations" description="Definitions, formulas and coverage.">
           <MethodologySection model={model} generatedAt={generatedAt} relatedLinks={getRelatedLinks(SLUG)} />
         </Section>
 

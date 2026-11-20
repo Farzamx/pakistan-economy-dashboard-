@@ -33,7 +33,7 @@ export default async function FedFundsPage() {
     <SeoPageLayout
       canonicalPath={`/${SLUG}`}
       title="US Federal Funds Rate"
-      subtitle="The interest rate the US Federal Reserve targets for overnight bank lending — the anchor rate for the entire global Dollar financial system, set eight times a year by the FOMC."
+      subtitle="The US Federal Reserve's overnight policy rate, set by the FOMC: the anchor of global Dollar funding."
       kpiLabel="Fed Funds Effective Rate"
       kpiValue={`${fedFundsKpi.value}%`}
       kpiChange={fedFundsKpi.change}

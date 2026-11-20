@@ -24,7 +24,7 @@ export default async function ImportsPage() {
     <SeoPageLayout
       canonicalPath={`/${SLUG}`}
       title="Pakistan Imports"
-      subtitle="Monthly goods imports (free-on-board value, balance-of-payments basis) — what Pakistan spends on goods bought from abroad, from crude oil to machinery to edible oil."
+      subtitle="Monthly goods imports (free-on-board, balance-of-payments basis), from crude oil to machinery."
       kpiLabel="Goods Imports (Monthly, FOB)"
       kpiValue={`$${imports_.kpi.value}B`}
       kpiChange={imports_.kpi.change}

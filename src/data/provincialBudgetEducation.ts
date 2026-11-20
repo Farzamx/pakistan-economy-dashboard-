@@ -10,7 +10,7 @@ import type { BudgetToolkitContent } from "./budgetEducation";
 export const PROVINCIAL_BUDGET_TOOLKITS: BudgetToolkitContent[] = [
   {
     slug: "overview",
-    title: "How Are Pakistan's Provincial Budgets Different From the Federal Budget?",
+    title: "Provincial vs Federal Budgets",
     content:
       "Pakistan has five governments that each present their own annual budget: one federal government, plus Punjab, Sindh, Khyber Pakhtunkhwa, and Balochistan. Since the 18th Constitutional Amendment in 2010 handed over subjects like education and health to the provinces, most of the money actually spent on schools, hospitals, and local infrastructure flows through these four provincial budgets, not the federal one.\n\nEach province collects some money itself (mainly sales tax on services, property tax, and agricultural income tax) but relies heavily on its share of federally-collected taxes, distributed through the National Finance Commission (NFC) Award. A province then decides how to split that money between running existing services (current expenditure — salaries, utility bills, maintenance) and building new things (development expenditure, usually called the Annual Development Programme or ADP).\n\nThis Provincial Budget Intelligence Workshop tracks all four provinces side by side, using figures transcribed directly from each province's own official budget documents — separate from, and not merged with, the Federal Budget Workshop elsewhere on this dashboard.",
     contentRomanUrdu:

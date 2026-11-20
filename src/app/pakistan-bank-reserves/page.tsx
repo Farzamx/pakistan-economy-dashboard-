@@ -24,7 +24,7 @@ export default async function BankReservesPage() {
     <SeoPageLayout
       canonicalPath={`/${SLUG}`}
       title="Pakistan Commercial Bank Reserves"
-      subtitle="Net foreign exchange reserves held by Pakistan's commercial banks — the second of the two components (alongside the State Bank's own reserves) that make up the country's total liquid FX reserves."
+      subtitle="Net foreign exchange reserves held by commercial banks, one of the two parts of Pakistan's liquid reserves."
       kpiLabel="Net Reserves with Banks"
       kpiValue={`$${bankReserves.kpi.value}B`}
       kpiChange={bankReserves.kpi.change}

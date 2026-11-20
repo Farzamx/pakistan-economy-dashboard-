@@ -24,7 +24,7 @@ export default async function EurPkrPage() {
     <SeoPageLayout
       canonicalPath={`/${SLUG}`}
       title="EUR to PKR Exchange Rate"
-      subtitle="How many Pakistani Rupees it takes to buy one Euro — relevant for trade with the EU, Pakistan's largest export destination bloc, and the European Pakistani diaspora."
+      subtitle="Rupees per Euro, key for trade with the EU, Pakistan's largest export market."
       kpiLabel="EUR / PKR (Intraday)"
       kpiValue={fxRates.eurPkr.value}
       kpiChange={fxRates.eurPkr.change}

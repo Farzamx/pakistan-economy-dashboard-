@@ -231,8 +231,8 @@ export default function MacroRegimeDashboard({
     <section className="glass-card scroll-mt-[60px] p-6 sm:scroll-mt-[120px] sm:p-8" id="macro-regime">
       <span className="text-label text-neon-blue">Regime Dashboard</span>
       <p className="mt-2 max-w-2xl text-sm text-white/60 light:text-slate-500">
-        The current classification of each dimension, how well-evidenced it is, and what the stored record shows about how it got
-        here. Every figure is an observation the system persisted — none is reconstructed, interpolated or forecast.
+        Each dimension&rsquo;s current classification, how well-evidenced it is, and how it got here. Stored observations only: nothing
+        reconstructed, interpolated or forecast.
       </p>
 
       {/* Headline counts, all of them plain tallies of the engine's output. */}

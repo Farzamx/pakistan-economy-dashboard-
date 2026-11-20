@@ -40,7 +40,7 @@ export default async function ForeignReservesPage() {
     <SeoPageLayout
       canonicalPath={`/${SLUG}`}
       title="Pakistan Foreign Exchange Reserves"
-      subtitle="The hard currency (mainly US Dollars) held by the State Bank of Pakistan and commercial banks to pay for imports and foreign debt."
+      subtitle="Foreign currency held by the State Bank and commercial banks to pay for imports and foreign debt."
       kpiLabel="Net Liquid SBP Reserves"
       kpiValue={`$${netLiquidB.toFixed(1)}B`}
       kpiChange={netLiquid.kpi.change}

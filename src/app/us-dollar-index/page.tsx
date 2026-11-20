@@ -34,7 +34,7 @@ export default async function DxyPage() {
     <SeoPageLayout
       canonicalPath={`/${SLUG}`}
       title="US Dollar Index (DXY)"
-      subtitle="A measure of the US Dollar's value against a basket of six major currencies (Euro, Yen, Pound, Canadian Dollar, Swedish Krona, Swiss Franc) — the standard global gauge of overall Dollar strength."
+      subtitle="The US Dollar's value against six major currencies: the standard gauge of Dollar strength."
       kpiLabel="US Dollar Index (DXY)"
       kpiValue={dxyKpi.value}
       kpiChange={dxyKpi.change}

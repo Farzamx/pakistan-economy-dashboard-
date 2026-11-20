@@ -36,7 +36,7 @@ export default async function PakistanEconomicDashboardPage() {
     <SeoPageLayout
       canonicalPath={`/${SLUG}`}
       title="Pakistan Economic Dashboard"
-      subtitle={`${SITE_NAME} is a free, real-time dashboard tracking Pakistan's economy — GDP, inflation, exchange rates, reserves, remittances, financial markets, and monetary policy, all in one place.`}
+      subtitle={`${SITE_NAME} is a free, real-time dashboard of Pakistan's economy: growth, inflation, markets and monetary policy.`}
       kpiLabel={isLiveCpi ? "CPI Inflation (YoY) — Live Preview" : "CPI Inflation (YoY)"}
       kpiValue={`${cpiInflation.kpi.value}%`}
       kpiChange={cpiInflation.kpi.change}

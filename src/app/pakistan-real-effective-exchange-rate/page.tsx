@@ -24,7 +24,7 @@ export default async function ReerPage() {
     <SeoPageLayout
       canonicalPath={`/${SLUG}`}
       title="Pakistan Real Effective Exchange Rate (REER)"
-      subtitle="An index measuring the Rupee's value against a trade-weighted basket of trading-partner currencies, adjusted for relative inflation — the standard gauge of whether the Rupee is overvalued or undervalued."
+      subtitle="The Rupee against a trade-weighted, inflation-adjusted basket of partner currencies."
       kpiLabel="REER Index (Base 2010 = 100)"
       kpiValue={reer.kpi.value}
       kpiChange={reer.kpi.change}

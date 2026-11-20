@@ -24,7 +24,7 @@ export default async function CoreInflationPage() {
     <SeoPageLayout
       canonicalPath={`/${SLUG}`}
       title="Pakistan Core Inflation"
-      subtitle="Urban Non-Food Non-Energy (NFNE) inflation — the underlying price trend left once volatile food and energy swings are stripped out, and the measure the State Bank actually watches for policy decisions."
+      subtitle="Urban Non-Food Non-Energy (NFNE) inflation: the underlying trend, excluding food and energy, that the State Bank watches."
       kpiLabel="Core Inflation (Urban NFNE, YoY)"
       kpiValue={`${core.kpi.value}%`}
       kpiChange={core.kpi.change}

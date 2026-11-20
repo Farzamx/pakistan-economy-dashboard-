@@ -24,7 +24,7 @@ export default async function ExportsPage() {
     <SeoPageLayout
       canonicalPath={`/${SLUG}`}
       title="Pakistan Exports"
-      subtitle="Monthly goods exports (free-on-board value, balance-of-payments basis) — the Dollar earnings Pakistan brings in from selling goods abroad."
+      subtitle="Monthly goods exports (free-on-board, balance-of-payments basis)."
       kpiLabel="Goods Exports (Monthly, FOB)"
       kpiValue={`$${exports_.kpi.value}B`}
       kpiChange={exports_.kpi.change}

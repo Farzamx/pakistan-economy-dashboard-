@@ -34,7 +34,7 @@ export default async function BrentPage() {
     <SeoPageLayout
       canonicalPath={`/${SLUG}`}
       title="Brent Crude Oil Price"
-      subtitle="The North Sea-sourced international oil benchmark — the pricing reference most directly relevant to the crude cargoes Pakistan actually imports from the Gulf and beyond."
+      subtitle="The North Sea crude benchmark: the reference price most relevant to the oil Pakistan imports."
       kpiLabel="Brent Crude Oil (Live)"
       kpiValue={`$${brentKpi.value}/bbl`}
       kpiChange={brentKpi.change}

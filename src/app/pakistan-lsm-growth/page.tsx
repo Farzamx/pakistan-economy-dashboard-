@@ -24,7 +24,7 @@ export default async function LsmGrowthPage() {
     <SeoPageLayout
       canonicalPath={`/${SLUG}`}
       title="Pakistan LSM Growth"
-      subtitle="Large Scale Manufacturing output growth — an index tracking production across roughly three dozen major industrial subsectors, published monthly as Pakistan's most timely read on real economic activity."
+      subtitle="Monthly growth in Large Scale Manufacturing output: Pakistan's most timely gauge of formal industrial activity."
       kpiLabel="LSM Growth (YoY)"
       kpiValue={`${lsm.kpi.value} ${lsm.kpi.unit}`}
       kpiChange={lsm.kpi.change}
@@ -35,6 +35,7 @@ export default async function LsmGrowthPage() {
       chartColor="#38bdf8"
       chartUnit=""
       chartGradientId="seoLsmGradient"
+      keyNote="Covers large, formal manufacturers only; small-scale and informal manufacturing is excluded, so read it as a gauge of formal industry."
       chartCaption="Source: Pakistan Bureau of Statistics / SBP EasyData, monthly, LSM Quantum Index (base FY2015-16 = 100), year-over-year growth."
       explanation={[
         "Large Scale Manufacturing (LSM) is a quantum index tracking physical production volumes across roughly three dozen major industrial subsectors — textiles, food processing, automobiles, steel, cement, fertilizers, pharmaceuticals, and more — weighted by each sector's share of manufacturing value added.",

@@ -48,7 +48,7 @@ export default async function GoldPricePage() {
     <SeoPageLayout
       canonicalPath={`/${SLUG}`}
       title="Gold Price in Pakistan"
-      subtitle="The international gold price, converted to Pakistani Rupees at the live USD/PKR rate — a common hedge against inflation and Rupee depreciation."
+      subtitle="The international gold price in Rupees, converted at the live USD/PKR rate."
       kpiLabel="Gold (Live, International Spot Price)"
       kpiValue={`$${goldKpi.value}/oz`}
       kpiChange={goldKpi.change}

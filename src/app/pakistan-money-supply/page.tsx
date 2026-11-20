@@ -24,7 +24,7 @@ export default async function MoneySupplyPage() {
     <SeoPageLayout
       canonicalPath={`/${SLUG}`}
       title="Pakistan Money Supply (M2)"
-      subtitle="Broad money — currency in circulation plus demand and time deposits held at banks — the total stock of money circulating through Pakistan's economy."
+      subtitle="Broad money (M2): currency in circulation plus bank demand and time deposits."
       kpiLabel="Broad Money Supply (M2)"
       kpiValue={`₨${m2.kpi.value}T`}
       kpiChange={m2.kpi.change}

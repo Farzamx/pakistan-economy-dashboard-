@@ -77,7 +77,7 @@ export default async function EconomicCalendarPage() {
   return (
     <div className="flex min-h-screen w-full">
       <Sidebar />
-      <main className="flex-1 px-6 py-8 sm:px-10 lg:px-16">
+      <main className="min-w-0 flex-1 px-6 py-8 sm:px-10 lg:px-16">
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd).replace(/</g, "\\u003c") }} />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd).replace(/</g, "\\u003c") }} />
 
@@ -87,10 +87,13 @@ export default async function EconomicCalendarPage() {
           <h2 className="text-xl font-semibold text-white light:text-slate-900"><T tKey="common.faq" /></h2>
           <div className="space-y-5">
             {([1,2,3,4,5,6] as const).map((n) => (
-              <div key={n}>
-                <p className="text-sm font-semibold text-white/85 light:text-slate-800"><T tKey={`calendar.calFaq${n}Q`} /></p>
-                <p className="mt-1.5 text-sm leading-relaxed text-white/60 light:text-slate-600"><T tKey={`calendar.calFaq${n}A`} /></p>
-              </div>
+              <details key={n} className="group">
+                <summary className="flex cursor-pointer list-none items-center gap-2 text-sm font-semibold text-white/85 light:text-slate-800 [&::-webkit-details-marker]:hidden">
+                  <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true" className="shrink-0 transition-transform group-open:rotate-90"><path d="M3 1.5L7 5L3 8.5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                  <T tKey={`calendar.calFaq${n}Q`} />
+                </summary>
+                <p className="mt-1.5 ps-[18px] text-sm leading-relaxed text-white/60 light:text-slate-600"><T tKey={`calendar.calFaq${n}A`} /></p>
+              </details>
             ))}
           </div>
         </section>

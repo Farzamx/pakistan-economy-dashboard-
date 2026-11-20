@@ -95,12 +95,7 @@ export default function HistorySection({ headline, mom, core, food }: { headline
 
       <ChartFrame
         title="Is inflation speeding up or slowing down?"
-        howToRead={
-          <>
-            Each bar is the change in the headline <em>rate</em> since the previous month, in percentage points. An orange bar means the rate rose; a teal bar means it fell.{" "}
-            <strong className="font-medium text-pe-text">A falling rate is not falling prices</strong>: prices are still rising whenever the rate is above zero, just more slowly.
-          </>
-        }
+        howToRead="Each bar is the month-to-month change in the headline rate (orange: inflation sped up; teal: it slowed); a falling rate still means prices are rising, just more slowly."
         legend={<Key items={[{ label: "Rate rose (inflation accelerated)", color: "var(--pe-viz-orange)" }, { label: "Rate fell (inflation slowed)", color: "var(--pe-viz-teal)" }]} />}
         source={`Source: derived — headline year-on-year rate minus the previous month's rate (consecutive months only) · ${accel.length} month${accel.length === 1 ? "" : "s"} charted`}
         table={{ caption: "Month-to-month change in the headline inflation rate, percentage points", head: ["Month", "Change (pp)"], rows: accel.map((p) => [monthLabel(p.month), formatValue(p.value, 1, { signed: true })]) }}

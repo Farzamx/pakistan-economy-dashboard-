@@ -67,7 +67,7 @@ export default function PatternsSection({ headline, mom }: { headline: MonthlyPo
         </Callout>
       )}
       <p className="text-[12px] leading-relaxed text-pe-text-3">
-        Urban-vs-rural and country-by-year heatmaps are covered elsewhere: the urban/rural data does not exist in PEIC (see <a href="#urban-rural" className="text-pe-accent underline underline-offset-2">Urban vs rural</a>), and the country comparison is in <a href="#international" className="text-pe-accent underline underline-offset-2">International comparison</a>. The group-by-month heatmap is in <a href="#groups-time" className="text-pe-accent underline underline-offset-2">CPI groups over time</a>.
+        Related: <a href="#groups-time" className="text-pe-accent underline underline-offset-2">CPI groups over time</a> (group-by-month heatmap) and <a href="#international" className="text-pe-accent underline underline-offset-2">Pakistan and regional peers</a>. Urban vs rural is <a href="#urban-rural" className="text-pe-accent underline underline-offset-2">not available</a>.
       </p>
     </div>
   );

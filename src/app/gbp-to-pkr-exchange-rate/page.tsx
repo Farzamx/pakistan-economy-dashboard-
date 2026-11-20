@@ -24,7 +24,7 @@ export default async function GbpPkrPage() {
     <SeoPageLayout
       canonicalPath={`/${SLUG}`}
       title="GBP to PKR Exchange Rate"
-      subtitle="How many Pakistani Rupees it takes to buy one British Pound — relevant for one of Pakistan's largest overseas diaspora communities."
+      subtitle="Rupees per British Pound, important for Pakistan's large UK diaspora."
       kpiLabel="GBP / PKR (Intraday)"
       kpiValue={fxRates.gbpPkr.value}
       kpiChange={fxRates.gbpPkr.change}

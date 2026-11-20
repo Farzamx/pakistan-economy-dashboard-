@@ -24,7 +24,7 @@ export default async function FdiPage() {
     <SeoPageLayout
       canonicalPath={`/${SLUG}`}
       title="FDI in Pakistan"
-      subtitle="Net foreign direct investment flowing into Pakistan — money invested by foreign companies in local businesses, factories, and infrastructure."
+      subtitle="Net foreign direct investment into Pakistani businesses, factories and infrastructure."
       kpiLabel="Net FDI Inflows (Monthly)"
       kpiValue={`$${fdi.kpi.value}M`}
       kpiChange={fdi.kpi.change}

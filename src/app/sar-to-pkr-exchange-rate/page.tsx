@@ -24,7 +24,7 @@ export default async function SarPkrPage() {
     <SeoPageLayout
       canonicalPath={`/${SLUG}`}
       title="SAR to PKR Exchange Rate"
-      subtitle="How many Pakistani Rupees it takes to buy one Saudi Riyal — a closely watched rate for Pakistan's large Saudi-based expatriate community."
+      subtitle="Rupees per Saudi Riyal, closely watched by Pakistan's workers in Saudi Arabia."
       kpiLabel="SAR / PKR (Intraday)"
       kpiValue={fxRates.sarPkr.value}
       kpiChange={fxRates.sarPkr.change}

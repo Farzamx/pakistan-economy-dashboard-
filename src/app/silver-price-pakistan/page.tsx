@@ -43,7 +43,7 @@ export default async function SilverPricePage() {
     <SeoPageLayout
       canonicalPath={`/${SLUG}`}
       title="Silver Price in Pakistan"
-      subtitle="The international silver price, converted to Pakistani Rupees at the live USD/PKR rate — a metal held both as a lower-cost precious-metal hedge and, industrially, as a key input in electronics and solar panels."
+      subtitle="The international silver price in Rupees, converted at the live USD/PKR rate."
       kpiLabel="Silver (Live, International Spot Price)"
       kpiValue={`$${silverKpi.value}/oz`}
       kpiChange={silverKpi.change}

@@ -47,7 +47,7 @@ export default async function WeeklyInflationPage() {
     <SeoPageLayout
       canonicalPath={`/${SLUG}`}
       title="Pakistan Weekly Inflation Rate (SPI)"
-      subtitle="The year-over-year inflation rate from PBS's Sensitive Price Indicator — the fastest-updating inflation signal published in Pakistan, well ahead of monthly CPI."
+      subtitle="Year-over-year inflation from PBS's weekly Sensitive Price Indicator, published ahead of monthly CPI."
       kpiLabel="SPI Inflation — Combined Group, YoY"
       kpiValue={latest ? `${latest.yoyPct >= 0 ? "+" : ""}${latest.yoyPct.toFixed(2)}%` : "Unavailable"}
       kpiChange={yoyPpChange !== null ? `${yoyPpChange >= 0 ? "+" : ""}${yoyPpChange.toFixed(2)} pp vs last week` : undefined}

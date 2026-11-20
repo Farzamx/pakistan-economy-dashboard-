@@ -24,7 +24,7 @@ export default async function RemittancesPage() {
     <SeoPageLayout
       canonicalPath={`/${SLUG}`}
       title="Pakistan Remittances"
-      subtitle="Money sent home by overseas Pakistani workers — one of the largest, steadiest sources of foreign currency for the economy."
+      subtitle="Money sent home by overseas Pakistani workers, a major and steady source of foreign currency."
       kpiLabel="Workers' Remittances (Monthly)"
       kpiValue={`$${remittances.kpi.value}B`}
       kpiChange={remittances.kpi.change}

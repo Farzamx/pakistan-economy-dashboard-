@@ -24,6 +24,7 @@ import ProvincialTreemap from "./ProvincialTreemap";
 import ProvincialAllocationTable from "./ProvincialAllocationTable";
 import ProvincialRs100Card from "./ProvincialRs100Card";
 import OtherSpendingNote from "./OtherSpendingNote";
+import { LeadMore } from "@/components/shell/Disclosure";
 import ProvincialDebtSection from "./ProvincialDebtSection";
 import ProvincialPerCitizenSection from "./ProvincialPerCitizenSection";
 import ProvincialHistoricalExplorer from "./ProvincialHistoricalExplorer";
@@ -187,7 +188,7 @@ export default function ProvincialWorkspace({ province }: ProvincialWorkspacePro
       {year.notes && (
         <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface)] p-4">
           <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-[var(--text-muted)]">{t("provincial.dataNotes")}</p>
-          <p className="text-xs leading-relaxed text-[var(--text-secondary)]">{year.notes}</p>
+          <LeadMore leadClassName="text-xs leading-relaxed text-[var(--text-secondary)]">{year.notes}</LeadMore>
         </div>
       )}
 

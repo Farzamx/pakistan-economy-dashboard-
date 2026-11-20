@@ -97,11 +97,7 @@ export default function GroupsTimeSection({ groups }: { groups: GroupModel | nul
 
       <ChartFrame
         title="What the headline is made of, month by month"
-        howToRead={
-          <>
-            Each bar is that month&rsquo;s headline year-on-year rate, split into <strong className="font-medium text-pe-text">percentage-point contributions</strong> from each group; the dot is the total. The bands add up to the headline exactly. Groups not named are folded into one band.
-          </>
-        }
+        howToRead="Each bar is the month’s headline rate split into group contributions (percentage points); the dot is the total. The bands add up to the headline exactly; groups not named share one band."
         legend={
           <ControlBar>
             <Key items={STACK_SERIES.map((s) => ({ label: s.label, color: `var(--pe-viz-${s.color})` }))} />

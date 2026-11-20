@@ -105,7 +105,7 @@ export default async function BudgetCategoryPage({ params }: PageProps) {
 
         {toolkit && (
           <div className="mt-6">
-            <BudgetToolkit toolkit={toolkit} />
+            <BudgetToolkit toolkit={toolkit} compact />
           </div>
         )}
 
@@ -118,10 +118,13 @@ export default async function BudgetCategoryPage({ params }: PageProps) {
           <h2 className="text-xl font-semibold text-white light:text-slate-900"><T tKey="common.faq" /></h2>
           <div className="mt-4 space-y-5">
             {category.faq.map((item, i) => (
-              <div key={i}>
-                <p className="text-sm font-semibold text-white/85 light:text-slate-800">{item.question}</p>
-                <p className="mt-1.5 text-sm leading-relaxed text-white/60 light:text-slate-600">{item.answer}</p>
-              </div>
+              <details key={i} className="group">
+                <summary className="text-sm font-semibold text-white/85 light:text-slate-800 flex cursor-pointer list-none items-center gap-2 [&::-webkit-details-marker]:hidden">
+                  <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true" className="shrink-0 transition-transform group-open:rotate-90"><path d="M3 1.5L7 5L3 8.5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                  {item.question}
+                </summary>
+                <p className="mt-1.5 text-sm leading-relaxed text-white/60 light:text-slate-600 ps-[18px]">{item.answer}</p>
+              </details>
             ))}
           </div>
         </section>

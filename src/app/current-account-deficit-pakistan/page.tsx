@@ -25,7 +25,7 @@ export default async function CurrentAccountPage() {
     <SeoPageLayout
       canonicalPath={`/${SLUG}`}
       title="Pakistan Current Account Deficit"
-      subtitle="The gap between all money flowing into and out of Pakistan internationally — exports, imports, remittances, and transfers."
+      subtitle="Pakistan's net international flows: exports, imports, remittances and transfers."
       kpiLabel={`Current Account (Monthly) — ${isDeficit ? "Deficit" : "Surplus"}`}
       kpiValue={`${currentAccount.kpi.value} ${currentAccount.kpi.unit}`}
       kpiChange={currentAccount.kpi.change}

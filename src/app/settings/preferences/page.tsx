@@ -12,7 +12,7 @@ export default function PreferencesPage() {
   return (
     <div className="flex min-h-screen w-full">
       <Sidebar />
-      <main className="flex-1 px-6 py-8 sm:px-10 lg:px-16">
+      <main className="min-w-0 flex-1 px-6 py-8 sm:px-10 lg:px-16">
         <div className="flex flex-col gap-1">
           <h1 className="text-2xl font-semibold text-[var(--text-primary)]">Dashboard Preferences</h1>
           <p className="max-w-2xl text-sm text-[var(--text-muted)]">

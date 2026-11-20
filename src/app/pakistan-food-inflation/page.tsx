@@ -44,7 +44,7 @@ export default async function FoodInflationPage() {
     <SeoPageLayout
       canonicalPath={`/${SLUG}`}
       title="Pakistan Food Inflation"
-      subtitle="How fast urban food prices are rising year-over-year — the component of inflation that hits household budgets most directly."
+      subtitle="Year-over-year change in urban food prices."
       kpiLabel="Urban Food CPI Inflation (YoY)"
       kpiValue={latest ? `${latest.value.toFixed(1)}%` : "Unavailable"}
       kpiChange={diff !== null ? `${diff >= 0 ? "+" : ""}${diff.toFixed(1)} pp vs previous month` : undefined}

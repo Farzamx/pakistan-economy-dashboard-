@@ -154,18 +154,18 @@ export default async function InflationRatePage() {
           <MeasuresSection headline={model.headline} core={model.core} food={model.food} />
         </Section>
 
-        <Section id="food-rest" title="Food and the rest of the basket" description="PBS publishes no non-food series; this splits the national basket into food and everything else from PBS&rsquo;s own group data.">
+        <Section id="food-rest" title="Food and the rest of the basket" description="Food vs everything else, built from PBS group data (PBS publishes no non-food series).">
           <div className="flex flex-col gap-4">
             <GroupSourceStrip source={model.groupSource} />
             <FoodRestSection groups={model.groups} />
           </div>
         </Section>
 
-        <Section id="urban-rural" title="Urban vs rural inflation" description="A comparison PEIC cannot yet make — and why.">
+        <Section id="urban-rural" title="Urban vs rural inflation" description="Not yet available in PEIC.">
           <UrbanRuralSection />
         </Section>
 
-        <Section id="groups" title="CPI expenditure groups: what is driving inflation" description="Twelve PBS groups, three different numbers each — rate, basket weight and contribution — kept apart.">
+        <Section id="groups" title="CPI groups: what drives inflation" description="Rate, basket weight and contribution for each of the twelve PBS groups.">
           <div className="flex flex-col gap-4">
             <GroupSourceStrip source={model.groupSource} />
             <GroupsSnapshotSection groups={model.groups} snapshot={model.snapshot} />
@@ -191,11 +191,11 @@ export default async function InflationRatePage() {
           <DistributionSection headline={model.headline} core={model.core} food={model.food} groups={model.groups} />
         </Section>
 
-        <Section id="international" title="Pakistan and regional peers" description="Annual consumer-price inflation: Pakistan, India, Bangladesh and Sri Lanka, one World Bank indicator.">
+        <Section id="international" title="Pakistan and regional peers" description="Annual CPI inflation: Pakistan, India, Bangladesh and Sri Lanka (World Bank).">
           <InternationalSection intl={model.intl} monthlyHeadline={model.headline} />
         </Section>
 
-        <Section id="policy" title="Inflation and the SBP policy rate" description="The two series on one time axis — shown together, not linked.">
+        <Section id="policy" title="Inflation and the SBP policy rate" description="Both series on one time axis (shown together, not modelled).">
           <PolicySection headline={model.headline} core={model.core} policy={model.policy} horizon={model.horizon} />
         </Section>
 
@@ -203,9 +203,9 @@ export default async function InflationRatePage() {
           <FindingsSection model={model} />
         </Section>
 
-        <Section id="meaning" title="What this means, and why it matters">
+        <Section id="meaning" title="About inflation">
           <p className="max-w-3xl text-[14px] leading-relaxed text-pe-text-2">{EXPLANATION[0]}</p>
-          <Disclosure summary="How to read the numbers, and why they matter" className="mt-1">
+          <Disclosure summary="More: reading the numbers and why they matter" className="mt-1">
             <div className="grid gap-6 lg:grid-cols-2">
               <div className="flex flex-col gap-2">
                 <h3 className="text-[13px] font-semibold text-pe-text">What this means</h3>
@@ -223,7 +223,7 @@ export default async function InflationRatePage() {
           </Disclosure>
         </Section>
 
-        <Section id="methodology" title="Methodology and data limitations" description="Definitions, formulas, what the data covers and what it cannot show.">
+        <Section id="methodology" title="Methodology and limitations" description="Definitions, formulas and coverage.">
           <MethodologySection model={model} relatedLinks={getRelatedLinks(SLUG)} />
         </Section>
 

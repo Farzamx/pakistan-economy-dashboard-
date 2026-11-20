@@ -1,6 +1,7 @@
 "use client";
 
 import { useLanguage } from "@/components/LanguageProvider";
+import { LeadMore } from "@/components/shell/Disclosure";
 
 export default function WhyEventsMatter() {
   const { t } = useLanguage();
@@ -23,7 +24,9 @@ export default function WhyEventsMatter() {
         {topics.map((topic) => (
           <div key={topic.title} className="rounded-xl border border-white/5 light:border-slate-100 bg-white/[0.02] light:bg-slate-50 p-4">
             <p className="text-sm font-semibold text-white light:text-slate-900">{topic.title}</p>
-            <p className="mt-1.5 text-sm leading-relaxed text-white/60 light:text-slate-600">{topic.body}</p>
+            <LeadMore className="mt-1.5" leadClassName="text-sm leading-relaxed text-white/60 light:text-slate-600">
+              {topic.body}
+            </LeadMore>
           </div>
         ))}
       </div>

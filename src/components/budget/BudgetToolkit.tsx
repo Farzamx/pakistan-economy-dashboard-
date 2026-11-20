@@ -4,11 +4,11 @@ import { Fragment, useState } from "react";
 import Link from "next/link";
 import type { BudgetToolkitContent } from "@/data/budgetEducation";
 import { useLanguage } from "@/components/LanguageProvider";
-import { Disclosure } from "@/components/shell/Disclosure";
+import { Disclosure, splitLead } from "@/components/shell/Disclosure";
 
 interface BudgetToolkitProps {
   toolkit: BudgetToolkitContent;
-  /** Lead with the first paragraph and keep the rest behind a disclosure. For overview pages; explainer pages, where this text is the content, leave it off. */
+  /** Lead with the first sentence and keep the rest behind a disclosure. For overview pages; explainer pages, where this text is the content, leave it off. */
   compact?: boolean;
 }
 
@@ -37,6 +37,9 @@ export default function BudgetToolkit({ toolkit, compact = false }: BudgetToolki
   const { t } = useLanguage();
   const [urduVisible, setUrduVisible] = useState(false);
   const englishParagraphs = toolkit.content.split("\n\n");
+  // Compact: the first sentence is visible; the rest of that paragraph and every later paragraph sit behind "Read more".
+  const lead = splitLead(englishParagraphs[0]);
+  const compactRest = [lead.rest, ...englishParagraphs.slice(1)].filter((p): p is string => Boolean(p));
   const urduParagraphs = toolkit.contentRomanUrdu.split("\n\n");
 
   return (
@@ -54,15 +57,15 @@ export default function BudgetToolkit({ toolkit, compact = false }: BudgetToolki
       </div>
 
       <div className="space-y-3">
-        {(compact ? englishParagraphs.slice(0, 1) : englishParagraphs).map((p, i) => (
+        {(compact ? [lead.lead] : englishParagraphs).map((p, i) => (
           <p key={i} className="text-sm leading-relaxed text-white/65 light:text-slate-600">
             {renderWithLinks(p)}
           </p>
         ))}
-        {compact && englishParagraphs.length > 1 && (
-          <Disclosure summary="Read more: how the budget is shared out and spent" testId="budget-toolkit-more">
+        {compact && compactRest.length > 0 && (
+          <Disclosure summary="Read more" testId="budget-toolkit-more">
             <div className="mt-1 space-y-3">
-              {englishParagraphs.slice(1).map((p, i) => (
+              {compactRest.map((p, i) => (
                 <p key={i} className="text-sm leading-relaxed text-white/65 light:text-slate-600">
                   {renderWithLinks(p)}
                 </p>

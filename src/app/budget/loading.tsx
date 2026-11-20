@@ -4,7 +4,7 @@ export default function BudgetLoading() {
   return (
     <div className="flex min-h-screen w-full">
       <Sidebar />
-      <main className="flex-1 px-6 py-8 sm:px-10 lg:px-16">
+      <main className="min-w-0 flex-1 px-6 py-8 sm:px-10 lg:px-16">
         <div className="flex flex-col gap-10">
           <div className="h-10 w-64 animate-pulse rounded-lg bg-white/5" />
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

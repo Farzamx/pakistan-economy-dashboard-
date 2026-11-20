@@ -63,11 +63,7 @@ export default function DistributionSection({ headline, core, food, groups }: { 
       {groups ? (
         <ChartFrame
           title="Which groups are the most volatile?"
-          howToRead={
-            <>
-              One row per CPI group: the blue box holds the middle half of its monthly year-on-year readings, the line inside it is the median, the thin line reaches the typical extremes, and orange rings are unusual months. A <strong className="font-medium text-pe-text">wide box means a volatile group</strong>. Ordered by median.
-            </>
-          }
+          howToRead="A wide box means a volatile group; rows are ordered by median. Each box spans the middle half of the group’s monthly year-on-year readings: the line inside is the median, the whiskers reach the typical extremes and orange rings mark unusual months."
           source={`Source: PBS CPI group indices, derived year-on-year · ${groups.yoy[1]?.length ?? 0} months per group (${coverageText(groups.yoy[1] ?? [])})`}
           table={{ caption: "Spread of each group's monthly year-on-year rate", head: ["Group", "Months", "Median", "Lower quartile", "Upper quartile", "Min", "Max"], rows: boxRows.map((r) => [groupLabel(Number(r.key)).name, r.stats ? String(r.stats.n) : null, r.stats ? `${formatValue(r.stats.median, 1)}%` : null, r.stats ? `${formatValue(r.stats.q1, 1)}%` : null, r.stats ? `${formatValue(r.stats.q3, 1)}%` : null, r.stats ? `${formatValue(r.stats.min, 1)}%` : null, r.stats ? `${formatValue(r.stats.max, 1)}%` : null]) }}
         >

@@ -107,12 +107,7 @@ export default function GroupsSnapshotSection({ groups, snapshot }: { groups: Gr
 
         <ChartFrame
           title="Which groups drive the headline"
-          howToRead={
-            <>
-              Each stem is how many <strong className="font-medium text-pe-text">percentage points</strong>{" "}
-              a group adds to the headline rate. A group&rsquo;s contribution depends on both its weight and its rate, so it ranks differently from the chart on the left. The contributions add up to the headline.
-            </>
-          }
+          howToRead="Each stem is the percentage points a group adds to the headline rate; together they add up to it. A contribution depends on both weight and rate, so the ranking differs from the chart on the left."
           source={`Source: derived — weight × change in group index ÷ headline index · ${crow ? `${monthLabel(crow.baseMonth)} → ${monthLabel(cur)}` : monthLabel(cur)}`}
           table={{ caption: `Contribution to the headline YoY change, ${monthLabel(cur)}`, head: ["Group", "Contribution (pp)"], rows: contribRows.map((r) => [groupLabel(Number(r.key)).name, formatValue(r.value, 2)]) }}
         >

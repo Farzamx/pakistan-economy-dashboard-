@@ -60,8 +60,7 @@ export default function ConfidenceBarChart({ data }: { data: ConfidencePoint[] }
       {unscored.length > 0 && (
         <div className="border-t border-white/5 pt-3 light:border-black/5">
           <p className="text-[11px] leading-relaxed text-white/35 light:text-slate-400">
-            Not scored — the engine reported no confidence value for these dimensions because the available evidence was inadequate
-            to classify them. They are not drawn as zero, which would be a different statement.
+            Not scored: too little evidence to classify these dimensions. Listed here rather than drawn as zero.
           </p>
           <ul className="mt-1.5 flex flex-wrap gap-1.5">
             {unscored.map((d) => (
@@ -77,10 +76,8 @@ export default function ConfidenceBarChart({ data }: { data: ConfidencePoint[] }
       )}
 
       <p className="border-t border-white/5 pt-3 text-[11px] leading-relaxed text-white/30 light:border-black/5 light:text-slate-400">
-        This is the engine&rsquo;s own 0&ndash;100 score for the freshness and availability of each dimension&rsquo;s input data. It
-        measures evidence quality &mdash; not the severity or desirability of the condition described, and not the reliability of the
-        classification itself. A dimension marked <span className="text-white/45 light:text-slate-500">(unclassified)</span> has
-        usable inputs but no verdict: the engine&rsquo;s rule could not reach one from them.
+        A 0&ndash;100 score of evidence quality, not of how good or bad conditions are.{" "}
+        <span className="text-white/45 light:text-slate-500">(unclassified)</span>: usable inputs, but the engine&rsquo;s rule reached no verdict.
       </p>
     </div>
   );

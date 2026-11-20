@@ -24,7 +24,7 @@ export default async function WpiInflationPage() {
     <SeoPageLayout
       canonicalPath={`/${SLUG}`}
       title="Pakistan Wholesale Price Index (WPI)"
-      subtitle="Year-over-year change in prices at the wholesale/producer level — what it costs businesses to buy goods before they ever reach a retail shelf, and a leading signal for where retail (CPI) inflation is headed."
+      subtitle="Year-over-year change in wholesale (producer) prices, an early signal for consumer (CPI) inflation."
       kpiLabel="WPI Inflation (YoY)"
       kpiValue={`${wpi.kpi.value}%`}
       kpiChange={wpi.kpi.change}

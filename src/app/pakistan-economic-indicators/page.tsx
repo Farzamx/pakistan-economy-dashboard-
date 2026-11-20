@@ -26,7 +26,7 @@ export default async function EconomicIndicatorsPage() {
     <SeoPageLayout
       canonicalPath={`/${SLUG}`}
       title="Pakistan Economic Indicators"
-      subtitle="A live, at-a-glance snapshot of the indicators that matter most for understanding Pakistan's economy right now."
+      subtitle="A live snapshot of the indicators that matter most for Pakistan's economy."
       kpiLabel="CPI Inflation (YoY)"
       kpiValue={`${sbp.cpiInflation.kpi.value}%`}
       kpiChange={sbp.cpiInflation.kpi.change}

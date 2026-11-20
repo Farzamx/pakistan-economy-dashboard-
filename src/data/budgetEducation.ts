@@ -22,7 +22,7 @@ export interface BudgetToolkitContent {
 export const BUDGET_TOOLKITS: BudgetToolkitContent[] = [
   {
     slug: "overview",
-    title: "How Is Pakistan's Federal Budget Put Together?",
+    title: "How the Federal Budget Works",
     content:
       "Every June, Pakistan's government presents its federal budget — a plan for how much money it expects to collect and how it plans to spend it over the next financial year (July to June). Most of that money comes from taxes collected by the FBR, like income tax and sales tax. When spending is higher than what the government collects, which happens almost every year, it borrows the difference.\n\nBefore the federal government can spend a single rupee, a large share of tax collection is handed to the provinces under a rule called the [NFC Award](/budget/provincial-transfers). What remains is spent on paying interest on old loans ([debt servicing](/budget/debt-servicing)), defence, pensions, subsidies, and building roads, dams, and hospitals through the [PSDP](/budget/psdp). This Budget Workshop shows exactly how that money is split, year after year, using figures taken directly from the government's own official budget documents.",
     contentRomanUrdu:
