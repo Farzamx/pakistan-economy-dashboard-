@@ -78,7 +78,7 @@ export default async function CategoryPage({ params }: Props) {
                     {lesson.readMinutes} min
                   </span>
                   {lesson.isPremium && (
-                    <span className="rounded-full border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold text-amber-400">
+                    <span className="rounded-full border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-[11px] font-semibold text-amber-400">
                       <T tKey="academy.premiumBadge" />
                     </span>
                   )}

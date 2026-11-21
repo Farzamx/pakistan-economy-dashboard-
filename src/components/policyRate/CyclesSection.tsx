@@ -127,7 +127,7 @@ export default function CyclesSection({ model }: { model: PolicyRateViewModel })
       </ChartFrame>
 
       <div className="relative overflow-x-auto rounded-[var(--pe-radius)] border border-pe-border" tabIndex={0} role="region" aria-label="Cycles table (scrolls sideways)">
-        <table className="w-full min-w-[720px] border-collapse text-left text-[12.5px] tabular-nums">
+        <table className="w-full min-w-[720px] border-collapse text-left text-[13.5px] tabular-nums">
           <caption className="sr-only">Tightening and easing cycles: first and last change, number of changes, start and end rate, total move and span</caption>
           <thead className="bg-pe-surface-2 text-pe-text-2">
             <tr>
@@ -141,7 +141,7 @@ export default function CyclesSection({ model }: { model: PolicyRateViewModel })
               <tr key={c.startDate} className="border-t border-pe-border">
                 <th scope="row" className="whitespace-nowrap px-3 py-1.5 text-left font-normal text-pe-text">
                   {c.direction === "tightening" ? "Tightening" : "Easing"}
-                  {c.latest ? <span className="ms-2 rounded-[var(--pe-radius-sm)] border border-pe-border bg-pe-surface-2 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-[0.05em] text-pe-text-2">latest</span> : null}
+                  {c.latest ? <span className="ms-2 rounded-[var(--pe-radius-sm)] border border-pe-border bg-pe-surface-2 px-1.5 py-0.5 text-[11px] font-medium uppercase tracking-[0.05em] text-pe-text-2">latest</span> : null}
                 </th>
                 <td className="whitespace-nowrap px-3 py-1.5">{formatDate(c.startDate)}</td>
                 <td className="whitespace-nowrap px-3 py-1.5">{formatDate(c.endDate)}</td>
@@ -154,7 +154,7 @@ export default function CyclesSection({ model }: { model: PolicyRateViewModel })
           </tbody>
         </table>
       </div>
-      <p className="-mt-3 max-w-3xl font-mono text-[11px] leading-relaxed text-pe-text-3">
+      <p className="-mt-3 max-w-3xl font-mono text-[12px] leading-relaxed text-pe-text-3">
         A cycle ends only when the next change goes the other way, so a long pause between two increases does not split a run. Because meetings that held the rate are not in the series, &ldquo;span&rdquo; runs from the first change to the last and says nothing about pauses inside it. &ldquo;Holding&rdquo; on the timeline means no change was recorded and no run was under way; it is not a count of meetings.
       </p>
     </div>

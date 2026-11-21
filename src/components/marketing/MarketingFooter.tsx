@@ -22,7 +22,7 @@ export default function MarketingFooter() {
           <span className="text-[16px] font-extrabold tracking-tight" style={{ fontFamily: "var(--font-marketing-display)", color: "var(--paper)" }}>
             PEIC
           </span>
-          <p className="max-w-[36ch] text-[13px] leading-relaxed" style={{ fontFamily: "var(--font-marketing-body)", color: "var(--muted)" }}>
+          <p className="max-w-[36ch] text-[14px] leading-relaxed" style={{ fontFamily: "var(--font-marketing-body)", color: "var(--muted)" }}>
             Pakistan Economic Intelligence Center.
           </p>
         </div>
@@ -32,7 +32,7 @@ export default function MarketingFooter() {
             <Link
               key={link.href}
               href={link.href}
-              className="min-h-[44px] py-2 text-[14px] min-[480px]:min-h-0 min-[480px]:py-0"
+              className="min-h-[44px] py-2 text-[15px] min-[480px]:min-h-0 min-[480px]:py-0"
               style={{ fontFamily: "var(--font-marketing-body)", color: "var(--muted)" }}
             >
               {link.label}
@@ -43,7 +43,7 @@ export default function MarketingFooter() {
         <div className="flex flex-col gap-3">
           <a
             href={`mailto:${CONTACT_EMAIL}`}
-            className="min-h-[44px] py-2 text-[14px] min-[480px]:min-h-0 min-[480px]:py-0"
+            className="min-h-[44px] py-2 text-[15px] min-[480px]:min-h-0 min-[480px]:py-0"
             style={{ fontFamily: "var(--font-marketing-body)", color: "var(--muted)" }}
           >
             {CONTACT_EMAIL}
@@ -52,7 +52,7 @@ export default function MarketingFooter() {
             href={LINKEDIN_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="min-h-[44px] py-2 text-[14px] min-[480px]:min-h-0 min-[480px]:py-0"
+            className="min-h-[44px] py-2 text-[15px] min-[480px]:min-h-0 min-[480px]:py-0"
             style={{ fontFamily: "var(--font-marketing-body)", color: "var(--muted)" }}
           >
             LinkedIn
@@ -61,7 +61,7 @@ export default function MarketingFooter() {
       </div>
 
       <div className="mx-auto w-full max-w-[1200px] border-t px-5 py-6 min-[1024px]:px-10" style={{ borderColor: "var(--ink-raised)" }}>
-        <p className="text-[12px]" style={{ fontFamily: "var(--font-marketing-data)", color: "var(--muted)" }}>
+        <p className="text-[13px]" style={{ fontFamily: "var(--font-marketing-data)", color: "var(--muted)" }}>
           © {new Date().getFullYear()} Pakistan Economic Intelligence Center.
         </p>
       </div>

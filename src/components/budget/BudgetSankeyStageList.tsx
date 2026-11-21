@@ -35,10 +35,10 @@ export default function BudgetSankeyStageList({ groups, selectedId, connectedIds
         return (
           <li key={g.stage} className="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface)] p-3">
             <div className="mb-2 flex items-baseline justify-between gap-2">
-              <h4 className="text-[11px] font-semibold uppercase tracking-widest text-[var(--text-secondary)]">
+              <h4 className="text-[12px] font-semibold uppercase tracking-widest text-[var(--text-secondary)]">
                 Stage {gi + 1} · {g.title}
               </h4>
-              <span className="text-[10px] text-[var(--text-muted)]">{STAGE_HINT[g.stage]}</span>
+              <span className="text-[11px] text-[var(--text-muted)]">{STAGE_HINT[g.stage]}</span>
             </div>
             <ul className="flex flex-col gap-1">
               {g.nodes.map((n) => {
@@ -50,7 +50,7 @@ export default function BudgetSankeyStageList({ groups, selectedId, connectedIds
                     <div className={`rounded-lg border px-2.5 py-2 transition-colors ${selected ? "border-[var(--text-primary)] bg-[var(--surface-hover)]" : linked ? "border-neon-blue/50 bg-neon-blue/[0.06]" : "border-transparent"}`}>
                       <button type="button" aria-pressed={selected} onClick={() => onSelect(selected ? null : n.id)} className="block w-full text-left">
                         <span className="flex items-baseline justify-between gap-3">
-                          <span className="flex min-w-0 items-center gap-2 text-[13px] text-[var(--text-primary)]">
+                          <span className="flex min-w-0 items-center gap-2 text-[14px] text-[var(--text-primary)]">
                             <span
                               aria-hidden="true"
                               className="h-2.5 w-2.5 shrink-0 rounded-sm"
@@ -60,10 +60,10 @@ export default function BudgetSankeyStageList({ groups, selectedId, connectedIds
                               {n.label}
                               {n.derived ? " *" : ""}
                             </span>
-                            {n.kind === "financing" && <span className="shrink-0 rounded border border-[var(--border)] px-1 text-[10px] text-[var(--text-muted)]">borrowing</span>}
-                            {linked && <span className="shrink-0 text-[10px] text-neon-blue">linked</span>}
+                            {n.kind === "financing" && <span className="shrink-0 rounded border border-[var(--border)] px-1 text-[11px] text-[var(--text-muted)]">borrowing</span>}
+                            {linked && <span className="shrink-0 text-[11px] text-neon-blue">linked</span>}
                           </span>
-                          <span className="shrink-0 text-right text-[12px] tabular-nums text-[var(--text-secondary)]">
+                          <span className="shrink-0 text-right text-[13px] tabular-nums text-[var(--text-secondary)]">
                             <span className="font-semibold text-[var(--text-primary)]">{formatBn(n.value)}</span> · {formatShare(n.pctOfTotalResources)}
                           </span>
                         </span>
@@ -76,7 +76,7 @@ export default function BudgetSankeyStageList({ groups, selectedId, connectedIds
                           type="button"
                           aria-expanded={expanded.has(n.id)}
                           onClick={() => onToggleExpand(n.id)}
-                          className="mt-1.5 rounded-md border border-[var(--border)] px-2 py-0.5 text-[11px] text-[var(--text-muted)] transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]"
+                          className="mt-1.5 rounded-md border border-[var(--border)] px-2 py-0.5 text-[12px] text-[var(--text-muted)] transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]"
                         >
                           {expanded.has(n.id) ? "Hide breakdown" : "Show breakdown"}
                         </button>

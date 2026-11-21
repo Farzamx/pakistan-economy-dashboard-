@@ -70,11 +70,11 @@ export default async function DownloadDatasetsPage() {
       <div className="mx-auto flex max-w-[1200px] flex-col gap-8 px-3 py-6 sm:px-4 lg:gap-10 lg:px-6">
         <header className="flex flex-col gap-4 border-b border-pe-border pb-6 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p className="text-[12px] font-medium uppercase tracking-[0.06em] text-pe-text-3">Data</p>
+            <p className="text-[13px] font-medium uppercase tracking-[0.06em] text-pe-text-3">Data</p>
             <h1 className="mt-1 text-[24px] font-semibold leading-tight tracking-[-0.01em] text-pe-text [text-wrap:balance] sm:text-[28px]">
               Download Datasets
             </h1>
-            <p className="mt-1.5 max-w-3xl text-[14px] leading-relaxed text-pe-text-2 [text-wrap:pretty]">
+            <p className="mt-1.5 max-w-3xl text-[15px] leading-relaxed text-pe-text-2 [text-wrap:pretty]">
               Download historical Pakistani economic indicators in Excel and CSV formats. Filter by frequency and date range.
             </p>
           </div>
@@ -83,7 +83,7 @@ export default async function DownloadDatasetsPage() {
             href="/api/datasets/all"
             download
             title="One workbook, one sheet per indicator, every observation"
-            className="inline-flex h-9 shrink-0 items-center justify-center self-start rounded-[var(--pe-radius)] border border-pe-border-strong px-3.5 text-[13px] font-medium text-pe-text transition-colors hover:bg-pe-surface-2 sm:self-auto"
+            className="inline-flex h-9 shrink-0 items-center justify-center self-start rounded-[var(--pe-radius)] border border-pe-border-strong px-3.5 text-[14px] font-medium text-pe-text transition-colors hover:bg-pe-surface-2 sm:self-auto"
           >
             Download all {downloadable} datasets (.xlsx)
           </a>
@@ -97,7 +97,7 @@ export default async function DownloadDatasetsPage() {
             <h2 id="dataset-list-heading" className="text-[17px] font-semibold text-pe-text">
               Available datasets
             </h2>
-            <p className="mt-0.5 text-[13px] text-pe-text-2">Live indicators. Pick a frequency and date range, then preview or download any series.</p>
+            <p className="mt-0.5 text-[14px] text-pe-text-2">Live indicators. Pick a frequency and date range, then preview or download any series.</p>
           </div>
           <DatasetBrowser rows={rows} />
         </section>

@@ -37,8 +37,8 @@ export default function DiscountFactorExplorerChartsInner({ series, selectedYear
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} vertical={false} />
-            <XAxis dataKey="year" stroke="transparent" tick={{ fill: axisTickFill, fontSize: 11 }} tickLine={false} axisLine={false} />
-            <YAxis domain={[0, 1]} tickFormatter={(v) => v.toFixed(1)} stroke="transparent" tick={{ fill: axisTickFill, fontSize: 11 }} tickLine={false} axisLine={false} width={40} />
+            <XAxis dataKey="year" stroke="transparent" tick={{ fill: axisTickFill, fontSize: 12 }} tickLine={false} axisLine={false} />
+            <YAxis domain={[0, 1]} tickFormatter={(v) => v.toFixed(1)} stroke="transparent" tick={{ fill: axisTickFill, fontSize: 12 }} tickLine={false} axisLine={false} width={40} />
             <Tooltip contentStyle={tooltipStyle} formatter={(v) => [typeof v === "number" ? v.toFixed(4) : v, ""]} labelFormatter={(l) => `Year ${l}`} />
             <Area type="monotone" dataKey="discountFactorValue" stroke="#4d8df7" strokeWidth={2} fill="url(#dfe-fill)" isAnimationActive={!prefersReducedMotion} animationDuration={700} />
             {selectedPoint && <ReferenceDot x={selectedPoint.year} y={selectedPoint.discountFactorValue} r={5} fill="#fb7185" stroke="none" />}

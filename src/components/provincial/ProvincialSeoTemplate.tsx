@@ -57,7 +57,7 @@ export default function ProvincialSeoTemplate({ page }: ProvincialSeoTemplatePro
               ))}
             </tbody>
           </table>
-          <p className="mt-3 text-[11px] text-white/40 light:text-slate-400">
+          <p className="mt-3 text-[12px] text-white/40 light:text-slate-400">
             Source: {meta.name} {year.citations.summary.document}, FY{year.fiscalYear} Budget Estimate.
           </p>
         </div>

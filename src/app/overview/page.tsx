@@ -687,7 +687,7 @@ export default async function Home() {
           <section id="home-indicators" aria-labelledby="home-indicators-heading" className="rounded-[var(--pe-radius)] border border-pe-border bg-pe-surface">
             <div className="px-4 pb-3 pt-4 lg:px-5 lg:pt-5">
               <h2 id="home-indicators-heading" className="text-[17px] font-semibold text-pe-text">Indicators</h2>
-              <p className="text-[13px] text-pe-text-2">{homeIndicatorRows.length} series. Every row opens its full history.</p>
+              <p className="text-[14px] text-pe-text-2">{homeIndicatorRows.length} series. Every row opens its full history.</p>
             </div>
             <IndicatorsTable rows={homeIndicatorRows} />
           </section>

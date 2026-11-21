@@ -15,8 +15,8 @@ export default function FindingsSection({ model }: { model: PolicyRateViewModel 
     <ul className="flex flex-col divide-y divide-pe-border rounded-[var(--pe-radius)] border border-pe-border">
       {findings.map((f) => (
         <li key={f.id} className="px-4 py-3">
-          <LeadMore leadClassName="text-[14px] leading-relaxed text-pe-text">{f.text}</LeadMore>
-          <p className="mt-1 font-mono text-[11px] text-pe-text-3">
+          <LeadMore leadClassName="text-[15px] leading-relaxed text-pe-text">{f.text}</LeadMore>
+          <p className="mt-1 font-mono text-[12px] text-pe-text-3">
             {f.period} · {f.source}
           </p>
         </li>

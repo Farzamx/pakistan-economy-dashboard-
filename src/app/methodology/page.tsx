@@ -18,7 +18,7 @@ export const metadata: Metadata = {
 function SectionHeading({ eyebrow, title }: { eyebrow: string; title: string }) {
   return (
     <div className="flex flex-col gap-2">
-      <span className="text-[11px] uppercase tracking-[0.14em]" style={{ fontFamily: "var(--font-marketing-data)", color: "var(--muted)" }}>
+      <span className="text-[12px] uppercase tracking-[0.14em]" style={{ fontFamily: "var(--font-marketing-data)", color: "var(--muted)" }}>
         {eyebrow}
       </span>
       <h2 className="text-[22px] font-bold leading-tight min-[1024px]:text-[26px]" style={{ fontFamily: "var(--font-marketing-heading)", color: "var(--paper)" }}>
@@ -31,10 +31,10 @@ function SectionHeading({ eyebrow, title }: { eyebrow: string; title: string }) 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-1">
-      <span className="text-[12px] uppercase tracking-[0.08em]" style={{ fontFamily: "var(--font-marketing-data)", color: "var(--muted)" }}>
+      <span className="text-[13px] uppercase tracking-[0.08em]" style={{ fontFamily: "var(--font-marketing-data)", color: "var(--muted)" }}>
         {label}
       </span>
-      <p className="text-[15px] leading-relaxed" style={{ fontFamily: "var(--font-marketing-body)", color: "var(--paper)" }}>
+      <p className="text-[16px] leading-relaxed" style={{ fontFamily: "var(--font-marketing-body)", color: "var(--paper)" }}>
         {children}
       </p>
     </div>
@@ -44,7 +44,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 function SourceCard({ name, children }: { name: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-4 rounded-xl border p-6" style={{ borderColor: "var(--ink-raised)" }}>
-      <p className="text-[13px] font-medium" style={{ fontFamily: "var(--font-marketing-data)", color: "var(--paper)" }}>
+      <p className="text-[14px] font-medium" style={{ fontFamily: "var(--font-marketing-data)", color: "var(--paper)" }}>
         {name}
       </p>
       {children}
@@ -55,7 +55,7 @@ function SourceCard({ name, children }: { name: string; children: React.ReactNod
 function Todo({ children }: { children: React.ReactNode }) {
   return (
     <p
-      className="rounded-md border border-dashed px-3 py-2 text-[13px] leading-relaxed"
+      className="rounded-md border border-dashed px-3 py-2 text-[14px] leading-relaxed"
       style={{ borderColor: "var(--muted)", color: "var(--muted)", fontFamily: "var(--font-marketing-data)" }}
     >
       TODO: {children}
@@ -66,7 +66,7 @@ function Todo({ children }: { children: React.ReactNode }) {
 function Code({ children }: { children: React.ReactNode }) {
   return (
     <code
-      className="block whitespace-pre-wrap rounded-md px-3 py-2 text-[13px] leading-relaxed"
+      className="block whitespace-pre-wrap rounded-md px-3 py-2 text-[14px] leading-relaxed"
       style={{ background: "var(--ink)", color: "var(--paper)", fontFamily: "var(--font-marketing-data)" }}
     >
       {children}
@@ -84,7 +84,7 @@ export default function MethodologyPage() {
       <MarketingNav />
 
       <main className="mx-auto w-full max-w-[820px] px-5 pb-24 pt-32 min-[1024px]:px-10 min-[1024px]:pt-40">
-        <span className="text-[11px] uppercase tracking-[0.14em]" style={{ fontFamily: "var(--font-marketing-data)", color: muted }}>
+        <span className="text-[12px] uppercase tracking-[0.14em]" style={{ fontFamily: "var(--font-marketing-data)", color: muted }}>
           Methodology
         </span>
         <h1 className="mt-3 text-[32px] font-bold leading-tight min-[1024px]:text-[44px]" style={{ fontFamily: "var(--font-marketing-heading)", color: paper }}>
@@ -201,19 +201,19 @@ export default function MethodologyPage() {
         {/* Personal Inflation Calculator */}
         <div className="mt-16 flex flex-col gap-5">
           <SectionHeading eyebrow="Decision Support Lab" title="Personal Inflation Calculator" />
-          <p className="max-w-[65ch] text-[15px] leading-relaxed" style={{ fontFamily: body, color: muted }}>
+          <p className="max-w-[65ch] text-[16px] leading-relaxed" style={{ fontFamily: body, color: muted }}>
             Uses PBS&apos;s own official 12-group CPI basket (Food & Non-Alcoholic Beverages, Alcoholic Beverages &
             Tobacco, Clothing & Footwear, Housing/Water/Electricity/Gas & Fuels, Furnishing & Household Equipment,
             Health, Transport, Communication, Recreation & Culture, Education, Restaurants & Hotels, Miscellaneous) —
             the same groups and year-on-year rates PBS publishes each month, never a custom or invented basket.
           </p>
-          <p className="max-w-[65ch] text-[15px] leading-relaxed" style={{ fontFamily: body, color: muted }}>
+          <p className="max-w-[65ch] text-[16px] leading-relaxed" style={{ fontFamily: body, color: muted }}>
             You enter how your own spending splits across those 12 groups (as percentages, or as PKR amounts that are
             converted to percentages of your total). Your rate and the official rate are both computed the same way —
             each group&apos;s year-on-year inflation rate, weighted by a spending distribution:
           </p>
           <Code>{"personal or official rate = Σ (group's weight% ÷ 100) × (group's YoY inflation%)"}</Code>
-          <p className="max-w-[65ch] text-[15px] leading-relaxed" style={{ fontFamily: body, color: muted }}>
+          <p className="max-w-[65ch] text-[16px] leading-relaxed" style={{ fontFamily: body, color: muted }}>
             Your result uses your entered weights; the official CPI benchmark uses PBS&apos;s own published weights
             for the average household — same formula, different weights. The gap between the two is broken down by
             category, and the categories responsible for the largest share of that gap are surfaced as the
@@ -226,7 +226,7 @@ export default function MethodologyPage() {
         {/* Economic Health Score */}
         <div className="mt-16 flex flex-col gap-5">
           <SectionHeading eyebrow="Decision Support Lab" title="Personal Economic Health Score" />
-          <p className="max-w-[65ch] text-[15px] leading-relaxed" style={{ fontFamily: body, color: muted }}>
+          <p className="max-w-[65ch] text-[16px] leading-relaxed" style={{ fontFamily: body, color: muted }}>
             A deterministic 0–100 score — not an AI estimate — averaged across up to six categories, each a plain
             formula over numbers you&apos;ve already entered into the Lab&apos;s other calculators. A category is only
             included once you&apos;ve given it enough to work with, so using one tool still produces an honest partial
@@ -234,7 +234,7 @@ export default function MethodologyPage() {
           </p>
 
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[560px] border-collapse text-[14px]" style={{ fontFamily: body, color: paper }}>
+            <table className="w-full min-w-[560px] border-collapse text-[15px]" style={{ fontFamily: body, color: paper }}>
               <thead>
                 <tr className="border-b" style={{ borderColor: "var(--ink-raised)" }}>
                   <th className="py-2 pr-4 text-left font-medium" style={{ color: muted }}>Category</th>
@@ -261,7 +261,7 @@ export default function MethodologyPage() {
             </table>
           </div>
 
-          <p className="max-w-[65ch] text-[15px] leading-relaxed" style={{ fontFamily: body, color: muted }}>
+          <p className="max-w-[65ch] text-[16px] leading-relaxed" style={{ fontFamily: body, color: muted }}>
             Every category score is clamped to 0–100. The overall score is the plain average of whichever categories
             have enough data, rounded to the nearest whole number. Categories scoring 70 or above are called out as
             strengths; categories below 50 are called out as weaknesses.

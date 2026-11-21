@@ -67,16 +67,16 @@ function buildTooltipContent(data: TrendPoint[], unit: string, color: string) {
           minWidth: 120,
         }}
       >
-        <div style={{ color: "var(--chart-tooltip-label)", fontSize: 11, marginBottom: 3, letterSpacing: "0.02em" }}>{label}</div>
+        <div style={{ color: "var(--chart-tooltip-label)", fontSize: 12, marginBottom: 3, letterSpacing: "0.02em" }}>{label}</div>
         <div style={{ color: "var(--chart-tooltip-value)", fontWeight: 600, fontSize: 15, fontVariantNumeric: "tabular-nums" }}>
           {value}{unit}
         </div>
         {delta !== null && (
-          <div style={{ color: deltaColor, fontSize: 11, fontWeight: 500, marginTop: 2, fontVariantNumeric: "tabular-nums" }}>
+          <div style={{ color: deltaColor, fontSize: 12, fontWeight: 500, marginTop: 2, fontVariantNumeric: "tabular-nums" }}>
             {delta >= 0 ? "▲" : "▼"} {Math.abs(delta).toFixed(2)}{unit} vs prior
           </div>
         )}
-        <div style={{ color, fontSize: 9, marginTop: 4, opacity: 0.6 }}>●&nbsp;current series</div>
+        <div style={{ color, fontSize: 10, marginTop: 4, opacity: 0.6 }}>●&nbsp;current series</div>
       </div>
     );
   };
@@ -145,14 +145,14 @@ export default function TrendLineChart({
             <XAxis
               dataKey="month"
               stroke="transparent"
-              tick={{ fill: axisTickFill, fontSize: 12 }}
+              tick={{ fill: axisTickFill, fontSize: 13 }}
               tickLine={false}
               axisLine={false}
               {...(xAxisInterval !== undefined ? { interval: xAxisInterval } : {})}
             />
             <YAxis
               stroke="transparent"
-              tick={{ fill: axisTickFill, fontSize: 12 }}
+              tick={{ fill: axisTickFill, fontSize: 13 }}
               tickLine={false}
               axisLine={false}
               width={40}
@@ -177,7 +177,7 @@ export default function TrendLineChart({
                 // "Avg 13.6%": the exact figure is redundant with the Y-axis
                 // scale the dashed line already crosses, and a short label
                 // needs less gutter width to always clear the plot cleanly.
-                label={{ value: "Avg", position: "right", fill: avgLabelColor, fontSize: 10 }}
+                label={{ value: "Avg", position: "right", fill: avgLabelColor, fontSize: 11 }}
               />
             )}
             {markers?.map((marker) => {
@@ -190,7 +190,7 @@ export default function TrendLineChart({
                   stroke={markerStroke}
                   strokeDasharray="2 3"
                   strokeWidth={1}
-                  label={{ value: marker.label, position: "top", fill: markerStroke, fontSize: 9 }}
+                  label={{ value: marker.label, position: "top", fill: markerStroke, fontSize: 10 }}
                 />
               );
             })}

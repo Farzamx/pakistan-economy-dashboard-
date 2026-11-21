@@ -13,14 +13,14 @@ const UNIT: Record<BondInsight["evidence"][number]["unit"], (v: number) => strin
 
 /** The findings: one sentence each, with the figures it is computed from and its caveat one click away. Server-compatible. */
 export default function BondFindings({ insights }: { insights: BondInsight[] }) {
-  if (insights.length === 0) return <p className="text-[13px] text-pe-text-3">No findings can be computed from the available auctions.</p>;
+  if (insights.length === 0) return <p className="text-[14px] text-pe-text-3">No findings can be computed from the available auctions.</p>;
   return (
     <ul className="flex flex-col divide-y divide-pe-border" data-testid="bond-findings">
       {insights.map((i) => (
         <li key={i.id} className="py-2.5 first:pt-0 last:pb-0">
-          <p className="text-[14px] leading-relaxed text-pe-text">{i.text}</p>
+          <p className="text-[15px] leading-relaxed text-pe-text">{i.text}</p>
           <Disclosure summary="Figures and caveat" className="mt-0.5">
-            <ul className="grid gap-x-6 gap-y-0.5 text-[12px] sm:grid-cols-2">
+            <ul className="grid gap-x-6 gap-y-0.5 text-[13px] sm:grid-cols-2">
               {i.evidence.map((e, j) => (
                 <li key={j} className="flex justify-between gap-3 tabular-nums">
                   <span className="text-pe-text-2">
@@ -30,7 +30,7 @@ export default function BondFindings({ insights }: { insights: BondInsight[] }) 
                 </li>
               ))}
             </ul>
-            {i.caveat && <p className="mt-2 text-[12px] text-pe-text-3">{i.caveat}</p>}
+            {i.caveat && <p className="mt-2 text-[13px] text-pe-text-3">{i.caveat}</p>}
           </Disclosure>
         </li>
       ))}

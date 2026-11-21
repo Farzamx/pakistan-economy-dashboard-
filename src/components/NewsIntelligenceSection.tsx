@@ -137,7 +137,7 @@ export default function NewsIntelligenceSection({ items, modelDisplayName, newsR
           <h2 className="text-headline text-white light:text-slate-900">
             {t("news.title")}
           </h2>
-          <span className="rounded-full border border-neon-blue/20 bg-neon-blue/10 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-widest text-neon-blue/70">
+          <span className="rounded-full border border-neon-blue/20 bg-neon-blue/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-widest text-neon-blue/70">
             {modelDisplayName}
           </span>
         </div>
@@ -145,16 +145,16 @@ export default function NewsIntelligenceSection({ items, modelDisplayName, newsR
           {t("news.description")}
         </p>
         <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1">
-          <span className="text-[10px] text-white/25 light:text-slate-400">
+          <span className="text-[11px] text-white/25 light:text-slate-400">
             <span className="text-white/35 light:text-slate-500">{t("news.refreshed")}</span>{" "}
             {newsRefreshedAt}
           </span>
-          <span className="text-[10px] text-white/15 light:text-slate-300">·</span>
-          <span className="text-[10px] text-white/25 light:text-slate-400">
+          <span className="text-[11px] text-white/15 light:text-slate-300">·</span>
+          <span className="text-[11px] text-white/25 light:text-slate-400">
             {sourceCount} {t("news.sources")}
           </span>
-          <span className="text-[10px] text-white/15 light:text-slate-300">·</span>
-          <span className="text-[10px] text-white/25 light:text-slate-400">{t("news.breakingRefresh")}</span>
+          <span className="text-[11px] text-white/15 light:text-slate-300">·</span>
+          <span className="text-[11px] text-white/25 light:text-slate-400">{t("news.breakingRefresh")}</span>
         </div>
       </motion.div>
 
@@ -169,7 +169,7 @@ export default function NewsIntelligenceSection({ items, modelDisplayName, newsR
                 type="button"
                 onClick={() => setActiveTab(tab)}
                 aria-pressed={active}
-                className={`rounded-full border px-3 py-1 text-[11px] font-medium transition-colors ${
+                className={`rounded-full border px-3 py-1 text-[12px] font-medium transition-colors ${
                   active
                     ? "border-neon-blue/40 bg-neon-blue/15 text-neon-blue"
                     : "border-white/10 light:border-slate-200 text-white/50 light:text-slate-500 hover:text-white light:hover:text-slate-900"
@@ -210,10 +210,10 @@ export default function NewsIntelligenceSection({ items, modelDisplayName, newsR
             >
               {/* Row 1: category tag + timestamp */}
               <div className="flex items-center justify-between gap-2">
-                <span className="rounded-md bg-white/5 light:bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-white/40 light:text-slate-500">
+                <span className="rounded-md bg-white/5 light:bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-white/40 light:text-slate-500">
                   {catMap[item.category] ?? item.category}
                 </span>
-                <span className="text-[10px] text-white/30 light:text-slate-400" suppressHydrationWarning>
+                <span className="text-[11px] text-white/30 light:text-slate-400" suppressHydrationWarning>
                   {formatAge(item.publishedAt)}
                 </span>
               </div>
@@ -227,7 +227,7 @@ export default function NewsIntelligenceSection({ items, modelDisplayName, newsR
               <div className="flex flex-wrap items-center gap-1.5">
                 <span className="inline-flex items-center gap-0.5">
                   <span
-                    className={`rounded-md px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
+                    className={`rounded-md px-1.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide ${
                       SENTIMENT_STYLES[sentiment] ?? SENTIMENT_STYLES.Neutral
                     }`}
                   >
@@ -237,14 +237,14 @@ export default function NewsIntelligenceSection({ items, modelDisplayName, newsR
                 </span>
 
                 <span className="inline-flex items-center gap-0.5">
-                  <span className={`text-[10px] font-medium ${RISK_STYLES[riskLevel] ?? RISK_STYLES.Low}`}>
+                  <span className={`text-[11px] font-medium ${RISK_STYLES[riskLevel] ?? RISK_STYLES.Low}`}>
                     {riskLevel === "Low" ? t("news.riskLow") : riskLevel === "Moderate" ? t("news.riskMed") : t("news.riskHigh")}
                   </span>
                   <InfoTooltip termKey="Risk Level" size="xs" />
                 </span>
 
                 <span
-                  className={`rounded-md border px-1.5 py-0.5 text-[10px] font-bold tabular-nums ${impactScoreClass(impactScore)}`}
+                  className={`rounded-md border px-1.5 py-0.5 text-[11px] font-bold tabular-nums ${impactScoreClass(impactScore)}`}
                 >
                   {formatImpactScore(impactScore)}
                 </span>
@@ -253,22 +253,22 @@ export default function NewsIntelligenceSection({ items, modelDisplayName, newsR
               {/* Row 4: quality score strip — relevance / source reliability / freshness */}
               <div className="flex flex-wrap items-center gap-1.5 border-t border-white/5 light:border-slate-100 pt-1.5">
                 <span
-                  className={`rounded-md border px-1.5 py-0.5 text-[9px] font-semibold tabular-nums ${relevanceClass(item.relevanceScore)}`}
+                  className={`rounded-md border px-1.5 py-0.5 text-[10px] font-semibold tabular-nums ${relevanceClass(item.relevanceScore)}`}
                   title="Pakistan relevance score (0-10)"
                 >
                   {t("news.relevance")} {item.relevanceScore}
                 </span>
-                <span className="text-[9px] text-white/30 light:text-slate-400" title="Source reliability score (0-10)">
+                <span className="text-[10px] text-white/30 light:text-slate-400" title="Source reliability score (0-10)">
                   {t("news.sourceRating")} {item.sourceReliability}/10
                 </span>
-                <span className={`text-[9px] font-medium ${FRESHNESS_STYLES[item.freshness]}`}>
+                <span className={`text-[10px] font-medium ${FRESHNESS_STYLES[item.freshness]}`}>
                   {freshnessMap[item.freshness] ?? item.freshness}
                 </span>
               </div>
 
               {/* Row 5: market impact (deterministic) or AI reason (fallback) */}
               {marketImpact ? (
-                <div className="text-[10px] leading-relaxed text-white/40 light:text-slate-500">
+                <div className="text-[11px] leading-relaxed text-white/40 light:text-slate-500">
                   <span className="font-semibold text-white/55 light:text-slate-600">{marketImpact.label}:</span>{" "}
                   {marketImpact.bullets.join(" · ")}
                 </div>
@@ -278,19 +278,19 @@ export default function NewsIntelligenceSection({ items, modelDisplayName, newsR
                 // rendered nothing at all, making an AI-tagging
                 // failure/fallback look identical to a card that simply had
                 // no deterministic market-impact rule. Now visibly flagged.
-                <p className="text-[10px] leading-relaxed text-white/25 light:text-slate-400 italic">
+                <p className="text-[11px] leading-relaxed text-white/25 light:text-slate-400 italic">
                   {t("news.aiUnavailable")}
                 </p>
               ) : (
                 reason && (
-                  <p className="text-[10px] leading-relaxed text-white/35 light:text-slate-500 italic">
+                  <p className="text-[11px] leading-relaxed text-white/35 light:text-slate-500 italic">
                     {reason}
                   </p>
                 )
               )}
 
               {/* Row 6: source */}
-              <p className="text-[10px] text-white/25 light:text-slate-400">{item.source}</p>
+              <p className="text-[11px] text-white/25 light:text-slate-400">{item.source}</p>
             </motion.a>
           );
         })}

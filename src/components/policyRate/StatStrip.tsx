@@ -18,11 +18,11 @@ export default function StatStrip({ items, label }: { items: StatItem[]; label: 
     <dl aria-label={label} className="grid grid-cols-[repeat(auto-fit,minmax(168px,1fr))] gap-3">
       {items.map((it) => (
         <div key={it.label} className="min-w-0 rounded-[var(--pe-radius)] border border-pe-border bg-pe-surface px-3 py-2.5">
-          <dt className="text-[12px] text-pe-text-2">{it.label}</dt>
+          <dt className="text-[13px] text-pe-text-2">{it.label}</dt>
           <dd className="mt-0.5 text-[18px] font-semibold tabular-nums text-pe-text">
             <AnimatedFigure value={it.value} />
           </dd>
-          {it.detail ? <dd className="mt-0.5 text-[11.5px] leading-snug text-pe-text-2">{it.detail}</dd> : null}
+          {it.detail ? <dd className="mt-0.5 text-[12.5px] leading-snug text-pe-text-2">{it.detail}</dd> : null}
         </div>
       ))}
     </dl>

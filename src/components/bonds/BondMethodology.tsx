@@ -28,7 +28,7 @@ const fmtFailed = (m: Record<string, number>) => Object.entries(m).map(([t, n]) 
 export default function BondMethodology({ facts, retrievedOn, sources, excluded, related }: BondMethodologyProps) {
   return (
     <div className="flex flex-col gap-3" data-testid="bond-methodology">
-      <ul className="flex flex-col gap-1 text-[13px] text-pe-text-2">
+      <ul className="flex flex-col gap-1 text-[14px] text-pe-text-2">
         <li>
           <span className="font-medium text-pe-text">Source.</span> State Bank of Pakistan auction archives, read on {formatDate(retrievedOn)}.
         </li>
@@ -68,7 +68,7 @@ export default function BondMethodology({ facts, retrievedOn, sources, excluded,
           {sources.map((s) => (
             <li key={s.url}>
               <a href={s.url} target="_blank" rel="noopener noreferrer" className="text-pe-accent hover:underline">{s.url.replace("https://www.", "")}</a> · sheet &ldquo;{s.sheet}&rdquo;{s.lastModified ? ` · modified ${s.lastModified}` : ""}
-              <span className="block break-all font-mono text-[11px] text-pe-text-3">sha256 {s.sha256}</span>
+              <span className="block break-all font-mono text-[12px] text-pe-text-3">sha256 {s.sha256}</span>
             </li>
           ))}
           <li>The latest T-bill and PIB auctions were checked line by line against SBP&apos;s published auction-result PDFs, and the 3-month series against SBP EasyData. The update procedure is in the repository (docs/bond-yields-workshop.md).</li>

@@ -58,9 +58,9 @@ export function Treemap({ items, height = 340, ariaLabel }: { items: TreemapDatu
                 color: cls ? `var(--pe-heat-${cls.id}-ink)` : "var(--pe-text-2)",
               }}
             >
-              {!tiny && <span className={`block font-medium ${roomy ? "text-[12px]" : "text-[11px]"}`}>{d.label}</span>}
+              {!tiny && <span className={`block font-medium ${roomy ? "text-[13px]" : "text-[12px]"}`}>{d.label}</span>}
               {roomy && (
-                <span className="mt-0.5 block text-[11px] tabular-nums">
+                <span className="mt-0.5 block text-[12px] tabular-nums">
                   {formatValue(d.weight, 1)}% of basket
                   <br />
                   {d.yoy === null ? "no reading" : `${formatPercent(d.yoy, 1)} YoY`}
@@ -80,7 +80,7 @@ export function Treemap({ items, height = 340, ariaLabel }: { items: TreemapDatu
         </TooltipBox>
       </div>
       <div className="mt-2">
-        <p className="mb-1 text-[11px] text-pe-text-3">Box size = share of the basket (fixed 2015-16 weight). Box colour = latest year-on-year inflation:</p>
+        <p className="mb-1 text-[12px] text-pe-text-3">Box size = share of the basket (fixed 2015-16 weight). Box colour = latest year-on-year inflation:</p>
         <HeatLegend scale={YOY_SCALE} showMissing={false} />
       </div>
     </div>

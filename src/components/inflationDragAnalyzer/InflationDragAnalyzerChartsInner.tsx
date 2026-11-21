@@ -38,8 +38,8 @@ export default function InflationDragAnalyzerChartsInner({ startingWealth, endin
         <ResponsiveContainer width="100%" height={260}>
           <BarChart data={data} margin={{ top: 4, right: 16, left: 8, bottom: 4 }}>
             <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} vertical={false} />
-            <XAxis dataKey="name" stroke="transparent" tick={{ fill: axisTickFill, fontSize: 11 }} tickLine={false} axisLine={false} />
-            <YAxis tickFormatter={(v) => `Rs ${(v / 1000).toFixed(0)}k`} stroke="transparent" tick={{ fill: axisTickFill, fontSize: 11 }} tickLine={false} axisLine={false} width={64} />
+            <XAxis dataKey="name" stroke="transparent" tick={{ fill: axisTickFill, fontSize: 12 }} tickLine={false} axisLine={false} />
+            <YAxis tickFormatter={(v) => `Rs ${(v / 1000).toFixed(0)}k`} stroke="transparent" tick={{ fill: axisTickFill, fontSize: 12 }} tickLine={false} axisLine={false} width={64} />
             <Tooltip contentStyle={tooltipStyle} formatter={(v, name) => (name === "value" ? [`Rs ${typeof v === "number" ? Math.round(v).toLocaleString("en-US") : v}`, ""] : [null, null])} />
             <Bar dataKey="base" stackId="waterfall" fill="transparent" isAnimationActive={false} />
             <Bar dataKey="value" stackId="waterfall" radius={[4, 4, 0, 0]} isAnimationActive={!prefersReducedMotion} animationDuration={700}>

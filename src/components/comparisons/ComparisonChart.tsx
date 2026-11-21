@@ -87,7 +87,7 @@ export default function ComparisonChart({ data, seriesA, seriesB, mode }: Compar
             <XAxis
               dataKey="label"
               stroke="transparent"
-              tick={{ fill: axisTickFill, fontSize: 11 }}
+              tick={{ fill: axisTickFill, fontSize: 12 }}
               tickLine={false}
               axisLine={false}
               minTickGap={32}
@@ -95,7 +95,7 @@ export default function ComparisonChart({ data, seriesA, seriesB, mode }: Compar
             <YAxis
               yAxisId="left"
               stroke="transparent"
-              tick={{ fill: axisTickFill, fontSize: 11 }}
+              tick={{ fill: axisTickFill, fontSize: 12 }}
               tickLine={false}
               axisLine={false}
               width={48}
@@ -106,7 +106,7 @@ export default function ComparisonChart({ data, seriesA, seriesB, mode }: Compar
                 yAxisId="right"
                 orientation="right"
                 stroke="transparent"
-                tick={{ fill: axisTickFill, fontSize: 11 }}
+                tick={{ fill: axisTickFill, fontSize: 12 }}
                 tickLine={false}
                 axisLine={false}
                 width={48}
@@ -138,7 +138,7 @@ export default function ComparisonChart({ data, seriesA, seriesB, mode }: Compar
               }}
             />
             <Legend
-              wrapperStyle={{ fontSize: 12, color: legendColor }}
+              wrapperStyle={{ fontSize: 13, color: legendColor }}
               iconType="line"
             />
             <Line

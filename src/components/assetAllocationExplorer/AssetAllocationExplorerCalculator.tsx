@@ -264,12 +264,12 @@ export default function AssetAllocationExplorerCalculator({ breakdown, liveData 
               const delta = row.next - row.cur;
               return (
                 <div key={row.label} className="rounded-lg border border-[var(--border-subtle)] p-2.5">
-                  <p className="text-[11px] text-white/40 light:text-slate-400">{row.label}</p>
+                  <p className="text-[12px] text-white/40 light:text-slate-400">{row.label}</p>
                   <p className="text-mono-num text-sm font-semibold tabular-nums text-white light:text-slate-900">
                     {row.next.toFixed(1)}
                     {row.suffix}
                   </p>
-                  <p className={`text-[11px] ${delta === 0 ? "text-white/40" : delta > 0 ? "text-emerald-400" : "text-rose-400"}`}>
+                  <p className={`text-[12px] ${delta === 0 ? "text-white/40" : delta > 0 ? "text-emerald-400" : "text-rose-400"}`}>
                     {delta === 0 ? "no change" : `${delta > 0 ? "+" : ""}${delta.toFixed(1)}${row.suffix} vs. current`}
                   </p>
                 </div>
@@ -302,7 +302,7 @@ export default function AssetAllocationExplorerCalculator({ breakdown, liveData 
       <div className="glass-card rounded-xl p-4 sm:p-5">
         <div className="flex items-center gap-2">
           <h3 className="text-sm font-semibold text-white light:text-slate-900">Asset Correlation</h3>
-          <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-300">Illustrative — not computed from live data</span>
+          <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-amber-300">Illustrative — not computed from live data</span>
         </div>
         <p className="mt-1 text-xs text-white/50 light:text-slate-500">No return-correlation data source exists for these asset classes — these are fixed, documented assumptions used only to estimate portfolio-level risk, not a live measurement.</p>
         <div className="mt-3 overflow-x-auto">

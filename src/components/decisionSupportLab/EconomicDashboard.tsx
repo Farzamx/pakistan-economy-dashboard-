@@ -199,7 +199,7 @@ export default function EconomicDashboard({ breakdown, liveData }: Props) {
                   <p className="text-white/85 light:text-slate-800">{rec.title}</p>
                   <p className="text-xs text-white/45 light:text-slate-400">{rec.reason}</p>
                 </div>
-                <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${rec.expectedImpact === "high" ? "bg-rose-500/15 text-rose-300" : rec.expectedImpact === "medium" ? "bg-amber-500/15 text-amber-300" : "bg-white/10 text-white/50"}`}>
+                <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide ${rec.expectedImpact === "high" ? "bg-rose-500/15 text-rose-300" : rec.expectedImpact === "medium" ? "bg-amber-500/15 text-amber-300" : "bg-white/10 text-white/50"}`}>
                   {rec.expectedImpact}
                 </span>
               </li>

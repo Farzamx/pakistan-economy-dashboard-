@@ -82,7 +82,7 @@ export default function OverviewSection({ kpi, model }: { kpi: SbpIndicatorResul
         )}
       </div>
       {run && (
-        <p className="mt-3 max-w-3xl text-[13px] leading-relaxed text-pe-text-2">
+        <p className="mt-3 max-w-3xl text-[14px] leading-relaxed text-pe-text-2">
           {run.latest ? "Latest run of changes: " : ""}
           {run.changes} {run.direction === "tightening" ? (run.changes === 1 ? "increase" : "increases") : run.changes === 1 ? "cut" : "cuts"} between {formatDate(run.startDate)} and {formatDate(run.endDate)} ({signedPp(run.totalChange)} pp, {pct(run.startRate)} to {pct(run.endRate)}). Meetings that left the rate unchanged are not in SBP&rsquo;s series.
         </p>

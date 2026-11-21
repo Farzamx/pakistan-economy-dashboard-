@@ -45,14 +45,14 @@ export default function BudgetTrendChart({ points, fields, mode }: BudgetTrendCh
             <XAxis
               dataKey="fiscalYear"
               stroke="transparent"
-              tick={{ fill: axisTickFill, fontSize: 11 }}
+              tick={{ fill: axisTickFill, fontSize: 12 }}
               tickLine={false}
               axisLine={false}
               minTickGap={20}
             />
             <YAxis
               stroke="transparent"
-              tick={{ fill: axisTickFill, fontSize: 11 }}
+              tick={{ fill: axisTickFill, fontSize: 12 }}
               tickLine={false}
               axisLine={false}
               width={52}
@@ -64,7 +64,7 @@ export default function BudgetTrendChart({ points, fields, mode }: BudgetTrendCh
               cursor={{ stroke: cursorStroke, strokeWidth: 1 }}
               formatter={(value, name) => [typeof value === "number" ? formatValue(value) : "Not itemised", String(name)]}
             />
-            <Legend wrapperStyle={{ fontSize: 12, color: legendColor }} iconType="line" />
+            <Legend wrapperStyle={{ fontSize: 13, color: legendColor }} iconType="line" />
             {fields.map((field, i) => {
               const meta = BUDGET_FIELD_META[field];
               return (

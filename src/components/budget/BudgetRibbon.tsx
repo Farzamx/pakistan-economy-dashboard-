@@ -20,11 +20,11 @@ export default function BudgetRibbon() {
     >
       <div className="flex items-center gap-3">
         <span aria-hidden="true" className="h-5 w-[3px] rounded-full" style={{ background: "linear-gradient(#e8cf8c, #b8923a)" }} />
-        <p className="text-[13px] font-semibold uppercase tracking-[0.18em]" style={{ color: "#e8cf8c" }}>
+        <p className="text-[14px] font-semibold uppercase tracking-[0.18em]" style={{ color: "#e8cf8c" }}>
           Budget Tracker Workshop
         </p>
       </div>
-      <p className="text-[11px] tracking-wide" style={{ color: "rgba(232, 236, 245, 0.78)" }}>
+      <p className="text-[12px] tracking-wide" style={{ color: "rgba(232, 236, 245, 0.78)" }}>
         Federal Budget Estimates · FY{first} to FY{last} · Source: Finance Division, Budget in Brief
       </p>
     </header>

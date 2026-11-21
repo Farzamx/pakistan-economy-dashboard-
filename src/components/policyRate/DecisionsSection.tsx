@@ -32,15 +32,15 @@ export default function DecisionsSection({ model }: { model: PolicyRateViewModel
           ["Largest cut", s.largestCut ? `${signedPp(s.largestCut.change)} pp · ${formatDate(s.largestCut.date)}` : "—"],
         ].map(([t, d]) => (
           <div key={t} className="rounded-[var(--pe-radius)] border border-pe-border bg-pe-surface px-3 py-2.5">
-            <dt className="text-[12px] text-pe-text-2">{t}</dt>
-            <dd className="mt-0.5 text-[15px] font-semibold tabular-nums text-pe-text">{d}</dd>
+            <dt className="text-[13px] text-pe-text-2">{t}</dt>
+            <dd className="mt-0.5 text-[16px] font-semibold tabular-nums text-pe-text">{d}</dd>
           </div>
         ))}
       </dl>
 
       <div>
         <div className="relative max-h-[28rem] overflow-auto rounded-[var(--pe-radius)] border border-pe-border" tabIndex={0} role="region" aria-label="Policy-rate changes, newest first (scrolls)">
-          <table className="w-full min-w-[720px] border-collapse text-left text-[12.5px] tabular-nums">
+          <table className="w-full min-w-[720px] border-collapse text-left text-[13.5px] tabular-nums">
             <caption className="sr-only">Every policy-rate change, newest first, with the inflation known at the time and the real policy rate after the change</caption>
             <thead className="sticky top-0 bg-pe-surface-2 text-pe-text-2">
               <tr>
@@ -64,7 +64,7 @@ export default function DecisionsSection({ model }: { model: PolicyRateViewModel
             </tbody>
           </table>
         </div>
-        <p className="mt-2 max-w-3xl font-mono text-[11px] leading-relaxed text-pe-text-3">
+        <p className="mt-2 max-w-3xl font-mono text-[12px] leading-relaxed text-pe-text-3">
           Source: SBP EasyData (policy rate), SBP / PBS (headline CPI inflation, YoY). &ldquo;Inflation known then&rdquo; is the CPI of the month before the decision month: PBS publishes the monthly CPI at the start of the following month. &ldquo;Not in the data&rdquo; means that month is outside the inflation series PEIC holds (it begins in July 2016), not that it was zero.
         </p>
       </div>

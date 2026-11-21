@@ -188,15 +188,15 @@ export default function BudgetWorkspace({ years, flowSlot }: BudgetWorkspaceProp
           {view === "donut" && <BudgetAllocationChart data={allocationDetail.slices} />}
           {view === "treemap" && <BudgetAllocationTreemap key={yearRecord.fiscalYear} data={allocationDetail.slices} />}
           {allocationDetail.notes.map((n) => (
-            <p key={n} className="mt-3 rounded-lg border border-amber-500/25 bg-amber-500/[0.06] p-2.5 text-[11px] text-amber-200 light:text-amber-800">{n}</p>
+            <p key={n} className="mt-3 rounded-lg border border-amber-500/25 bg-amber-500/[0.06] p-2.5 text-[12px] text-amber-200 light:text-amber-800">{n}</p>
           ))}
           {allocationDetail.discrepancies.map((n) => (
-            <p key={n} className="mt-3 rounded-lg border border-rose-500/30 bg-rose-500/[0.06] p-2.5 text-[11px] text-rose-200 light:text-rose-800">Does not reconcile: {n}</p>
+            <p key={n} className="mt-3 rounded-lg border border-rose-500/30 bg-rose-500/[0.06] p-2.5 text-[12px] text-rose-200 light:text-rose-800">Does not reconcile: {n}</p>
           ))}
-          <p className="mt-3 text-[11px] text-[var(--text-muted)]">
+          <p className="mt-3 text-[12px] text-[var(--text-muted)]">
             Percentages are shares of the budget envelope: total outlay plus the provinces&apos; NFC share, which Budget in Brief deducts on the revenue side and does not count in total outlay. {t("budget.sourceNote")}
           </p>
-          <details className="mt-1 text-[11px] text-[var(--text-muted)]" data-testid="budget-allocation-more">
+          <details className="mt-1 text-[12px] text-[var(--text-muted)]" data-testid="budget-allocation-more">
             <summary className="cursor-pointer select-none text-[var(--text-secondary)] hover:text-[var(--text-primary)]">What &ldquo;Other&rdquo; holds, and the FY2010-11 caveat</summary>
             <p className="mt-1">
               &ldquo;Other&rdquo; is the remainder: grants and transfers, running of civil government, net lending and contingency provisions. In FY2010-11 interest and pension are not itemised, so the bundled slice holds them together with that remainder.{view === "bars" ? " Bar length is relative to the largest slice." : ""}
@@ -234,14 +234,14 @@ export default function BudgetWorkspace({ years, flowSlot }: BudgetWorkspaceProp
             <button
               type="button"
               onClick={() => trendChartRef.current && exportChartAsPng(trendChartRef.current, "pakistan-budget-trend.png", "#05060f")}
-              className="rounded-lg border border-[var(--border)] px-2.5 py-1 text-[11px] font-medium text-[var(--text-muted)] transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]"
+              className="rounded-lg border border-[var(--border)] px-2.5 py-1 text-[12px] font-medium text-[var(--text-muted)] transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]"
             >
               {t("budget.exportPng")}
             </button>
             <button
               type="button"
               onClick={() => exportTrendAsCsv(trendPoints, fieldLabels, "pakistan-budget-trend.csv")}
-              className="rounded-lg border border-[var(--border)] px-2.5 py-1 text-[11px] font-medium text-[var(--text-muted)] transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]"
+              className="rounded-lg border border-[var(--border)] px-2.5 py-1 text-[12px] font-medium text-[var(--text-muted)] transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]"
             >
               {t("budget.exportCsv")}
             </button>
@@ -250,13 +250,13 @@ export default function BudgetWorkspace({ years, flowSlot }: BudgetWorkspaceProp
             <BudgetTrendChart points={trendPoints} fields={effectiveFields} mode={mode} />
           </div>
           {rangeYears.length === 0 && <p className="text-xs text-rose-400">No fiscal years in the selected range.</p>}
-          <ul className="flex flex-col gap-1 text-[11px] text-[var(--text-muted)]">
+          <ul className="flex flex-col gap-1 text-[12px] text-[var(--text-muted)]">
             {gapNotes.map((n) => (
               <li key={n}>{n}</li>
             ))}
             <li>{t("budget.sourceNote")}</li>
           </ul>
-          <details className="text-[11px] text-[var(--text-muted)]">
+          <details className="text-[12px] text-[var(--text-muted)]">
             <summary className="cursor-pointer select-none hover:text-[var(--text-secondary)]">View as a table</summary>
             <div className="mt-2 overflow-x-auto">
               <table className="w-full min-w-[420px] border-collapse text-right tabular-nums">
@@ -306,7 +306,7 @@ export default function BudgetWorkspace({ years, flowSlot }: BudgetWorkspaceProp
             >
               <span className="text-sm font-semibold text-[var(--text-primary)]">{cat.shortTitle}</span>
               <span className="text-xs text-[var(--text-muted)]">{cat.description}</span>
-              {cat.disclaimer && <span className="mt-1 text-[10px] text-amber-400">{t("budget.federalNote")}</span>}
+              {cat.disclaimer && <span className="mt-1 text-[11px] text-amber-400">{t("budget.federalNote")}</span>}
             </Link>
           ))}
         </div>

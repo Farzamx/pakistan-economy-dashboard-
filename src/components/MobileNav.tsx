@@ -373,7 +373,7 @@ export default function MobileNav() {
                     P
                   </div>
                   <div>
-                    <p className="font-serif text-[15px] font-semibold tracking-[-0.005em] text-white light:text-slate-900">{t("nav.logoName")}</p>
+                    <p className="font-serif text-[16px] font-semibold tracking-[-0.005em] text-white light:text-slate-900">{t("nav.logoName")}</p>
                     <p className="text-xs text-white/40 light:text-slate-400">{t("nav.logoSubtitle")}</p>
                   </div>
                 </div>
@@ -394,7 +394,7 @@ export default function MobileNav() {
               <nav className="flex flex-col gap-4">
                 {GROUP_ORDER.map((group) => (
                   <div key={group} className="flex flex-col gap-1">
-                    <p className="px-1 text-[11px] font-semibold uppercase tracking-[0.1em] text-white/30 light:text-slate-400">{t(`nav.group${group.charAt(0).toUpperCase()}${group.slice(1)}`)}</p>
+                    <p className="px-1 text-[12px] font-semibold uppercase tracking-[0.1em] text-white/30 light:text-slate-400">{t(`nav.group${group.charAt(0).toUpperCase()}${group.slice(1)}`)}</p>
                     {LINKS.filter((l) => l.group === group).map((link, i) => {
                       // Three cases:
                       //   "/#section" — hash-only homepage anchor → never active by route

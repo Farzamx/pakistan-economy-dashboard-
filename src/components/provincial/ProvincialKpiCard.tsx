@@ -60,7 +60,7 @@ export default function ProvincialKpiCard({ title, valueRs, subValue, yoy, fisca
       ) : (
         <span className="text-xs text-white/30 light:text-slate-400">No prior-year figure for comparison</span>
       )}
-      <span className="mt-auto border-t border-white/5 light:border-slate-100 pt-2 text-[10px] text-white/40 light:text-slate-400">
+      <span className="mt-auto border-t border-white/5 light:border-slate-100 pt-2 text-[11px] text-white/40 light:text-slate-400">
         FY{fiscalYear} Budget Estimate · {sourceLabel}
       </span>
     </motion.div>

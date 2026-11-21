@@ -31,7 +31,7 @@ export default function ProvincialPerCitizenSection({ metrics, provinceName, pop
             <p className="mt-1 text-xl font-semibold text-white light:text-slate-900">
               {m.rsPerCitizen === null ? "—" : `Rs ${m.rsPerCitizen.toFixed(0)}`}
             </p>
-            <p className="text-[10px] text-white/30 light:text-slate-400">{t("provincial.perCitizen")}</p>
+            <p className="text-[11px] text-white/30 light:text-slate-400">{t("provincial.perCitizen")}</p>
           </div>
         ))}
       </div>

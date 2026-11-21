@@ -72,17 +72,17 @@ function Cell({ cell, index, animate }: { cell: TapeCell; index: number; animate
 
   return (
     <div className="mkt-tape-cell flex min-w-[177px] shrink-0 snap-start flex-col gap-1 px-5 py-4 min-[1024px]:min-w-0 min-[1024px]:flex-1 min-[1024px]:px-6">
-      <span className="text-[11px] uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-marketing-data)", color: "var(--muted)" }}>
+      <span className="text-[12px] uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-marketing-data)", color: "var(--muted)" }}>
         {cell.label}
       </span>
       <span className="text-[18px] font-medium min-[1024px]:text-[20px]" style={{ fontFamily: "var(--font-marketing-data)", color: "var(--paper)" }}>
         {formatValue(displayed, cell.decimals, cell.unit)}
       </span>
-      <span className="flex items-center gap-1 text-[12px]" style={{ fontFamily: "var(--font-marketing-data)" }}>
+      <span className="flex items-center gap-1 text-[13px]" style={{ fontFamily: "var(--font-marketing-data)" }}>
         <DirectionGlyph direction={cell.direction} />
         <span style={{ color: cell.direction === "up" ? "var(--up)" : cell.direction === "down" ? "var(--down)" : "var(--muted)" }}>{cell.changeLabel}</span>
       </span>
-      <span className="text-[11px]" style={{ fontFamily: "var(--font-marketing-data)", color: "var(--muted)" }}>
+      <span className="text-[12px]" style={{ fontFamily: "var(--font-marketing-data)", color: "var(--muted)" }}>
         as of {cell.asOf}
       </span>
     </div>

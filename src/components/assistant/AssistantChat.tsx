@@ -80,7 +80,7 @@ function renderMarkdown(text: string): React.ReactNode {
       <ul key={`list-${output.length}`} className="mt-1 space-y-0.5">
         {listBuffer.map((item, i) => (
           <li key={i} className="flex gap-1.5 items-baseline">
-            <span className="text-[#38bdf8]/40 flex-shrink-0 text-[10px]">›</span>
+            <span className="text-[#38bdf8]/40 flex-shrink-0 text-[11px]">›</span>
             <span>{parseBold(item)}</span>
           </li>
         ))}
@@ -105,7 +105,7 @@ function renderMarkdown(text: string): React.ReactNode {
       }
     } else if (/^\*\*[^*]+\*\*$/.test(line.trim())) {
       output.push(
-        <p key={`hdr-${i}`} className="mt-1.5 text-[11px] font-semibold uppercase tracking-wide text-white/55 light:text-slate-500">
+        <p key={`hdr-${i}`} className="mt-1.5 text-[12px] font-semibold uppercase tracking-wide text-white/55 light:text-slate-500">
           {line.trim().slice(2, -2)}
         </p>,
       );
@@ -132,9 +132,9 @@ function MessageCitations({ citations }: { citations: CitationItem[] }) {
     <div className="mt-1.5">
       <button
         onClick={() => setExpanded((v) => !v)}
-        className="flex items-center gap-1 text-[10px] text-white/30 light:text-slate-400 hover:text-[#38bdf8]/60 transition-colors"
+        className="flex items-center gap-1 text-[11px] text-white/30 light:text-slate-400 hover:text-[#38bdf8]/60 transition-colors"
       >
-        <span className="text-[9px]">{expanded ? "▾" : "▸"}</span>
+        <span className="text-[10px]">{expanded ? "▾" : "▸"}</span>
         {citations.length} source{citations.length > 1 ? "s" : ""}
       </button>
       {expanded && (
@@ -145,10 +145,10 @@ function MessageCitations({ citations }: { citations: CitationItem[] }) {
               href={c.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1.5 text-[11px] text-white/40 light:text-slate-500 hover:text-[#38bdf8]/75 transition-colors"
+              className="flex items-center gap-1.5 text-[12px] text-white/40 light:text-slate-500 hover:text-[#38bdf8]/75 transition-colors"
             >
               <span
-                className={`text-[8px] px-1 py-0.5 rounded font-medium flex-shrink-0 ${TIER_STYLES[c.tier] ?? TIER_STYLES.C}`}
+                className={`text-[10px] px-1 py-0.5 rounded font-medium flex-shrink-0 ${TIER_STYLES[c.tier] ?? TIER_STYLES.C}`}
               >
                 {c.tier}
               </span>
@@ -192,7 +192,7 @@ function TranslationSection({
       <button
         onClick={() => onTranslate(msgIndex, msg.content)}
         disabled={msg.translating}
-        className="flex items-center gap-1 text-[10px] text-white/28 light:text-slate-400 hover:text-[#38bdf8]/55 transition-colors disabled:cursor-default"
+        className="flex items-center gap-1 text-[11px] text-white/28 light:text-slate-400 hover:text-[#38bdf8]/55 transition-colors disabled:cursor-default"
         aria-label={buttonLabel ?? "Translating…"}
       >
         {msg.translating ? (
@@ -205,7 +205,7 @@ function TranslationSection({
           </>
         ) : (
           <>
-            <span className="text-[11px]">🌐</span>
+            <span className="text-[12px]">🌐</span>
             <span>{buttonLabel}</span>
           </>
         )}
@@ -213,10 +213,10 @@ function TranslationSection({
 
       {msg.translationVisible && msg.translation && (
         <div className="mt-1.5 rounded-xl px-3 py-2.5 bg-[#071420] light:bg-blue-50 border border-[#38bdf8]/10 light:border-blue-100">
-          <p className="text-[9px] font-semibold uppercase tracking-wider text-[#38bdf8]/30 light:text-blue-500 mb-1.5">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-[#38bdf8]/30 light:text-blue-500 mb-1.5">
             Roman Urdu
           </p>
-          <div className="text-[12.5px] text-white/62 light:text-slate-700 space-y-0.5 leading-snug">
+          <div className="text-[13.5px] text-white/62 light:text-slate-700 space-y-0.5 leading-snug">
             {renderMarkdown(msg.translation)}
           </div>
         </div>
@@ -235,16 +235,16 @@ function MessageFooter({ msg }: { msg: Message }) {
     <div className="mt-2 pt-2 border-t border-white/8 light:border-slate-200 space-y-1">
       <div className="flex items-center flex-wrap gap-x-2 gap-y-0.5">
         {msg.queryCategory && (
-          <span className="text-[10px] font-medium text-white/35 light:text-slate-500">
+          <span className="text-[11px] font-medium text-white/35 light:text-slate-500">
             {msg.queryCategory}
           </span>
         )}
         {conf && (
           <>
-            <span className="text-white/15 light:text-slate-300 text-[10px]">·</span>
+            <span className="text-white/15 light:text-slate-300 text-[11px]">·</span>
             <span className="flex items-center gap-1">
               <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${conf.dot}`} />
-              <span className={`text-[10px] font-medium ${conf.text}`}>
+              <span className={`text-[11px] font-medium ${conf.text}`}>
                 {conf.label}
               </span>
             </span>
@@ -252,12 +252,12 @@ function MessageFooter({ msg }: { msg: Message }) {
         )}
         {msg.source && (
           <>
-            <span className="text-white/15 light:text-slate-300 text-[10px]">·</span>
-            <span className={`text-[10px] font-medium ${SOURCE_COLORS[msg.source] ?? "text-white/35"}`}>
+            <span className="text-white/15 light:text-slate-300 text-[11px]">·</span>
+            <span className={`text-[11px] font-medium ${SOURCE_COLORS[msg.source] ?? "text-white/35"}`}>
               {msg.source}
             </span>
             {msg.dataSource && (
-              <span className="text-[10px] text-white/30 light:text-slate-400 font-medium">
+              <span className="text-[11px] text-white/30 light:text-slate-400 font-medium">
                 via {msg.dataSource}
               </span>
             )}
@@ -265,8 +265,8 @@ function MessageFooter({ msg }: { msg: Message }) {
         )}
         {msg.modelDisplayName && msg.modelDisplayName !== "Offline" && (
           <>
-            <span className="text-white/15 light:text-slate-300 text-[10px]">·</span>
-            <span className="text-[10px] text-white/25 light:text-slate-400 font-medium">
+            <span className="text-white/15 light:text-slate-300 text-[11px]">·</span>
+            <span className="text-[11px] text-white/25 light:text-slate-400 font-medium">
               {msg.modelDisplayName}
             </span>
           </>
@@ -274,13 +274,13 @@ function MessageFooter({ msg }: { msg: Message }) {
       </div>
 
       {msg.confidenceReason && (
-        <p className="text-[10px] text-white/25 light:text-slate-400 leading-tight">
+        <p className="text-[11px] text-white/25 light:text-slate-400 leading-tight">
           {msg.confidenceReason}
         </p>
       )}
 
       {showSearch && (
-        <p className="text-[10px] text-white/20 light:text-slate-400">
+        <p className="text-[11px] text-white/20 light:text-slate-400">
           {msg.sourcesFound! > 0
             ? `Searched · ${msg.sourcesFound} trusted source${msg.sourcesFound! > 1 ? "s" : ""}${msg.searchLatencyMs ? ` · ${msg.searchLatencyMs}ms` : ""}`
             : `Searched · no trusted sources found`}
@@ -463,7 +463,7 @@ export default function AssistantChat({ context, onClose }: Props) {
           </span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-[10px] text-[#38bdf8]/60 font-medium uppercase tracking-wider">
+          <span className="text-[11px] text-[#38bdf8]/60 font-medium uppercase tracking-wider">
             {t("assistant.badge")}
           </span>
           <button
@@ -482,7 +482,7 @@ export default function AssistantChat({ context, onClose }: Props) {
         {/* Suggested questions — only when empty */}
         {isEmpty && (
           <div className="space-y-2 pt-1">
-            <p className="text-[11px] text-white/35 light:text-slate-500 font-medium uppercase tracking-wider px-0.5">
+            <p className="text-[12px] text-white/35 light:text-slate-500 font-medium uppercase tracking-wider px-0.5">
               {t("assistant.askAnything")}
             </p>
             {SUGGESTED_QUESTIONS.map((q) => (
@@ -504,7 +504,7 @@ export default function AssistantChat({ context, onClose }: Props) {
             className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
           >
             <div
-              className={`max-w-[92%] rounded-2xl px-3.5 py-2.5 text-[13px] ${
+              className={`max-w-[92%] rounded-2xl px-3.5 py-2.5 text-[14px] ${
                 msg.role === "user"
                   ? "bg-[#38bdf8]/20 light:bg-blue-50 text-white/90 light:text-slate-800 rounded-br-md border border-[#38bdf8]/25 light:border-blue-200"
                   : "bg-white/5 light:bg-slate-50 text-white/82 light:text-slate-700 rounded-bl-md border border-white/8 light:border-slate-200"
@@ -561,7 +561,7 @@ export default function AssistantChat({ context, onClose }: Props) {
             onKeyDown={handleKeyDown}
             placeholder={t("assistant.placeholder")}
             disabled={isLoading}
-            className="flex-1 bg-transparent text-[13px] text-white/85 light:text-slate-800 placeholder-white/25 light:placeholder-slate-400 outline-none disabled:opacity-50"
+            className="flex-1 bg-transparent text-[14px] text-white/85 light:text-slate-800 placeholder-white/25 light:placeholder-slate-400 outline-none disabled:opacity-50"
           />
           <button
             onClick={() => void send(input)}
@@ -584,7 +584,7 @@ export default function AssistantChat({ context, onClose }: Props) {
             </svg>
           </button>
         </div>
-        <p className="text-[10px] text-white/18 light:text-slate-400 text-center mt-1.5">
+        <p className="text-[11px] text-white/18 light:text-slate-400 text-center mt-1.5">
           as of {context.asOf} · {t("assistant.footer")}
         </p>
       </div>

@@ -34,7 +34,7 @@ function AffectsHint({ field }: { field: keyof EconomicProfile }) {
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        className="text-[11px] text-white/30 underline decoration-dotted underline-offset-2 hover:text-neon-blue light:text-slate-400"
+        className="text-[12px] text-white/30 underline decoration-dotted underline-offset-2 hover:text-neon-blue light:text-slate-400"
       >
         affects {affected.length} tool{affected.length === 1 ? "" : "s"}
       </button>
@@ -168,7 +168,7 @@ export default function EconomicProfileOnboarding() {
               ))}
             </select>
             {provinceAutoFilled && (
-              <p className="mt-1 text-[11px] text-white/40 light:text-slate-400">
+              <p className="mt-1 text-[12px] text-white/40 light:text-slate-400">
                 Province set from city —{" "}
                 <button type="button" onClick={() => setProvinceAutoFilled(false)} className="underline decoration-dotted underline-offset-2 hover:text-neon-blue">
                   change

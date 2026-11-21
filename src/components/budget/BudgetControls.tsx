@@ -92,7 +92,7 @@ export default function BudgetControls({
             <button
               type="button"
               onClick={() => onRangeChange(fiscalYears[0], fiscalYears[fiscalYears.length - 1])}
-              className="rounded-lg border border-[var(--border)] px-2.5 py-1 text-[11px] text-[var(--text-muted)] transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]"
+              className="rounded-lg border border-[var(--border)] px-2.5 py-1 text-[12px] text-[var(--text-muted)] transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]"
             >
               All years
             </button>
@@ -113,7 +113,7 @@ export default function BudgetControls({
               aria-pressed={active && available}
               disabled={!available}
               title={available ? undefined : "Not part of total outlay, so it has no share of outlay (switch basis to plot it)"}
-              className={`rounded-full border px-3 py-1 text-[11px] font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-35 ${
+              className={`rounded-full border px-3 py-1 text-[12px] font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-35 ${
                 active && available
                   ? "border-transparent text-white"
                   : "border-[var(--border)] text-[var(--text-muted)] hover:text-[var(--text-primary)]"

@@ -45,7 +45,7 @@ export default function AuctionFlowExplorer({ tbills, pibs, def }: AuctionFlowEx
   const single = effectiveTenor !== "all";
   const barsH = single ? 210 : 260;
   const yieldH = single ? 76 : 0;
-  const m = { top: 14, right: 12, bottom: 34, left: 52 };
+  const m = { top: 20, right: 12, bottom: 34, left: 52 };
   const height = m.top + barsH + (single ? 26 + yieldH : 0) + m.bottom;
   const innerW = Math.max(width - m.left - m.right, 40);
   const band = rows.length ? innerW / rows.length : innerW;
@@ -93,19 +93,19 @@ export default function AuctionFlowExplorer({ tbills, pibs, def }: AuctionFlowEx
       </div>
 
       {rows.length === 0 ? (
-        <p className="px-1 py-10 text-center text-[13px] text-pe-text-3">No auctions for this selection.</p>
+        <p className="px-1 py-10 text-center text-[14px] text-pe-text-3">No auctions for this selection.</p>
       ) : (
         <div ref={attach} className="relative" data-testid="flow-chart">
           <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} role="group" aria-label={`Offered and accepted amounts per ${instrument === "tbill" ? "T-bill" : "PIB"} auction, PKR billion face value`} className="block max-w-full" onPointerDown={onBlankPointerDown}>
             {ticks.map((t) => (
               <g key={t}>
                 <line x1={m.left} x2={m.left + innerW} y1={yBar(t)} y2={yBar(t)} stroke="var(--chart-grid)" />
-                <text x={m.left - 6} y={yBar(t)} textAnchor="end" dominantBaseline="central" fontSize={11} fill="var(--chart-axis)" className="tabular-nums">
+                <text x={m.left - 6} y={yBar(t)} textAnchor="end" dominantBaseline="central" fontSize={12} fill="var(--chart-axis)" className="tabular-nums">
                   {t.toLocaleString("en-US")}
                 </text>
               </g>
             ))}
-            <text x={m.left - 6} y={m.top - 4} textAnchor="end" fontSize={10} fill="var(--chart-axis)">
+            <text x={m.left - 6} y={m.top - 9} textAnchor="end" fontSize={11} fill="var(--chart-axis)">
               Rs bn
             </text>
 
@@ -128,7 +128,7 @@ export default function AuctionFlowExplorer({ tbills, pibs, def }: AuctionFlowEx
                     </g>
                   )}
                   {i % labelEvery === 0 && (
-                    <text x={cx} y={height - 14} textAnchor="middle" fontSize={10} fill="var(--chart-axis)">
+                    <text x={cx} y={height - 14} textAnchor="middle" fontSize={11} fill="var(--chart-axis)">
                       {shortDate(r.date)}
                     </text>
                   )}
@@ -159,13 +159,13 @@ export default function AuctionFlowExplorer({ tbills, pibs, def }: AuctionFlowEx
 
             {single && (
               <g>
-                <text x={m.left - 6} y={yoff - 6} textAnchor="end" fontSize={10} fill="var(--chart-axis)">
+                <text x={m.left - 6} y={yoff - 6} textAnchor="end" fontSize={11} fill="var(--chart-axis)">
                   {YIELD_DEFINITION_LABEL[def]}, %
                 </text>
                 {yTicks.map((t) => (
                   <g key={t}>
                     <line x1={m.left} x2={m.left + innerW} y1={yYield(t)} y2={yYield(t)} stroke="var(--chart-grid)" />
-                    <text x={m.left - 6} y={yYield(t)} textAnchor="end" dominantBaseline="central" fontSize={10} fill="var(--chart-axis)" className="tabular-nums">
+                    <text x={m.left - 6} y={yYield(t)} textAnchor="end" dominantBaseline="central" fontSize={11} fill="var(--chart-axis)" className="tabular-nums">
                       {t.toFixed(1)}
                     </text>
                   </g>
@@ -196,14 +196,14 @@ export default function AuctionFlowExplorer({ tbills, pibs, def }: AuctionFlowEx
                 {r.target !== null && <TipRow label="Target" value={bn(r.target)} />}
                 {r.offeredOverTarget !== null && <TipRow label="Offered ÷ target" value={times(r.offeredOverTarget)} />}
                 {r.yield !== null && <TipRow label={YIELD_DEFINITION_LABEL[def]} value={`${r.yield.toFixed(2)}%`} />}
-                <p className="mt-1 text-[11px]" style={{ color: "var(--chart-tooltip-label)" }}>{OUTCOME_TEXT[r.outcome] ?? r.outcome}</p>
+                <p className="mt-1 text-[12px]" style={{ color: "var(--chart-tooltip-label)" }}>{OUTCOME_TEXT[r.outcome] ?? r.outcome}</p>
               </>
             )}
           </TooltipBox>
         </div>
       )}
 
-      <ul className="flex flex-wrap gap-x-5 gap-y-1 text-[12px] text-pe-text-2" aria-label="Key">
+      <ul className="flex flex-wrap gap-x-5 gap-y-1 text-[13px] text-pe-text-2" aria-label="Key">
         <li className="flex items-center gap-1.5"><span aria-hidden className="inline-block h-3 w-3 rounded-[2px] opacity-30" style={{ background: "var(--pe-viz-blue)" }} />Competitive bids offered</li>
         <li className="flex items-center gap-1.5"><span aria-hidden className="inline-block h-3 w-1.5 rounded-[2px]" style={{ background: "var(--pe-viz-blue)" }} />Total accepted</li>
         <li className="flex items-center gap-1.5"><span aria-hidden className="inline-block h-0.5 w-4" style={{ background: "var(--pe-text)" }} />Target</li>
@@ -213,8 +213,8 @@ export default function AuctionFlowExplorer({ tbills, pibs, def }: AuctionFlowEx
       {selected && (
         <div className="grid gap-3 lg:grid-cols-2">
           <div className="rounded-[var(--pe-radius)] border border-pe-border bg-pe-surface p-3.5" data-testid="flow-detail">
-            <h4 className="text-[12px] font-semibold uppercase tracking-[0.05em] text-pe-text-3">{formatDate(selected.date)}{selected.auctionNo ? ` · auction ${selected.auctionNo}` : ""}</h4>
-            <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-4 gap-y-0.5 text-[13px] tabular-nums">
+            <h4 className="text-[13px] font-semibold uppercase tracking-[0.05em] text-pe-text-3">{formatDate(selected.date)}{selected.auctionNo ? ` · auction ${selected.auctionNo}` : ""}</h4>
+            <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-4 gap-y-0.5 text-[14px] tabular-nums">
               <dt className="text-pe-text-3">Offered</dt><dd className="text-right text-pe-text">{bn(selected.offered)}</dd>
               <dt className="text-pe-text-3">Accepted</dt><dd className="text-right text-pe-text">{bn(selected.accepted)}</dd>
               <dt className="text-pe-text-3">Target</dt><dd className="text-right text-pe-text">{selected.target === null ? "not published per tenor" : bn(selected.target)}</dd>
@@ -225,18 +225,18 @@ export default function AuctionFlowExplorer({ tbills, pibs, def }: AuctionFlowEx
             </dl>
           </div>
           <div className="rounded-[var(--pe-radius)] border border-pe-border bg-pe-surface p-3.5">
-            <h4 className="text-[12px] font-semibold uppercase tracking-[0.05em] text-pe-text-3">Over the {rows.length} auctions shown</h4>
-            <p className="mt-2 text-[13px] text-pe-text-2">
+            <h4 className="text-[13px] font-semibold uppercase tracking-[0.05em] text-pe-text-3">Over the {rows.length} auctions shown</h4>
+            <p className="mt-2 text-[14px] text-pe-text-2">
               {med !== null ? <>Bids offered were a median <strong className="font-semibold text-pe-text">{times(med)}</strong> the target{latestRatio !== null ? <>; the latest auction drew <strong className="font-semibold text-pe-text">{times(latestRatio)}</strong></> : null}. </> : "No target is published per tenor for these auctions, so bids cannot be set against it. "}
               {failedCount > 0 ? `${failedCount} of ${rows.length} had a tenor with nothing accepted.` : "Every auction accepted bids."}
             </p>
-            <p className="mt-2 text-[11px] text-pe-text-3">Amounts are face value. &ldquo;Accepted&rdquo; adds competitive and non-competitive bids (and short sales for PIBs); non-competitive bids, including provincial governments&apos;, are often a large part of it.</p>
+            <p className="mt-2 text-[12px] text-pe-text-3">Amounts are face value. &ldquo;Accepted&rdquo; adds competitive and non-competitive bids (and short sales for PIBs); non-competitive bids, including provincial governments&apos;, are often a large part of it.</p>
           </div>
         </div>
       )}
 
       {rows.length > 0 && (
-        <details className="text-[12px] text-pe-text-2">
+        <details className="text-[13px] text-pe-text-2">
           <summary className="cursor-pointer select-none text-pe-accent hover:underline">View the numbers as a table</summary>
           <div className="mt-2 max-h-72 overflow-auto rounded-[var(--pe-radius)] border border-pe-border" tabIndex={0} role="region" aria-label="Auction amounts (scrolls)">
             <table className="w-full min-w-[560px] border-collapse text-left tabular-nums">

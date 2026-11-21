@@ -21,7 +21,7 @@ export default function AuthShell({ title, subtitle, children, footer }: AuthShe
             P
           </div>
           <div className="text-left">
-            <p className="font-serif text-[15px] font-semibold tracking-[-0.005em] text-white light:text-slate-900">{t("nav.logoName")}</p>
+            <p className="font-serif text-[16px] font-semibold tracking-[-0.005em] text-white light:text-slate-900">{t("nav.logoName")}</p>
             <p className="text-xs text-white/40 light:text-slate-400">{t("nav.logoSubtitle")}</p>
           </div>
         </Link>

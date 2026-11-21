@@ -108,7 +108,7 @@ export default function ComparisonWorkspace({
                     <p className="mt-1 text-xs text-[var(--text-muted)]">{SECTOR_COMPOSITION.description}</p>
                   </div>
                   <SectorCompositionChart data={sectorWindowed} />
-                  <p className="text-[11px] text-[var(--text-muted)]">{t("comparisons.worldBankSource")}</p>
+                  <p className="text-[12px] text-[var(--text-muted)]">{t("comparisons.worldBankSource")}</p>
                 </div>
               )}
               {isSectorGroup && !sectorWindowed && (

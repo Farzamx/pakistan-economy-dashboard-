@@ -30,7 +30,7 @@ export default function DownloadDatasetsButton({ onLinkClick }: { onLinkClick: (
       title={label}
       data-download-datasets-shortcut
       onClick={(e) => onLinkClick(e, DOWNLOAD_DATASETS_PATH)}
-      className={`inline-flex h-9 w-9 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-[var(--pe-radius)] border border-pe-nav-border text-[13px] font-medium text-pe-nav-text transition-colors hover:bg-pe-nav-raised sm:w-auto sm:px-3 lg:w-9 lg:px-0 xl:w-auto xl:px-3 ${
+      className={`inline-flex h-9 w-9 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-[var(--pe-radius)] border border-pe-nav-border text-[14px] font-medium text-pe-nav-text transition-colors hover:bg-pe-nav-raised sm:w-auto sm:px-3 lg:w-9 lg:px-0 xl:w-auto xl:px-3 ${
         current ? "bg-pe-nav-raised" : ""
       }`}
     >

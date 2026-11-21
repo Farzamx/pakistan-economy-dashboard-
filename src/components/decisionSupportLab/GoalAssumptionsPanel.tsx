@@ -106,7 +106,7 @@ export default function GoalAssumptionsPanel({
               role="img"
               aria-label="How much your actual annual return might swing around the expected return — used only by the probability simulation, not the deterministic funding-gap number above."
               title="How much your actual annual return might swing around the expected return — used only by the probability simulation, not the deterministic funding-gap number above."
-              className="flex h-3.5 w-3.5 shrink-0 cursor-help items-center justify-center rounded-full border border-white/25 text-[9px] font-semibold text-white/50 light:border-slate-300 light:text-slate-400"
+              className="flex h-3.5 w-3.5 shrink-0 cursor-help items-center justify-center rounded-full border border-white/25 text-[10px] font-semibold text-white/50 light:border-slate-300 light:text-slate-400"
             >
               i
             </span>

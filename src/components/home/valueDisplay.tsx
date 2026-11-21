@@ -59,7 +59,7 @@ const STATUS_CLASS: Record<StatusTone, string> = {
 
 export function StatusPill({ tone, label }: { tone: StatusTone; label: string }) {
   return (
-    <span className={`inline-flex shrink-0 items-center whitespace-nowrap rounded-full border px-2 py-px text-[11px] font-medium ${STATUS_CLASS[tone]}`}>
+    <span className={`inline-flex shrink-0 items-center whitespace-nowrap rounded-full border px-2 py-px text-[12px] font-medium ${STATUS_CLASS[tone]}`}>
       {label}
     </span>
   );

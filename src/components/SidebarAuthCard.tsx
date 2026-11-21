@@ -69,11 +69,11 @@ export default function SidebarAuthCard() {
       <div className="flex flex-col gap-2.5 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3.5" data-cta-source="sidebar">
         <div className="flex items-center justify-between gap-2">
           <p className="min-w-0 truncate text-xs text-[var(--text-secondary)]">{user.email}</p>
-          <span className="shrink-0 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-400">
+          <span className="shrink-0 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-emerald-400">
             {t("nav.memberBadge")}
           </span>
         </div>
-        <div className="flex flex-col gap-1 text-[11px] text-[var(--text-muted)]">
+        <div className="flex flex-col gap-1 text-[12px] text-[var(--text-muted)]">
           <span>{t("nav.memberSince")} {memberSince}</span>
         </div>
         <button

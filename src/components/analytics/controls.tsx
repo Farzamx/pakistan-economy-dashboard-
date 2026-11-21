@@ -29,12 +29,12 @@ export function Segmented<T extends string>({
 }) {
   return (
     <fieldset className="min-w-0">
-      <legend className="mb-1 text-[11px] font-medium uppercase tracking-[0.05em] text-pe-text-3">{label}</legend>
+      <legend className="mb-1 text-[12px] font-medium uppercase tracking-[0.05em] text-pe-text-3">{label}</legend>
       <div className="inline-flex max-w-full flex-wrap overflow-hidden rounded-[var(--pe-radius)] border border-pe-border-strong bg-pe-surface">
         {options.map((o) => (
           <label
             key={o.value}
-            className={`relative cursor-pointer select-none border-e border-pe-border px-3 py-1.5 text-[13px] last:border-e-0 has-[:focus-visible]:outline-2 has-[:focus-visible]:-outline-offset-2 has-[:focus-visible]:outline-[var(--pe-focus)] ${
+            className={`relative cursor-pointer select-none border-e border-pe-border px-3 py-1.5 text-[14px] last:border-e-0 has-[:focus-visible]:outline-2 has-[:focus-visible]:-outline-offset-2 has-[:focus-visible]:outline-[var(--pe-focus)] ${
               o.disabled ? "cursor-not-allowed text-pe-text-3 opacity-50" : value === o.value ? "bg-pe-accent font-medium text-[var(--pe-surface)]" : "text-pe-text-2 hover:bg-pe-surface-2"
             }`}
           >
@@ -81,7 +81,7 @@ export function SeriesToggles({
 }) {
   return (
     <div role="group" aria-label={label} className="flex flex-wrap items-center gap-1.5">
-      <span className="text-[11px] font-medium uppercase tracking-[0.05em] text-pe-text-3">{label}</span>
+      <span className="text-[12px] font-medium uppercase tracking-[0.05em] text-pe-text-3">{label}</span>
       {items.map((it) => {
         const on = active.has(it.key);
         const locked = on && active.size <= minActive;
@@ -93,7 +93,7 @@ export function SeriesToggles({
             disabled={it.disabled || locked}
             onClick={() => onToggle(it.key)}
             title={locked ? "At least one series must stay visible" : undefined}
-            className={`inline-flex items-center gap-1.5 rounded-[var(--pe-radius)] border px-2.5 py-1 text-[12px] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--pe-focus)] disabled:cursor-not-allowed ${
+            className={`inline-flex items-center gap-1.5 rounded-[var(--pe-radius)] border px-2.5 py-1 text-[13px] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--pe-focus)] disabled:cursor-not-allowed ${
               on ? "border-pe-border-strong bg-pe-surface-2 text-pe-text" : "border-pe-border bg-pe-surface text-pe-text-3 line-through decoration-1"
             } ${it.disabled ? "opacity-40" : ""}`}
           >
@@ -124,14 +124,14 @@ export function Select<T extends string>({
 }) {
   return (
     <div className="min-w-0">
-      <label htmlFor={id} className="mb-1 block text-[11px] font-medium uppercase tracking-[0.05em] text-pe-text-3">
+      <label htmlFor={id} className="mb-1 block text-[12px] font-medium uppercase tracking-[0.05em] text-pe-text-3">
         {label}
       </label>
       <select
         id={id}
         value={value}
         onChange={(e) => onChange(e.target.value as T)}
-        className="w-full min-w-[8.5rem] rounded-[var(--pe-radius)] border border-pe-border-strong bg-pe-surface px-2.5 py-1.5 text-[13px] text-pe-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--pe-focus)]"
+        className="w-full min-w-[8.5rem] rounded-[var(--pe-radius)] border border-pe-border-strong bg-pe-surface px-2.5 py-1.5 text-[14px] text-pe-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--pe-focus)]"
       >
         {options.map((o) => (
           <option key={o.value} value={o.value} disabled={o.disabled}>
@@ -151,7 +151,7 @@ export function ControlBar({ children }: { children: ReactNode }) {
 /** A static colour key for charts whose series are fixed (clustered/stacked bars). */
 export function Key({ items }: { items: { label: string; color: string }[] }) {
   return (
-    <ul className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[12px] text-pe-text-2" aria-label="Chart key">
+    <ul className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px] text-pe-text-2" aria-label="Chart key">
       {items.map((i) => (
         <li key={i.label} className="inline-flex items-center gap-1.5">
           <span aria-hidden className="inline-block h-2.5 w-2.5 rounded-[2px]" style={{ background: i.color }} />

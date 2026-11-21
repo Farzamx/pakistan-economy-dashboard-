@@ -186,9 +186,9 @@ const INPUT_CLASS: Record<NonNullable<Props["variant"]>, string> = {
   legacy:
     "w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] py-2 pl-8 pr-3 text-xs text-[var(--text-primary)] outline-none transition-colors placeholder:text-[var(--text-muted)] focus:border-neon-blue/40",
   nav:
-    "w-full rounded-[var(--pe-radius)] border border-pe-nav-border bg-white/10 py-1.5 ps-8 pe-3 text-[13px] text-pe-nav-text outline-none transition-colors placeholder:text-pe-nav-text-muted focus:bg-white/15",
+    "w-full rounded-[var(--pe-radius)] border border-pe-nav-border bg-white/10 py-1.5 ps-8 pe-3 text-[14px] text-pe-nav-text outline-none transition-colors placeholder:text-pe-nav-text-muted focus:bg-white/15",
   surface:
-    "w-full rounded-[var(--pe-radius)] border border-pe-border-strong bg-pe-surface py-2 ps-8 pe-3 text-[14px] text-pe-text outline-none transition-colors placeholder:text-pe-text-3 focus:border-pe-accent",
+    "w-full rounded-[var(--pe-radius)] border border-pe-border-strong bg-pe-surface py-2 ps-8 pe-3 text-[15px] text-pe-text outline-none transition-colors placeholder:text-pe-text-3 focus:border-pe-accent",
 };
 
 const ICON_CLASS: Record<NonNullable<Props["variant"]>, string> = {
@@ -322,7 +322,7 @@ export default function GlobalSearch({ onLinkClick, placeholder, className, vari
           }
         >
           {results.length === 0 ? (
-            <li className={redesigned ? "px-3 py-2 text-[13px] text-pe-text-3" : "px-3 py-2 text-xs text-[var(--text-muted)]"}>{t("search.noMatches")}</li>
+            <li className={redesigned ? "px-3 py-2 text-[14px] text-pe-text-3" : "px-3 py-2 text-xs text-[var(--text-muted)]"}>{t("search.noMatches")}</li>
           ) : (
             results.map((entry, i) => (
               <li key={entry.href} id={`${listId}-${i}`} role="option" aria-selected={i === highlightedIndex}>
@@ -332,7 +332,7 @@ export default function GlobalSearch({ onLinkClick, placeholder, className, vari
                   onMouseEnter={() => setHighlightedIndex(i)}
                   className={
                     redesigned
-                      ? `block px-3 py-1.5 text-[13px] transition-colors ${i === highlightedIndex ? "bg-pe-surface-2 text-pe-accent" : "text-pe-text-2"}`
+                      ? `block px-3 py-1.5 text-[14px] transition-colors ${i === highlightedIndex ? "bg-pe-surface-2 text-pe-accent" : "text-pe-text-2"}`
                       : `block px-3 py-2 text-xs transition-colors ${
                           i === highlightedIndex
                             ? "bg-neon-blue/15 text-neon-blue"

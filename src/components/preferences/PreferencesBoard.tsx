@@ -119,7 +119,7 @@ export default function PreferencesBoard() {
 
       {/* Theme */}
       <section>
-        <h2 className="mb-3 text-[10px] font-semibold uppercase tracking-widest text-[var(--text-muted)]">{t("prefs.theme")}</h2>
+        <h2 className="mb-3 text-[11px] font-semibold uppercase tracking-widest text-[var(--text-muted)]">{t("prefs.theme")}</h2>
         <div className="flex gap-2.5">
           {(["dark", "light"] as Theme[]).map((themeOpt) => (
             <button
@@ -141,7 +141,7 @@ export default function PreferencesBoard() {
 
       {/* Default province */}
       <section>
-        <h2 className="mb-3 text-[10px] font-semibold uppercase tracking-widest text-[var(--text-muted)]">{t("prefs.defaultProvince")}</h2>
+        <h2 className="mb-3 text-[11px] font-semibold uppercase tracking-widest text-[var(--text-muted)]">{t("prefs.defaultProvince")}</h2>
         <div className="flex flex-wrap gap-2.5">
           {PROVINCES.map((p) => (
             <button
@@ -162,7 +162,7 @@ export default function PreferencesBoard() {
 
       {/* Widget board */}
       <section>
-        <h2 className="mb-1 text-[10px] font-semibold uppercase tracking-widest text-[var(--text-muted)]">{t("prefs.sectionsTitle")}</h2>
+        <h2 className="mb-1 text-[11px] font-semibold uppercase tracking-widest text-[var(--text-muted)]">{t("prefs.sectionsTitle")}</h2>
         <p className="mb-3 text-xs text-[var(--text-muted)]">
           {t("prefs.sectionsDesc")}
         </p>

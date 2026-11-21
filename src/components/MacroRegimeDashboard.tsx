@@ -64,7 +64,7 @@ function Panel({ title, caption, children }: { title: string; caption?: string; 
   return (
     <div className="rounded-lg border border-white/10 bg-white/[0.025] p-5 light:border-black/10 light:bg-black/[0.015]">
       <span className="text-label text-white/45 light:text-slate-400">{title}</span>
-      {caption && <LeadMore className="mt-1" leadClassName="text-[11px] leading-relaxed text-white/35 light:text-slate-400">{caption}</LeadMore>}
+      {caption && <LeadMore className="mt-1" leadClassName="text-[12px] leading-relaxed text-white/35 light:text-slate-400">{caption}</LeadMore>}
       <div className="mt-3">{children}</div>
     </div>
   );
@@ -93,7 +93,7 @@ function EvidenceRow({ evidence }: { evidence: IntelligenceSignal["evidence"][nu
   return (
     <li className="border-t border-white/5 py-2 first:border-t-0 first:pt-0 light:border-black/5">
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
-        <span className="text-[12px] text-white/60 light:text-slate-600">
+        <span className="text-[13px] text-white/60 light:text-slate-600">
           {href ? (
             <Link href={href} className="underline decoration-white/20 underline-offset-2 hover:text-white light:decoration-black/20 light:hover:text-slate-900">
               {evidence.label}
@@ -102,11 +102,11 @@ function EvidenceRow({ evidence }: { evidence: IntelligenceSignal["evidence"][nu
             evidence.label
           )}
         </span>
-        <span className="text-mono-num text-right text-[12px] tabular-nums text-white/50 light:text-slate-500">
+        <span className="text-mono-num text-right text-[13px] tabular-nums text-white/50 light:text-slate-500">
           {evidence.value !== null ? `${evidence.value}${evidence.unit}` : "—"}
         </span>
       </div>
-      <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] text-white/30 light:text-slate-400">
+      <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-white/30 light:text-slate-400">
         {/* Observation period, not a fetch time — the distinction the
             engine's own evidence model makes, preserved here. */}
         <span className="tabular-nums">{evidence.observationPeriod ? `observed ${evidence.observationPeriod}` : "period not reported"}</span>
@@ -137,7 +137,7 @@ function DimensionCard({ card }: { card: DimensionCardView }) {
       <div className="flex items-start justify-between gap-3">
         <span className="text-label text-white/45 light:text-slate-400">{card.label}</span>
         <span
-          className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold tracking-wide ${CONFIDENCE_BADGE[card.confidence]}`}
+          className={`shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-semibold tracking-wide ${CONFIDENCE_BADGE[card.confidence]}`}
           title={
             card.rated
               ? "The engine's confidence score for the input data behind this classification."
@@ -157,7 +157,7 @@ function DimensionCard({ card }: { card: DimensionCardView }) {
         </p>
       ) : (
         // Never dressed up as a finding: the engine could not classify this.
-        <p className="mt-2 text-[14px] font-medium leading-tight text-white/45 light:text-slate-500">Not classifiable — insufficient evidence</p>
+        <p className="mt-2 text-[15px] font-medium leading-tight text-white/45 light:text-slate-500">Not classifiable — insufficient evidence</p>
       )}
 
       {/* The engine scores INPUT DATA QUALITY separately from whether its
@@ -167,7 +167,7 @@ function DimensionCard({ card }: { card: DimensionCardView }) {
           reads as a contradiction, so it is named explicitly rather than
           hidden — and neither number is altered to make them agree. */}
       {!card.rated && card.confidenceScore !== null && (
-        <p className="mt-1.5 text-[11px] leading-relaxed text-white/35 light:text-slate-400">
+        <p className="mt-1.5 text-[12px] leading-relaxed text-white/35 light:text-slate-400">
           The {card.confidenceScore}/100 score above rates the freshness and availability of this dimension&rsquo;s input data, not
           the classification. The inputs are present; the engine&rsquo;s rule still could not reach a verdict from them.
         </p>
@@ -177,9 +177,9 @@ function DimensionCard({ card }: { card: DimensionCardView }) {
           untouched, and substitutes a neutral explanation only when that
           sentence would restate the raw "insufficient-data" sentinel. See
           its rationale in macroIntelligenceViews.ts. */}
-      <p className="mt-2 text-[12px] leading-relaxed text-white/60 light:text-slate-600">{card.displaySummary}</p>
+      <p className="mt-2 text-[13px] leading-relaxed text-white/60 light:text-slate-600">{card.displaySummary}</p>
 
-      <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-white/5 pt-2.5 text-[11px] text-white/35 light:border-black/5 light:text-slate-400">
+      <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-white/5 pt-2.5 text-[12px] text-white/35 light:border-black/5 light:text-slate-400">
         <span className="tabular-nums">
           {card.usableCount} of {card.totalInputs} indicator{card.totalInputs === 1 ? "" : "s"} usable
         </span>
@@ -188,14 +188,14 @@ function DimensionCard({ card }: { card: DimensionCardView }) {
       </div>
 
       {card.missingInputs.length > 0 && (
-        <p className="mt-1.5 text-[11px] leading-relaxed text-amber-400/70">
+        <p className="mt-1.5 text-[12px] leading-relaxed text-amber-400/70">
           Unavailable: {card.missingInputs.join(", ")}
         </p>
       )}
 
       {card.evidence.length > 0 && (
         <details className="group mt-2.5">
-          <summary className="w-fit cursor-pointer list-none text-[11px] font-medium text-white/40 hover:text-white/70 light:text-slate-500 light:hover:text-slate-700">
+          <summary className="w-fit cursor-pointer list-none text-[12px] font-medium text-white/40 hover:text-white/70 light:text-slate-500 light:hover:text-slate-700">
             <span className="inline-flex items-center gap-1">
               Evidence and sources
               <span aria-hidden="true" className="transition-transform group-open:rotate-90">›</span>
@@ -271,7 +271,7 @@ export default function MacroRegimeDashboard({
           >
             <CoverageBarChart data={coverage} />
             {newest && (
-              <p className="mt-3 border-t border-white/5 pt-3 text-[11px] leading-relaxed text-white/30 light:border-black/5 light:text-slate-400">
+              <p className="mt-3 border-t border-white/5 pt-3 text-[12px] leading-relaxed text-white/30 light:border-black/5 light:text-slate-400">
                 Most recent snapshot {newest.snapshotDate}: {newest.coverage.classified} of {newest.coverage.recorded} dimensions
                 classified.
               </p>
@@ -281,7 +281,7 @@ export default function MacroRegimeDashboard({
 
         {/* The caveat is stated once, prominently, in the section that
             introduces snapshot-dated charts and events. */}
-        <p className="rounded-lg border border-white/10 bg-white/[0.02] p-4 text-[11px] leading-relaxed text-white/40 light:border-black/10 light:bg-black/[0.015] light:text-slate-500">
+        <p className="rounded-lg border border-white/10 bg-white/[0.02] p-4 text-[12px] leading-relaxed text-white/40 light:border-black/10 light:bg-black/[0.015] light:text-slate-500">
           <span className="font-semibold text-white/60 light:text-slate-600">Reading the dates above. </span>
           {SNAPSHOT_DATE_CAVEAT}{" "}
           {economic.length > 0 || turningPoints.length > 0
@@ -289,7 +289,7 @@ export default function MacroRegimeDashboard({
             : "No state changes have been recorded across the stored snapshots."}
         </p>
 
-        <p className="text-[11px] leading-relaxed text-white/30 light:text-slate-400">{analytics.sufficiency.note}</p>
+        <p className="text-[12px] leading-relaxed text-white/30 light:text-slate-400">{analytics.sufficiency.note}</p>
       </div>
     </section>
   );

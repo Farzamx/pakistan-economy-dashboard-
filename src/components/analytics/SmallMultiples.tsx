@@ -42,10 +42,10 @@ function Mini({ item, domain, unit, showRange }: { item: MultipleItem; domain: [
   return (
     <li className="min-w-0 rounded-[var(--pe-radius)] border border-pe-border bg-pe-surface p-2.5">
       <div className="flex items-baseline justify-between gap-2">
-        <h4 className="min-w-0 truncate text-[12px] font-medium text-pe-text" title={item.label}>{item.label}</h4>
-        {shown && <span className="shrink-0 text-[13px] font-semibold tabular-nums text-pe-text">{formatValue(shown.value, 1)}{unit}</span>}
+        <h4 className="min-w-0 truncate text-[13px] font-medium text-pe-text" title={item.label}>{item.label}</h4>
+        {shown && <span className="shrink-0 text-[14px] font-semibold tabular-nums text-pe-text">{formatValue(shown.value, 1)}{unit}</span>}
       </div>
-      <p className="flex h-4 justify-between gap-2 text-[11px] text-pe-text-3">
+      <p className="flex h-4 justify-between gap-2 text-[12px] text-pe-text-3">
         <span>{shown ? shortMonthLabel(shown.month) : "no data"}</span>
         {showRange && pts.length > 0 && <span className="tabular-nums">scale {formatValue(domain[0], 0)} to {formatValue(domain[1], 0)}{unit}</span>}
       </p>
@@ -81,7 +81,7 @@ function Mini({ item, domain, unit, showRange }: { item: MultipleItem; domain: [
           {shown && <circle cx={geo.x(monthIndex(shown.month))} cy={geo.y(shown.value)} r={3.5} fill="var(--pe-viz-blue)" stroke="var(--pe-surface)" strokeWidth={1.5} />}
         </svg>
       ) : (
-        <p className="py-6 text-center text-[12px] italic text-pe-text-3">no data</p>
+        <p className="py-6 text-center text-[13px] italic text-pe-text-3">no data</p>
       )}
     </li>
   );

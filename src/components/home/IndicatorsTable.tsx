@@ -75,7 +75,7 @@ export default function IndicatorsTable({ rows }: { rows: IndicatorRow[] }) {
         type="button"
         aria-pressed={active}
         onClick={() => setCategory(value)}
-        className={`min-h-11 shrink-0 whitespace-nowrap rounded-full border px-4 text-[13px] font-medium lg:min-h-9 ${
+        className={`min-h-11 shrink-0 whitespace-nowrap rounded-full border px-4 text-[14px] font-medium lg:min-h-9 ${
           active ? "border-pe-accent bg-pe-surface-2 text-pe-text" : "border-pe-border text-pe-text-2 hover:border-pe-border-strong hover:text-pe-text"
         }`}
       >
@@ -99,7 +99,7 @@ export default function IndicatorsTable({ rows }: { rows: IndicatorRow[] }) {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Filter indicators…"
-            className="min-h-11 w-full rounded-[var(--pe-radius)] border border-pe-border-strong bg-pe-surface px-3 text-[14px] text-pe-text outline-none placeholder:text-pe-text-3 focus:border-pe-accent lg:min-h-9 lg:w-52 lg:text-[13px]"
+            className="min-h-11 w-full rounded-[var(--pe-radius)] border border-pe-border-strong bg-pe-surface px-3 text-[15px] text-pe-text outline-none placeholder:text-pe-text-3 focus:border-pe-accent lg:min-h-9 lg:w-52 lg:text-[14px]"
           />
         </label>
       </div>
@@ -108,16 +108,16 @@ export default function IndicatorsTable({ rows }: { rows: IndicatorRow[] }) {
       </p>
 
       {visible.length === 0 ? (
-        <p className="border-t border-pe-border px-5 py-8 text-center text-[13px] text-pe-text-3">
+        <p className="border-t border-pe-border px-5 py-8 text-center text-[14px] text-pe-text-3">
           {rows.length === 0 ? "Indicator data is unavailable right now." : "No indicators match this filter."}
         </p>
       ) : (
         <>
           {/* Desktop: a real table. */}
-          <table className="hidden w-full border-collapse text-[14px] lg:table">
+          <table className="hidden w-full border-collapse text-[15px] lg:table">
             <caption className="sr-only">Pakistan economic indicators with latest value, change, observation period, next release and data status.</caption>
             <thead>
-              <tr className="border-y border-pe-border font-mono text-[11px] uppercase tracking-[0.1em] text-pe-text-3">
+              <tr className="border-y border-pe-border font-mono text-[12px] uppercase tracking-[0.1em] text-pe-text-3">
                 {COLUMNS.map((col, i) => {
                   const key = col.key;
                   const active = key !== null && sort?.key === key;
@@ -148,14 +148,14 @@ export default function IndicatorsTable({ rows }: { rows: IndicatorRow[] }) {
                   <tr key={row.id} className="border-b border-pe-border hover:bg-pe-surface-2">
                     <th scope="row" className="py-2.5 pe-4 ps-5 text-start font-normal">
                       <IndicatorName row={row} className="font-medium text-pe-text" />
-                      <span className="block text-[12px] text-pe-text-3">{row.group}</span>
+                      <span className="block text-[13px] text-pe-text-3">{row.group}</span>
                     </th>
                     <td className="whitespace-nowrap py-2.5 pe-4 ps-4 text-end font-semibold tabular-nums text-pe-text">
                       {row.value}
                       {row.unit && <span className="ms-1">{row.unit}</span>}
                     </td>
                     <td className="whitespace-nowrap py-2.5 pe-4 ps-4">
-                      {row.change ? <ChangeValue change={row.change} className="text-[13px]" /> : <span className="text-pe-text-3">—</span>}
+                      {row.change ? <ChangeValue change={row.change} className="text-[14px]" /> : <span className="text-pe-text-3">—</span>}
                     </td>
                     <td className="whitespace-nowrap py-2.5 pe-4 ps-4 tabular-nums text-pe-text-2">{row.period}</td>
                     <td className={`whitespace-nowrap py-2.5 pe-4 ps-4 ${row.nextRelease ? "text-pe-text" : "text-pe-text-3"}`}>{row.nextRelease ?? "Not scheduled"}</td>
@@ -175,17 +175,17 @@ export default function IndicatorsTable({ rows }: { rows: IndicatorRow[] }) {
               return (
                 <li key={row.id} className="flex min-h-11 items-center justify-between gap-4 px-4 py-3">
                   <span className="min-w-0">
-                    <IndicatorName row={row} className="block text-[14px] font-medium leading-snug text-pe-text" />
-                    <span className={`block text-[12px] ${status.tone === "current" ? "text-pe-text-3" : status.tone === "due" ? "text-pe-accent" : "text-[var(--pe-warn-text)]"}`}>
+                    <IndicatorName row={row} className="block text-[15px] font-medium leading-snug text-pe-text" />
+                    <span className={`block text-[13px] ${status.tone === "current" ? "text-pe-text-3" : status.tone === "due" ? "text-pe-accent" : "text-[var(--pe-warn-text)]"}`}>
                       {row.period} · {status.label}
                     </span>
                   </span>
                   <span className="flex shrink-0 flex-col items-end">
-                    <span className="whitespace-nowrap text-[15px] font-semibold tabular-nums text-pe-text">
+                    <span className="whitespace-nowrap text-[16px] font-semibold tabular-nums text-pe-text">
                       {row.value}
                       {row.unit && <span className="ms-1">{row.unit}</span>}
                     </span>
-                    {row.change && <ChangeValue change={row.change.replace(/\s+vs\s.*$/i, "")} className="text-[12px]" />}
+                    {row.change && <ChangeValue change={row.change.replace(/\s+vs\s.*$/i, "")} className="text-[13px]" />}
                   </span>
                 </li>
               );
@@ -200,7 +200,7 @@ export default function IndicatorsTable({ rows }: { rows: IndicatorRow[] }) {
             type="button"
             aria-expanded={expanded}
             onClick={() => setExpanded((v) => !v)}
-            className="min-h-11 w-full rounded-[var(--pe-radius)] px-4 text-[14px] font-medium text-pe-accent hover:underline max-lg:border max-lg:border-pe-border lg:w-auto"
+            className="min-h-11 w-full rounded-[var(--pe-radius)] px-4 text-[15px] font-medium text-pe-accent hover:underline max-lg:border max-lg:border-pe-border lg:w-auto"
           >
             {expanded ? `Show fewer indicators` : `Show all ${rows.length} indicators →`}
           </button>

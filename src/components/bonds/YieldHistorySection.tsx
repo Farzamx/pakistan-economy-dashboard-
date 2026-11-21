@@ -106,7 +106,7 @@ export default function YieldHistorySection({ tbills, pibs, policy, def }: Yield
         {policy ? (
           <DateLines series={spreadSeries} from={from} to={lastDate} unit=" pp" decimals={2} axisDecimals={1} height={220} ariaLabel="Three-month T-bill yield minus the policy rate" maxGapDays={75} zeroLine />
         ) : (
-          <p className="px-1 py-8 text-center text-[13px] text-pe-text-3">The policy-rate history could not be loaded, so this comparison is not shown. Nothing is estimated in its place.</p>
+          <p className="px-1 py-8 text-center text-[14px] text-pe-text-3">The policy-rate history could not be loaded, so this comparison is not shown. Nothing is estimated in its place.</p>
         )}
       </ChartFrame>
     </div>

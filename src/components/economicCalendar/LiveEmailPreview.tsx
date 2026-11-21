@@ -92,8 +92,8 @@ export default function LiveEmailPreview() {
   return (
     <div className="overflow-hidden rounded-2xl border border-white/10 bg-[#0b0d18]">
       <div className="flex items-center justify-between border-b border-white/10 bg-white/[0.02] px-4 py-2">
-        <span className="text-[11px] font-medium uppercase tracking-wide text-slate-500">Example preview</span>
-        <span className="text-[11px] text-slate-600">Not a real alert</span>
+        <span className="text-[12px] font-medium uppercase tracking-wide text-slate-500">Example preview</span>
+        <span className="text-[12px] text-slate-600">Not a real alert</span>
       </div>
 
       <div role="tablist" aria-label="Example alert type" className="flex gap-1 overflow-x-auto border-b border-white/10 px-3 pt-2.5">
@@ -109,7 +109,7 @@ export default function LiveEmailPreview() {
               aria-controls={`${tabIdBase}-panel`}
               tabIndex={active ? 0 : -1}
               onClick={() => setActiveIndex(i)}
-              className={`shrink-0 rounded-t-lg px-3 py-1.5 text-[11px] font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400 ${
+              className={`shrink-0 rounded-t-lg px-3 py-1.5 text-[12px] font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400 ${
                 active ? "bg-sky-400/10 text-sky-400" : "text-slate-500 hover:text-slate-300"
               }`}
             >
@@ -120,11 +120,11 @@ export default function LiveEmailPreview() {
       </div>
 
       <div role="tabpanel" id={`${tabIdBase}-panel`} aria-labelledby={`${tabIdBase}-tab-${activeIndex}`} className="p-5">
-        <p className="text-[11px] font-bold uppercase tracking-[0.06em] text-sky-400">🇵🇰 Pakistan Economic Intelligence</p>
+        <p className="text-[12px] font-bold uppercase tracking-[0.06em] text-sky-400">🇵🇰 Pakistan Economic Intelligence</p>
         <p className="mt-1 text-base font-bold text-white">Economic Release Alert</p>
 
         <span
-          className="mt-4 inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-bold"
+          className="mt-4 inline-flex items-center rounded-full px-2.5 py-1 text-[12px] font-bold"
           style={{ backgroundColor: importance.bg, color: importance.text }}
         >
           {importance.emoji} {example.importance} Market Impact
@@ -136,15 +136,15 @@ export default function LiveEmailPreview() {
 
         <div className="mt-4 grid grid-cols-3 gap-0.5 overflow-hidden rounded-lg">
           <div className="bg-white/[0.03] px-2 py-3 text-center">
-            <p className="text-[9px] uppercase tracking-wide text-slate-500">Previous</p>
+            <p className="text-[10px] uppercase tracking-wide text-slate-500">Previous</p>
             <p className="mt-1 text-sm font-semibold text-slate-200">{example.previous}</p>
           </div>
           <div className="bg-white/[0.03] px-2 py-3 text-center">
-            <p className="text-[9px] uppercase tracking-wide text-slate-500">Expected</p>
+            <p className="text-[10px] uppercase tracking-wide text-slate-500">Expected</p>
             <p className="mt-1 text-sm font-semibold text-slate-200">{example.expected}</p>
           </div>
           <div className="bg-sky-400/10 px-2 py-3 text-center">
-            <p className="text-[9px] uppercase tracking-wide text-sky-400">Actual</p>
+            <p className="text-[10px] uppercase tracking-wide text-sky-400">Actual</p>
             <p className="mt-1 text-sm font-bold text-sky-400">{example.actual}</p>
           </div>
         </div>
@@ -169,7 +169,7 @@ export default function LiveEmailPreview() {
         </div>
 
         <div className="mt-5 border-t border-white/10 pt-4">
-          <p className="text-[10px] uppercase tracking-wide text-slate-500">Next Scheduled Release</p>
+          <p className="text-[11px] uppercase tracking-wide text-slate-500">Next Scheduled Release</p>
           <p className="mt-1 text-sm font-semibold text-slate-200">{example.nextEvent.name}</p>
           <p className="text-xs text-slate-400">{example.nextEvent.dateLabel}</p>
         </div>
