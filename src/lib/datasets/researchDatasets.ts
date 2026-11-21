@@ -119,10 +119,42 @@ export interface ResearchDataset {
   variableCoverage?: readonly VariableCoverage[];
   /** One sentence about missing data shown on the card itself (the details sit in the notes). */
   missingDataNote?: string;
+  /** Plain-language explanation shown as a guided card (see DatasetGuide). Datasets without it keep the compact technical card. */
+  guide?: DatasetGuide;
   sources: readonly string[];
   files: readonly ResearchFile[];
   /** Plain statements a reader needs before using the data. */
   notes: readonly string[];
+}
+
+/** One variable explained for a reader who does not know monetary economics: what it is, and a worked example. Shown as a card. */
+export interface VariableGuide {
+  /** Column name in the CSV (matches variableCoverage). */
+  variable: string;
+  /** Plain-language name. */
+  title: string;
+  /** Which small icon the card shows. */
+  icon: "money" | "rate" | "prices" | "real";
+  /** One or two sentences, no jargon left unexplained. */
+  plain: string;
+  /** A simple worked example or how to read the number. Hypothetical figures are labelled as examples on the page. */
+  example: string;
+}
+
+/**
+ * Beginner-friendly explanation of a small dataset. Presentation text only: every number shown beside it (years, observation counts, missing years) comes from
+ * the dataset's own metadata, which the tests recompute from the published files. The research questions are questions the data can help investigate, never findings.
+ */
+export interface DatasetGuide {
+  variables: readonly VariableGuide[];
+  /** One line saying these are questions to investigate, not conclusions. */
+  learnIntro: string;
+  /** Research questions the data can help investigate. */
+  questions: readonly string[];
+  /** What "annual" and "financial year" mean here. */
+  frequencyPlain: string;
+  /** Which download to start with. */
+  downloadHint: string;
 }
 
 /** The large 30-year dataset always carries the reason-coded completeness block. */
@@ -243,7 +275,49 @@ export const PAKISTAN_M2_INTEREST_RATES: ResearchDataset = {
     { variable: "cpi_inflation_pct", label: "CPI inflation", observations: 30, first: "FY1995-96", last: "FY2024-25", missing: [] },
     { variable: "real_policy_rate_pct", label: "Real policy rate (approximate)", observations: 30, first: "FY1995-96", last: "FY2024-25", missing: [] },
   ],
-  missingDataNote: "FY2019-20 M2 growth is blank because SBP revised its M2 data that year. Nothing is estimated, interpolated or filled.",
+  missingDataNote:
+    "M2 growth for FY2019-20 is unavailable because the State Bank of Pakistan revised its M2 data series that year, so a reliable growth figure cannot be calculated. No missing value has been estimated or artificially filled in.",
+  guide: {
+    variables: [
+      {
+        variable: "m2_growth_pct",
+        title: "M2 Growth",
+        icon: "money",
+        plain: "How quickly the amount of money in Pakistan's economy is growing or shrinking. M2 counts cash plus the money people and businesses keep in bank accounts.",
+        example: "If M2 growth is 15%, there is about 15% more money in the economy than a year earlier.",
+      },
+      {
+        variable: "sbp_policy_rate_pct",
+        title: "SBP Policy Rate",
+        icon: "rate",
+        plain: "The interest rate set by the State Bank of Pakistan (SBP) to influence borrowing, lending, spending and inflation. Here it is the average rate over each financial year.",
+        example: "A higher policy rate usually makes loans more expensive; a lower one makes them cheaper.",
+      },
+      {
+        variable: "cpi_inflation_pct",
+        title: "CPI Inflation",
+        icon: "prices",
+        plain: "How quickly the prices of everyday goods and services are rising, measured by the Consumer Price Index (CPI).",
+        example: "At 10% inflation, something that cost Rs 100 last year costs about Rs 110 now.",
+      },
+      {
+        variable: "real_policy_rate_pct",
+        title: "Real Interest Rate",
+        icon: "real",
+        plain: "The policy rate minus inflation: an approximate guide to the interest rate once rising prices are taken into account.",
+        example: "A 12% policy rate with 8% inflation gives a real rate of about 4%. If it is negative, prices are rising faster than the policy rate.",
+      },
+    ],
+    learnIntro: "These are questions the data can help you investigate. The dataset does not answer them by itself, and a pattern in the numbers does not prove that one thing causes another.",
+    questions: [
+      "Is faster growth in the money supply associated with higher inflation?",
+      "Do changes in the money supply go together with changes in interest rates?",
+      "How do interest rates behave when inflation rises or falls?",
+      "How have monetary policy and Pakistan's economy moved together over time?",
+    ],
+    frequencyPlain: "One observation per financial year. A financial (fiscal) year runs from 1 July to 30 June and is named after the year it ends, so FY2019-20 means July 2019 to June 2020.",
+    downloadHint: "The Excel workbook and the combined CSV contain all four measures. The codebook explains every definition and calculation.",
+  },
   sources: ["State Bank of Pakistan", "Pakistan Bureau of Statistics", "Ministry of Finance"],
   files: [
     {

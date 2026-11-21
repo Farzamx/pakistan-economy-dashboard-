@@ -202,7 +202,9 @@ describe("the metadata on the page is true of the files", () => {
     expect(BODY.filter((r) => r.slice(2).every((c) => c !== "")).length).toBe(29);
     expect(D.notes.join(" ")).toContain("119 of 120");
     expect(D.notes.join(" ")).toContain("29 years have all four variables");
-    expect(D.missingDataNote).toContain("FY2019-20 M2 growth");
+    expect(D.missingDataNote).toContain("M2 growth for FY2019-20 is unavailable");
+    expect(D.missingDataNote).toContain("revised its M2 data series");
+    expect(D.missingDataNote).toContain("No missing value has been estimated or artificially filled in");
   });
 });
 
@@ -210,23 +212,110 @@ describe("the page section", () => {
   const html = renderToStaticMarkup(createElement(ResearchDatasetsSection));
   const card = html.slice(html.indexOf(`data-research-dataset="${D.id}"`));
   const esc = (s: string) => s.replace(/'/g, "&#x27;");
+  /** What a reader sees: markup removed, entities decoded, whitespace collapsed. */
+  const visibleText = (h: string) => h.replace(/<[^>]+>/g, "").replace(/&#x27;/g, "'").replace(/&amp;/g, "&").replace(/\s+/g, " ");
 
   it("shows the dataset as its own card with the exact title and a short description", () => {
     expect(card).toContain("Pakistan Money Supply and Interest Rates Dataset (1995–2025)");
     expect(card).toContain("Annual M2 growth, SBP policy rate, CPI inflation and the calculated real interest rate for Pakistan");
     expect(html.indexOf(`data-research-dataset="${PAKISTAN_30_YEAR.id}"`)).toBeLessThan(html.indexOf(`data-research-dataset="${D.id}"`));
   });
-  it("displays the study period, version, variable and observation counts, completeness and sources", () => {
-    for (const s of ["FY1995-96 to FY2024-25", "Annual", "Version 1", "4 variables", "30 annual observations", "3 of 4 variables complete", "119 of 120 variable-years available", "State Bank of Pakistan, Pakistan Bureau of Statistics, Ministry of Finance"]) expect(card, s).toContain(s);
+  it("shows the simple facts: time period, frequency, number of variables and how many of the possible values are available", () => {
+    const facts = card.slice(card.indexOf('aria-label="About the data"'), card.indexOf("</dl>", card.indexOf('aria-label="About the data"')));
+    const flat = facts.replace(/<\/(dt|dd)>/g, " ").replace(/<[^>]+>/g, "").replace(/\s+/g, " ");
+    for (const s of ["Time period FY1995-96 to FY2024-25", "Frequency Annual", "Variables 4", "Available values 119 out of 120 possible"]) expect(flat, s).toContain(s);
+    expect(card).toContain("Annual data · Version 1");
+    expect(card).toContain("Sources: <span");
+    expect(card).toContain("State Bank of Pakistan, Pakistan Bureau of Statistics, Ministry of Finance");
   });
-  it("displays the number of observations for each variable", () => {
-    expect(card).toContain('aria-label="Observations by variable"');
-    for (const v of D.variableCoverage!) expect(card, v.variable).toMatch(new RegExp(`${v.label.replace(/[()]/g, "\\$&")}: <span[^>]*>${v.observations} of 30</span>`));
+  it("explains annual data and the financial year in plain words", () => {
+    const vt = visibleText(card);
+    expect(vt).toContain("One observation per financial year.");
+    expect(vt).toContain("runs from 1 July to 30 June and is named after the year it ends");
+    expect(vt).toContain("FY2019-20 means July 2019 to June 2020");
+    // a financial-year label is never split across two lines
+    expect(card).toMatch(/<span class="whitespace-nowrap">FY2019-20<\/span> means July 2019/);
   });
-  it("states the missing-data fact on the card itself, not only inside the collapsible notes", () => {
+  it("shows how many years each measure has on that measure's own card, true to the CSV", () => {
+    for (const v of D.variableCoverage!) {
+      const start = card.indexOf(`data-variable-card="${v.variable}"`);
+      expect(start, v.variable).toBeGreaterThan(-1);
+      const cardHtml = card.slice(start, card.indexOf("</li>", start));
+      const txt = visibleText(cardHtml);
+      expect(txt, v.variable).toContain(`${v.observations} of 30 years available`);
+      if (v.missing.length) expect(txt).toContain(`(missing ${v.missing.join(", ")})`);
+      else expect(txt).not.toContain("missing");
+    }
+  });
+  it("states the one missing value in plain language on the card itself, not only inside the collapsible notes, and says nothing was filled in", () => {
     const visible = card.slice(0, card.indexOf("<details"));
-    expect(visible).toContain("Missing data:");
-    expect(visible).toContain("FY2019-20 M2 growth is blank");
+    const flat = visibleText(visible);
+    expect(flat).toContain("One value is missing.");
+    expect(flat).toContain("M2 growth for FY2019-20 is unavailable");
+    expect(flat).toContain("State Bank of Pakistan revised its M2 data series");
+    expect(flat).toContain("No missing value has been estimated or artificially filled in");
+  });
+  it("explains the four measures in simple language, as four cards, in order, each with a name, an explanation and an example", () => {
+    const order = [...card.matchAll(/data-variable-card="([a-z0-9_]+)"/g)].map((m) => m[1]);
+    expect(order).toEqual(["m2_growth_pct", "sbp_policy_rate_pct", "cpi_inflation_pct", "real_policy_rate_pct"]);
+    expect(order).toEqual(VARS);
+    expect(card).toContain("The four measures");
+    for (const v of D.guide!.variables) {
+      const start = card.indexOf(`data-variable-card="${v.variable}"`);
+      const cardHtml = card.slice(start, card.indexOf("</li>", start));
+      expect(cardHtml, v.variable).toContain("<svg"); // the small icon
+      expect(cardHtml).toContain('aria-hidden="true"');
+      expect(cardHtml).toContain(esc(v.title));
+      expect(cardHtml).toContain(esc(v.plain));
+      expect(cardHtml).toContain("Example: ");
+      expect(cardHtml).toContain(esc(v.example));
+      expect(v.plain.split(/(?<=[.!?])\s+/).length, `${v.variable}: one or two sentences`).toBeLessThanOrEqual(2);
+    }
+  });
+  it("uses the agreed beginner wording for each measure (plain words, no unexplained jargon)", () => {
+    const g = Object.fromEntries(D.guide!.variables.map((v) => [v.variable, v]));
+    expect(g.m2_growth_pct.plain).toContain("How quickly the amount of money in Pakistan's economy is growing or shrinking");
+    expect(g.m2_growth_pct.plain).toContain("cash plus the money people and businesses keep in bank accounts");
+    expect(g.sbp_policy_rate_pct.plain).toContain("State Bank of Pakistan (SBP)");
+    expect(g.sbp_policy_rate_pct.plain).toContain("influence borrowing, lending, spending and inflation");
+    expect(g.cpi_inflation_pct.plain).toContain("prices of everyday goods and services are rising");
+    expect(g.cpi_inflation_pct.plain).toContain("Consumer Price Index (CPI)");
+    expect(g.real_policy_rate_pct.plain).toContain("policy rate minus inflation");
+    expect(g.real_policy_rate_pct.title).toBe("Real Interest Rate");
+    expect(g.real_policy_rate_pct.plain).toContain("approximate guide"); // the card says it is approximate, in words a beginner reads first
+    expect(g.real_policy_rate_pct.example).toContain("12% policy rate with 8% inflation gives a real rate of about 4%");
+  });
+  it("has a \"What can you learn from this dataset?\" section of research questions, never conclusions", () => {
+    expect(card).toContain("What can you learn from this dataset?");
+    const g = D.guide!;
+    expect(g.questions).toHaveLength(4);
+    for (const q of g.questions) {
+      expect(card).toContain(esc(q));
+      expect(q.endsWith("?"), q).toBe(true); // a question, not a finding
+      expect(q, q).not.toMatch(/\b(causes?|caused|proves?|proven|leads? to|results? in|because of|due to)\b/i);
+    }
+    expect(g.learnIntro).toContain("does not prove that one thing causes another");
+    expect(g.learnIntro).toContain("questions the data can help you investigate");
+    // the topics the owner asked for
+    const all = g.questions.join(" ");
+    for (const s of ["money supply", "inflation", "interest rates", "monetary policy"]) expect(all.toLowerCase(), s).toContain(s);
+    expect(all).toContain("associated with higher inflation");
+  });
+  it("keeps the technical coverage details out of the main view: they sit in a collapsed \"Data coverage and technical notes\"", () => {
+    const visible = card.slice(0, card.indexOf("<details"));
+    const details = card.slice(card.indexOf("<details"));
+    expect(details.slice(0, 40)).not.toContain(" open");
+    expect(details).toContain("Data coverage and technical notes");
+    expect(details).toContain("3 of 4 variables have a value for every year; 119 of 120 variable-years are available.");
+    expect(visible).not.toContain("3 of 4 variables");
+    expect(visible).not.toContain("variable-years");
+  });
+  it("is a guided card, the compact Version 2 card is not, and the download section can be reached from the top", () => {
+    expect(card.slice(0, 400)).toContain("data-guided-card");
+    expect(html.slice(html.indexOf(`data-research-dataset="${PAKISTAN_30_YEAR.id}"`), html.indexOf(`data-research-dataset="${D.id}"`))).not.toContain("data-guided-card");
+    expect(card).toContain(`href="#${D.id}-downloads"`);
+    expect(card).toContain(`id="${D.id}-downloads"`);
+    expect(card.indexOf(`href="#${D.id}-downloads"`)).toBeLessThan(card.indexOf(`id="${D.id}-downloads"`));
   });
   it("offers all eight downloads, each a download link to its own file: Excel, combined CSV, codebook, SPSS syntax and four individual CSVs", () => {
     for (const f of D.files) {
@@ -279,9 +368,9 @@ describe("the page section", () => {
       expect(a.slice(0, 200)).toContain(`.${ext}"`); // the href and download attribute end in the same extension
     }
   });
-  it("keeps the methodology and missing-data notes in a collapsible \"Dataset notes\", with coverage by variable", () => {
+  it("keeps the methodology and missing-data notes in the collapsible \"Data coverage and technical notes\", with coverage by variable", () => {
     const details = card.slice(card.indexOf("<details"));
-    expect(details).toContain("Dataset notes");
+    expect(details).toContain("Data coverage and technical notes");
     expect(details).toContain("Coverage by variable");
     for (const n of D.notes) expect(details).toContain(esc(n.slice(0, 40)));
     expect(details).toContain("blank: FY2019-20");
