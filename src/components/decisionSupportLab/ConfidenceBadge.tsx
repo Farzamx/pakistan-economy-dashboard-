@@ -101,7 +101,7 @@ export default function ConfidenceBadge({ result, toolId }: Props) {
                   {isEstimateFactor(factor.label)
                     ? "This result includes one or more figures you entered manually instead of verified official data — usually because no official source covers that specific input. Check the values you typed above; they drive this outcome directly."
                     : "The historical average for your exact time range isn't available in our dataset, so the latest official inflation rate was substituted for the missing years instead."}
-                  <button type="button" onClick={() => setOpenPopover(null)} className="mt-2 block text-[11px] font-semibold text-neon-blue">
+                  <button type="button" onClick={() => setOpenPopover(null)} className="mt-2 block text-[12px] font-semibold text-neon-blue">
                     Got it
                   </button>
                 </div>

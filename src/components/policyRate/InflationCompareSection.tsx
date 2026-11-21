@@ -57,12 +57,12 @@ export default function InflationCompareSection({ model }: { model: PolicyRateVi
 
       {outcomes.length > 0 && (
         <div>
-          <h3 className="text-[14px] font-semibold text-pe-text">What inflation was around each cycle</h3>
-          <p className="mt-0.5 max-w-3xl text-[13px] leading-relaxed text-pe-text-2">
+          <h3 className="text-[15px] font-semibold text-pe-text">What inflation was around each cycle</h3>
+          <p className="mt-0.5 max-w-3xl text-[14px] leading-relaxed text-pe-text-2">
             Headline inflation (year on year) at the first change of each cycle, at its last change, and twelve months after the month of the last change. These are observations at three dates. They do not say that the cycle moved inflation, or that inflation would have been different without it.
           </p>
           <div className="relative mt-2 overflow-x-auto rounded-[var(--pe-radius)] border border-pe-border" tabIndex={0} role="region" aria-label="Inflation around each cycle (scrolls sideways)">
-            <table className="w-full min-w-[760px] border-collapse text-left text-[12.5px] tabular-nums">
+            <table className="w-full min-w-[760px] border-collapse text-left text-[13.5px] tabular-nums">
               <caption className="sr-only">For each tightening or easing cycle: the policy-rate move and headline inflation at its first change, at its last change and twelve months after</caption>
               <thead className="bg-pe-surface-2 text-pe-text-2">
                 <tr>
@@ -76,7 +76,7 @@ export default function InflationCompareSection({ model }: { model: PolicyRateVi
                   <tr key={o.startDate} className="border-t border-pe-border">
                     <th scope="row" className="whitespace-nowrap px-3 py-1.5 text-left font-normal text-pe-text">
                       {o.direction === "tightening" ? "Tightening" : "Easing"}
-                      <span className="block text-[11.5px] text-pe-text-2">{formatDate(o.startDate)} – {formatDate(o.endDate)}</span>
+                      <span className="block text-[12.5px] text-pe-text-2">{formatDate(o.startDate)} – {formatDate(o.endDate)}</span>
                     </th>
                     <td className="whitespace-nowrap px-3 py-1.5">{pct(o.startRate)} → {pct(o.endRate)} <span className="text-pe-text-2">({signedPp(o.totalChange)} pp)</span></td>
                     <td className="whitespace-nowrap px-3 py-1.5">{cell(o.inflationAtStart)}</td>
@@ -90,7 +90,7 @@ export default function InflationCompareSection({ model }: { model: PolicyRateVi
               </tbody>
             </table>
           </div>
-          <p className="mt-2 max-w-3xl font-mono text-[11px] leading-relaxed text-pe-text-3">
+          <p className="mt-2 max-w-3xl font-mono text-[12px] leading-relaxed text-pe-text-3">
             Source: SBP EasyData (policy rate), SBP / PBS (headline CPI inflation, YoY). &ldquo;At first/last change&rdquo; is the CPI of the month before the change (the latest figure PBS had published). &ldquo;Not in the data&rdquo; means that month is outside the inflation series PEIC holds, which begins in {monthLabel(model.headline[0].month)}, or is not yet published. The latest cycle&rsquo;s twelve-month figure is not yet available.
           </p>
         </div>

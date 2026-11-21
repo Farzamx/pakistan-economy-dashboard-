@@ -51,7 +51,7 @@ export default function ProvincialRankingDashboard({ lockedMetric, title }: Prov
                 type="button"
                 onClick={() => setMetric(m.field)}
                 aria-pressed={metric === m.field}
-                className={`rounded-full border px-3 py-1 text-[11px] font-medium transition-colors ${
+                className={`rounded-full border px-3 py-1 text-[12px] font-medium transition-colors ${
                   metric === m.field ? "border-neon-blue/40 bg-neon-blue/15 text-neon-blue" : "border-[var(--border)] text-[var(--text-muted)] hover:text-[var(--text-primary)]"
                 }`}
               >
@@ -69,7 +69,7 @@ export default function ProvincialRankingDashboard({ lockedMetric, title }: Prov
       <p className="text-sm text-[var(--text-muted)]">{metricMeta?.label ?? metric} — FY{year}</p>
       <ProvincialRankingBarChart entries={entries} />
 
-      <p className="text-[11px] text-[var(--text-muted)]">
+      <p className="text-[12px] text-[var(--text-muted)]">
         {t("provincial.rankingNote")}
       </p>
     </section>

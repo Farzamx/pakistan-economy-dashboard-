@@ -41,7 +41,7 @@ export default function Hero({ tapeCells }: { tapeCells: TapeCell[] }) {
     <section ref={heroRef} className="relative flex min-h-[100svh] w-full flex-col justify-end overflow-hidden min-[1024px]:min-h-screen">
       <div className="relative z-10 mx-auto flex w-full max-w-[1200px] flex-1 flex-col justify-center gap-6 px-5 pt-24 pb-8 min-[1024px]:px-10 min-[1024px]:pb-0">
         <span
-          className="text-[11px] uppercase tracking-[0.18em]"
+          className="text-[12px] uppercase tracking-[0.18em]"
           style={{ fontFamily: "var(--font-marketing-data)", color: "var(--muted)" }}
         >
           Pakistan Economic Intelligence Center
@@ -80,21 +80,21 @@ export default function Hero({ tapeCells }: { tapeCells: TapeCell[] }) {
         <div className="mkt-cta-row flex flex-col gap-3 min-[480px]:flex-row min-[480px]:gap-4">
           <Link
             href="/overview"
-            className="flex min-h-[44px] items-center justify-center rounded-lg px-6 py-3 text-[15px] font-semibold"
+            className="flex min-h-[44px] items-center justify-center rounded-lg px-6 py-3 text-[16px] font-semibold"
             style={{ fontFamily: "var(--font-marketing-body)", background: "var(--indigo)", color: "var(--paper)" }}
           >
             Open the platform
           </Link>
           <Link
             href="/methodology"
-            className="flex min-h-[44px] items-center justify-center rounded-lg border px-6 py-3 text-[15px] font-semibold"
+            className="flex min-h-[44px] items-center justify-center rounded-lg border px-6 py-3 text-[16px] font-semibold"
             style={{ fontFamily: "var(--font-marketing-body)", borderColor: "var(--muted)", color: "var(--paper)", background: "transparent" }}
           >
             How we calculate it
           </Link>
         </div>
 
-        <p className="mkt-trust-line text-[13px]" style={{ fontFamily: "var(--font-marketing-body)", color: "var(--muted)" }}>
+        <p className="mkt-trust-line text-[14px]" style={{ fontFamily: "var(--font-marketing-body)", color: "var(--muted)" }}>
           Built on data from SBP, PBS, PSX, IMF and the World Bank. Free to use.
         </p>
       </div>

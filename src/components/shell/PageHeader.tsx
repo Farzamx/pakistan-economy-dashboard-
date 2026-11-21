@@ -24,13 +24,13 @@ export default function PageHeader({ title, eyebrow, description, actions, meta 
     <header className="border-b border-pe-border pb-4">
       <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
         <div className="min-w-0 max-w-3xl">
-          {eyebrow && <p className="text-[12px] font-medium uppercase tracking-[0.06em] text-pe-text-3">{eyebrow}</p>}
+          {eyebrow && <p className="text-[13px] font-medium uppercase tracking-[0.06em] text-pe-text-3">{eyebrow}</p>}
           <h1 className="mt-1 text-[24px] font-semibold leading-tight tracking-[-0.01em] text-pe-text [text-wrap:balance] sm:text-[28px]">{title}</h1>
-          {description && <div className="mt-1.5 text-[14px] leading-relaxed text-pe-text-2">{description}</div>}
+          {description && <div className="mt-1.5 text-[15px] leading-relaxed text-pe-text-2">{description}</div>}
         </div>
         {actions && <div className="flex shrink-0 items-center gap-2">{actions}</div>}
       </div>
-      {meta && <div className="mt-3 font-mono text-[12px] text-pe-text-3">{meta}</div>}
+      {meta && <div className="mt-3 font-mono text-[13px] text-pe-text-3">{meta}</div>}
     </header>
   );
 }

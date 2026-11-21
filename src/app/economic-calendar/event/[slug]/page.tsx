@@ -185,15 +185,15 @@ export default async function EventDetailPage({ params }: PageProps) {
           <section className="glass-card mt-8 flex flex-col gap-5 p-6 sm:flex-row sm:items-center sm:justify-between sm:p-8">
             <div className="flex flex-wrap gap-8">
               <div className="flex flex-col gap-1">
-                <span className="text-[10px] uppercase tracking-wide text-white/35 light:text-slate-400">Previous</span>
+                <span className="text-[11px] uppercase tracking-wide text-white/35 light:text-slate-400">Previous</span>
                 <span className="text-xl font-semibold text-white/85 light:text-slate-700">{event.previousValue ?? "—"}</span>
               </div>
               <div className="flex flex-col gap-1">
-                <span className="text-[10px] uppercase tracking-wide text-white/35 light:text-slate-400">Forecast</span>
+                <span className="text-[11px] uppercase tracking-wide text-white/35 light:text-slate-400">Forecast</span>
                 <span className="text-xl font-semibold text-neon-blue">{event.forecastValue ?? "—"}</span>
               </div>
               <div className="flex flex-col gap-1">
-                <span className="text-[10px] uppercase tracking-wide text-white/35 light:text-slate-400">Actual</span>
+                <span className="text-[11px] uppercase tracking-wide text-white/35 light:text-slate-400">Actual</span>
                 <span className="text-xl font-semibold text-white/40 light:text-slate-400">Pending</span>
               </div>
             </div>

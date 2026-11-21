@@ -60,7 +60,7 @@ export function Heatmap({
     <div>
       {/* `relative` makes this the containing block for the absolutely-positioned sr-only labels inside the table, so they are clipped by the scroller instead of stretching the page. */}
       <div className="relative overflow-x-auto rounded-[var(--pe-radius)] border border-pe-border" tabIndex={0} role="region" aria-label={`${caption} (scrolls sideways)`}>
-        <table className="border-separate border-spacing-px text-[11px] tabular-nums" style={{ background: "var(--pe-border)" }}>
+        <table className="border-separate border-spacing-px text-[12px] tabular-nums" style={{ background: "var(--pe-border)" }}>
           <caption className="sr-only">{caption}</caption>
           <thead>
             <tr>
@@ -77,7 +77,7 @@ export function Heatmap({
           <tbody>
             {rows.map((r) => (
               <tr key={r.key}>
-                <th scope="row" className="sticky left-0 z-10 whitespace-nowrap bg-pe-surface px-2 py-1 text-left text-[12px] font-normal text-pe-text-2" style={{ minWidth: labelWidth, width: labelWidth }}>
+                <th scope="row" className="sticky left-0 z-10 whitespace-nowrap bg-pe-surface px-2 py-1 text-left text-[13px] font-normal text-pe-text-2" style={{ minWidth: labelWidth, width: labelWidth }}>
                   {r.label}
                 </th>
                 {r.cells.map((v, ci) => {
@@ -118,7 +118,7 @@ export function Heatmap({
       </div>
 
       {/* Tap/hover readout: native title tooltips do not exist on touch screens. */}
-      <p id={readoutId} aria-live="polite" className="mt-1.5 min-h-[1.25rem] text-[12px] text-pe-text-2">
+      <p id={readoutId} aria-live="polite" className="mt-1.5 min-h-[1.25rem] text-[13px] text-pe-text-2">
         {readout ?? <span className="text-pe-text-3">Tap or hover a cell for its exact value.</span>}
       </p>
 
@@ -129,7 +129,7 @@ export function Heatmap({
 
 export function HeatLegend({ scale, showMissing }: { scale: HeatScale; showMissing: boolean }) {
   return (
-    <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[11px] text-pe-text-2" aria-label={`Colour key, ${scale.unit}`} role="group">
+    <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[12px] text-pe-text-2" aria-label={`Colour key, ${scale.unit}`} role="group">
       <span className="font-medium text-pe-text-3">{scale.unit}:</span>
       {scale.classes.map((c) => (
         <span key={c.id} className="inline-flex items-center gap-1.5">

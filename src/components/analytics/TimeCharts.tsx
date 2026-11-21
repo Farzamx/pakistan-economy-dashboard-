@@ -35,7 +35,7 @@ import type { NameType, ValueType } from "recharts/types/component/DefaultToolti
 import { formatValue } from "@/lib/analytics/scales";
 import { useSafeReducedMotion } from "@/hooks/useSafeReducedMotion";
 
-export const AXIS = { fill: "var(--chart-axis)", fontSize: 11 } as const;
+export const AXIS = { fill: "var(--chart-axis)", fontSize: 12 } as const;
 export type Colour = "blue" | "orange" | "teal" | "purple" | "amber" | "slate";
 export const viz = (name: Colour) => `var(--pe-viz-${name})`;
 
@@ -78,12 +78,12 @@ export function makeTip(unit: string, decimals: number, series?: SeriesSpec[], e
     const note = extra?.(String(label));
     return (
       <div style={tipBox}>
-        <p style={{ color: "var(--chart-tooltip-label)", fontSize: 11, marginBottom: 4 }}>{label}</p>
+        <p style={{ color: "var(--chart-tooltip-label)", fontSize: 12, marginBottom: 4 }}>{label}</p>
         {payload.map((p) => {
           const spec = series?.find((s) => s.key === p.dataKey);
           const v = p.value;
           return (
-            <p key={String(p.dataKey)} style={{ display: "flex", justifyContent: "space-between", gap: 12, fontSize: 12, color: "var(--chart-tooltip-value)" }}>
+            <p key={String(p.dataKey)} style={{ display: "flex", justifyContent: "space-between", gap: 12, fontSize: 13, color: "var(--chart-tooltip-value)" }}>
               <span style={{ color: "var(--chart-tooltip-label)", display: "inline-flex", alignItems: "center", gap: 6 }}>
                 <span aria-hidden style={{ width: 8, height: 8, borderRadius: 2, background: String(p.color ?? p.fill ?? "currentColor"), display: "inline-block" }} />
                 {spec?.label ?? p.name}
@@ -94,7 +94,7 @@ export function makeTip(unit: string, decimals: number, series?: SeriesSpec[], e
             </p>
           );
         })}
-        {note && <p style={{ color: "var(--chart-tooltip-label)", fontSize: 10, marginTop: 4 }}>{note}</p>}
+        {note && <p style={{ color: "var(--chart-tooltip-label)", fontSize: 11, marginTop: 4 }}>{note}</p>}
       </div>
     );
   };
@@ -132,7 +132,7 @@ export function SignedBars({
   animate?: boolean;
 }) {
   const reduced = useSafeReducedMotion();
-  if (data.length === 0) return <p className="px-1 py-10 text-center text-[13px] text-pe-text-3">No observations in this range.</p>;
+  if (data.length === 0) return <p className="px-1 py-10 text-center text-[14px] text-pe-text-3">No observations in this range.</p>;
   const spec: SeriesSpec[] = [{ key: "value", label: metric, color: positive }];
   return (
     <Box height={height} ariaLabel={ariaLabel}>
@@ -178,7 +178,7 @@ export function MultiLine({
   animate?: boolean;
 }) {
   const reduced = useSafeReducedMotion();
-  if (data.length === 0 || series.length === 0) return <p className="px-1 py-10 text-center text-[13px] text-pe-text-3">No observations in this range.</p>;
+  if (data.length === 0 || series.length === 0) return <p className="px-1 py-10 text-center text-[14px] text-pe-text-3">No observations in this range.</p>;
   return (
     <Box height={height} ariaLabel={ariaLabel}>
       <LineChart data={data} margin={{ top: 8, right: 12, bottom: 0, left: -8 }} accessibilityLayer>
@@ -237,7 +237,7 @@ export function ClusteredBars({
   /** Angle the category labels and show every one (for long names such as CPI groups). */
   angled?: boolean;
 }) {
-  if (data.length === 0) return <p className="px-1 py-10 text-center text-[13px] text-pe-text-3">No observations in this range.</p>;
+  if (data.length === 0) return <p className="px-1 py-10 text-center text-[14px] text-pe-text-3">No observations in this range.</p>;
   return (
     <Box height={height} ariaLabel={ariaLabel}>
       <BarChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: -8 }} barGap={1} barCategoryGap="22%" accessibilityLayer>
@@ -246,7 +246,7 @@ export function ClusteredBars({
         <YAxis tickFormatter={yTick(unit)} tick={AXIS} tickLine={false} axisLine={false} width={46} />
         <ReferenceLine y={0} stroke="var(--chart-axis)" strokeWidth={1.25} />
         <Tooltip content={makeTip(unit, decimals, series)} cursor={{ fill: "var(--chart-cursor)" }} />
-        {showLegend && <Legend wrapperStyle={{ fontSize: 12, color: "var(--chart-axis)", paddingTop: 4 }} iconType="square" iconSize={9} />}
+        {showLegend && <Legend wrapperStyle={{ fontSize: 13, color: "var(--chart-axis)", paddingTop: 4 }} iconType="square" iconSize={9} />}
         {series.map((s) => (
           <Bar key={s.key} dataKey={s.key} name={s.label} fill={viz(s.color)} radius={[2, 2, 0, 0]} maxBarSize={22} isAnimationActive={false} />
         ))}
@@ -274,7 +274,7 @@ export function StackedBars({
   decimals?: number;
   ariaLabel: string;
 }) {
-  if (data.length === 0) return <p className="px-1 py-10 text-center text-[13px] text-pe-text-3">No observations in this range.</p>;
+  if (data.length === 0) return <p className="px-1 py-10 text-center text-[14px] text-pe-text-3">No observations in this range.</p>;
   const all: SeriesSpec[] = [...series, { key: "total", label: "Total (headline)", color: "slate" }];
   return (
     <Box height={height} ariaLabel={ariaLabel}>
@@ -319,7 +319,7 @@ export function ScatterPlot({
   height?: number;
   ariaLabel: string;
 }) {
-  if (points.length === 0) return <p className="px-1 py-10 text-center text-[13px] text-pe-text-3">No aligned observations.</p>;
+  if (points.length === 0) return <p className="px-1 py-10 text-center text-[14px] text-pe-text-3">No aligned observations.</p>;
   const rest = points.filter((p) => !p.latest);
   const latest = points.filter((p) => p.latest);
   const tip = ({ active, payload }: TooltipContentProps<ValueType, NameType>) => {
@@ -327,9 +327,9 @@ export function ScatterPlot({
     const d = payload[0].payload as ScatterDatum;
     return (
       <div style={tipBox}>
-        <p style={{ color: "var(--chart-tooltip-label)", fontSize: 11, marginBottom: 4 }}>{d.label}</p>
-        <p style={{ fontSize: 12, color: "var(--chart-tooltip-value)" }}>{xLabel}: <b style={{ fontVariantNumeric: "tabular-nums" }}>{formatValue(d.x, 1)}{unit}</b></p>
-        <p style={{ fontSize: 12, color: "var(--chart-tooltip-value)" }}>{yLabel}: <b style={{ fontVariantNumeric: "tabular-nums" }}>{formatValue(d.y, 2)}{unit}</b></p>
+        <p style={{ color: "var(--chart-tooltip-label)", fontSize: 12, marginBottom: 4 }}>{d.label}</p>
+        <p style={{ fontSize: 13, color: "var(--chart-tooltip-value)" }}>{xLabel}: <b style={{ fontVariantNumeric: "tabular-nums" }}>{formatValue(d.x, 1)}{unit}</b></p>
+        <p style={{ fontSize: 13, color: "var(--chart-tooltip-value)" }}>{yLabel}: <b style={{ fontVariantNumeric: "tabular-nums" }}>{formatValue(d.y, 2)}{unit}</b></p>
       </div>
     );
   };
@@ -337,8 +337,8 @@ export function ScatterPlot({
     <Box height={height} ariaLabel={ariaLabel}>
       <ScatterChart margin={{ top: 8, right: 14, bottom: 22, left: 4 }} accessibilityLayer>
         <CartesianGrid stroke="var(--chart-grid)" />
-        <XAxis type="number" dataKey="x" name={xLabel} tickFormatter={yTick(unit)} tick={AXIS} tickLine={false} axisLine={false} label={{ value: xLabel, position: "insideBottom", offset: -12, fill: "var(--chart-axis)", fontSize: 11 }} />
-        <YAxis type="number" dataKey="y" name={yLabel} tickFormatter={yTick(unit)} tick={AXIS} tickLine={false} axisLine={false} width={46} label={{ value: yLabel, angle: -90, position: "insideLeft", offset: 4, fill: "var(--chart-axis)", fontSize: 11, style: { textAnchor: "middle" } }} />
+        <XAxis type="number" dataKey="x" name={xLabel} tickFormatter={yTick(unit)} tick={AXIS} tickLine={false} axisLine={false} label={{ value: xLabel, position: "insideBottom", offset: -12, fill: "var(--chart-axis)", fontSize: 12 }} />
+        <YAxis type="number" dataKey="y" name={yLabel} tickFormatter={yTick(unit)} tick={AXIS} tickLine={false} axisLine={false} width={46} label={{ value: yLabel, angle: -90, position: "insideLeft", offset: 4, fill: "var(--chart-axis)", fontSize: 12, style: { textAnchor: "middle" } }} />
         <ZAxis range={[46, 46]} />
         <Tooltip content={tip} cursor={{ strokeDasharray: "3 3", stroke: "var(--chart-axis)" }} />
         <Scatter data={rest} fill={viz("blue")} fillOpacity={0.55} isAnimationActive={false} />
@@ -364,14 +364,14 @@ export function Histogram({
   /** Index of the bin containing the latest reading. */
   highlightBin?: number;
 }) {
-  if (bins.length === 0) return <p className="px-1 py-10 text-center text-[13px] text-pe-text-3">No observations.</p>;
+  if (bins.length === 0) return <p className="px-1 py-10 text-center text-[14px] text-pe-text-3">No observations.</p>;
   const data = bins.map((b) => ({ period: `${formatValue(b.from, 0)}–${formatValue(b.to, 0)}`, count: b.count, from: b.from, to: b.to }));
   const tip = ({ active, payload }: TooltipContentProps<ValueType, NameType>) => {
     if (!active || !payload?.length) return null;
     const d = payload[0].payload as (typeof data)[number];
     return (
       <div style={tipBox}>
-        <p style={{ color: "var(--chart-tooltip-label)", fontSize: 11 }}>{formatValue(d.from, 0)}{unit} to under {formatValue(d.to, 0)}{unit}</p>
+        <p style={{ color: "var(--chart-tooltip-label)", fontSize: 12 }}>{formatValue(d.from, 0)}{unit} to under {formatValue(d.to, 0)}{unit}</p>
         <p style={{ fontSize: 13, color: "var(--chart-tooltip-value)" }}><b>{d.count}</b> month{d.count === 1 ? "" : "s"}</p>
       </div>
     );

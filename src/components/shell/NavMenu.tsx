@@ -72,7 +72,7 @@ export default function NavMenu({ entry, open, onOpenChange, active, onLinkClick
               close();
               onAction(item.id);
             }}
-            className="block w-full rounded-[var(--pe-radius-sm)] px-2.5 py-1.5 text-start text-[13px] text-pe-text-2 hover:bg-pe-surface-2 hover:text-pe-text"
+            className="block w-full rounded-[var(--pe-radius-sm)] px-2.5 py-1.5 text-start text-[14px] text-pe-text-2 hover:bg-pe-surface-2 hover:text-pe-text"
           >
             {t(item.labelKey)}
           </button>
@@ -86,7 +86,7 @@ export default function NavMenu({ entry, open, onOpenChange, active, onLinkClick
           href={item.href}
           aria-current={current}
           onClick={(e) => handleItemClick(e, item.href)}
-          className={`block rounded-[var(--pe-radius-sm)] px-2.5 py-1.5 text-[13px] leading-snug hover:bg-pe-surface-2 ${
+          className={`block rounded-[var(--pe-radius-sm)] px-2.5 py-1.5 text-[14px] leading-snug hover:bg-pe-surface-2 ${
             current ? "font-medium text-pe-accent" : "text-pe-text-2 hover:text-pe-text"
           }`}
         >
@@ -113,7 +113,7 @@ export default function NavMenu({ entry, open, onOpenChange, active, onLinkClick
             onOpenChange(true);
           }
         }}
-        className={`relative flex items-center gap-1 px-3 text-[14px] font-medium transition-colors ${
+        className={`relative flex items-center gap-1 px-3 text-[15px] font-medium transition-colors ${
           open ? "bg-pe-nav-raised text-pe-nav-text" : isCurrent ? "text-pe-nav-text" : "text-pe-nav-text-muted hover:text-pe-nav-text"
         }`}
       >
@@ -143,7 +143,7 @@ export default function NavMenu({ entry, open, onOpenChange, active, onLinkClick
             return (
               <div key={group.id} className="min-w-0">
                 {group.labelKey && (
-                  <p id={headingId} className="mb-1 border-b border-pe-border px-2.5 pb-1.5 text-[11px] font-semibold uppercase tracking-[0.06em] text-pe-text-3">
+                  <p id={headingId} className="mb-1 border-b border-pe-border px-2.5 pb-1.5 text-[12px] font-semibold uppercase tracking-[0.06em] text-pe-text-3">
                     {t(group.labelKey)}
                   </p>
                 )}
@@ -160,7 +160,7 @@ export default function NavMenu({ entry, open, onOpenChange, active, onLinkClick
               href={entry.footer.href}
               aria-current={ariaCurrentFor(active, entry.footer.id)}
               onClick={(e) => handleItemClick(e, entry.footer!.href)}
-              className="inline-flex items-center gap-1 rounded-[var(--pe-radius-sm)] px-2.5 py-1.5 text-[13px] font-medium text-pe-accent hover:underline"
+              className="inline-flex items-center gap-1 rounded-[var(--pe-radius-sm)] px-2.5 py-1.5 text-[14px] font-medium text-pe-accent hover:underline"
             >
               {entry.footer.labelKey ? t(entry.footer.labelKey) : entry.footer.label}
               <span aria-hidden="true">→</span>

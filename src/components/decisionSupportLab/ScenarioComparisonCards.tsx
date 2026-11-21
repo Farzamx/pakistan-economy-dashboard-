@@ -30,7 +30,7 @@ export default function ScenarioComparisonCards({ scenarios }: Props) {
             Rs {Math.round(s.projectedFutureValue / 1000).toLocaleString("en-US")}k
           </p>
           <p className="mt-1 text-xs text-white/50 light:text-slate-500">Projected value at target date</p>
-          <span className={`mt-3 inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium ${s.isOnTrack ? "bg-emerald-400/10 text-emerald-400" : "bg-rose-400/10 text-rose-400"}`}>
+          <span className={`mt-3 inline-flex rounded-full px-2 py-0.5 text-[12px] font-medium ${s.isOnTrack ? "bg-emerald-400/10 text-emerald-400" : "bg-rose-400/10 text-rose-400"}`}>
             {s.isOnTrack ? "On Track" : `${Math.abs(s.fundingGapPct).toFixed(0)}% Short`}
           </span>
         </div>

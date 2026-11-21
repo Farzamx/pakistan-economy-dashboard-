@@ -131,7 +131,7 @@ export default function MobileDrawer({ open, onClose, active, gate, onAction, ov
               onClose({ restoreFocus: false });
               onAction(item.id);
             }}
-            className="block w-full rounded-[var(--pe-radius-sm)] px-3 py-2 text-start text-[14px] text-pe-text-2 hover:bg-pe-surface-2"
+            className="block w-full rounded-[var(--pe-radius-sm)] px-3 py-2 text-start text-[15px] text-pe-text-2 hover:bg-pe-surface-2"
           >
             {t(item.labelKey)}
           </button>
@@ -145,7 +145,7 @@ export default function MobileDrawer({ open, onClose, active, gate, onAction, ov
           href={item.href}
           aria-current={current}
           onClick={(e) => handleLinkClick(e, item.href)}
-          className={`block rounded-[var(--pe-radius-sm)] px-3 py-2 text-[14px] hover:bg-pe-surface-2 ${current ? "font-medium text-pe-accent" : "text-pe-text-2"}`}
+          className={`block rounded-[var(--pe-radius-sm)] px-3 py-2 text-[15px] hover:bg-pe-surface-2 ${current ? "font-medium text-pe-accent" : "text-pe-text-2"}`}
         >
           {item.labelKey ? t(item.labelKey) : item.label}
         </Link>
@@ -197,7 +197,7 @@ export default function MobileDrawer({ open, onClose, active, gate, onAction, ov
                         href={entry.href}
                         aria-current={current}
                         onClick={(e) => handleLinkClick(e, entry.href)}
-                        className={`block rounded-[var(--pe-radius-sm)] px-3 py-2.5 text-[15px] font-medium hover:bg-pe-surface-2 ${current ? "text-pe-accent" : "text-pe-text"}`}
+                        className={`block rounded-[var(--pe-radius-sm)] px-3 py-2.5 text-[16px] font-medium hover:bg-pe-surface-2 ${current ? "text-pe-accent" : "text-pe-text"}`}
                       >
                         {t(entry.labelKey!)}
                       </Link>
@@ -210,7 +210,7 @@ export default function MobileDrawer({ open, onClose, active, gate, onAction, ov
                             aria-expanded={sectionsOpen}
                             aria-controls={sectionsPanelId}
                             onClick={() => toggleGroup("overview-sections")}
-                            className="flex w-full items-center justify-between rounded-[var(--pe-radius-sm)] px-3 py-2 text-start text-[13px] font-medium text-pe-text-2 hover:bg-pe-surface-2"
+                            className="flex w-full items-center justify-between rounded-[var(--pe-radius-sm)] px-3 py-2 text-start text-[14px] font-medium text-pe-text-2 hover:bg-pe-surface-2"
                           >
                             {t("appNav.onThisPage")}
                             <svg aria-hidden="true" className={`h-3 w-3 text-pe-text-3 transition-transform ${sectionsOpen ? "rotate-180" : ""}`} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -231,7 +231,7 @@ export default function MobileDrawer({ open, onClose, active, gate, onAction, ov
                                       // After the drawer releases its scroll lock.
                                       setTimeout(() => goToOverviewSection(s.id), 0);
                                     }}
-                                    className={`block rounded-[var(--pe-radius-sm)] px-3 py-1.5 text-[14px] hover:bg-pe-surface-2 ${here ? "font-medium text-pe-accent" : "text-pe-text-2"}`}
+                                    className={`block rounded-[var(--pe-radius-sm)] px-3 py-1.5 text-[15px] hover:bg-pe-surface-2 ${here ? "font-medium text-pe-accent" : "text-pe-text-2"}`}
                                   >
                                     {t(s.labelKey)}
                                   </a>
@@ -253,7 +253,7 @@ export default function MobileDrawer({ open, onClose, active, gate, onAction, ov
                       aria-expanded={isOpen}
                       aria-controls={groupPanelId}
                       onClick={() => toggleGroup(entry.id)}
-                      className="flex w-full items-center justify-between rounded-[var(--pe-radius-sm)] px-3 py-2.5 text-start text-[15px] font-medium text-pe-text hover:bg-pe-surface-2"
+                      className="flex w-full items-center justify-between rounded-[var(--pe-radius-sm)] px-3 py-2.5 text-start text-[16px] font-medium text-pe-text hover:bg-pe-surface-2"
                     >
                       <span>
                         {t(entry.labelKey)}
@@ -267,7 +267,7 @@ export default function MobileDrawer({ open, onClose, active, gate, onAction, ov
                       {entry.groups.map((group) => (
                         <div key={group.id} className="mt-1">
                           {group.labelKey && (
-                            <p className="px-3 pb-0.5 pt-1.5 text-[11px] font-semibold uppercase tracking-[0.06em] text-pe-text-3">{t(group.labelKey)}</p>
+                            <p className="px-3 pb-0.5 pt-1.5 text-[12px] font-semibold uppercase tracking-[0.06em] text-pe-text-3">{t(group.labelKey)}</p>
                           )}
                           <ul className="flex flex-col">{group.items.map(renderItem)}</ul>
                         </div>
@@ -283,14 +283,14 @@ export default function MobileDrawer({ open, onClose, active, gate, onAction, ov
 
         <div className="shrink-0 border-t border-pe-border px-3 py-3">
           <div className="flex items-center justify-between">
-            <span className="text-[13px] text-pe-text-2">{t("appNav.darkMode")}</span>
+            <span className="text-[14px] text-pe-text-2">{t("appNav.darkMode")}</span>
             <ThemeToggle className="border border-pe-border text-pe-text-2 hover:bg-pe-surface-2" />
           </div>
           {!loading && (
             <div className="mt-3">
               {user ? (
                 <div className="flex items-center justify-between gap-2">
-                  <p className="min-w-0 truncate text-[12px] text-pe-text-2">{user.email}</p>
+                  <p className="min-w-0 truncate text-[13px] text-pe-text-2">{user.email}</p>
                   <button
                     type="button"
                     data-cta="logout"
@@ -299,7 +299,7 @@ export default function MobileDrawer({ open, onClose, active, gate, onAction, ov
                       onClose({ restoreFocus: false });
                       requestSignOut();
                     }}
-                    className="shrink-0 rounded-[var(--pe-radius)] border border-pe-border px-3 py-1.5 text-[13px] font-medium text-pe-text-2 hover:bg-pe-surface-2"
+                    className="shrink-0 rounded-[var(--pe-radius)] border border-pe-border px-3 py-1.5 text-[14px] font-medium text-pe-text-2 hover:bg-pe-surface-2"
                   >
                     {t("common.logout")}
                   </button>
@@ -310,7 +310,7 @@ export default function MobileDrawer({ open, onClose, active, gate, onAction, ov
                     href="/login"
                     data-cta="login"
                     data-cta-source="drawer"
-                    className="flex-1 rounded-[var(--pe-radius)] border border-pe-border px-3 py-2 text-center text-[14px] font-medium text-pe-text"
+                    className="flex-1 rounded-[var(--pe-radius)] border border-pe-border px-3 py-2 text-center text-[15px] font-medium text-pe-text"
                   >
                     {t("common.login")}
                   </Link>
@@ -318,7 +318,7 @@ export default function MobileDrawer({ open, onClose, active, gate, onAction, ov
                     href="/signup"
                     data-cta="signup"
                     data-cta-source="drawer"
-                    className="flex-1 rounded-[var(--pe-radius)] bg-pe-accent px-3 py-2 text-center text-[14px] font-semibold text-pe-surface"
+                    className="flex-1 rounded-[var(--pe-radius)] bg-pe-accent px-3 py-2 text-center text-[15px] font-semibold text-pe-surface"
                   >
                     {t("common.signup")}
                   </Link>

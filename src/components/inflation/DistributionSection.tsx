@@ -54,7 +54,7 @@ export default function DistributionSection({ headline, core, food, groups }: { 
       >
         <Histogram bins={bins} highlightBin={latestBin} ariaLabel={`Histogram of ${label[measure]} year-on-year inflation across ${pts.length} months`} />
         {stats && latest && (
-          <p className="mt-1.5 text-[12px] tabular-nums text-pe-text-2">
+          <p className="mt-1.5 text-[13px] tabular-nums text-pe-text-2">
             {pts.length} months · lowest {formatValue(stats.min.value, 1)}% ({monthLabel(stats.min.month)}) · highest {formatValue(stats.max.value, 1)}% ({monthLabel(stats.max.month)}) · latest {formatValue(latest.value, 1)}% ({monthLabel(latest.month)})
           </p>
         )}

@@ -10,7 +10,7 @@
 import { RESEARCH_DATASETS, formatFileSize, researchFileHref, type ResearchCompleteness, type ResearchDataset, type ResearchFile } from "@/lib/datasets/researchDatasets";
 
 const buttonBase =
-  "inline-flex min-h-9 max-w-full items-center justify-center gap-1.5 rounded-[var(--pe-radius)] border px-3.5 py-1.5 text-center text-[13px] font-medium transition-colors";
+  "inline-flex min-h-9 max-w-full items-center justify-center gap-1.5 rounded-[var(--pe-radius)] border px-3.5 py-1.5 text-center text-[14px] font-medium transition-colors";
 const primary = `${buttonBase} border-pe-accent text-pe-accent hover:bg-pe-surface-2`;
 const secondary = `${buttonBase} border-pe-border-strong text-pe-text hover:bg-pe-surface-2`;
 
@@ -54,7 +54,7 @@ function CoverageGlance({ d, c }: { d: ResearchDataset; c: ResearchCompleteness 
     { label: "Unresolved gaps", value: fmtInt(unresolved), detail: `would need a reconciliation not yet made (${m.needsReconciliation}), candidate values not verifiable (${m.unverified}), T-bill 2018 with only 6 of 12 months (${m.tbillTooFewMonths})`, indent: true },
   ];
   return (
-    <dl aria-label="Coverage at a glance" className="mt-2 grid grid-cols-[minmax(0,1fr)_auto] gap-x-4 text-[12px] leading-relaxed">
+    <dl aria-label="Coverage at a glance" className="mt-2 grid grid-cols-[minmax(0,1fr)_auto] gap-x-4 text-[13px] leading-relaxed">
       {rows.map((r) => (
         <div key={r.label} className={`col-span-2 grid grid-cols-subgrid gap-x-4 border-t border-pe-border py-1.5 first:border-t-0 ${r.indent ? "ps-4" : ""}`}>
           <dt className="min-w-0">
@@ -81,7 +81,7 @@ function summaryOf(d: ResearchDataset) {
 /** Coverage by variable, for a dataset small enough to list every variable: how many years each has, its span, and which years are blank. */
 function VariableCoverageList({ d }: { d: ResearchDataset }) {
   return (
-    <dl aria-label="Coverage by variable" className="mt-2 grid grid-cols-[minmax(0,1fr)_auto] gap-x-4 text-[12px] leading-relaxed">
+    <dl aria-label="Coverage by variable" className="mt-2 grid grid-cols-[minmax(0,1fr)_auto] gap-x-4 text-[13px] leading-relaxed">
       {(d.variableCoverage ?? []).map((v) => (
         <div key={v.variable} className="col-span-2 grid grid-cols-subgrid gap-x-4 border-t border-pe-border py-1.5 first:border-t-0">
           <dt className="min-w-0">
@@ -110,7 +110,7 @@ export default function ResearchDatasets() {
         <h2 id="research-datasets-heading" className="text-[17px] font-semibold text-pe-text">
           Research Datasets
         </h2>
-        <p className="mt-0.5 text-[13px] text-pe-text-2">Explore curated historical economic datasets prepared for academic research, statistical analysis and economic studies.</p>
+        <p className="mt-0.5 text-[14px] text-pe-text-2">Explore curated historical economic datasets prepared for academic research, statistical analysis and economic studies.</p>
       </div>
 
       <ul className="flex flex-col gap-4">
@@ -123,15 +123,15 @@ export default function ResearchDatasets() {
             <li key={d.id} data-research-dataset={d.id} className="rounded-[var(--pe-radius)] border border-pe-border bg-pe-surface p-5">
               <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
                 <h3 className="text-[16px] font-semibold leading-snug text-pe-text">{d.title}</h3>
-                <span className="rounded-full border border-pe-border bg-pe-surface-2 px-2 py-px text-[11px] font-medium text-pe-text-2">{d.frequencyLabel}</span>
-                <span className="rounded-full border border-pe-border bg-pe-surface-2 px-2 py-px text-[11px] font-medium text-pe-text-2" data-research-version>
+                <span className="rounded-full border border-pe-border bg-pe-surface-2 px-2 py-px text-[12px] font-medium text-pe-text-2">{d.frequencyLabel}</span>
+                <span className="rounded-full border border-pe-border bg-pe-surface-2 px-2 py-px text-[12px] font-medium text-pe-text-2" data-research-version>
                   {s.version}
                 </span>
               </div>
-              <p className="mt-1.5 max-w-3xl text-[13px] leading-relaxed text-pe-text-2">{d.description}</p>
+              <p className="mt-1.5 max-w-3xl text-[14px] leading-relaxed text-pe-text-2">{d.description}</p>
 
               {/* The essentials, as one quiet line rather than a grid of labelled boxes. */}
-              <ul className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-[13px] font-medium text-pe-text" aria-label="Dataset summary">
+              <ul className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-[14px] font-medium text-pe-text" aria-label="Dataset summary">
                 <Stat>{d.coverage}</Stat>
                 <Stat>{d.variables} variables</Stat>
                 <Stat>
@@ -145,7 +145,7 @@ export default function ResearchDatasets() {
                 </Stat>
               </ul>
               {d.variableCoverage && (
-                <ul className="mt-1.5 flex flex-wrap gap-x-5 gap-y-1 text-[12px] text-pe-text-2" aria-label="Observations by variable" data-observations-by-variable>
+                <ul className="mt-1.5 flex flex-wrap gap-x-5 gap-y-1 text-[13px] text-pe-text-2" aria-label="Observations by variable" data-observations-by-variable>
                   {d.variableCoverage.map((v) => (
                     <li key={v.variable} className="whitespace-nowrap">
                       {v.label}: <span className="font-medium tabular-nums text-pe-text">{v.observations} of {d.observations}</span>
@@ -154,14 +154,14 @@ export default function ResearchDatasets() {
                 </ul>
               )}
               {d.missingDataNote && (
-                <p className="mt-2 max-w-3xl text-[12px] leading-relaxed text-pe-text-2" data-missing-data-note>
+                <p className="mt-2 max-w-3xl text-[13px] leading-relaxed text-pe-text-2" data-missing-data-note>
                   <span className="font-medium text-pe-text">Missing data: </span>
                   {d.missingDataNote}
                 </p>
               )}
 
               {perVariable.length > 0 && (
-                <h4 className="mt-4 text-[12px] font-semibold text-pe-text" data-research-group="main">
+                <h4 className="mt-4 text-[13px] font-semibold text-pe-text" data-research-group="main">
                   Main downloads
                 </h4>
               )}
@@ -172,7 +172,7 @@ export default function ResearchDatasets() {
               </div>
               {perVariable.length > 0 && (
                 <>
-                  <h4 className="mt-4 text-[12px] font-semibold text-pe-text" data-research-group="individual">
+                  <h4 className="mt-4 text-[13px] font-semibold text-pe-text" data-research-group="individual">
                     Individual variable downloads
                   </h4>
                   <div className="mt-1.5 flex flex-wrap items-center gap-2" role="group" aria-label={`Download one variable of ${d.title} as CSV`} data-research-individual-files>
@@ -183,7 +183,7 @@ export default function ResearchDatasets() {
                 </>
               )}
               {extras.length > 0 && (
-                <p className="mt-1 flex flex-wrap items-center gap-x-1.5 text-[12px] text-pe-text-3">
+                <p className="mt-1 flex flex-wrap items-center gap-x-1.5 text-[13px] text-pe-text-3">
                   Also available:
                   {extras.map((f) => (
                     <FileButton key={f.kind} dataset={d} file={f} className="inline-flex min-h-9 items-center text-pe-accent underline underline-offset-2 hover:no-underline" />
@@ -192,22 +192,22 @@ export default function ResearchDatasets() {
               )}
 
               <details className="group mt-4 border-t border-pe-border pt-3">
-                <summary className="flex min-h-9 cursor-pointer list-none items-center gap-1.5 text-[13px] font-medium text-pe-text-2 hover:text-pe-text [&::-webkit-details-marker]:hidden">
+                <summary className="flex min-h-9 cursor-pointer list-none items-center gap-1.5 text-[14px] font-medium text-pe-text-2 hover:text-pe-text [&::-webkit-details-marker]:hidden">
                   <svg viewBox="0 0 10 10" aria-hidden="true" className="h-2.5 w-2.5 transition-transform group-open:rotate-90"><path d="M3 1.5 7 5 3 8.5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
                   Dataset notes
                 </summary>
                 {d.completeness ? (
                   <>
-                    <h4 className="mt-2 text-[12px] font-semibold text-pe-text">Coverage at a glance</h4>
+                    <h4 className="mt-2 text-[13px] font-semibold text-pe-text">Coverage at a glance</h4>
                     <CoverageGlance d={d} c={d.completeness} />
                   </>
                 ) : (
                   <>
-                    <h4 className="mt-2 text-[12px] font-semibold text-pe-text">Coverage by variable</h4>
+                    <h4 className="mt-2 text-[13px] font-semibold text-pe-text">Coverage by variable</h4>
                     <VariableCoverageList d={d} />
                   </>
                 )}
-                <ul className="mt-3 flex list-disc flex-col gap-1.5 ps-5 text-[12px] leading-relaxed text-pe-text-2">
+                <ul className="mt-3 flex list-disc flex-col gap-1.5 ps-5 text-[13px] leading-relaxed text-pe-text-2">
                   {d.notes.map((n) => (
                     <li key={n}>{n}</li>
                   ))}

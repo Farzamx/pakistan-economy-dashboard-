@@ -37,19 +37,19 @@ export function ChartFrame({
   return (
     <figure className={`min-w-0 ${className}`}>
       <figcaption className="mb-2">
-        <h3 className="text-[14px] font-semibold text-pe-text">{title}</h3>
+        <h3 className="text-[15px] font-semibold text-pe-text">{title}</h3>
         {howToRead && <HowToRead>{howToRead}</HowToRead>}
       </figcaption>
       {legend && <div className="mb-2">{legend}</div>}
       {children}
-      {source && <p className="mt-2 font-mono text-[11px] leading-relaxed text-pe-text-3">{source}</p>}
+      {source && <p className="mt-2 font-mono text-[12px] leading-relaxed text-pe-text-3">{source}</p>}
       {table && table.rows.length > 0 && (
         <details className="group mt-2">
-          <summary className="inline-flex cursor-pointer select-none items-center gap-1 rounded-[var(--pe-radius-sm)] py-1 text-[12px] font-medium text-pe-accent hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--pe-focus)]">
+          <summary className="inline-flex cursor-pointer select-none items-center gap-1 rounded-[var(--pe-radius-sm)] py-1 text-[13px] font-medium text-pe-accent hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--pe-focus)]">
             View the numbers as a table
           </summary>
           <div className="relative mt-1 max-h-72 overflow-auto rounded-[var(--pe-radius)] border border-pe-border" tabIndex={0} role="region" aria-label={`${table.caption} (scrolls)`}>
-            <table className="w-full border-collapse text-left text-[12px] tabular-nums">
+            <table className="w-full border-collapse text-left text-[13px] tabular-nums">
               <caption className="sr-only">{table.caption}</caption>
               <thead className="sticky top-0 bg-pe-surface-2 text-pe-text-2">
                 <tr>
@@ -87,7 +87,7 @@ export function ChartFrame({
 
 function HowToRead({ children }: { children: ReactNode }) {
   return (
-    <LeadMore className="mt-0.5 max-w-3xl text-[13px] leading-relaxed text-pe-text-2">{children}</LeadMore>
+    <LeadMore className="mt-0.5 max-w-3xl text-[14px] leading-relaxed text-pe-text-2">{children}</LeadMore>
   );
 }
 
@@ -103,11 +103,11 @@ export function Callout({ tone = "info", title, children }: { tone?: "info" | "l
       }}
     >
       {title && (
-        <p className="text-[13px] font-medium" style={{ color: limit ? "var(--pe-warn-text)" : "var(--pe-text)" }}>
+        <p className="text-[14px] font-medium" style={{ color: limit ? "var(--pe-warn-text)" : "var(--pe-text)" }}>
           {title}
         </p>
       )}
-      <div className={`${title ? "mt-1 " : ""}text-[13px] leading-relaxed text-pe-text-2`}>{children}</div>
+      <div className={`${title ? "mt-1 " : ""}text-[14px] leading-relaxed text-pe-text-2`}>{children}</div>
     </div>
   );
 }

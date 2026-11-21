@@ -85,14 +85,14 @@ function Panel({ title, caption, children }: { title: string; caption?: string; 
   return (
     <div className="rounded-lg border border-white/10 bg-white/[0.025] p-5 light:border-black/10 light:bg-black/[0.015]">
       <span className="text-label text-white/45 light:text-slate-400">{title}</span>
-      {caption && <p className="mt-1 text-[11px] leading-relaxed text-white/35 light:text-slate-400">{caption}</p>}
+      {caption && <p className="mt-1 text-[12px] leading-relaxed text-white/35 light:text-slate-400">{caption}</p>}
       <div className="mt-3">{children}</div>
     </div>
   );
 }
 
 function Empty({ children }: { children: React.ReactNode }) {
-  return <p className="text-[13px] leading-relaxed text-white/40 light:text-slate-500">{children}</p>;
+  return <p className="text-[14px] leading-relaxed text-white/40 light:text-slate-500">{children}</p>;
 }
 
 function Timeline({ timeline }: { timeline: readonly TimelinePoint[] }) {
@@ -110,13 +110,13 @@ function Timeline({ timeline }: { timeline: readonly TimelinePoint[] }) {
                 title={`${point.snapshotDate} — ${point.posture}`}
                 className={`h-9 w-[14px] rounded-sm ${POSTURE_CELL[point.posture]} ${i === timeline.length - 1 ? "ring-1 ring-white/50 light:ring-black/30" : ""}`}
               />
-              <span className="text-mono-num text-[9px] tabular-nums text-white/25 light:text-slate-400">{point.snapshotDate.slice(8)}</span>
+              <span className="text-mono-num text-[10px] tabular-nums text-white/25 light:text-slate-400">{point.snapshotDate.slice(8)}</span>
             </div>
           ))}
         </div>
       </div>
 
-      <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 border-t border-white/5 pt-3 text-[11px] text-white/35 light:border-black/5 light:text-slate-400">
+      <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 border-t border-white/5 pt-3 text-[12px] text-white/35 light:border-black/5 light:text-slate-400">
         <span className="tabular-nums">
           {first.snapshotDate} → {last.snapshotDate}
         </span>
@@ -128,7 +128,7 @@ function Timeline({ timeline }: { timeline: readonly TimelinePoint[] }) {
         </span>
       </div>
 
-      <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-white/30 light:text-slate-400">
+      <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-white/30 light:text-slate-400">
         {(["Improving", "Stable", "Mixed", "Deteriorating", "Insufficient Data"] as MacroPosture[]).map((p) => (
           <span key={p} className="inline-flex items-center gap-1.5">
             <span className={`h-2 w-2 rounded-sm ${POSTURE_CELL[p]}`} aria-hidden="true" />
@@ -156,20 +156,20 @@ function TransitionRows({ transitions }: { transitions: readonly HistoricalTrans
         <tbody>
           {transitions.map((t, i) => (
             <tr key={`${t.snapshotDate}-${t.dimension}-${i}`} className="border-b border-white/5 last:border-b-0 light:border-black/5">
-              <td className="text-mono-num whitespace-nowrap py-2.5 pr-4 text-[12px] tabular-nums text-white/45 light:text-slate-500">
+              <td className="text-mono-num whitespace-nowrap py-2.5 pr-4 text-[13px] tabular-nums text-white/45 light:text-slate-500">
                 {t.snapshotDate}
-                {t.ongoing && <span className="ml-1.5 rounded-full border border-neon-blue/30 px-1.5 py-px text-[9px] font-semibold text-neon-blue">CURRENT</span>}
+                {t.ongoing && <span className="ml-1.5 rounded-full border border-neon-blue/30 px-1.5 py-px text-[10px] font-semibold text-neon-blue">CURRENT</span>}
               </td>
-              <td className="whitespace-nowrap py-2.5 pr-4 text-[13px] text-white/75 light:text-slate-700">{DIMENSION_LABEL[t.dimension]}</td>
-              <td className="py-2.5 pr-4 text-[13px] text-white/60 light:text-slate-600">
+              <td className="whitespace-nowrap py-2.5 pr-4 text-[14px] text-white/75 light:text-slate-700">{DIMENSION_LABEL[t.dimension]}</td>
+              <td className="py-2.5 pr-4 text-[14px] text-white/60 light:text-slate-600">
                 {tidy(t.fromState)} <span aria-hidden="true" className="mx-1 text-white/25 light:text-slate-300">→</span>{" "}
                 <span className="font-medium text-white light:text-slate-900">{tidy(t.toState)}</span>
               </td>
-              <td className={`whitespace-nowrap py-2.5 pr-4 text-[12px] font-medium ${TRANSITION_CLASS[t.kind]}`}>
+              <td className={`whitespace-nowrap py-2.5 pr-4 text-[13px] font-medium ${TRANSITION_CLASS[t.kind]}`}>
                 {TRANSITION_LABEL[t.kind]}
-                {t.isTurningPoint && <span className="ml-1.5 text-[10px] font-semibold text-amber-400">REVERSAL</span>}
+                {t.isTurningPoint && <span className="ml-1.5 text-[11px] font-semibold text-amber-400">REVERSAL</span>}
               </td>
-              <td className="text-mono-num whitespace-nowrap py-2.5 text-[12px] tabular-nums text-white/45 light:text-slate-500">
+              <td className="text-mono-num whitespace-nowrap py-2.5 text-[13px] tabular-nums text-white/45 light:text-slate-500">
                 {t.persistedSnapshots} snapshot{t.persistedSnapshots === 1 ? "" : "s"}
               </td>
             </tr>
@@ -199,20 +199,20 @@ function PersistenceRows({ profiles }: { profiles: readonly DimensionHistoryProf
         <tbody>
           {observed.map((p) => (
             <tr key={p.dimension} className="border-b border-white/5 last:border-b-0 light:border-black/5">
-              <td className="whitespace-nowrap py-2.5 pr-4 text-[13px] text-white/75 light:text-slate-700">
+              <td className="whitespace-nowrap py-2.5 pr-4 text-[14px] text-white/75 light:text-slate-700">
                 {DIMENSION_LABEL[p.dimension]}
-                {!p.polarityRated && <span className="ml-1.5 text-[10px] text-white/25 light:text-slate-400">not rated</span>}
+                {!p.polarityRated && <span className="ml-1.5 text-[11px] text-white/25 light:text-slate-400">not rated</span>}
               </td>
-              <td className="py-2.5 pr-4 text-[13px] font-medium text-white light:text-slate-900">
+              <td className="py-2.5 pr-4 text-[14px] font-medium text-white light:text-slate-900">
                 {p.currentAssessment === "insufficient-data" ? <span className="font-normal text-white/45 light:text-slate-500">not classifiable</span> : tidy(p.currentState!)}
               </td>
-              <td className="text-mono-num whitespace-nowrap py-2.5 pr-4 text-[12px] tabular-nums text-white/55 light:text-slate-600">
+              <td className="text-mono-num whitespace-nowrap py-2.5 pr-4 text-[13px] tabular-nums text-white/55 light:text-slate-600">
                 {runLabel(p.currentRunLength, p.currentRunTruncated)}
               </td>
-              <td className="text-mono-num whitespace-nowrap py-2.5 pr-4 text-[12px] tabular-nums text-white/45 light:text-slate-500">
+              <td className="text-mono-num whitespace-nowrap py-2.5 pr-4 text-[13px] tabular-nums text-white/45 light:text-slate-500">
                 {p.longestRunForCurrentState ? runLabel(p.longestRunForCurrentState.length, p.longestRunForCurrentState.truncatedStart) : "—"}
               </td>
-              <td className="whitespace-nowrap py-2.5 text-[12px] text-white/45 light:text-slate-500">{p.standing.replace(/-/g, " ")}</td>
+              <td className="whitespace-nowrap py-2.5 text-[13px] text-white/45 light:text-slate-500">{p.standing.replace(/-/g, " ")}</td>
             </tr>
           ))}
         </tbody>
@@ -232,13 +232,13 @@ function ConfigurationBlock({ report }: { report: HistoricalAnalyticsReport }) {
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap gap-1.5">
         {c.currentPattern.map((p) => (
-          <span key={p.dimension} className="rounded-md border border-white/10 bg-white/[0.03] px-2 py-1 text-[11px] text-white/60 light:border-black/10 light:bg-black/[0.02] light:text-slate-600">
+          <span key={p.dimension} className="rounded-md border border-white/10 bg-white/[0.03] px-2 py-1 text-[12px] text-white/60 light:border-black/10 light:bg-black/[0.02] light:text-slate-600">
             {DIMENSION_LABEL[p.dimension]} <span className="text-white/40 light:text-slate-400">·</span> {tidy(p.state)}
           </span>
         ))}
       </div>
 
-      <p className="text-[13px] leading-relaxed text-white/65 light:text-slate-600">
+      <p className="text-[14px] leading-relaxed text-white/65 light:text-slate-600">
         {c.priorExactMatches === 0 ? (
           <>This exact configuration of {c.currentPattern.length} rated dimension{c.currentPattern.length === 1 ? "" : "s"} does not appear anywhere else in the {c.searched} available snapshots.</>
         ) : (
@@ -250,12 +250,12 @@ function ConfigurationBlock({ report }: { report: HistoricalAnalyticsReport }) {
 
       {c.partialMatches.length > 0 && (
         <div className="border-t border-white/5 pt-3 light:border-black/5">
-          <p className="text-[11px] text-white/35 light:text-slate-400">
+          <p className="text-[12px] text-white/35 light:text-slate-400">
             {c.partialMatches.length} earlier snapshot{c.partialMatches.length === 1 ? "" : "s"} matched some but not all rated dimensions:
           </p>
           <ul className="mt-1.5 flex flex-col gap-1">
             {c.partialMatches.slice(0, 5).map((m) => (
-              <li key={m.snapshotDate} className="text-[12px] text-white/50 light:text-slate-500">
+              <li key={m.snapshotDate} className="text-[13px] text-white/50 light:text-slate-500">
                 <span className="text-mono-num tabular-nums">{m.snapshotDate}</span> — matched {m.matchingDimensions.length} of {m.comparedDimensions.length}: {m.matchingDimensions.join(", ")}
               </li>
             ))}
@@ -263,7 +263,7 @@ function ConfigurationBlock({ report }: { report: HistoricalAnalyticsReport }) {
         </div>
       )}
 
-      <p className="border-t border-white/5 pt-3 text-[11px] leading-relaxed text-white/30 light:border-black/5 light:text-slate-400">
+      <p className="border-t border-white/5 pt-3 text-[12px] leading-relaxed text-white/30 light:border-black/5 light:text-slate-400">
         Matching compares persisted state strings for rated dimensions only, across the snapshots stored so far. It describes what has been recorded — it implies nothing about what follows a match.
       </p>
     </div>
@@ -279,7 +279,7 @@ export default function MacroHistoricalAnalytics({ report }: { report: Historica
     return (
       <section className="glass-card scroll-mt-[60px] p-6 sm:scroll-mt-[120px] sm:p-8" id="macro-history">
         <span className="text-label text-neon-blue">Historical Regime Analytics</span>
-        <p className="mt-3 text-[13px] leading-relaxed text-white/55 light:text-slate-500">{sufficiency.note}</p>
+        <p className="mt-3 text-[14px] leading-relaxed text-white/55 light:text-slate-500">{sufficiency.note}</p>
       </section>
     );
   }
@@ -292,7 +292,7 @@ export default function MacroHistoricalAnalytics({ report }: { report: Historica
       <p className="mt-2 max-w-2xl text-sm text-white/60 light:text-slate-500">
         How the recorded macro regime has evolved across stored snapshots. Every point below is an observation the system actually persisted — nothing is reconstructed from current values.
       </p>
-      <p className="mt-2 text-[11px] leading-relaxed text-white/35 light:text-slate-400">{sufficiency.note}</p>
+      <p className="mt-2 text-[12px] leading-relaxed text-white/35 light:text-slate-400">{sufficiency.note}</p>
 
       <div className="mt-6 flex flex-col gap-4">
         <Panel title="Historical Regime Timeline" caption="One cell per stored snapshot, oldest first. The outlined cell is the most recent.">
@@ -321,13 +321,13 @@ export default function MacroHistoricalAnalytics({ report }: { report: Historica
             ) : (
               <ul className="flex flex-col gap-2">
                 {turningPoints.map((t, i) => (
-                  <li key={`${t.snapshotDate}-${t.dimension}-${i}`} className="flex flex-wrap items-baseline gap-x-2 text-[13px] text-white/65 light:text-slate-600">
+                  <li key={`${t.snapshotDate}-${t.dimension}-${i}`} className="flex flex-wrap items-baseline gap-x-2 text-[14px] text-white/65 light:text-slate-600">
                     <span className="text-mono-num tabular-nums text-white/40 light:text-slate-400">{t.snapshotDate}</span>
                     <span className="font-medium text-white light:text-slate-900">{DIMENSION_LABEL[t.dimension]}</span>
                     <span>
                       {tidy(t.fromState)} <span aria-hidden="true" className="text-white/25">→</span> {tidy(t.toState)}
                     </span>
-                    <span className="text-[11px] text-white/35 light:text-slate-400">held {t.persistedSnapshots} snapshot{t.persistedSnapshots === 1 ? "" : "s"}</span>
+                    <span className="text-[12px] text-white/35 light:text-slate-400">held {t.persistedSnapshots} snapshot{t.persistedSnapshots === 1 ? "" : "s"}</span>
                   </li>
                 ))}
               </ul>
@@ -353,7 +353,7 @@ export default function MacroHistoricalAnalytics({ report }: { report: Historica
           >
             <ul className="flex flex-col gap-1.5">
               {report.coverageChanges.map((t, i) => (
-                <li key={`${t.snapshotDate}-${t.dimension}-${i}`} className="flex flex-wrap items-baseline gap-x-2 text-[12px] text-white/50 light:text-slate-500">
+                <li key={`${t.snapshotDate}-${t.dimension}-${i}`} className="flex flex-wrap items-baseline gap-x-2 text-[13px] text-white/50 light:text-slate-500">
                   <span className="text-mono-num tabular-nums text-white/35 light:text-slate-400">{t.snapshotDate}</span>
                   <span className="text-white/70 light:text-slate-700">{DIMENSION_LABEL[t.dimension]}</span>
                   <span>{t.kind === "coverage-lost" ? `became unclassifiable (was ${tidy(t.fromState)})` : `became classifiable as ${tidy(t.toState)}`}</span>

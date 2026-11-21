@@ -50,19 +50,19 @@ export default function NextMajorEvents({ events }: { events: EventRecord[] }) {
               </div>
               <div className="flex shrink-0 items-center gap-5 border-t border-white/5 light:border-slate-100 pt-3 sm:border-t-0 sm:pt-0">
                 <div className="flex flex-col gap-0.5">
-                  <span className="text-[10px] uppercase tracking-wide text-white/35 light:text-slate-400">{t("calendar.previousCol")}</span>
+                  <span className="text-[11px] uppercase tracking-wide text-white/35 light:text-slate-400">{t("calendar.previousCol")}</span>
                   <span className="text-sm font-medium text-white/70 light:text-slate-600">{event.previousValue ?? "—"}</span>
                 </div>
                 <div className="flex flex-col gap-0.5">
-                  <span className="text-[10px] uppercase tracking-wide text-white/35 light:text-slate-400">{t("calendar.forecastCol")}</span>
+                  <span className="text-[11px] uppercase tracking-wide text-white/35 light:text-slate-400">{t("calendar.forecastCol")}</span>
                   <span className="text-sm font-medium text-neon-blue">{event.forecastValue ?? "—"}</span>
                 </div>
                 <div className="flex flex-col gap-0.5">
-                  <span className="text-[10px] uppercase tracking-wide text-white/35 light:text-slate-400">{t("calendar.actualCol")}</span>
+                  <span className="text-[11px] uppercase tracking-wide text-white/35 light:text-slate-400">{t("calendar.actualCol")}</span>
                   <span className="text-sm font-medium text-white/30 light:text-slate-400">{event.actualValue ?? t("calendar.pending")}</span>
                 </div>
                 <div className="flex flex-col gap-0.5">
-                  <span className="text-[10px] uppercase tracking-wide text-white/35 light:text-slate-400">{t("calendar.daysRemaining")}</span>
+                  <span className="text-[11px] uppercase tracking-wide text-white/35 light:text-slate-400">{t("calendar.daysRemaining")}</span>
                   <span className="text-sm font-medium text-white/70 light:text-slate-600">{remaining <= 0 ? t("common.today") : remaining}</span>
                 </div>
               </div>

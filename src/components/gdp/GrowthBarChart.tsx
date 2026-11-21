@@ -28,13 +28,13 @@ function makeTooltip(unit: string, metric: string) {
     const v = Number(payload[0].value);
     return (
       <div style={{ background: "var(--chart-tooltip-bg)", border: "1px solid var(--chart-tooltip-border)", borderRadius: "var(--pe-radius)", padding: "8px 10px" }}>
-        <p style={{ color: "var(--chart-tooltip-label)", fontSize: 11 }}>{label}</p>
+        <p style={{ color: "var(--chart-tooltip-label)", fontSize: 12 }}>{label}</p>
         <p style={{ color: "var(--chart-tooltip-value)", fontSize: 14, fontVariantNumeric: "tabular-nums" }}>
           {v > 0 ? "+" : ""}
           {v.toFixed(2)}
           {unit}
         </p>
-        <p style={{ color: "var(--chart-tooltip-label)", fontSize: 10 }}>{metric}</p>
+        <p style={{ color: "var(--chart-tooltip-label)", fontSize: 11 }}>{metric}</p>
       </div>
     );
   };
@@ -53,15 +53,15 @@ export default function GrowthBarChart({
   height?: number;
 }) {
   if (data.length === 0) {
-    return <p className="px-1 py-8 text-center text-[13px] text-pe-text-3">No observations available for this series.</p>;
+    return <p className="px-1 py-8 text-center text-[14px] text-pe-text-3">No observations available for this series.</p>;
   }
   return (
     <div className="w-full" style={{ height }}>
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: -16 }}>
           <CartesianGrid stroke="var(--chart-grid)" vertical={false} />
-          <XAxis dataKey="period" tick={{ fill: "var(--chart-axis)", fontSize: 11 }} tickLine={false} axisLine={false} interval="preserveStartEnd" minTickGap={16} />
-          <YAxis tickFormatter={(v) => `${v}${unit}`} tick={{ fill: "var(--chart-axis)", fontSize: 11 }} tickLine={false} axisLine={false} width={46} />
+          <XAxis dataKey="period" tick={{ fill: "var(--chart-axis)", fontSize: 12 }} tickLine={false} axisLine={false} interval="preserveStartEnd" minTickGap={16} />
+          <YAxis tickFormatter={(v) => `${v}${unit}`} tick={{ fill: "var(--chart-axis)", fontSize: 12 }} tickLine={false} axisLine={false} width={46} />
           <ReferenceLine y={0} stroke="var(--chart-axis)" strokeWidth={1} />
           <Tooltip content={makeTooltip(unit, metric)} cursor={{ fill: "var(--chart-cursor)" }} />
           <Bar dataKey="value" name={metric} radius={[2, 2, 0, 0]} isAnimationActive={false}>

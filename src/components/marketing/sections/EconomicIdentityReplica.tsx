@@ -57,25 +57,25 @@ export default function EconomicIdentityReplica() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
-            <h3 className="text-[15px] font-bold" style={{ fontFamily: "var(--font-marketing-heading)", color: "var(--paper)" }}>
+            <h3 className="text-[16px] font-bold" style={{ fontFamily: "var(--font-marketing-heading)", color: "var(--paper)" }}>
               Your Economic Profile
             </h3>
             <span
-              className="rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.06em]"
+              className="rounded-full px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.06em]"
               style={{ fontFamily: "var(--font-marketing-data)", background: "var(--indigo)", color: "var(--paper)" }}
             >
               Preview
             </span>
           </div>
-          <p className="mt-1 max-w-md text-[13px]" style={{ fontFamily: "var(--font-marketing-body)", color: "var(--muted)" }}>
+          <p className="mt-1 max-w-md text-[14px]" style={{ fontFamily: "var(--font-marketing-body)", color: "var(--muted)" }}>
             Fill this in once — every tool in the Lab reads it automatically.
           </p>
         </div>
         <div className="flex items-center gap-2 rounded-full border px-3 py-1.5" style={{ borderColor: "var(--muted)" }}>
-          <span className="text-[13px] font-semibold" style={{ fontFamily: "var(--font-marketing-data)", color: "var(--indigo)" }}>
+          <span className="text-[14px] font-semibold" style={{ fontFamily: "var(--font-marketing-data)", color: "var(--indigo)" }}>
             40%
           </span>
-          <span className="text-[11px]" style={{ fontFamily: "var(--font-marketing-body)", color: "var(--muted)" }}>
+          <span className="text-[12px]" style={{ fontFamily: "var(--font-marketing-body)", color: "var(--muted)" }}>
             complete
           </span>
         </div>
@@ -89,7 +89,7 @@ export default function EconomicIdentityReplica() {
         {SECTIONS.map((section) => (
           <div key={section.title} className="rounded-lg border p-3.5" style={{ borderColor: "var(--ink-raised)" }}>
             <div className="flex items-center justify-between">
-              <span className="text-[14px] font-semibold" style={{ fontFamily: "var(--font-marketing-body)", color: "var(--paper)" }}>
+              <span className="text-[15px] font-semibold" style={{ fontFamily: "var(--font-marketing-body)", color: "var(--paper)" }}>
                 {section.title}
               </span>
               <span aria-hidden="true" style={{ color: "var(--muted)", transform: section.open ? "rotate(90deg)" : "none" }}>
@@ -100,7 +100,7 @@ export default function EconomicIdentityReplica() {
               <div className="mt-3 grid grid-cols-1 gap-2.5 min-[480px]:grid-cols-2">
                 {section.fields.map((field) => (
                   <div key={field.label}>
-                    <span className="text-[10px] uppercase tracking-[0.08em]" style={{ fontFamily: "var(--font-marketing-data)", color: "var(--muted)" }}>
+                    <span className="text-[11px] uppercase tracking-[0.08em]" style={{ fontFamily: "var(--font-marketing-data)", color: "var(--muted)" }}>
                       {field.label}
                     </span>
                     <div className="mt-1 rounded-md border px-2.5 py-2" style={{ borderColor: "var(--ink-raised)" }}>
@@ -110,7 +110,7 @@ export default function EconomicIdentityReplica() {
                         tabIndex={-1}
                         value={field.value}
                         placeholder="—"
-                        className="w-full bg-transparent text-[13px] outline-none"
+                        className="w-full bg-transparent text-[14px] outline-none"
                         style={{ fontFamily: "var(--font-marketing-body)", color: field.value ? "var(--paper)" : "var(--muted)" }}
                       />
                     </div>

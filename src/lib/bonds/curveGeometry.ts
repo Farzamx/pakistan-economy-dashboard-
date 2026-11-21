@@ -68,7 +68,7 @@ export interface CurveLayout {
  * the data (it does not start at zero: a yield axis is about differences between curves, and the label says so).
  */
 export function buildCurveLayout(width: number, height: number, yields: readonly number[]): CurveLayout {
-  const margin: ChartMargin = { top: 16, right: width < 420 ? 14 : 22, bottom: 40, left: width < 420 ? 40 : 48 };
+  const margin: ChartMargin = { top: 22, right: width < 420 ? 14 : 22, bottom: 40, left: width < 420 ? 40 : 48 };
   const innerWidth = Math.max(width - margin.left - margin.right, 40);
   const innerHeight = Math.max(height - margin.top - margin.bottom, 40);
   const finite = yields.filter((v) => Number.isFinite(v));

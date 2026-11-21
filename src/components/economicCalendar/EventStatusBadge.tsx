@@ -5,7 +5,7 @@ import { EVENT_STATUS_META } from "@/lib/economicCalendar/economicCalendarRegist
 export default function EventStatusBadge({ status }: { status: EventStatus }) {
   const meta = EVENT_STATUS_META[status];
   return (
-    <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${meta.badgeClass}`}>
+    <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide ${meta.badgeClass}`}>
       {meta.label}
     </span>
   );

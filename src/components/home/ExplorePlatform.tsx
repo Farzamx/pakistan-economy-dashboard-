@@ -39,10 +39,10 @@ export function ExplorePlatform() {
           <li key={f.href} className={`min-w-0 lg:rounded-[var(--pe-radius)] lg:border lg:border-pe-border lg:bg-pe-surface ${f.mobileOnly ? "lg:hidden" : ""}`}>
             <ProtectedLink href={f.href} className="group flex h-full min-h-11 items-center justify-between gap-3 px-4 py-3 hover:bg-pe-surface-2 lg:flex-col lg:items-start lg:justify-start lg:gap-1.5 lg:p-5">
               <span className="min-w-0">
-                <span className="block text-[15px] font-semibold text-pe-text">{f.title}</span>
-                <span className="mt-0.5 block text-[13px] leading-snug text-pe-text-2">{f.description}</span>
+                <span className="block text-[16px] font-semibold text-pe-text">{f.title}</span>
+                <span className="mt-0.5 block text-[14px] leading-snug text-pe-text-2">{f.description}</span>
               </span>
-              <span className="shrink-0 text-[13px] font-medium text-pe-accent group-hover:underline lg:mt-auto lg:pt-2">
+              <span className="shrink-0 text-[14px] font-medium text-pe-accent group-hover:underline lg:mt-auto lg:pt-2">
                 <span className="max-lg:sr-only">Open </span>
                 <span aria-hidden="true">→</span>
               </span>
@@ -54,8 +54,8 @@ export function ExplorePlatform() {
       <div className="hidden lg:grid lg:grid-cols-2 lg:gap-4">
         <div id="home-provincial" className={`${CARD} flex h-full flex-col p-4 lg:p-5`}>
           <div className="flex items-center justify-between gap-3">
-            <h3 className="text-[15px] font-semibold text-pe-text">Provincial budgets</h3>
-            <ProtectedLink href="/provincial-budget/compare" className="-my-2 inline-flex min-h-11 items-center text-[13px] font-medium text-pe-accent hover:underline">
+            <h3 className="text-[16px] font-semibold text-pe-text">Provincial budgets</h3>
+            <ProtectedLink href="/provincial-budget/compare" className="-my-2 inline-flex min-h-11 items-center text-[14px] font-medium text-pe-accent hover:underline">
               Compare all four →
             </ProtectedLink>
           </div>
@@ -64,7 +64,7 @@ export function ExplorePlatform() {
               <li key={p.id}>
                 <ProtectedLink
                   href={`/provincial-budget/${p.slug}`}
-                  className="flex min-h-11 items-center rounded-[var(--pe-radius)] border border-pe-border px-3 text-[14px] font-medium text-pe-text hover:border-pe-border-strong hover:bg-pe-surface-2"
+                  className="flex min-h-11 items-center rounded-[var(--pe-radius)] border border-pe-border px-3 text-[15px] font-medium text-pe-text hover:border-pe-border-strong hover:bg-pe-surface-2"
                 >
                   {p.name}
                 </ProtectedLink>
@@ -74,11 +74,11 @@ export function ExplorePlatform() {
         </div>
 
         <div id="home-popular" className={`${CARD} flex h-full flex-col p-4 lg:p-5`}>
-          <h3 className="text-[15px] font-semibold text-pe-text">Popular questions</h3>
+          <h3 className="text-[16px] font-semibold text-pe-text">Popular questions</h3>
           <ul className="mt-2 grid grid-cols-1 gap-x-6 sm:grid-cols-2">
             {QUESTIONS.map((q) => (
               <li key={q.href}>
-                <ProtectedLink href={q.href} className="flex min-h-11 items-center text-[14px] text-pe-accent hover:underline">
+                <ProtectedLink href={q.href} className="flex min-h-11 items-center text-[15px] text-pe-accent hover:underline">
                   {q.label}
                 </ProtectedLink>
               </li>
@@ -93,7 +93,7 @@ export function ExplorePlatform() {
 /** `sources` is the existing Data Sources control (it opens the per-indicator provenance table). */
 export function OverviewFooter({ sources }: { sources: ReactNode }) {
   return (
-    <footer className="mt-4 flex flex-col gap-3 border-t border-pe-border pt-5 text-[12px] text-pe-text-3 lg:flex-row lg:items-center lg:justify-between">
+    <footer className="mt-4 flex flex-col gap-3 border-t border-pe-border pt-5 text-[13px] text-pe-text-3 lg:flex-row lg:items-center lg:justify-between">
       <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:gap-3">
         <p>Data: State Bank of Pakistan, Pakistan Bureau of Statistics, World Bank, Yahoo Finance.</p>
         <div className="flex items-center gap-2">

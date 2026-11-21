@@ -102,7 +102,7 @@ export default function KpiCard({ title, value, unit, change, trend, source, lat
           // name (sr-only text) instead of aria-hidden + title-only — the
           // freshness state is information, not decoration, so it must be
           // reachable by screen readers and not color-only.
-          <span className={`shrink-0 text-[10px] ${FRESHNESS_SEVERITY_DOT[freshness.severity]}`} title={freshness.reason}>
+          <span className={`shrink-0 text-[11px] ${FRESHNESS_SEVERITY_DOT[freshness.severity]}`} title={freshness.reason}>
             <span aria-hidden="true">&#9679;</span>
             <span className="sr-only">Data status: {FRESHNESS_STATE_LABEL[freshness.state]}</span>
           </span>
@@ -120,9 +120,9 @@ export default function KpiCard({ title, value, unit, change, trend, source, lat
       </div>
 
       {/* Row 3 — the delta, in words */}
-      <div className={`flex items-center gap-1 text-[11px] font-medium ${trendColor}`}>
+      <div className={`flex items-center gap-1 text-[12px] font-medium ${trendColor}`}>
         <TrendArrowIcon trend={trend} className="h-3 w-3" />
-        <span className="truncate">{change}</span>
+        <span className="min-w-0">{change}</span>
       </div>
 
       {/* Row 4 — full-width trend rail (v4 Phase 2): the same real history
@@ -155,7 +155,7 @@ export default function KpiCard({ title, value, unit, change, trend, source, lat
       {seoSlug && (
         <Link
           href={`/${seoSlug}`}
-          className="mt-auto text-[11px] font-medium text-neon-blue underline-offset-2 transition-opacity duration-150 hover:underline min-[800px]:opacity-0 min-[800px]:group-hover:opacity-100 min-[800px]:group-focus-within:opacity-100"
+          className="mt-auto text-[12px] font-medium text-neon-blue underline-offset-2 transition-opacity duration-150 hover:underline min-[800px]:opacity-0 min-[800px]:group-hover:opacity-100 min-[800px]:group-focus-within:opacity-100"
         >
           {t("common.learnMore")} →
         </Link>

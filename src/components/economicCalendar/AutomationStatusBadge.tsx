@@ -12,7 +12,7 @@ export default function AutomationStatusBadge({ tier }: { tier: string | undefin
   const meta = AUTOMATION_TIER_META[tier as "semi_automated" | "manual"] ?? AUTOMATION_TIER_META.manual;
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${meta.badgeClass}`}
+      className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide ${meta.badgeClass}`}
       title="This release is not fully machine-verified — its actual value requires a manual or partially manual update."
     >
       {meta.label}

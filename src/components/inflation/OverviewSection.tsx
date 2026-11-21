@@ -114,7 +114,7 @@ export default function OverviewSection({ headlineKpi, coreKpi, model }: { headl
           />
         )}
       </div>
-      <p className="mt-3 text-[12px] leading-relaxed text-pe-text-3">
+      <p className="mt-3 text-[13px] leading-relaxed text-pe-text-3">
         Urban and rural headline inflation are not shown: PEIC does not hold a rural series (see{" "}
         <a href="#urban-rural" className="text-pe-accent underline underline-offset-2">Urban vs rural</a>).
       </p>

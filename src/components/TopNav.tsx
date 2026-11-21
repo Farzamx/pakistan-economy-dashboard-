@@ -102,7 +102,7 @@ export default function TopNav() {
                 comfortable room for it once Markets/Research/Risk Intel
                 are deferred to 1280px (see below), so it doesn't need to
                 wait for that same wider breakpoint. */}
-            <span className="hidden font-serif text-[15px] font-semibold tracking-[-0.005em] text-white min-[1024px]:inline light:text-slate-900">
+            <span className="hidden font-serif text-[16px] font-semibold tracking-[-0.005em] text-white min-[1024px]:inline light:text-slate-900">
               {t("nav.logoName")}
             </span>
           </Link>

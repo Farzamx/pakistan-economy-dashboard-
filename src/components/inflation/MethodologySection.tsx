@@ -62,33 +62,33 @@ export default function MethodologySection({ model, relatedLinks }: { model: Inf
 
   return (
     <div className="flex flex-col gap-4">
-      <Disclosure summary="What the terms mean" className="text-[14px]">
+      <Disclosure summary="What the terms mean" className="text-[15px]">
         <dl className="mt-1 grid gap-x-8 gap-y-3 md:grid-cols-2">
           {DEFS.map(([t, d]) => (
             <div key={t}>
-              <dt className="text-[13px] font-medium text-pe-text">{t}</dt>
-              <dd className="mt-0.5 text-[13px] leading-relaxed text-pe-text-2">{d}</dd>
+              <dt className="text-[14px] font-medium text-pe-text">{t}</dt>
+              <dd className="mt-0.5 text-[14px] leading-relaxed text-pe-text-2">{d}</dd>
             </div>
           ))}
         </dl>
       </Disclosure>
 
-      <p className="max-w-3xl text-[13px] leading-relaxed text-pe-text-2">Anything not published as such is derived, and is labelled &ldquo;derived&rdquo; where it appears.</p>
+      <p className="max-w-3xl text-[14px] leading-relaxed text-pe-text-2">Anything not published as such is derived, and is labelled &ldquo;derived&rdquo; where it appears.</p>
 
-      <Disclosure summary="How derived figures are calculated" className="text-[14px]">
+      <Disclosure summary="How derived figures are calculated" className="text-[15px]">
         <dl className="mt-1 flex flex-col divide-y divide-pe-border rounded-[var(--pe-radius)] border border-pe-border">
           {FORMULAS.map(([t, d]) => (
             <div key={t} className="grid gap-1 px-3 py-2.5 md:grid-cols-[16rem_1fr] md:gap-4">
-              <dt className="text-[13px] font-medium text-pe-text">{t}</dt>
-              <dd className="text-[13px] leading-relaxed text-pe-text-2">{d}</dd>
+              <dt className="text-[14px] font-medium text-pe-text">{t}</dt>
+              <dd className="text-[14px] leading-relaxed text-pe-text-2">{d}</dd>
             </div>
           ))}
         </dl>
       </Disclosure>
 
-      <Disclosure summary="Data coverage on this page, and what is not held" className="text-[14px]">
+      <Disclosure summary="Data coverage on this page, and what is not held" className="text-[15px]">
         <div className="relative mt-1 overflow-x-auto rounded-[var(--pe-radius)] border border-pe-border" tabIndex={0} role="region" aria-label="Series used on this page (scrolls sideways)">
-          <table className="w-full min-w-[720px] border-collapse text-left text-[12.5px]">
+          <table className="w-full min-w-[720px] border-collapse text-left text-[13.5px]">
             <caption className="sr-only">Series used on this page: frequency, coverage, unit and source</caption>
             <thead className="bg-pe-surface-2 text-pe-text-2">
               <tr>
@@ -110,8 +110,8 @@ export default function MethodologySection({ model, relatedLinks }: { model: Inf
             </tbody>
           </table>
         </div>
-        <p className="mt-3 text-[13px] font-medium text-pe-text">Not held by PEIC, so not shown:</p>
-        <ul className="mt-1 list-disc space-y-0.5 pl-5 text-[13px] leading-relaxed text-pe-text-2">
+        <p className="mt-3 text-[14px] font-medium text-pe-text">Not held by PEIC, so not shown:</p>
+        <ul className="mt-1 list-disc space-y-0.5 pl-5 text-[14px] leading-relaxed text-pe-text-2">
           <li>Rural headline, core and food inflation; urban headline and urban group series</li>
           <li>A national core or national food series (the core and food series held are urban)</li>
           <li>A published non-food series, and perishable / non-perishable food</li>
@@ -121,20 +121,20 @@ export default function MethodologySection({ model, relatedLinks }: { model: Inf
       </Disclosure>
 
       <div id="data-status" className="scroll-mt-20">
-        <h3 className="mb-2 text-[14px] font-semibold text-pe-text">Where the group data comes from, and how fresh it is</h3>
+        <h3 className="mb-2 text-[15px] font-semibold text-pe-text">Where the group data comes from, and how fresh it is</h3>
         <DataStatusPanel source={model.groupSource} />
       </div>
 
-      <Disclosure summary={`Checks run on this page’s data (${model.checks.length})`} className="text-[14px]">
+      <Disclosure summary={`Checks run on this page’s data (${model.checks.length})`} className="text-[15px]">
         {model.checks.length === 0 ? (
-          <p className="text-[13px] text-pe-text-2">No cross-source checks could be run on this load.</p>
+          <p className="text-[14px] text-pe-text-2">No cross-source checks could be run on this load.</p>
         ) : (
           <ul className="flex flex-col gap-1.5">
             {model.checks.map((c) => (
-              <li key={c.id} className="flex gap-2 text-[13px] leading-relaxed text-pe-text-2">
+              <li key={c.id} className="flex gap-2 text-[14px] leading-relaxed text-pe-text-2">
                 <span
                   aria-label={c.status === "ok" ? "passed" : c.status === "warn" ? "warning" : "note"}
-                  className="mt-0.5 inline-block h-4 shrink-0 rounded-[var(--pe-radius-sm)] px-1.5 text-[10px] font-semibold uppercase leading-4"
+                  className="mt-0.5 inline-block h-4 shrink-0 rounded-[var(--pe-radius-sm)] px-1.5 text-[11px] font-semibold uppercase leading-4"
                   style={c.status === "ok" ? { background: "var(--pe-surface-2)", color: "var(--pe-up)", border: "1px solid var(--pe-border)" } : { background: "var(--pe-warn-bg)", color: "var(--pe-warn-text)", border: "1px solid var(--pe-warn-border)" }}
                 >
                   {c.status === "ok" ? "ok" : c.status === "warn" ? "check" : "note"}
@@ -147,8 +147,8 @@ export default function MethodologySection({ model, relatedLinks }: { model: Inf
       </Disclosure>
 
       <div>
-        <h3 className="mb-2 text-[14px] font-semibold text-pe-text">Limitations</h3>
-        <ul className="list-disc space-y-1.5 pl-5 text-[13px] leading-relaxed text-pe-text-2">
+        <h3 className="mb-2 text-[15px] font-semibold text-pe-text">Limitations</h3>
+        <ul className="list-disc space-y-1.5 pl-5 text-[14px] leading-relaxed text-pe-text-2">
           <li><strong className="font-medium text-pe-text">Revisions and rebasing.</strong> The SBP series reflect the current 2015-16 base. Early values (before 2019) differ from the figures first published under the earlier base, and annual averages of the monthly series can differ from other sources&rsquo; annual figures by more than a point in some years.</li>
           <li><strong className="font-medium text-pe-text">Publication timing.</strong> PBS publishes CPI at the start of the following month; SBP EasyData can lag it. A series that ends earlier than the headline is flagged where it appears.</li>
           <li><strong className="font-medium text-pe-text">Group data has a short history.</strong> PBS&rsquo;s machine-readable group indices begin in {g ? monthLabel(g.indexMonths[0]) : "mid-2022"}, so group year-on-year rates begin a year later, and group month-on-month rates span only {g ? `${(g.indexMonths.length / 12).toFixed(1)} years` : "a few years"}. Patterns across so few years are suggestive, not conclusive.</li>
@@ -160,8 +160,8 @@ export default function MethodologySection({ model, relatedLinks }: { model: Inf
 
       <div className="grid gap-6 md:grid-cols-2">
         <div>
-          <h3 className="mb-2 text-[14px] font-semibold text-pe-text">Download the data</h3>
-          <ul className="flex flex-col gap-1.5 text-[13px]">
+          <h3 className="mb-2 text-[15px] font-semibold text-pe-text">Download the data</h3>
+          <ul className="flex flex-col gap-1.5 text-[14px]">
             {[
               ["/api/datasets/sbp-cpi-inflation", "Headline CPI inflation (Excel)"],
               ["/api/datasets/sbp-core-inflation", "Core inflation, NFNE (Excel)"],
@@ -175,15 +175,15 @@ export default function MethodologySection({ model, relatedLinks }: { model: Inf
               <Link href="/download-datasets" className="text-pe-accent hover:underline">All datasets, with source and period details →</Link>
             </li>
           </ul>
-          <p className="mt-2 text-[12px] leading-relaxed text-pe-text-3">The downloads carry the published series with their provenance. Derived figures on this page (month-on-month, group rates, contributions) are not part of them; their formulas are above.</p>
+          <p className="mt-2 text-[13px] leading-relaxed text-pe-text-3">The downloads carry the published series with their provenance. Derived figures on this page (month-on-month, group rates, contributions) are not part of them; their formulas are above.</p>
         </div>
         {relatedLinks.length > 0 && (
           <div>
-            <h3 className="mb-2 text-[14px] font-semibold text-pe-text">Related indicators</h3>
+            <h3 className="mb-2 text-[15px] font-semibold text-pe-text">Related indicators</h3>
             <ul className="flex flex-wrap gap-2">
               {relatedLinks.map((l) => (
                 <li key={l.href}>
-                  <Link href={l.href} className="inline-block rounded-[var(--pe-radius)] border border-pe-border bg-pe-surface px-3 py-1.5 text-[13px] text-pe-text-2 transition-colors hover:border-pe-border-strong hover:text-pe-text">{l.label}</Link>
+                  <Link href={l.href} className="inline-block rounded-[var(--pe-radius)] border border-pe-border bg-pe-surface px-3 py-1.5 text-[14px] text-pe-text-2 transition-colors hover:border-pe-border-strong hover:text-pe-text">{l.label}</Link>
                 </li>
               ))}
             </ul>

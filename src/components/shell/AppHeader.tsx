@@ -92,7 +92,7 @@ export default function AppHeader() {
       <a
         href="#main-content"
         onClick={skipToContent}
-        className="sr-only z-[70] rounded-[var(--pe-radius)] bg-pe-surface px-3 py-2 text-[14px] font-medium text-pe-accent shadow-[var(--pe-shadow-pop)] focus:not-sr-only focus:fixed focus:start-2 focus:top-2"
+        className="sr-only z-[70] rounded-[var(--pe-radius)] bg-pe-surface px-3 py-2 text-[15px] font-medium text-pe-accent shadow-[var(--pe-shadow-pop)] focus:not-sr-only focus:fixed focus:start-2 focus:top-2"
       >
         {t("appNav.skipToContent")}
       </a>
@@ -160,7 +160,7 @@ export default function AppHeader() {
                       href={entry.href}
                       aria-current={current}
                       onClick={(e) => handleTopLinkClick(e, entry.href)}
-                      className={`relative flex items-center whitespace-nowrap px-3 text-[14px] font-medium transition-colors ${
+                      className={`relative flex items-center whitespace-nowrap px-3 text-[15px] font-medium transition-colors ${
                         current ? "text-pe-nav-text" : "text-pe-nav-text-muted hover:text-pe-nav-text"
                       }`}
                     >

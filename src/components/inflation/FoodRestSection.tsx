@@ -53,7 +53,7 @@ export default function FoodRestSection({ groups }: { groups: GroupModel | null 
       </Callout>
 
       {contrib && foodC !== undefined && (
-        <p className="text-[13px] leading-relaxed text-pe-text-2">
+        <p className="text-[14px] leading-relaxed text-pe-text-2">
           Of the {formatValue(contrib.total, 2)}% rise in the CPI over the twelve months to {monthLabel(contrib.month)}, food &amp; non-alcoholic beverages contributed{" "}
           <strong className="font-medium text-pe-text tabular-nums">{formatValue(foodC, 2)} percentage points</strong> and all other groups{" "}
           <strong className="font-medium text-pe-text tabular-nums">{formatValue(contrib.total - foodC, 2)}</strong>.

@@ -62,7 +62,7 @@ function ActionTile({ label, icon, onClick, href, protectedRoute }: { label: str
   const inner = (
     <>
       <span className="flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 light:border-slate-200 bg-white/[0.03] light:bg-slate-50 text-neon-blue">{icon}</span>
-      <span className="text-[11px] font-medium text-white/70 light:text-slate-600">{label}</span>
+      <span className="text-[12px] font-medium text-white/70 light:text-slate-600">{label}</span>
     </>
   );
   const className = "flex flex-col items-center gap-1.5 rounded-xl py-1 text-center transition-colors hover:bg-white/[0.03] light:hover:bg-slate-50";

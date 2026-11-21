@@ -124,7 +124,7 @@ export default function InternationalSection({ intl, monthlyHeadline }: { intl: 
       ) : (
         <Callout tone="limit" title="No common year">The selected countries do not share a year with data, so no like-for-like comparison is drawn.</Callout>
       )}
-      <p className="text-[12px] leading-relaxed text-pe-text-3">
+      <p className="text-[13px] leading-relaxed text-pe-text-3">
         Limits: annual averages hide what happened within a year; countries measure CPI with different baskets, weights and methods, so the comparison shows how fast each country&rsquo;s own consumer prices rose, not that the same goods cost the same. Sri Lanka&rsquo;s negative values are real: its consumer prices fell on average in those years. Countries shown: {Object.keys(NAME).filter((k) => intl.series[k]).map((k) => NAME[k]).join(", ")}.
       </p>
     </div>

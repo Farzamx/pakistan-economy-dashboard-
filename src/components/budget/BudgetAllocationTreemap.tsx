@@ -30,12 +30,12 @@ function Cell({ x = 0, y = 0, width = 0, height = 0, name, value = 0, pct = 0, f
     <g>
       <rect x={x} y={y} width={width} height={height} fill={fill} stroke="var(--surface, #0b0e21)" strokeWidth={2} rx={4} />
       {roomForName && (
-        <text x={x + 8} y={y + 18} fontSize={12} fontWeight={700} fill="#fff" stroke="rgba(0,0,0,0.4)" strokeWidth={2.5} paintOrder="stroke">
+        <text x={x + 8} y={y + 18} fontSize={13} fontWeight={700} fill="#fff" stroke="rgba(0,0,0,0.4)" strokeWidth={2.5} paintOrder="stroke">
           {name} · {pct.toFixed(1)}%
         </text>
       )}
       {roomForAmount && (
-        <text x={x + 8} y={y + 35} fontSize={11} fill="#fff" stroke="rgba(0,0,0,0.4)" strokeWidth={2.5} paintOrder="stroke">
+        <text x={x + 8} y={y + 35} fontSize={12} fill="#fff" stroke="rgba(0,0,0,0.4)" strokeWidth={2.5} paintOrder="stroke">
           Rs {value.toLocaleString("en-US", { maximumFractionDigits: 0 })}bn
         </text>
       )}
@@ -70,7 +70,7 @@ export default function BudgetAllocationTreemap({ data }: BudgetAllocationTreema
           </ResponsiveContainer>
         )}
       </div>
-      <ul className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-[var(--text-muted)]" aria-label="Treemap legend">
+      <ul className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[12px] text-[var(--text-muted)]" aria-label="Treemap legend">
         {data.map((s) => (
           <li key={s.label} className="flex items-center gap-1.5">
             <span aria-hidden="true" className="h-2 w-2 rounded-sm" style={{ background: s.color }} />

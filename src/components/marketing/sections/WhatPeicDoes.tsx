@@ -25,7 +25,7 @@ export default function WhatPeicDoes() {
         {ITEMS.map((item) => (
           <div key={item.eyebrow} className="flex flex-col gap-3 rounded-xl border p-6" style={{ borderColor: "var(--ink-raised)", background: "var(--ink-raised)" }}>
             <span
-              className="text-[11px] uppercase tracking-[0.14em]"
+              className="text-[12px] uppercase tracking-[0.14em]"
               style={{ fontFamily: "var(--font-marketing-data)", color: "var(--cyan)" }}
             >
               {item.eyebrow}
@@ -33,7 +33,7 @@ export default function WhatPeicDoes() {
             <h2 className="text-[22px] font-bold leading-tight" style={{ fontFamily: "var(--font-marketing-heading)", color: "var(--paper)" }}>
               {item.title}
             </h2>
-            <p className="text-[15px] leading-relaxed" style={{ fontFamily: "var(--font-marketing-body)", color: "var(--muted)" }}>
+            <p className="text-[16px] leading-relaxed" style={{ fontFamily: "var(--font-marketing-body)", color: "var(--muted)" }}>
               {item.body}
             </p>
           </div>

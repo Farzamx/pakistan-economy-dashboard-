@@ -66,7 +66,7 @@ export default function PatternsSection({ headline, mom }: { headline: MonthlyPo
           The month-on-month series covers only {matrix.years.length} calendar years, and they include an unusually volatile period. A calendar month that repeats as high or low is worth watching, but it is not statistical evidence of seasonality.
         </Callout>
       )}
-      <p className="text-[12px] leading-relaxed text-pe-text-3">
+      <p className="text-[13px] leading-relaxed text-pe-text-3">
         Urban-vs-rural and country-by-year heatmaps are covered elsewhere: the urban/rural data does not exist in PEIC (see <a href="#urban-rural" className="text-pe-accent underline underline-offset-2">Urban vs rural</a>), and the country comparison is in <a href="#international" className="text-pe-accent underline underline-offset-2">International comparison</a>. The group-by-month heatmap is in <a href="#groups-time" className="text-pe-accent underline underline-offset-2">CPI groups over time</a>.
       </p>
     </div>

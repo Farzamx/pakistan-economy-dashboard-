@@ -198,10 +198,10 @@ export default async function SyncStatusPage() {
                     <tr key={a.id} className="hover:bg-white/[0.02] align-top">
                       <td className="px-4 py-3">
                         <p className="font-medium text-white">{a.seriesSlug}</p>
-                        <p className="text-[11px] text-slate-500">{fmtDate(a.eventDate)}</p>
+                        <p className="text-[12px] text-slate-500">{fmtDate(a.eventDate)}</p>
                       </td>
                       <td className="px-4 py-3">
-                        <span className="rounded bg-rose-500/20 px-2 py-0.5 text-[11px] font-semibold uppercase text-rose-400">{a.mismatchType}</span>
+                        <span className="rounded bg-rose-500/20 px-2 py-0.5 text-[12px] font-semibold uppercase text-rose-400">{a.mismatchType}</span>
                       </td>
                       <td className="px-4 py-3 font-mono text-emerald-400">{a.releasedActualValue}</td>
                       <td className="px-4 py-3 font-mono text-amber-400">{a.freshValue ?? "—"}</td>
@@ -241,7 +241,7 @@ export default async function SyncStatusPage() {
                     <tr key={series.id} className="hover:bg-white/[0.02]">
                       <td className="px-4 py-3">
                         <p className="font-medium text-white">{series.title}</p>
-                        <p className="text-[11px] text-slate-500">{series.slug}</p>
+                        <p className="text-[12px] text-slate-500">{series.slug}</p>
                       </td>
                       <td className="px-4 py-3 text-slate-300 capitalize">{series.cadence}</td>
                       <td className="px-4 py-3 text-slate-300">
@@ -262,8 +262,8 @@ export default async function SyncStatusPage() {
                       </td>
                       <td className="px-4 py-3">
                         {isOverdue
-                          ? <span className="rounded bg-amber-500/20 px-2 py-0.5 text-[11px] font-semibold text-amber-400">OVERDUE</span>
-                          : <span className="rounded bg-emerald-500/10 px-2 py-0.5 text-[11px] font-semibold text-emerald-400">OK</span>}
+                          ? <span className="rounded bg-amber-500/20 px-2 py-0.5 text-[12px] font-semibold text-amber-400">OVERDUE</span>
+                          : <span className="rounded bg-emerald-500/10 px-2 py-0.5 text-[12px] font-semibold text-emerald-400">OK</span>}
                       </td>
                     </tr>
                   );

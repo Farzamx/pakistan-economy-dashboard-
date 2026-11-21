@@ -22,7 +22,7 @@ export default function CreatorBadge() {
       // at min-[800px] and up every value matches what this component
       // already rendered before this change, so desktop is visually
       // identical to before.
-      className="glass-card pointer-events-none fixed bottom-2 right-2 z-40 whitespace-nowrap px-2 py-1 text-[9px] text-white/30 opacity-70 light:text-slate-400 min-[800px]:bottom-5 min-[800px]:right-5 min-[800px]:px-3 min-[800px]:py-1.5 min-[800px]:text-[11px]"
+      className="glass-card pointer-events-none fixed bottom-2 right-2 z-40 whitespace-nowrap px-2 py-1 text-[10px] text-white/30 opacity-70 light:text-slate-400 min-[800px]:bottom-5 min-[800px]:right-5 min-[800px]:px-3 min-[800px]:py-1.5 min-[800px]:text-[12px]"
     >
       Developed by Farzam Arif
     </motion.div>

@@ -24,7 +24,7 @@ export default function ContactPage() {
       <MarketingNav />
 
       <main className="mx-auto w-full max-w-[560px] px-5 pb-24 pt-32 min-[1024px]:px-10 min-[1024px]:pt-40">
-        <span className="text-[11px] uppercase tracking-[0.14em]" style={{ fontFamily: "var(--font-marketing-data)", color: "var(--muted)" }}>
+        <span className="text-[12px] uppercase tracking-[0.14em]" style={{ fontFamily: "var(--font-marketing-data)", color: "var(--muted)" }}>
           Contact
         </span>
         <h1 className="mt-3 text-[32px] font-bold leading-tight min-[1024px]:text-[44px]" style={{ fontFamily: "var(--font-marketing-heading)", color: "var(--paper)" }}>
@@ -54,7 +54,7 @@ export default function ContactPage() {
             LinkedIn ↗
           </a>
 
-          <p className="mt-2 text-[14px]" style={{ fontFamily: "var(--font-marketing-data)", color: "var(--muted)" }}>
+          <p className="mt-2 text-[15px]" style={{ fontFamily: "var(--font-marketing-data)", color: "var(--muted)" }}>
             Pakistan
           </p>
         </div>

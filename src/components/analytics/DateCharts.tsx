@@ -37,7 +37,7 @@ function useWidth(): [(el: HTMLDivElement | null) => void, number] {
   return [setEl, width];
 }
 
-const empty = (text: string) => <p className="px-1 py-10 text-center text-[13px] text-pe-text-3">{text}</p>;
+const empty = (text: string) => <p className="px-1 py-10 text-center text-[14px] text-pe-text-3">{text}</p>;
 
 // ───────────────────────────── DateLines ─────────────────────────────
 
@@ -95,7 +95,7 @@ export function DateLines({
     const iso = tsToIso(ts);
     return (
       <div style={{ ...tipBox, minWidth: 190, maxWidth: 270 }}>
-        <p style={{ color: "var(--chart-tooltip-label)", fontSize: 11, marginBottom: 4 }}>{formatDate(iso)}</p>
+        <p style={{ color: "var(--chart-tooltip-label)", fontSize: 12, marginBottom: 4 }}>{formatDate(iso)}</p>
         {series.map((s) => {
           const o = asOfObservation(s.points, iso);
           const sameDay = o?.date === iso;
@@ -108,14 +108,14 @@ export function DateLines({
               : sameDay ? "observed this day" : `${stale ? "no observation for " + gap + " days; last was" : "latest observation"} ${formatDate(o.date)}`;
           return (
             <div key={s.key} style={{ marginTop: 3 }}>
-              <p style={{ display: "flex", justifyContent: "space-between", gap: 12, fontSize: 12, color: "var(--chart-tooltip-value)" }}>
+              <p style={{ display: "flex", justifyContent: "space-between", gap: 12, fontSize: 13, color: "var(--chart-tooltip-value)" }}>
                 <span style={{ color: "var(--chart-tooltip-label)", display: "inline-flex", alignItems: "center", gap: 6 }}>
                   <span aria-hidden style={{ width: 8, height: 8, borderRadius: 2, background: viz(s.color), display: "inline-block" }} />
                   {s.label}
                 </span>
                 <span style={{ fontVariantNumeric: "tabular-nums", fontWeight: 500, opacity: stale ? 0.6 : 1 }}>{o ? `${formatValue(o.value, decimals)}${unit}` : "no data"}</span>
               </p>
-              <p style={{ color: "var(--chart-tooltip-label)", fontSize: 10, paddingLeft: 14 }}>{detail}{o?.note ? ` · ${o.note}` : ""}</p>
+              <p style={{ color: "var(--chart-tooltip-label)", fontSize: 11, paddingLeft: 14 }}>{detail}{o?.note ? ` · ${o.note}` : ""}</p>
             </div>
           );
         })}
@@ -212,13 +212,13 @@ export function DetailBars({
     const d = payload[0].payload as DetailBar;
     return (
       <div style={{ ...tipBox, maxWidth: 260 }}>
-        <p style={{ color: "var(--chart-tooltip-value)", fontSize: 12, fontWeight: 600 }}>{d.title}</p>
-        <p style={{ fontSize: 12, color: "var(--chart-tooltip-value)", marginTop: 2 }}>
+        <p style={{ color: "var(--chart-tooltip-value)", fontSize: 13, fontWeight: 600 }}>{d.title}</p>
+        <p style={{ fontSize: 13, color: "var(--chart-tooltip-value)", marginTop: 2 }}>
           <span aria-hidden style={{ width: 8, height: 8, borderRadius: 2, background: viz(d.color), display: "inline-block", marginRight: 6 }} />
           <b style={{ fontVariantNumeric: "tabular-nums" }}>{formatValue(d.value, decimals)}{unit}</b>
         </p>
         {d.lines.map((l, i) => (
-          <p key={i} style={{ color: "var(--chart-tooltip-label)", fontSize: 11, marginTop: 2 }}>{l}</p>
+          <p key={i} style={{ color: "var(--chart-tooltip-label)", fontSize: 12, marginTop: 2 }}>{l}</p>
         ))}
       </div>
     );

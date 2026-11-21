@@ -36,8 +36,8 @@ export default function SavingsErosionChartsInner({ series, savingsAmount }: Pro
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} vertical={false} />
-            <XAxis dataKey="year" stroke="transparent" tick={{ fill: axisTickFill, fontSize: 11 }} tickLine={false} axisLine={false} />
-            <YAxis tickFormatter={(v) => `Rs ${(v / 1000).toFixed(0)}k`} stroke="transparent" tick={{ fill: axisTickFill, fontSize: 11 }} tickLine={false} axisLine={false} width={64} />
+            <XAxis dataKey="year" stroke="transparent" tick={{ fill: axisTickFill, fontSize: 12 }} tickLine={false} axisLine={false} />
+            <YAxis tickFormatter={(v) => `Rs ${(v / 1000).toFixed(0)}k`} stroke="transparent" tick={{ fill: axisTickFill, fontSize: 12 }} tickLine={false} axisLine={false} width={64} />
             <ReferenceLine y={savingsAmount} stroke={axisTickFill} strokeDasharray="4 4" />
             <Tooltip contentStyle={tooltipStyle} formatter={(v) => [`Rs ${typeof v === "number" ? Math.round(v).toLocaleString("en-US") : v}`, ""]} />
             <Area type="monotone" dataKey="realValue" stroke="#fb7185" strokeWidth={2} fill="url(#se-real-value-fill)" isAnimationActive={!prefersReducedMotion} animationDuration={700} />

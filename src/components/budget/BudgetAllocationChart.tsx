@@ -78,7 +78,7 @@ export default function BudgetAllocationChart({ data }: BudgetAllocationChartPro
   const innerRadius = isMobile ? 48 : 70;
   const outerRadius = isMobile ? 78 : 120;
   const containerHeight = isMobile ? 420 : 340;
-  const labelFontSize = isMobile ? 10 : 12;
+  const labelFontSize = isMobile ? 11 : 13;
   const labelMinPercent = isMobile ? MOBILE_LABEL_MIN_PERCENT : 0;
   const renderLabel = makeRingLabel(labelFontSize, labelMinPercent);
 
@@ -109,7 +109,7 @@ export default function BudgetAllocationChart({ data }: BudgetAllocationChartPro
               formatter={(value, name) => [`Rs ${typeof value === "number" ? value.toFixed(0) : value}bn`, String(name)]}
             />
             <Legend
-              wrapperStyle={{ fontSize: isMobile ? 11 : 12, color: legendColor, lineHeight: isMobile ? "1.6" : undefined }}
+              wrapperStyle={{ fontSize: isMobile ? 12 : 13, color: legendColor, lineHeight: isMobile ? "1.6" : undefined }}
               layout="vertical"
               align={isMobile ? "center" : "right"}
               verticalAlign={isMobile ? "bottom" : "middle"}

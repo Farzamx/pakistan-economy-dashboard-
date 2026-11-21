@@ -166,7 +166,7 @@ export default function CustomComparisonBuilder() {
               ))}
             </div>
           )}
-          <p className="text-[11px] text-[var(--text-muted)]">
+          <p className="text-[12px] text-[var(--text-muted)]">
             {t("comparisons.sourcesLabel")}: {state.sourceA}{state.sourceB !== state.sourceA ? ` & ${state.sourceB}` : ""}
           </p>
         </>

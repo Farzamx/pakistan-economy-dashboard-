@@ -29,10 +29,10 @@ export default function FutureSalaryProjectionChartsInner({ series }: Props) {
         <ResponsiveContainer width="100%" height={280}>
           <LineChart data={data} margin={{ top: 4, right: 16, left: 8, bottom: 4 }}>
             <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} vertical={false} />
-            <XAxis dataKey="year" stroke="transparent" tick={{ fill: axisTickFill, fontSize: 11 }} tickLine={false} axisLine={false} />
-            <YAxis tickFormatter={(v) => `Rs ${(v / 1000).toFixed(0)}k`} stroke="transparent" tick={{ fill: axisTickFill, fontSize: 11 }} tickLine={false} axisLine={false} width={64} />
+            <XAxis dataKey="year" stroke="transparent" tick={{ fill: axisTickFill, fontSize: 12 }} tickLine={false} axisLine={false} />
+            <YAxis tickFormatter={(v) => `Rs ${(v / 1000).toFixed(0)}k`} stroke="transparent" tick={{ fill: axisTickFill, fontSize: 12 }} tickLine={false} axisLine={false} width={64} />
             <Tooltip contentStyle={tooltipStyle} formatter={(v) => [`Rs ${typeof v === "number" ? Math.round(v).toLocaleString("en-US") : v}`, ""]} />
-            <Legend wrapperStyle={{ fontSize: 12, color: axisTickFill }} />
+            <Legend wrapperStyle={{ fontSize: 13, color: axisTickFill }} />
             <Line type="monotone" dataKey="nominal" name="Nominal Salary" stroke="#4d8df7" strokeWidth={2} dot={false} isAnimationActive={!prefersReducedMotion} animationDuration={700} />
             <Line type="monotone" dataKey="real" name="Real Salary" stroke="#fb7185" strokeWidth={2} dot={false} isAnimationActive={!prefersReducedMotion} animationDuration={700} />
           </LineChart>

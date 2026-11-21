@@ -59,7 +59,7 @@ const QUARTER_BARS = 20;
 const PEER_YEARS = 12;
 
 function SourceLine({ children }: { children: React.ReactNode }) {
-  return <p className="mt-2 font-mono text-[11px] leading-relaxed text-pe-text-3">{children}</p>;
+  return <p className="mt-2 font-mono text-[12px] leading-relaxed text-pe-text-3">{children}</p>;
 }
 
 export default async function GdpBreakdownWorkshopPage() {
@@ -92,11 +92,11 @@ export default async function GdpBreakdownWorkshopPage() {
     <div className="min-h-screen w-full bg-pe-bg">
       <div className="mx-auto flex max-w-[1200px] flex-col gap-3 px-3 py-4 sm:px-4 lg:px-6">
         <header className="border-b border-pe-border pb-4">
-          <p className="text-[12px] font-medium uppercase tracking-[0.06em] text-pe-text-3">Workshop</p>
+          <p className="text-[13px] font-medium uppercase tracking-[0.06em] text-pe-text-3">Workshop</p>
           <h1 className="mt-1 text-[24px] font-semibold leading-tight tracking-[-0.01em] text-pe-text [text-wrap:balance] sm:text-[28px]">
             {TITLE}
           </h1>
-          <p className="mt-1.5 max-w-3xl text-[14px] leading-relaxed text-pe-text-2">
+          <p className="mt-1.5 max-w-3xl text-[15px] leading-relaxed text-pe-text-2">
             How Pakistan&rsquo;s economy is structured, and how fast it has grown. Every figure below is a{" "}
             <strong className="font-medium text-pe-text">share</strong> or a{" "}
             <strong className="font-medium text-pe-text">growth rate</strong> — this page carries no GDP level, and says so
@@ -114,10 +114,10 @@ export default async function GdpBreakdownWorkshopPage() {
 
           {shareNote.latestTotal !== null && (
             <div className="mt-3 rounded-[var(--pe-radius)] border border-[var(--pe-warn-border)] bg-[var(--pe-warn-bg)] p-3">
-              <p className="text-[13px] font-medium text-[var(--pe-warn-text)]">
+              <p className="text-[14px] font-medium text-[var(--pe-warn-text)]">
                 These three shares total about {shareNote.latestTotal}% — not 100%.
               </p>
-              <p className="mt-1 text-[13px] leading-relaxed text-pe-text-2">
+              <p className="mt-1 text-[14px] leading-relaxed text-pe-text-2">
                 The World Bank&rsquo;s value-added measure excludes net taxes on products (taxes such as GST and import
                 duties, less subsidies). That excluded portion is roughly {shareNote.latestResidual}% of GDP in{" "}
                 {shareNote.latestYear}, which is why the stack stops short of the 100% line. The shares are shown exactly as
@@ -127,7 +127,7 @@ export default async function GdpBreakdownWorkshopPage() {
             </div>
           )}
 
-          <p className="mt-3 text-[13px] leading-relaxed text-pe-text-2">
+          <p className="mt-3 text-[14px] leading-relaxed text-pe-text-2">
             <strong className="font-medium text-pe-text">How to read it:</strong>{" "}
             a rising band means that sector&rsquo;s
             value added grew faster than the rest of the economy, not that the sector grew in absolute terms.
@@ -153,14 +153,14 @@ export default async function GdpBreakdownWorkshopPage() {
                 {gdpKpi.value}
                 {gdpKpi.unit}
               </span>
-              <span className="text-[13px] text-pe-text-2">{gdpKpi.change}</span>
-              <span className="font-mono text-[11px] text-pe-text-3">
+              <span className="text-[14px] text-pe-text-2">{gdpKpi.change}</span>
+              <span className="font-mono text-[12px] text-pe-text-3">
                 latest · {gdpKpi.latestDate ?? "—"}
               </span>
             </div>
           )}
           <GrowthBarChart data={annualBars} metric="Annual real GDP growth (%)" />
-          <p className="mt-3 text-[13px] leading-relaxed text-pe-text-2">
+          <p className="mt-3 text-[14px] leading-relaxed text-pe-text-2">
             <strong className="font-medium text-pe-text">This is a rate, not a size.</strong> A bar shows how much the
             economy grew that year, not how large it is. Two countries can show the same growth rate at very different
             economic sizes.
@@ -184,7 +184,7 @@ export default async function GdpBreakdownWorkshopPage() {
         >
           <GrowthBarChart data={quarterBars} metric="Quarterly real GVA growth, YoY (%)" />
           <div className="mt-3 rounded-[var(--pe-radius)] border border-pe-border bg-pe-surface-2 p-3">
-            <p className="text-[13px] leading-relaxed text-pe-text-2">
+            <p className="text-[14px] leading-relaxed text-pe-text-2">
               <strong className="font-medium text-pe-text">Not the same measure as the annual series above.</strong>{" "}
               This
               is gross value added, reported by Pakistan&rsquo;s fiscal quarter; the annual series is GDP on a calendar-year
@@ -211,7 +211,7 @@ export default async function GdpBreakdownWorkshopPage() {
           description="Annual real GDP growth, same indicator and same periods for every country shown."
         >
           <PeerClusteredBarChart data={peerPoints} countries={peers} />
-          <p className="mt-3 text-[13px] leading-relaxed text-pe-text-2">
+          <p className="mt-3 text-[14px] leading-relaxed text-pe-text-2">
             <strong className="font-medium text-pe-text">Why these can share one scale:</strong> all three bars are the
             same World Bank indicator (annual % change in real GDP) over the same years, so they are directly comparable.
             A missing year for a country is drawn as a gap, never as a zero bar.
@@ -237,7 +237,7 @@ export default async function GdpBreakdownWorkshopPage() {
           description="Gaps in the underlying sources, stated plainly rather than filled in."
         >
           <FaqAccordion items={GDP_DATA_LIMITATIONS.map((item) => ({ question: item.title, answer: item.detail }))} className="-mx-4 -mt-1" />
-          <p className="mt-3 border-t border-pe-border pt-3 text-[13px] text-pe-text-2">
+          <p className="mt-3 border-t border-pe-border pt-3 text-[14px] text-pe-text-2">
             For the series this page does cover in more depth, see{" "}
             <Link href="/gdp-growth-pakistan" className="text-pe-accent hover:underline">
               Pakistan GDP Growth

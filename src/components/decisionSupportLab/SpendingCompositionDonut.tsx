@@ -77,7 +77,7 @@ export default function SpendingCompositionDonut({ data }: Props) {
         </Pie>
         <Tooltip contentStyle={tooltipStyle} formatter={(v) => [`${typeof v === "number" ? v.toFixed(1) : v}%`, ""]} />
         <Legend
-          wrapperStyle={{ fontSize: isMobile ? 11 : 12, color: axisTickFill, lineHeight: isMobile ? "1.6" : undefined }}
+          wrapperStyle={{ fontSize: isMobile ? 12 : 13, color: axisTickFill, lineHeight: isMobile ? "1.6" : undefined }}
           layout="vertical"
           align={isMobile ? "center" : "right"}
           verticalAlign={isMobile ? "bottom" : "middle"}

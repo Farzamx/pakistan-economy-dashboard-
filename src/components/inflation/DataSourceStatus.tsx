@@ -38,7 +38,7 @@ export function GroupSourceStrip({ source }: { source: GroupSourceInfo | null })
   const onFallback = source.fallback;
   return (
     <p
-      className="rounded-[var(--pe-radius)] border px-3 py-2 text-[12.5px] leading-relaxed"
+      className="rounded-[var(--pe-radius)] border px-3 py-2 text-[13.5px] leading-relaxed"
       style={onFallback ? { background: "var(--pe-warn-bg)", borderColor: "var(--pe-warn-border)", color: "var(--pe-warn-text)" } : { background: "var(--pe-surface-2)", borderColor: "var(--pe-border)", color: "var(--pe-text-2)" }}
     >
       <span className="font-medium" style={{ color: onFallback ? "var(--pe-warn-text)" : "var(--pe-text)" }}>
@@ -58,18 +58,18 @@ function Row({ n, term, answer, children }: { n: number; term: string; answer: s
   return (
     <div className="grid gap-1 px-3 py-2.5 md:grid-cols-[15rem_1fr] md:gap-4">
       <dt>
-        <span className="text-[13px] font-medium text-pe-text">{term}</span>
-        <span className="mt-0.5 block text-[12px] leading-snug text-pe-text-3">{answer}</span>
+        <span className="text-[14px] font-medium text-pe-text">{term}</span>
+        <span className="mt-0.5 block text-[13px] leading-snug text-pe-text-3">{answer}</span>
         <span className="sr-only">Fact {n} of 6.</span>
       </dt>
-      <dd className="text-[13px] leading-relaxed text-pe-text-2">{children}</dd>
+      <dd className="text-[14px] leading-relaxed text-pe-text-2">{children}</dd>
     </div>
   );
 }
 
 export function DataStatusPanel({ source }: { source: GroupSourceInfo | null }) {
   if (!source) {
-    return <p className="text-[13px] text-pe-text-2">Source and freshness details were not available on this load.</p>;
+    return <p className="text-[14px] text-pe-text-2">Source and freshness details were not available on this load.</p>;
   }
   const run = source.lastIngestionRun;
   const notice = fallbackNotice(source);
@@ -127,7 +127,7 @@ export function DataStatusPanel({ source }: { source: GroupSourceInfo | null }) 
           {notice ? ` ${notice}` : ""}
         </Row>
       </dl>
-      <p className="mt-2 max-w-3xl text-[12px] leading-relaxed text-pe-text-3">
+      <p className="mt-2 max-w-3xl text-[13px] leading-relaxed text-pe-text-3">
         These are six different questions, so they can differ without anything being wrong: a recent run with nothing new leaves the data change old, and an old data change is normal between PBS releases. They are never combined into one &ldquo;freshness&rdquo; score. Headline and core inflation, food, the policy rate, the CPI index and the international figures come from their own sources, described in the table above.
       </p>
     </div>

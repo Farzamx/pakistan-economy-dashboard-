@@ -35,9 +35,9 @@ export default function BudgetInsightsPanel({ insights, title = "Budget Insights
             <span className="mr-1.5 text-neon-blue">▸</span>
             {insight.text}
           </p>
-          {insight.caveat && <p className="ml-4 mt-0.5 text-[11px] text-[var(--text-muted)]">{insight.caveat}</p>}
+          {insight.caveat && <p className="ml-4 mt-0.5 text-[12px] text-[var(--text-muted)]">{insight.caveat}</p>}
           {insight.evidence && insight.evidence.length > 0 && (
-            <details className="ml-4 mt-0.5 text-[11px] text-[var(--text-muted)]">
+            <details className="ml-4 mt-0.5 text-[12px] text-[var(--text-muted)]">
               <summary className="cursor-pointer select-none hover:text-[var(--text-secondary)]">Show the figures behind this</summary>
               <ul className="mt-1 grid gap-x-4 gap-y-0.5 sm:grid-cols-2">
                 {insight.evidence.map((e, j) => (

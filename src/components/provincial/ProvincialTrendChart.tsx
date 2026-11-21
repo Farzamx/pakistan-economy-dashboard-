@@ -55,14 +55,14 @@ export default function ProvincialTrendChart({ points, field, label, color, unit
               <XAxis
                 dataKey="fiscalYear"
                 stroke="transparent"
-                tick={{ fill: axisTickFill, fontSize: 11 }}
+                tick={{ fill: axisTickFill, fontSize: 12 }}
                 tickLine={false}
                 axisLine={false}
                 minTickGap={20}
               />
               <YAxis
                 stroke="transparent"
-                tick={{ fill: axisTickFill, fontSize: 11 }}
+                tick={{ fill: axisTickFill, fontSize: 12 }}
                 tickLine={false}
                 axisLine={false}
                 width={unit === "bn" ? 52 : 64}

@@ -110,7 +110,7 @@ export default function ProvincialHistoricalExplorer({ lockedProvince }: Provinc
               type="button"
               onClick={() => setMetric(m.field)}
               aria-pressed={metric === m.field}
-              className={`rounded-full border px-3 py-1 text-[11px] font-medium transition-colors ${
+              className={`rounded-full border px-3 py-1 text-[12px] font-medium transition-colors ${
                 metric === m.field ? "border-neon-blue/40 bg-neon-blue/15 text-neon-blue" : "border-[var(--border)] text-[var(--text-muted)] hover:text-[var(--text-primary)]"
               }`}
             >
@@ -225,7 +225,7 @@ export default function ProvincialHistoricalExplorer({ lockedProvince }: Provinc
         </div>
       )}
 
-      <p className="text-[11px] text-[var(--text-muted)]">
+      <p className="text-[12px] text-[var(--text-muted)]">
         {t("provincial.sourceBudgetDocs")}
       </p>
     </div>
@@ -235,7 +235,7 @@ export default function ProvincialHistoricalExplorer({ lockedProvince }: Provinc
 function GrowthKpi({ title, value }: { title: string; value: string }) {
   return (
     <div className="flex flex-col gap-1 rounded-xl border border-white/5 light:border-slate-100 bg-white/[0.02] light:bg-slate-50 p-4">
-      <p className="text-[11px] text-[var(--text-muted)]">{title}</p>
+      <p className="text-[12px] text-[var(--text-muted)]">{title}</p>
       <p className="text-lg font-bold text-[var(--text-primary)]">{value}</p>
     </div>
   );

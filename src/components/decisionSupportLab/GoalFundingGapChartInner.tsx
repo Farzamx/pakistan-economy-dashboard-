@@ -33,8 +33,8 @@ export default function GoalFundingGapChartInner({ points }: Props) {
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} vertical={false} />
-            <XAxis dataKey="year" stroke="transparent" tick={{ fill: axisTickFill, fontSize: 11 }} tickLine={false} axisLine={false} />
-            <YAxis tickFormatter={(v) => `Rs ${(v / 1_000_000).toFixed(1)}M`} stroke="transparent" tick={{ fill: axisTickFill, fontSize: 11 }} tickLine={false} axisLine={false} width={64} />
+            <XAxis dataKey="year" stroke="transparent" tick={{ fill: axisTickFill, fontSize: 12 }} tickLine={false} axisLine={false} />
+            <YAxis tickFormatter={(v) => `Rs ${(v / 1_000_000).toFixed(1)}M`} stroke="transparent" tick={{ fill: axisTickFill, fontSize: 12 }} tickLine={false} axisLine={false} width={64} />
             <Tooltip contentStyle={tooltipStyle} formatter={(v, name) => [`Rs ${typeof v === "number" ? Math.round(v).toLocaleString("en-US") : v}`, name === "balance" ? "Projected Balance" : "Inflation-Adjusted Target"]} />
             <Area type="monotone" dataKey="balance" stroke="#4ade80" strokeWidth={2} fill="url(#goal-balance-fill)" isAnimationActive={!prefersReducedMotion} animationDuration={700} />
             <Line type="monotone" dataKey="target" stroke="#f59e0b" strokeWidth={2} strokeDasharray="5 4" dot={false} isAnimationActive={!prefersReducedMotion} animationDuration={700} />

@@ -96,7 +96,7 @@ export default function PsxComingSoonModal({ open, onClose }: Props) {
                 </svg>
               </div>
 
-              <span className="mt-5 inline-flex items-center rounded-full border border-neon-blue/20 bg-neon-blue/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-widest text-neon-blue/80">
+              <span className="mt-5 inline-flex items-center rounded-full border border-neon-blue/20 bg-neon-blue/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-widest text-neon-blue/80">
                 {t("modal.comingSoon")}
               </span>
 

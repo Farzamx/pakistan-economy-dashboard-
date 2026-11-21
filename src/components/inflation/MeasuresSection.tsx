@@ -52,8 +52,8 @@ export default function MeasuresSection({ headline, core, food }: { headline: Mo
           { t: "Food inflation", d: "Prices of food items only. Food is the largest part of the basket, so it moves the headline most. Published here for urban households." },
         ].map((x) => (
           <div key={x.t} className="rounded-[var(--pe-radius)] border border-pe-border bg-pe-surface-2 p-3">
-            <p className="text-[13px] font-medium text-pe-text">{x.t}</p>
-            <p className="mt-1 text-[13px] leading-relaxed text-pe-text-2">{x.d}</p>
+            <p className="text-[14px] font-medium text-pe-text">{x.t}</p>
+            <p className="mt-1 text-[14px] leading-relaxed text-pe-text-2">{x.d}</p>
           </div>
         ))}
       </div>

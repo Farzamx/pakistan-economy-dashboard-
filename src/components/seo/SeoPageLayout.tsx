@@ -121,14 +121,14 @@ export default function SeoPageLayout({
           <Link
             href="/overview"
             aria-label={`Back to ${SITE_NAME}`}
-            className="-ms-1.5 inline-flex items-center gap-1.5 rounded-[var(--pe-radius)] px-1.5 py-2 text-[13px] font-medium text-pe-text-2 transition-colors hover:bg-pe-surface-2 hover:text-pe-text"
+            className="-ms-1.5 inline-flex items-center gap-1.5 rounded-[var(--pe-radius)] px-1.5 py-2 text-[14px] font-medium text-pe-text-2 transition-colors hover:bg-pe-surface-2 hover:text-pe-text"
           >
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true" className="shrink-0">
               <path d="M13 8H3M3 8L7.5 3.5M3 8L7.5 12.5" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
             {SITE_NAME}
           </Link>
-          <span className="min-w-0 shrink truncate text-end font-mono text-[11px] text-pe-text-3">
+          <span className="min-w-0 shrink truncate text-end font-mono text-[12px] text-pe-text-3">
             pakeconintel.com{canonicalPath}
           </span>
         </div>
@@ -137,19 +137,19 @@ export default function SeoPageLayout({
           <h1 className="text-[24px] font-semibold leading-tight tracking-[-0.01em] text-pe-text [text-wrap:balance] sm:text-[28px]">
             {title}
           </h1>
-          <p className="mt-1.5 max-w-2xl text-[14px] leading-relaxed text-pe-text-2">{subtitle}</p>
+          <p className="mt-1.5 max-w-2xl text-[15px] leading-relaxed text-pe-text-2">{subtitle}</p>
         </header>
 
         {/* Headline value — the page's primary figure, with its change,
             freshness verdict and (where provided) supporting stats. */}
         <div className="mt-3 rounded-[var(--pe-radius)] border border-pe-border bg-pe-surface p-4">
-          <span className="text-[11px] font-medium uppercase tracking-[0.06em] text-pe-text-3">{kpiLabel}</span>
+          <span className="text-[12px] font-medium uppercase tracking-[0.06em] text-pe-text-3">{kpiLabel}</span>
           <div className="mt-1 flex flex-wrap items-baseline gap-x-3 gap-y-1">
             <span className="text-[32px] font-semibold leading-none tabular-nums tracking-[-0.01em] text-pe-text sm:text-[38px]">
               {kpiValue}
             </span>
             {kpiChange && kpiTrend && (
-              <span className={`inline-flex items-center gap-1 text-[13px] font-medium ${TREND_TEXT_COLOR[kpiTrend]}`}>
+              <span className={`inline-flex items-center gap-1 text-[14px] font-medium ${TREND_TEXT_COLOR[kpiTrend]}`}>
                 <TrendArrowIcon trend={kpiTrend} className="h-3.5 w-3.5" />
                 {kpiChange}
               </span>
@@ -158,15 +158,15 @@ export default function SeoPageLayout({
           {kpiQuality && kpiQuality.freshness ? (
             <DataQualityBadge kpi={kpiQuality} freshness={kpiQuality.freshness} className="mt-2" />
           ) : (
-            kpiSourceNote && <span className="mt-2 block font-mono text-[11px] text-pe-text-3">{kpiSourceNote}</span>
+            kpiSourceNote && <span className="mt-2 block font-mono text-[12px] text-pe-text-3">{kpiSourceNote}</span>
           )}
 
           {secondaryStats && secondaryStats.length > 0 && (
             <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 border-t border-pe-border pt-3 sm:grid-cols-3">
               {secondaryStats.map((stat) => (
                 <div key={stat.label}>
-                  <dt className="text-[12px] text-pe-text-3">{stat.label}</dt>
-                  <dd className="mt-0.5 text-[15px] font-semibold tabular-nums text-pe-text">{stat.value}</dd>
+                  <dt className="text-[13px] text-pe-text-3">{stat.label}</dt>
+                  <dd className="mt-0.5 text-[16px] font-semibold tabular-nums text-pe-text">{stat.value}</dd>
                 </div>
               ))}
             </dl>
@@ -175,29 +175,29 @@ export default function SeoPageLayout({
 
         {/* Historical chart — same component, data and time range as before. */}
         <section className="mt-3 rounded-[var(--pe-radius)] border border-pe-border bg-pe-surface" aria-labelledby="indicator-chart-heading">
-          <h2 id="indicator-chart-heading" className="border-b border-pe-border px-4 py-2.5 text-[13px] font-semibold text-pe-text">
+          <h2 id="indicator-chart-heading" className="border-b border-pe-border px-4 py-2.5 text-[14px] font-semibold text-pe-text">
             {chartTitle}
           </h2>
           <div className="p-4">
             {chartData ? (
               <TrendLineChart data={chartData} color={chartColor} unit={chartUnit} gradientId={chartGradientId} />
             ) : (
-              <p className="rounded-[var(--pe-radius)] border border-pe-border bg-pe-surface-2 px-4 py-3 text-[13px] text-pe-text-2">
+              <p className="rounded-[var(--pe-radius)] border border-pe-border bg-pe-surface-2 px-4 py-3 text-[14px] text-pe-text-2">
                 {chartUnavailableNote ?? "Chart data is currently unavailable."}
               </p>
             )}
-            <p className="mt-2 font-mono text-[11px] leading-relaxed text-pe-text-3">{chartCaption}</p>
+            <p className="mt-2 font-mono text-[12px] leading-relaxed text-pe-text-3">{chartCaption}</p>
           </div>
         </section>
 
         <div className="mt-3 grid grid-cols-1 gap-3 lg:grid-cols-2">
           <section className="rounded-[var(--pe-radius)] border border-pe-border bg-pe-surface" aria-labelledby="indicator-meaning-heading">
-            <h2 id="indicator-meaning-heading" className="border-b border-pe-border px-4 py-2.5 text-[13px] font-semibold text-pe-text">
+            <h2 id="indicator-meaning-heading" className="border-b border-pe-border px-4 py-2.5 text-[14px] font-semibold text-pe-text">
               What this means
             </h2>
             <div className="flex flex-col gap-2 p-4">
               {explanation.map((p, i) => (
-                <p key={i} className="text-[14px] leading-relaxed text-pe-text-2">
+                <p key={i} className="text-[15px] leading-relaxed text-pe-text-2">
                   {p}
                 </p>
               ))}
@@ -205,12 +205,12 @@ export default function SeoPageLayout({
           </section>
 
           <section className="rounded-[var(--pe-radius)] border border-pe-border bg-pe-surface" aria-labelledby="indicator-why-heading">
-            <h2 id="indicator-why-heading" className="border-b border-pe-border px-4 py-2.5 text-[13px] font-semibold text-pe-text">
+            <h2 id="indicator-why-heading" className="border-b border-pe-border px-4 py-2.5 text-[14px] font-semibold text-pe-text">
               Why it matters
             </h2>
             <div className="flex flex-col gap-2 p-4">
               {whyItMatters.map((p, i) => (
-                <p key={i} className="text-[14px] leading-relaxed text-pe-text-2">
+                <p key={i} className="text-[15px] leading-relaxed text-pe-text-2">
                   {p}
                 </p>
               ))}
@@ -220,14 +220,14 @@ export default function SeoPageLayout({
 
         {/* FAQ — the same questions and answers the JSON-LD above declares. */}
         <section className="mt-3 rounded-[var(--pe-radius)] border border-pe-border bg-pe-surface" aria-labelledby="indicator-faq-heading">
-          <h2 id="indicator-faq-heading" className="border-b border-pe-border px-4 py-2.5 text-[13px] font-semibold text-pe-text">
+          <h2 id="indicator-faq-heading" className="border-b border-pe-border px-4 py-2.5 text-[14px] font-semibold text-pe-text">
             Frequently asked questions
           </h2>
           <dl className="divide-y divide-pe-border">
             {faq.map((item, i) => (
               <div key={i} className="px-4 py-3">
-                <dt className="text-[14px] font-medium text-pe-text">{item.question}</dt>
-                <dd className="mt-1 text-[14px] leading-relaxed text-pe-text-2">{item.answer}</dd>
+                <dt className="text-[15px] font-medium text-pe-text">{item.question}</dt>
+                <dd className="mt-1 text-[15px] leading-relaxed text-pe-text-2">{item.answer}</dd>
               </div>
             ))}
           </dl>
@@ -235,7 +235,7 @@ export default function SeoPageLayout({
 
         {relatedLinks.length > 0 && (
           <section className="mt-3" aria-labelledby="indicator-related-heading">
-            <h2 id="indicator-related-heading" className="mb-2 text-[11px] font-semibold uppercase tracking-[0.06em] text-pe-text-3">
+            <h2 id="indicator-related-heading" className="mb-2 text-[12px] font-semibold uppercase tracking-[0.06em] text-pe-text-3">
               Related pages
             </h2>
             <ul className="flex flex-wrap gap-2">
@@ -243,7 +243,7 @@ export default function SeoPageLayout({
                 <li key={link.href}>
                   <Link
                     href={link.href}
-                    className="inline-block rounded-[var(--pe-radius)] border border-pe-border bg-pe-surface px-3 py-1.5 text-[13px] text-pe-text-2 transition-colors hover:border-pe-border-strong hover:text-pe-text"
+                    className="inline-block rounded-[var(--pe-radius)] border border-pe-border bg-pe-surface px-3 py-1.5 text-[14px] text-pe-text-2 transition-colors hover:border-pe-border-strong hover:text-pe-text"
                   >
                     {link.label}
                   </Link>
@@ -256,7 +256,7 @@ export default function SeoPageLayout({
         <div className="my-6 flex justify-center">
           <Link
             href="/overview"
-            className="inline-flex items-center gap-2 rounded-[var(--pe-radius)] border border-pe-border bg-pe-surface px-4 py-2 text-[13px] font-medium text-pe-accent transition-colors hover:bg-pe-surface-2"
+            className="inline-flex items-center gap-2 rounded-[var(--pe-radius)] border border-pe-border bg-pe-surface px-4 py-2 text-[14px] font-medium text-pe-accent transition-colors hover:bg-pe-surface-2"
           >
             Open the full dashboard →
           </Link>

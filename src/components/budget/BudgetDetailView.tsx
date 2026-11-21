@@ -59,7 +59,7 @@ export default function BudgetDetailView({ slug, shortTitle, disclaimer, years, 
           <span className="text-xs text-[var(--text-muted)]">FY{latest.fiscalYear} Budget Estimate</span>
           <span className="text-2xl font-semibold text-[var(--text-primary)]">{value !== null ? rs(value) : "—"}</span>
           {yoy && (
-            <span className="text-[11px] text-[var(--text-muted)]">
+            <span className="text-[12px] text-[var(--text-muted)]">
               {yoy.pct >= 0 ? "+" : ""}
               {yoy.pct.toFixed(1)}% on the previous year (nominal)
             </span>
@@ -68,9 +68,9 @@ export default function BudgetDetailView({ slug, shortTitle, disclaimer, years, 
         <div className="glass-card flex flex-col gap-1 rounded-xl p-4">
           <span className="text-xs text-[var(--text-muted)]">{shareBasis.label}</span>
           <span className="text-2xl font-semibold text-[var(--text-primary)]">{shareBasis.pct !== null ? formatPct(shareBasis.pct) : "—"}</span>
-          {shareBasis.pct === null && <span className="text-[11px] text-[var(--text-muted)]">Not a component of total outlay, so it has no share of it.</span>}
+          {shareBasis.pct === null && <span className="text-[12px] text-[var(--text-muted)]">Not a component of total outlay, so it has no share of it.</span>}
           {summary?.rank && (
-            <span className="text-[11px] text-[var(--text-muted)]">
+            <span className="text-[12px] text-[var(--text-muted)]">
               Rank {summary.rank.position} of {summary.rank.of} itemised allocations
             </span>
           )}
@@ -79,7 +79,7 @@ export default function BudgetDetailView({ slug, shortTitle, disclaimer, years, 
           <span className="text-xs text-[var(--text-muted)]">{t("budget.shareOfGdp")}</span>
           <span className="text-2xl font-semibold text-[var(--text-primary)]">{summary?.pctOfGdp ? formatPct(summary.pctOfGdp.value) : "—"}</span>
           {summary?.pctOfGdp && (
-            <span className="text-[11px] text-[var(--text-muted)]">
+            <span className="text-[12px] text-[var(--text-muted)]">
               {summary.pctOfGdp.basis === "stated" ? "On the nominal GDP printed in Budget in Brief" : "On a GDP implied from the printed deficit (approximate)"}
             </span>
           )}
@@ -91,7 +91,7 @@ export default function BudgetDetailView({ slug, shortTitle, disclaimer, years, 
           <span className="text-xs text-[var(--text-muted)]">Compound annual growth (nominal)</span>
           <p className="mt-1 text-lg font-semibold text-[var(--text-primary)]">{cagr ? `${cagr.pct.toFixed(1)}% a year` : "—"}</p>
           {cagr && (
-            <p className="text-[11px] text-[var(--text-muted)]">
+            <p className="text-[12px] text-[var(--text-muted)]">
               FY{cagr.fromFy} ({rs(cagr.startValue)}) to FY{cagr.toFy} ({rs(cagr.endValue)}). Includes inflation; not real growth.
             </p>
           )}
@@ -99,14 +99,14 @@ export default function BudgetDetailView({ slug, shortTitle, disclaimer, years, 
         <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface)] p-4">
           <span className="text-xs text-[var(--text-muted)]">Highest budgeted amount</span>
           <p className="mt-1 text-lg font-semibold text-[var(--text-primary)]">{summary?.peak ? rs(summary.peak.value) : "—"}</p>
-          {summary?.peak && <p className="text-[11px] text-[var(--text-muted)]">FY{summary.peak.fiscalYear}</p>}
+          {summary?.peak && <p className="text-[12px] text-[var(--text-muted)]">FY{summary.peak.fiscalYear}</p>}
         </div>
         <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface)] p-4">
           <span className="text-xs text-[var(--text-muted)]">Coverage</span>
           <p className="mt-1 text-lg font-semibold text-[var(--text-primary)]">
             {years.length - (summary?.missingYears.length ?? 0)} of {years.length} years
           </p>
-          <p className="text-[11px] text-[var(--text-muted)]">
+          <p className="text-[12px] text-[var(--text-muted)]">
             {summary && summary.missingYears.length > 0 ? `Not itemised in ${summary.missingYears.map((y) => `FY${y}`).join(", ")}; left blank, not zero.` : "A figure is printed in every year."}
           </p>
         </div>
@@ -129,7 +129,7 @@ export default function BudgetDetailView({ slug, shortTitle, disclaimer, years, 
                   type="button"
                   aria-pressed={mode === m.mode}
                   onClick={() => setMode(m.mode)}
-                  className={`rounded-lg px-2.5 py-1 text-[11px] font-medium transition-colors ${mode === m.mode ? "bg-neon-blue/15 text-neon-blue" : "text-[var(--text-muted)] hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]"}`}
+                  className={`rounded-lg px-2.5 py-1 text-[12px] font-medium transition-colors ${mode === m.mode ? "bg-neon-blue/15 text-neon-blue" : "text-[var(--text-muted)] hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]"}`}
                 >
                   {m.label}
                 </button>
@@ -138,14 +138,14 @@ export default function BudgetDetailView({ slug, shortTitle, disclaimer, years, 
             <button
               type="button"
               onClick={() => chartRef.current && exportChartAsPng(chartRef.current, `${slug}.png`, "#05060f")}
-              className="rounded-lg border border-[var(--border)] px-2.5 py-1 text-[11px] font-medium text-[var(--text-muted)] transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]"
+              className="rounded-lg border border-[var(--border)] px-2.5 py-1 text-[12px] font-medium text-[var(--text-muted)] transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]"
             >
               {t("budget.exportPng")}
             </button>
             <button
               type="button"
               onClick={() => exportTrendAsCsv(trendPoints, { [field]: shortTitle }, `${slug}.csv`)}
-              className="rounded-lg border border-[var(--border)] px-2.5 py-1 text-[11px] font-medium text-[var(--text-muted)] transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]"
+              className="rounded-lg border border-[var(--border)] px-2.5 py-1 text-[12px] font-medium text-[var(--text-muted)] transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]"
             >
               {t("budget.exportCsv")}
             </button>
@@ -154,7 +154,7 @@ export default function BudgetDetailView({ slug, shortTitle, disclaimer, years, 
         <div ref={chartRef}>
           <BudgetTrendChart points={trendPoints} fields={[field]} mode={mode} />
         </div>
-        <p className="text-[11px] text-[var(--text-muted)]">
+        <p className="text-[12px] text-[var(--text-muted)]">
           {mode === "nominal" ? "Nominal rupees at each year's own prices, not adjusted for inflation. " : ""}
           {mode === "pctGdp" ? "Nominal GDP is printed in Budget in Brief from FY2019-20; earlier years use an implied GDP (±~1.4%). " : ""}
           {t("budget.sourceNote")}

@@ -30,7 +30,7 @@ export default function BudgetAllocationBars({ data, fiscalYear }: BudgetAllocat
             <span className="flex min-w-0 items-center gap-2 text-sm text-[var(--text-primary)]">
               <span aria-hidden="true" className="h-2.5 w-2.5 shrink-0 rounded-sm" style={{ background: s.color }} />
               <span className="truncate">{s.label}</span>
-              {s.kind !== "itemised" && <span className="shrink-0 rounded border border-[var(--border)] px-1 text-[10px] text-[var(--text-muted)]">{s.kind === "bundled" ? "bundled" : "remainder"}</span>}
+              {s.kind !== "itemised" && <span className="shrink-0 rounded border border-[var(--border)] px-1 text-[11px] text-[var(--text-muted)]">{s.kind === "bundled" ? "bundled" : "remainder"}</span>}
             </span>
             <span className="text-right text-sm tabular-nums text-[var(--text-secondary)]">
               <span className="font-semibold text-[var(--text-primary)]">{fmtRs(s.value)}</span> · {s.pct.toFixed(1)}%

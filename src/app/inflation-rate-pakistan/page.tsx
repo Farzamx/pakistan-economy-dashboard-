@@ -116,23 +116,23 @@ export default async function InflationRatePage() {
           <Link
             href="/overview"
             aria-label={`Back to ${SITE_NAME}`}
-            className="-ms-1.5 inline-flex items-center gap-1.5 rounded-[var(--pe-radius)] px-1.5 py-2 text-[13px] font-medium text-pe-text-2 transition-colors hover:bg-pe-surface-2 hover:text-pe-text"
+            className="-ms-1.5 inline-flex items-center gap-1.5 rounded-[var(--pe-radius)] px-1.5 py-2 text-[14px] font-medium text-pe-text-2 transition-colors hover:bg-pe-surface-2 hover:text-pe-text"
           >
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true" className="shrink-0">
               <path d="M13 8H3M3 8L7.5 3.5M3 8L7.5 12.5" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
             {SITE_NAME}
           </Link>
-          <span className="min-w-0 shrink truncate text-end font-mono text-[11px] text-pe-text-3">pakeconintel.com/{SLUG}</span>
+          <span className="min-w-0 shrink truncate text-end font-mono text-[12px] text-pe-text-3">pakeconintel.com/{SLUG}</span>
         </div>
 
         <header className="border-b border-pe-border pb-4">
           <h1 className="text-[24px] font-semibold leading-tight tracking-[-0.01em] text-pe-text [text-wrap:balance] sm:text-[28px]">Pakistan Inflation Rate</h1>
-          <p className="mt-1.5 max-w-3xl text-[14px] leading-relaxed text-pe-text-2">
+          <p className="mt-1.5 max-w-3xl text-[15px] leading-relaxed text-pe-text-2">
             The year-over-year change in consumer prices (CPI) for everyday items — food, rent, transport, and medicine.
           </p>
           <nav aria-label="On this page" className="mt-3">
-            <ul className="flex flex-wrap gap-x-4 gap-y-1.5 text-[13px]">
+            <ul className="flex flex-wrap gap-x-4 gap-y-1.5 text-[14px]">
               {NAV.map(([id, label]) => (
                 <li key={id}>
                   <a href={`#${id}`} className="text-pe-accent hover:underline">{label}</a>
@@ -204,19 +204,19 @@ export default async function InflationRatePage() {
         </Section>
 
         <Section id="meaning" title="What this means, and why it matters">
-          <p className="max-w-3xl text-[14px] leading-relaxed text-pe-text-2">{EXPLANATION[0]}</p>
+          <p className="max-w-3xl text-[15px] leading-relaxed text-pe-text-2">{EXPLANATION[0]}</p>
           <Disclosure summary="How to read the numbers, and why they matter" className="mt-1">
             <div className="grid gap-6 lg:grid-cols-2">
               <div className="flex flex-col gap-2">
-                <h3 className="text-[13px] font-semibold text-pe-text">What this means</h3>
+                <h3 className="text-[14px] font-semibold text-pe-text">What this means</h3>
                 {EXPLANATION.slice(1).map((t, i) => (
-                  <p key={i} className="text-[14px] leading-relaxed text-pe-text-2">{t}</p>
+                  <p key={i} className="text-[15px] leading-relaxed text-pe-text-2">{t}</p>
                 ))}
               </div>
               <div className="flex flex-col gap-2">
-                <h3 className="text-[13px] font-semibold text-pe-text">Why it matters</h3>
+                <h3 className="text-[14px] font-semibold text-pe-text">Why it matters</h3>
                 {WHY_IT_MATTERS.map((t, i) => (
-                  <p key={i} className="text-[14px] leading-relaxed text-pe-text-2">{t}</p>
+                  <p key={i} className="text-[15px] leading-relaxed text-pe-text-2">{t}</p>
                 ))}
               </div>
             </div>
@@ -232,7 +232,7 @@ export default async function InflationRatePage() {
         </Section>
 
         <div className="my-4 flex justify-center">
-          <Link href="/overview" className="inline-flex items-center gap-2 rounded-[var(--pe-radius)] border border-pe-border bg-pe-surface px-4 py-2 text-[13px] font-medium text-pe-accent transition-colors hover:bg-pe-surface-2">
+          <Link href="/overview" className="inline-flex items-center gap-2 rounded-[var(--pe-radius)] border border-pe-border bg-pe-surface px-4 py-2 text-[14px] font-medium text-pe-accent transition-colors hover:bg-pe-surface-2">
             Open the full dashboard →
           </Link>
         </div>

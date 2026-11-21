@@ -95,7 +95,7 @@ export default function CityCombobox({ id, value, onChange, onSelectCity, placeh
                 }`}
               >
                 <span>{city.name}</span>
-                {city.province && <span className="text-[11px] uppercase tracking-wide text-white/30 light:text-slate-400">{city.province}</span>}
+                {city.province && <span className="text-[12px] uppercase tracking-wide text-white/30 light:text-slate-400">{city.province}</span>}
               </button>
             </li>
           ))}

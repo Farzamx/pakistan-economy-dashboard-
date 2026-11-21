@@ -32,12 +32,12 @@ function Tip({ active, payload, label }: TooltipContentProps<ValueType, NameType
         padding: "8px 10px",
       }}
     >
-      <p style={{ color: "var(--chart-tooltip-label)", fontSize: 11 }}>{label}</p>
+      <p style={{ color: "var(--chart-tooltip-label)", fontSize: 12 }}>{label}</p>
       <p style={{ color: "var(--chart-tooltip-value)", fontSize: 14, fontVariantNumeric: "tabular-nums" }}>
         {row.classified} of {row.recorded} dimensions classified
       </p>
       {row.unclassified > 0 && (
-        <p style={{ color: "var(--chart-tooltip-label)", fontSize: 10 }}>
+        <p style={{ color: "var(--chart-tooltip-label)", fontSize: 11 }}>
           {row.unclassified} lacked sufficient evidence
         </p>
       )}
@@ -47,7 +47,7 @@ function Tip({ active, payload, label }: TooltipContentProps<ValueType, NameType
 
 export default function CoverageBarChart({ data, height = 200 }: { data: CoveragePoint[]; height?: number }) {
   if (data.length === 0) {
-    return <p className="text-[13px] text-white/40 light:text-slate-500">No snapshots are stored yet.</p>;
+    return <p className="text-[14px] text-white/40 light:text-slate-500">No snapshots are stored yet.</p>;
   }
 
   // The denominator is the engine's own `recorded` count, so the axis never
@@ -61,7 +61,7 @@ export default function CoverageBarChart({ data, height = 200 }: { data: Coverag
           <CartesianGrid stroke="var(--chart-grid)" vertical={false} />
           <XAxis
             dataKey="snapshotDate"
-            tick={{ fill: "var(--chart-axis)", fontSize: 10 }}
+            tick={{ fill: "var(--chart-axis)", fontSize: 11 }}
             tickLine={false}
             axisLine={false}
             interval="preserveStartEnd"
@@ -71,7 +71,7 @@ export default function CoverageBarChart({ data, height = 200 }: { data: Coverag
           <YAxis
             domain={[0, maxRecorded]}
             allowDecimals={false}
-            tick={{ fill: "var(--chart-axis)", fontSize: 10 }}
+            tick={{ fill: "var(--chart-axis)", fontSize: 11 }}
             tickLine={false}
             axisLine={false}
             width={44}

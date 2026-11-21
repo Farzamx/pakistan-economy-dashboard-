@@ -86,7 +86,7 @@ export default function BudgetSankeySvg({ layout, graph, selectedId, hover, tota
       <g aria-hidden="true">
         {layout.columns.map((c) => (
           <g key={c.stage}>
-            <text x={c.x + layout.nodeWidth / 2} y={20} textAnchor="middle" fontSize={11} fontWeight={600} letterSpacing="0.08em" style={{ fill: "var(--text-secondary)", textTransform: "uppercase" }}>
+            <text x={c.x + layout.nodeWidth / 2} y={20} textAnchor="middle" fontSize={12} fontWeight={600} letterSpacing="0.08em" style={{ fill: "var(--text-secondary)", textTransform: "uppercase" }}>
               {c.title}
             </text>
             <line x1={c.x + layout.nodeWidth / 2} x2={c.x + layout.nodeWidth / 2} y1={28} y2={36} style={{ stroke: "var(--border)" }} />

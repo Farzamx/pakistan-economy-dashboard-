@@ -59,14 +59,14 @@ export default function SectorCompositionChart({ data }: SectorCompositionChartP
             <XAxis
               dataKey="year"
               stroke="transparent"
-              tick={{ fill: axisTickFill, fontSize: 11 }}
+              tick={{ fill: axisTickFill, fontSize: 12 }}
               tickLine={false}
               axisLine={false}
               minTickGap={32}
             />
             <YAxis
               stroke="transparent"
-              tick={{ fill: axisTickFill, fontSize: 11 }}
+              tick={{ fill: axisTickFill, fontSize: 12 }}
               tickLine={false}
               axisLine={false}
               width={40}
@@ -78,7 +78,7 @@ export default function SectorCompositionChart({ data }: SectorCompositionChartP
               cursor={{ stroke: cursorStroke, strokeWidth: 1 }}
               formatter={(value) => `${typeof value === "number" ? value.toFixed(1) : value}%`}
             />
-            <Legend wrapperStyle={{ fontSize: 12, color: legendColor }} iconType="line" />
+            <Legend wrapperStyle={{ fontSize: 13, color: legendColor }} iconType="line" />
             <Line type="monotone" dataKey="agriculture" name={t("comparisons.agriculture")} stroke={COLORS.agriculture} strokeWidth={2} dot={false} connectNulls={false} isAnimationActive={!prefersReducedMotion} animationDuration={1400} />
             <Line type="monotone" dataKey="industry" name={t("comparisons.industry")} stroke={COLORS.industry} strokeWidth={2} dot={false} connectNulls={false} isAnimationActive={!prefersReducedMotion} animationDuration={1400} animationBegin={120} />
             <Line type="monotone" dataKey="services" name={t("comparisons.services")} stroke={COLORS.services} strokeWidth={2} dot={false} connectNulls={false} isAnimationActive={!prefersReducedMotion} animationDuration={1400} animationBegin={240} />

@@ -32,48 +32,48 @@ function ConfidencePanel({ confidence, modelScore }: ConfidencePanelProps) {
   const { t } = useLanguage();
   return (
     <div className="rounded-lg border border-white/5 light:border-slate-200 bg-white/[0.02] light:bg-slate-50 px-4 py-3">
-      <p className="mb-2.5 text-[9px] font-semibold uppercase tracking-widest text-white/25 light:text-slate-400">
+      <p className="mb-2.5 text-[10px] font-semibold uppercase tracking-widest text-white/25 light:text-slate-400">
         {t("riskIntel.transparency")}
       </p>
       <div className="grid grid-cols-3 gap-x-4 gap-y-0.5">
         <div>
-          <p className="text-[9px] font-medium uppercase tracking-wider text-white/25 light:text-slate-400">
+          <p className="text-[10px] font-medium uppercase tracking-wider text-white/25 light:text-slate-400">
             {t("riskIntel.lastCalculated")}
           </p>
-          <p className="mt-1 text-[10px] leading-tight text-white/50 light:text-slate-500">
+          <p className="mt-1 text-[11px] leading-tight text-white/50 light:text-slate-500">
             {confidence.calculatedAt.split(" · ")[0]}
           </p>
-          <p className="text-[10px] leading-tight text-white/35 light:text-slate-400">
+          <p className="text-[11px] leading-tight text-white/35 light:text-slate-400">
             {confidence.calculatedAt.split(" · ")[1]}
           </p>
         </div>
 
         <div>
-          <p className="text-[9px] font-medium uppercase tracking-wider text-white/25 light:text-slate-400">
+          <p className="text-[10px] font-medium uppercase tracking-wider text-white/25 light:text-slate-400">
             {t("riskIntel.indicators")}
           </p>
-          <p className="mt-1 text-[10px] leading-tight text-white/50 light:text-slate-500">
+          <p className="mt-1 text-[11px] leading-tight text-white/50 light:text-slate-500">
             {confidence.currentCount}/{confidence.totalCount} {t("riskIntel.currentSuffix")}
           </p>
-          <p className="text-[10px] leading-tight text-white/35 light:text-slate-400">
+          <p className="text-[11px] leading-tight text-white/35 light:text-slate-400">
             {confidence.staleCount === 0 ? t("riskIntel.noneStale") : `${confidence.staleCount} ${t("riskIntel.stale")}`}
           </p>
         </div>
 
         <div>
-          <p className="text-[9px] font-medium uppercase tracking-wider text-white/25 light:text-slate-400">
+          <p className="text-[10px] font-medium uppercase tracking-wider text-white/25 light:text-slate-400">
             {t("riskIntel.confidence")}
           </p>
-          <p className="mt-1 font-mono text-[10px] leading-tight text-white/50 light:text-slate-500">
+          <p className="mt-1 font-mono text-[11px] leading-tight text-white/50 light:text-slate-500">
             {confidence.score}%
           </p>
-          <p className={`text-[10px] leading-tight ${CONFIDENCE_DOT[confidence.level]}`}>
+          <p className={`text-[11px] leading-tight ${CONFIDENCE_DOT[confidence.level]}`}>
             ● {confidence.level}
           </p>
         </div>
       </div>
 
-      <p className="mt-2.5 text-[9px] text-white/20 light:text-slate-400">
+      <p className="mt-2.5 text-[10px] text-white/20 light:text-slate-400">
         {t("riskIntel.modelScore")} {modelScore}/100 {t("riskIntel.modelScoreNote")}
       </p>
     </div>
@@ -128,10 +128,10 @@ function RiskCard({ title, termKey, result, ai, confidence, modelDisplayName, de
               {title}
             </span>
             <InfoTooltip termKey={termKey} size="xs" />
-            <span className="rounded-full border border-neon-blue/20 bg-neon-blue/10 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-widest text-neon-blue/70">
+            <span className="rounded-full border border-neon-blue/20 bg-neon-blue/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-widest text-neon-blue/70">
               {t("riskIntel.quant")}
             </span>
-            <span className="rounded-full border border-neon-purple/20 bg-neon-purple/10 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-widest text-neon-purple/70">
+            <span className="rounded-full border border-neon-purple/20 bg-neon-purple/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-widest text-neon-purple/70">
               {modelDisplayName}
             </span>
           </div>
@@ -154,13 +154,13 @@ function RiskCard({ title, termKey, result, ai, confidence, modelDisplayName, de
       <div className="grid gap-4 border-t border-white/5 light:border-slate-200 pt-4 sm:grid-cols-2">
         {/* Key risks column */}
         <div>
-          <p className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-rose-400/60 light:text-rose-600">
+          <p className="mb-2 text-[11px] font-semibold uppercase tracking-widest text-rose-400/60 light:text-rose-600">
             {t("riskIntel.keyRisks")}
           </p>
           <ul className="space-y-1.5">
             {ai.keyRisks.map((risk, i) => (
               <li key={i} className="flex items-start gap-2 text-xs text-white/50 light:text-slate-600">
-                <span className="mt-0.5 shrink-0 text-[8px] text-rose-400/60 light:text-rose-500">▶</span>
+                <span className="mt-0.5 shrink-0 text-[10px] text-rose-400/60 light:text-rose-500">▶</span>
                 {risk}
               </li>
             ))}
@@ -169,8 +169,8 @@ function RiskCard({ title, termKey, result, ai, confidence, modelDisplayName, de
           <div className="mt-3 space-y-1">
             {result.topRiskFactors.map((f, i) => (
               <div key={i} className="flex items-center justify-between gap-2">
-                <span className="text-[10px] text-white/30 light:text-slate-400">{f.label}</span>
-                <span className="font-mono text-[10px] text-rose-400/50 light:text-rose-600">{f.formattedValue}</span>
+                <span className="text-[11px] text-white/30 light:text-slate-400">{f.label}</span>
+                <span className="font-mono text-[11px] text-rose-400/50 light:text-rose-600">{f.formattedValue}</span>
               </div>
             ))}
           </div>
@@ -178,13 +178,13 @@ function RiskCard({ title, termKey, result, ai, confidence, modelDisplayName, de
 
         {/* Strengths column */}
         <div>
-          <p className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-emerald-400/60 light:text-emerald-700">
+          <p className="mb-2 text-[11px] font-semibold uppercase tracking-widest text-emerald-400/60 light:text-emerald-700">
             {t("riskIntel.strengths")}
           </p>
           <ul className="space-y-1.5">
             {ai.keyPositives.map((pos, i) => (
               <li key={i} className="flex items-start gap-2 text-xs text-white/50 light:text-slate-600">
-                <span className="mt-0.5 shrink-0 text-[8px] text-emerald-400/60 light:text-emerald-600">▶</span>
+                <span className="mt-0.5 shrink-0 text-[10px] text-emerald-400/60 light:text-emerald-600">▶</span>
                 {pos}
               </li>
             ))}
@@ -193,8 +193,8 @@ function RiskCard({ title, termKey, result, ai, confidence, modelDisplayName, de
           <div className="mt-3 space-y-1">
             {result.topCushionFactors.map((f, i) => (
               <div key={i} className="flex items-center justify-between gap-2">
-                <span className="text-[10px] text-white/30 light:text-slate-400">{f.label}</span>
-                <span className="font-mono text-[10px] text-emerald-400/50 light:text-emerald-700">{f.formattedValue}</span>
+                <span className="text-[11px] text-white/30 light:text-slate-400">{f.label}</span>
+                <span className="font-mono text-[11px] text-emerald-400/50 light:text-emerald-700">{f.formattedValue}</span>
               </div>
             ))}
           </div>
@@ -240,17 +240,17 @@ export default function RiskIntelligenceSection({
         </p>
         {/* Weekly Intelligence Engine — updated every Monday, not on page load */}
         <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1">
-          <span className="text-[10px] text-white/25 light:text-slate-400">
+          <span className="text-[11px] text-white/25 light:text-slate-400">
             <span className="text-white/35 light:text-slate-500">{t("riskIntel.lastComputed")}</span>{" "}
             {computedAt}
           </span>
-          <span className="text-[10px] text-white/15 light:text-slate-300">·</span>
-          <span className="text-[10px] text-white/25 light:text-slate-400">
+          <span className="text-[11px] text-white/15 light:text-slate-300">·</span>
+          <span className="text-[11px] text-white/25 light:text-slate-400">
             <span className="text-white/35 light:text-slate-500">{t("riskIntel.nextUpdate")}</span>{" "}
             {nextUpdateAt}
           </span>
-          <span className="text-[10px] text-white/15 light:text-slate-300">·</span>
-          <span className="text-[10px] text-white/25 light:text-slate-400">
+          <span className="text-[11px] text-white/15 light:text-slate-300">·</span>
+          <span className="text-[11px] text-white/25 light:text-slate-400">
             {t("riskIntel.updateNote")}
           </span>
         </div>

@@ -210,7 +210,7 @@ export default function SettingsModal({ open, onClose }: Props) {
 
               {/* Section — Appearance */}
               <div className="mt-6">
-                <p className="mb-3 text-[10px] font-semibold uppercase tracking-widest text-[var(--text-muted)]">
+                <p className="mb-3 text-[11px] font-semibold uppercase tracking-widest text-[var(--text-muted)]">
                   {t("settings.appearance")}
                 </p>
                 <div className="space-y-2">
@@ -233,7 +233,7 @@ export default function SettingsModal({ open, onClose }: Props) {
 
               {/* Section — Language */}
               <div className="mt-6">
-                <p className="mb-3 text-[10px] font-semibold uppercase tracking-widest text-[var(--text-muted)]">
+                <p className="mb-3 text-[11px] font-semibold uppercase tracking-widest text-[var(--text-muted)]">
                   {t("settings.language")}
                 </p>
                 <div className="space-y-2">
@@ -250,7 +250,7 @@ export default function SettingsModal({ open, onClose }: Props) {
 
               {/* Section — Dashboard Preferences */}
               <div className="mt-6">
-                <p className="mb-3 text-[10px] font-semibold uppercase tracking-widest text-[var(--text-muted)]">
+                <p className="mb-3 text-[11px] font-semibold uppercase tracking-widest text-[var(--text-muted)]">
                   {t("settings.preferences")}
                 </p>
                 {user ? (
@@ -276,7 +276,7 @@ export default function SettingsModal({ open, onClose }: Props) {
 
               {/* Section — About */}
               <div className="mt-6">
-                <p className="mb-3 text-[10px] font-semibold uppercase tracking-widest text-[var(--text-muted)]">
+                <p className="mb-3 text-[11px] font-semibold uppercase tracking-widest text-[var(--text-muted)]">
                   {t("settings.about")}
                 </p>
                 <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-raised)] px-4 py-3 space-y-1">

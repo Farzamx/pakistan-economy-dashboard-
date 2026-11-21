@@ -29,7 +29,7 @@ export default function SensitivityTable({ rows }: Props) {
                   {row.fundingGapPct > 0 ? "+" : ""}{row.fundingGapPct.toFixed(1)}%
                 </td>
                 <td className="px-3 py-2 text-right">
-                  <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${row.isOnTrack ? "bg-emerald-400/10 text-emerald-400" : "bg-rose-400/10 text-rose-400"}`}>
+                  <span className={`rounded-full px-2 py-0.5 text-[12px] font-medium ${row.isOnTrack ? "bg-emerald-400/10 text-emerald-400" : "bg-rose-400/10 text-rose-400"}`}>
                     {row.isOnTrack ? "On Track" : "Behind"}
                   </span>
                 </td>

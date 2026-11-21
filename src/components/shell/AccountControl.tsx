@@ -46,7 +46,7 @@ export default function AccountControl() {
         href="/login"
         data-cta="login"
         data-cta-source="header"
-        className="inline-flex h-8 items-center whitespace-nowrap rounded-[var(--pe-radius)] border border-pe-nav-border px-3 text-[13px] font-medium text-pe-nav-text transition-colors hover:bg-pe-nav-raised"
+        className="inline-flex h-8 items-center whitespace-nowrap rounded-[var(--pe-radius)] border border-pe-nav-border px-3 text-[14px] font-medium text-pe-nav-text transition-colors hover:bg-pe-nav-raised"
       >
         {t("common.login")}
       </Link>
@@ -64,7 +64,7 @@ export default function AccountControl() {
         aria-controls={panelId}
         aria-label={`${t("appNav.account")}: ${user.email ?? ""}`}
         onClick={() => setOpen((v) => !v)}
-        className={`flex h-8 w-8 items-center justify-center rounded-full border border-pe-nav-border text-[13px] font-semibold text-pe-nav-text transition-colors hover:bg-pe-nav-raised ${open ? "bg-pe-nav-raised" : ""}`}
+        className={`flex h-8 w-8 items-center justify-center rounded-full border border-pe-nav-border text-[14px] font-semibold text-pe-nav-text transition-colors hover:bg-pe-nav-raised ${open ? "bg-pe-nav-raised" : ""}`}
       >
         <span aria-hidden="true">{initial}</span>
       </button>
@@ -74,13 +74,13 @@ export default function AccountControl() {
         onKeyDown={handleMenuArrowKeys}
         className="pe-panel absolute end-0 top-full z-10 mt-2 w-64 rounded-[var(--pe-radius)] border border-pe-border bg-pe-surface p-2 text-pe-text shadow-[var(--pe-shadow-pop)]"
       >
-        <p className="truncate border-b border-pe-border px-2.5 pb-2 pt-1 text-[12px] text-pe-text-2">{user.email}</p>
+        <p className="truncate border-b border-pe-border px-2.5 pb-2 pt-1 text-[13px] text-pe-text-2">{user.email}</p>
         <ul className="mt-1 flex flex-col">
           <li>
             <Link
               href="/settings/preferences"
               onClick={() => setTimeout(close, 0)}
-              className="block rounded-[var(--pe-radius-sm)] px-2.5 py-1.5 text-[13px] text-pe-text-2 hover:bg-pe-surface-2 hover:text-pe-text"
+              className="block rounded-[var(--pe-radius-sm)] px-2.5 py-1.5 text-[14px] text-pe-text-2 hover:bg-pe-surface-2 hover:text-pe-text"
             >
               {t("nav.settings")}
             </Link>
@@ -94,7 +94,7 @@ export default function AccountControl() {
                 close();
                 requestSignOut();
               }}
-              className="block w-full rounded-[var(--pe-radius-sm)] px-2.5 py-1.5 text-start text-[13px] text-pe-text-2 hover:bg-pe-surface-2 hover:text-pe-text"
+              className="block w-full rounded-[var(--pe-radius-sm)] px-2.5 py-1.5 text-start text-[14px] text-pe-text-2 hover:bg-pe-surface-2 hover:text-pe-text"
             >
               {t("common.logout")}
             </button>

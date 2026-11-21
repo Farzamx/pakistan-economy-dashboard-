@@ -7,7 +7,7 @@
 import type { ReactNode } from "react";
 
 const SUMMARY =
-  "inline-flex cursor-pointer select-none items-center gap-1.5 rounded-[var(--pe-radius-sm)] py-1 text-[13px] font-medium text-pe-accent hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--pe-focus)] [&::-webkit-details-marker]:hidden";
+  "inline-flex cursor-pointer select-none items-center gap-1.5 rounded-[var(--pe-radius-sm)] py-1 text-[14px] font-medium text-pe-accent hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--pe-focus)] [&::-webkit-details-marker]:hidden";
 
 function Chevron() {
   return (
@@ -25,7 +25,7 @@ export function Disclosure({ summary, children, defaultOpen = false, className =
         <Chevron />
         {summary}
       </summary>
-      <div className="mt-1 text-[13px] leading-relaxed text-pe-text-2">{children}</div>
+      <div className="mt-1 text-[14px] leading-relaxed text-pe-text-2">{children}</div>
     </details>
   );
 }
@@ -51,7 +51,7 @@ export function LeadMore({ children, className = "", leadClassName = "", moreLab
       <p className={leadClassName}>{parts.lead}</p>
       {parts.rest && (
         <details className="group">
-          <summary className="inline-flex cursor-pointer select-none items-center gap-1 rounded-[var(--pe-radius-sm)] py-0.5 text-[12px] font-medium text-pe-accent hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--pe-focus)] [&::-webkit-details-marker]:hidden">
+          <summary className="inline-flex cursor-pointer select-none items-center gap-1 rounded-[var(--pe-radius-sm)] py-0.5 text-[13px] font-medium text-pe-accent hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--pe-focus)] [&::-webkit-details-marker]:hidden">
             <svg width="9" height="9" viewBox="0 0 10 10" aria-hidden="true" className="shrink-0 transition-transform group-open:rotate-90">
               <path d="M3 1.5L7 5L3 8.5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
@@ -75,11 +75,11 @@ export function FaqAccordion({ items, className = "" }: { items: readonly FaqIte
     <div className={`divide-y divide-pe-border ${className}`} data-testid="faq-accordion">
       {items.map((item, i) => (
         <details key={i} className="group px-4 py-2.5">
-          <summary className="flex cursor-pointer select-none items-center gap-2 rounded-[var(--pe-radius-sm)] text-[14px] font-medium text-pe-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--pe-focus)] [&::-webkit-details-marker]:hidden">
+          <summary className="flex cursor-pointer select-none items-center gap-2 rounded-[var(--pe-radius-sm)] text-[15px] font-medium text-pe-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--pe-focus)] [&::-webkit-details-marker]:hidden">
             <Chevron />
             {item.question}
           </summary>
-          <div className="mt-1.5 ps-[18px] text-[14px] leading-relaxed text-pe-text-2">{item.answer}</div>
+          <div className="mt-1.5 ps-[18px] text-[15px] leading-relaxed text-pe-text-2">{item.answer}</div>
         </details>
       ))}
     </div>
