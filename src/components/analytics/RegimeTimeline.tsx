@@ -143,7 +143,7 @@ export default function RegimeTimeline({
     return { d0, d1, plotW, yTicks, x, y, xTicks, path, changeDays, labelled };
   }, [decisions, asOf, width, turningPoints]);
 
-  if (!geo) return <p className="px-1 py-10 text-center text-[13px] text-pe-text-3">No policy-rate history to draw.</p>;
+  if (!geo) return <p className="px-1 py-10 text-center text-[14px] text-pe-text-3">No policy-rate history to draw.</p>;
   const { d0, d1, plotW, yTicks, x, y, xTicks, path, changeDays, labelled } = geo;
   const stripY = PAD.t + PANEL_H + STRIP_GAP;
   const clipW = stage === "armed" ? 0 : width; // the reveal wipes the WHOLE drawing in; the finished chart is clipped to nothing
@@ -182,7 +182,7 @@ export default function RegimeTimeline({
           {yTicks.map((t) => (
             <g key={t}>
               <line x1={PAD.l} x2={PAD.l + plotW} y1={y(t)} y2={y(t)} stroke="var(--chart-grid)" />
-              <text x={PAD.l - 6} y={y(t)} textAnchor="end" dominantBaseline="central" fontSize={11} fill="var(--chart-axis)" className="tabular-nums">
+              <text x={PAD.l - 6} y={y(t)} textAnchor="end" dominantBaseline="central" fontSize={12} fill="var(--chart-axis)" className="tabular-nums">
                 {formatValue(t, t % 1 === 0 ? 0 : 1)}%
               </text>
             </g>
@@ -192,7 +192,7 @@ export default function RegimeTimeline({
             return (
               <g key={t.ts}>
                 <line x1={tx} x2={tx} y1={stripY + STRIP_H} y2={stripY + STRIP_H + 4} stroke="var(--chart-axis)" />
-                <text x={tx} y={stripY + STRIP_H + 17} textAnchor="middle" fontSize={11} fill="var(--chart-axis)">
+                <text x={tx} y={stripY + STRIP_H + 17} textAnchor="middle" fontSize={12} fill="var(--chart-axis)">
                   {t.label}
                 </text>
               </g>
@@ -255,7 +255,7 @@ export default function RegimeTimeline({
                 <g key={`${tp.date}-${tp.kind}`}>
                   <circle cx={tx} cy={ty} r={4} fill={tp.confirmed ? "var(--pe-viz-purple)" : "var(--pe-surface)"} stroke="var(--pe-viz-purple)" strokeWidth={1.75} />
                   {showLabel && (
-                    <text x={tx} y={tp.kind === "peak" ? ty - 9 : ty + 17} textAnchor="middle" fontSize={11} fontWeight={600} fill="var(--pe-text)" className="tabular-nums">
+                    <text x={tx} y={tp.kind === "peak" ? ty - 9 : ty + 17} textAnchor="middle" fontSize={12} fontWeight={600} fill="var(--pe-text)" className="tabular-nums">
                       {formatValue(tp.rate, 2)}%
                     </text>
                   )}
@@ -286,12 +286,12 @@ export default function RegimeTimeline({
             <TipTitle>{formatDate(d.iso)}</TipTitle>
             {d.level ? <TipRow label="Policy rate" value={pct(d.level.rate)} /> : null}
             {d.level ? (
-              <p className="text-[11px]" style={{ color: "var(--chart-tooltip-label)" }}>
+              <p className="text-[12px]" style={{ color: "var(--chart-tooltip-label)" }}>
                 {d.level.current ? `since ${formatDate(d.level.from)} (${daysText(d.level.days)} so far)` : `in effect ${formatDate(d.level.from)} to ${d.level.until ? formatDate(d.level.until) : ""} (${daysText(d.level.days)})`}
               </p>
             ) : null}
             {d.seg ? (
-              <p className="mt-1 text-[11px] leading-snug" style={{ color: "var(--chart-tooltip-value)" }}>
+              <p className="mt-1 text-[12px] leading-snug" style={{ color: "var(--chart-tooltip-value)" }}>
                 {regimeSentence(d.seg)}
               </p>
             ) : null}

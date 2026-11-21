@@ -66,7 +66,7 @@ export default function PatternsSection({ headline, mom }: { headline: MonthlyPo
           The month-on-month series covers only {matrix.years.length} calendar years, and they include an unusually volatile period. A calendar month that repeats as high or low is worth watching, but it is not statistical evidence of seasonality.
         </Callout>
       )}
-      <p className="text-[12px] leading-relaxed text-pe-text-3">
+      <p className="text-[13px] leading-relaxed text-pe-text-3">
         Related: <a href="#groups-time" className="text-pe-accent underline underline-offset-2">CPI groups over time</a> (group-by-month heatmap) and <a href="#international" className="text-pe-accent underline underline-offset-2">Pakistan and regional peers</a>. Urban vs rural is <a href="#urban-rural" className="text-pe-accent underline underline-offset-2">not available</a>.
       </p>
     </div>

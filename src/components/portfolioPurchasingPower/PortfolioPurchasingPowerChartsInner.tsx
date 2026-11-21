@@ -39,8 +39,8 @@ export default function PortfolioPurchasingPowerChartsInner({ rows, contribution
           <ResponsiveContainer width="100%" height={Math.max(160, contributionData.length * 44)}>
             <BarChart data={contributionData} layout="vertical" margin={{ top: 4, right: 32, left: 8, bottom: 4 }}>
               <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} horizontal={false} />
-              <XAxis type="number" tickFormatter={(v) => `${v}%`} stroke="transparent" tick={{ fill: axisTickFill, fontSize: 11 }} tickLine={false} axisLine={false} />
-              <YAxis type="category" dataKey="name" stroke="transparent" tick={{ fill: axisTickFill, fontSize: 12 }} tickLine={false} axisLine={false} width={130} />
+              <XAxis type="number" tickFormatter={(v) => `${v}%`} stroke="transparent" tick={{ fill: axisTickFill, fontSize: 12 }} tickLine={false} axisLine={false} />
+              <YAxis type="category" dataKey="name" stroke="transparent" tick={{ fill: axisTickFill, fontSize: 13 }} tickLine={false} axisLine={false} width={130} />
               <Tooltip contentStyle={tooltipStyle} formatter={(v) => [`${typeof v === "number" ? v.toFixed(1) : v}%`, ""]} />
               <Bar dataKey="value" radius={[0, 6, 6, 0]} isAnimationActive={!prefersReducedMotion} animationDuration={700}>
                 {contributionData.map((d) => (

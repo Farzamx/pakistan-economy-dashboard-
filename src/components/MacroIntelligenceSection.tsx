@@ -55,8 +55,8 @@ function freshnessLabel(state: IndicatorObservationEvidence["freshnessState"]): 
 function EvidenceRow({ evidence }: { evidence: IndicatorObservationEvidence }) {
   return (
     <li className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 border-t border-white/5 py-1.5 first:border-t-0 first:pt-0 light:border-black/5">
-      <span className="text-[11px] text-neutral-400 light:text-neutral-600">{evidence.label}</span>
-      <span className="text-right text-[11px] tabular-nums text-neutral-500 light:text-neutral-500">
+      <span className="text-[12px] text-neutral-400 light:text-neutral-600">{evidence.label}</span>
+      <span className="text-right text-[12px] tabular-nums text-neutral-500 light:text-neutral-500">
         {evidence.value !== null ? `${evidence.value}${evidence.unit}` : "—"}
         {evidence.observationPeriod && <> · {evidence.observationPeriod}</>}
         {" · "}
@@ -83,7 +83,7 @@ function EvidenceRow({ evidence }: { evidence: IndicatorObservationEvidence }) {
 function HistoryStrip({ history }: { history: DimensionHistory | null }) {
   if (!history) {
     return (
-      <p className="mt-3 border-t border-white/5 pt-3 text-[11px] text-white/30 light:border-black/5 light:text-slate-400">History will appear after additional snapshots.</p>
+      <p className="mt-3 border-t border-white/5 pt-3 text-[12px] text-white/30 light:border-black/5 light:text-slate-400">History will appear after additional snapshots.</p>
     );
   }
 
@@ -91,7 +91,7 @@ function HistoryStrip({ history }: { history: DimensionHistory | null }) {
     return (
       <div className="mt-3 border-t border-white/5 pt-3 light:border-black/5">
         <span className="text-label text-white/30 light:text-slate-400">History</span>
-        <p className="mt-1 text-[11px] text-white/40 light:text-slate-500">1 snapshot</p>
+        <p className="mt-1 text-[12px] text-white/40 light:text-slate-500">1 snapshot</p>
       </div>
     );
   }
@@ -110,7 +110,7 @@ function HistoryStrip({ history }: { history: DimensionHistory | null }) {
     <div className="mt-3 border-t border-white/5 pt-3 light:border-black/5">
       <span className="text-label text-white/30 light:text-slate-400">History</span>
 
-      <p className="mt-1 text-[11px] leading-relaxed text-white/50 light:text-slate-500">
+      <p className="mt-1 text-[12px] leading-relaxed text-white/50 light:text-slate-500">
         {runs.map((run, i) => (
           <span key={`${run.points[0].computedAt}-${i}`}>
             {i > 0 && <span aria-hidden="true" className="mx-1 text-white/20 light:text-slate-300">→</span>}
@@ -124,19 +124,19 @@ function HistoryStrip({ history }: { history: DimensionHistory | null }) {
         ))}
       </p>
 
-      <p className="mt-1 text-[11px] text-white/40 light:text-slate-500">
+      <p className="mt-1 text-[12px] text-white/40 light:text-slate-500">
         {history.currentState.replace(/-/g, " ")} · {countLabel}
         {history.previousState && <> · Changed from {history.previousState.replace(/-/g, " ")}</>}
       </p>
 
       {/* Counts are snapshots, not days: a missed scheduled run would
           otherwise silently become a claimed duration. */}
-      <p className="mt-1 text-[10px] leading-relaxed text-white/25 light:text-slate-400">
+      <p className="mt-1 text-[11px] leading-relaxed text-white/25 light:text-slate-400">
         Counts are stored snapshots, not days or economic events.
       </p>
 
       <details className="group mt-1.5">
-        <summary className="w-fit cursor-pointer list-none text-[10px] font-medium text-white/35 hover:text-white/60 light:text-slate-500 light:hover:text-slate-700">
+        <summary className="w-fit cursor-pointer list-none text-[11px] font-medium text-white/35 hover:text-white/60 light:text-slate-500 light:hover:text-slate-700">
           <span className="inline-flex items-center gap-1">
             All {history.points.length} snapshots
             <span aria-hidden="true" className="transition-transform group-open:rotate-90">›</span>
@@ -144,7 +144,7 @@ function HistoryStrip({ history }: { history: DimensionHistory | null }) {
         </summary>
         <ol className="mt-1.5 flex flex-col gap-0.5">
           {history.points.map((p, i) => (
-            <li key={`${p.computedAt}-${i}`} className="flex flex-wrap items-baseline gap-x-2 text-[10px] text-white/40 light:text-slate-500">
+            <li key={`${p.computedAt}-${i}`} className="flex flex-wrap items-baseline gap-x-2 text-[11px] text-white/40 light:text-slate-500">
               <span className="text-mono-num tabular-nums text-white/30 light:text-slate-400">{p.computedAt.slice(0, 10)}</span>
               <span>{p.state.replace(/-/g, " ")}</span>
             </li>
@@ -163,7 +163,7 @@ function SignalCard({ signal, history }: { signal: IntelligenceSignal; history: 
 
       <div className="flex items-start justify-between gap-3">
         <span className="text-label text-white/45 light:text-slate-400">{signal.label}</span>
-        <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold tracking-wide ${CONFIDENCE_BADGE_CLASS[signal.confidence]}`}>
+        <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-semibold tracking-wide ${CONFIDENCE_BADGE_CLASS[signal.confidence]}`}>
           {signal.confidence === "Insufficient" ? "INSUFFICIENT" : signal.confidence.toUpperCase()}
         </span>
       </div>
@@ -193,9 +193,9 @@ function SignalCard({ signal, history }: { signal: IntelligenceSignal; history: 
           passes every genuine sentence through untouched and substitutes a
           neutral explanation only in that case. The engine's own summary
           field is unchanged; signalDefinitions.ts is not modified. */}
-      <p className="mt-3 text-[13px] leading-relaxed text-white/65 light:text-slate-600">{displaySummary(signal)}</p>
+      <p className="mt-3 text-[14px] leading-relaxed text-white/65 light:text-slate-600">{displaySummary(signal)}</p>
 
-      <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-white/5 pt-3 text-[11px] text-white/35 light:border-black/5 light:text-slate-400">
+      <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-white/5 pt-3 text-[12px] text-white/35 light:border-black/5 light:text-slate-400">
         <span className="tabular-nums">
           {usableCount} of {signal.evidence.length} indicator{signal.evidence.length === 1 ? "" : "s"}
         </span>
@@ -213,7 +213,7 @@ function SignalCard({ signal, history }: { signal: IntelligenceSignal; history: 
 
       {signal.evidence.length > 0 && (
         <details className="group mt-3">
-          <summary className="w-fit cursor-pointer list-none text-[11px] font-medium text-neutral-400 hover:text-neutral-300 light:text-neutral-500 light:hover:text-neutral-700">
+          <summary className="w-fit cursor-pointer list-none text-[12px] font-medium text-neutral-400 hover:text-neutral-300 light:text-neutral-500 light:hover:text-neutral-700">
             <span className="inline-flex items-center gap-1">
               View supporting evidence
               <span aria-hidden="true" className="transition-transform group-open:rotate-90">›</span>

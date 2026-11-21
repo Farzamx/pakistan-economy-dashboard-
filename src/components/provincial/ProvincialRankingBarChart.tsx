@@ -41,8 +41,8 @@ export default function ProvincialRankingBarChart({ entries, unitLabel = "Rs bn"
           <ResponsiveContainer width="100%" height={Math.max(180, chartable.length * 56)}>
             <BarChart data={data} layout="vertical" margin={{ top: 8, right: 24, left: 8, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} horizontal={false} />
-              <XAxis type="number" stroke="transparent" tick={{ fill: axisTickFill, fontSize: 11 }} tickLine={false} axisLine={false} tickFormatter={(v) => `${v}`} />
-              <YAxis type="category" dataKey="name" stroke="transparent" tick={{ fill: axisTickFill, fontSize: 12 }} tickLine={false} axisLine={false} width={120} />
+              <XAxis type="number" stroke="transparent" tick={{ fill: axisTickFill, fontSize: 12 }} tickLine={false} axisLine={false} tickFormatter={(v) => `${v}`} />
+              <YAxis type="category" dataKey="name" stroke="transparent" tick={{ fill: axisTickFill, fontSize: 13 }} tickLine={false} axisLine={false} width={120} />
               <Tooltip
                 contentStyle={{ background: tooltipBg, border: tooltipBorder, borderRadius: "0.75rem", backdropFilter: "blur(16px)" }}
                 formatter={(value, _name, item) => [`${unitLabel} ${typeof value === "number" ? value.toFixed(1) : value} (FY${item.payload.fiscalYear})`, "Value"]}
@@ -57,7 +57,7 @@ export default function ProvincialRankingBarChart({ entries, unitLabel = "Rs bn"
         )
       )}
       {unavailable.length > 0 && (
-        <p className="mt-2 text-[11px] text-[var(--text-muted)]">
+        <p className="mt-2 text-[12px] text-[var(--text-muted)]">
           {t("provincial.notAvailable")}: {unavailable.map((e) => e.name).join(", ")} — {t("provincial.noVerifiedFigure")}
         </p>
       )}

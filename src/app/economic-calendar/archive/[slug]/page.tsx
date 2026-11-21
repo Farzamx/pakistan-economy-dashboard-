@@ -175,7 +175,7 @@ export default async function ArchiveDetailPage({ params }: PageProps) {
             <EventStatusBadge status={event.status} />
             <AutomationStatusBadge tier={event.series.automationTier} />
             {stillWithinRetention && (
-              <span className="rounded-full border border-neon-blue/20 bg-neon-blue/5 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-neon-blue">
+              <span className="rounded-full border border-neon-blue/20 bg-neon-blue/5 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-neon-blue">
                 {formatReleasedAgo(event.eventDate, today)}
               </span>
             )}
@@ -189,15 +189,15 @@ export default async function ArchiveDetailPage({ params }: PageProps) {
 
           <section className="glass-card mt-8 grid grid-cols-3 gap-4 p-6 sm:p-8">
             <div className="flex flex-col gap-1">
-              <span className="text-[10px] uppercase tracking-wide text-white/35 light:text-slate-400">Previous</span>
+              <span className="text-[11px] uppercase tracking-wide text-white/35 light:text-slate-400">Previous</span>
               <span className="text-lg font-semibold text-white/70 light:text-slate-600">{event.previousValue ?? "—"}</span>
             </div>
             <div className="flex flex-col gap-1">
-              <span className="text-[10px] uppercase tracking-wide text-white/35 light:text-slate-400">Forecast</span>
+              <span className="text-[11px] uppercase tracking-wide text-white/35 light:text-slate-400">Forecast</span>
               <span className="text-lg font-semibold text-white/70 light:text-slate-600">{event.forecastValue ?? "—"}</span>
             </div>
             <div className="flex flex-col gap-1">
-              <span className="text-[10px] uppercase tracking-wide text-white/35 light:text-slate-400">Actual</span>
+              <span className="text-[11px] uppercase tracking-wide text-white/35 light:text-slate-400">Actual</span>
               <span className="text-lg font-bold text-neon-blue">{event.actualValue ?? "Pending"}</span>
             </div>
           </section>

@@ -63,12 +63,12 @@ function Row({ kpi, index }: { kpi: Kpi; index: number }) {
   const content = (
     <div className="panel-row flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-white/[0.02] light:hover:bg-slate-50">
       {authoritative ? (
-        <span className={`shrink-0 text-[7px] ${FRESHNESS_SEVERITY_DOT[authoritative.severity]}`} title={`${FRESHNESS_STATE_LABEL[authoritative.state]} — ${authoritative.reason}`} aria-hidden="true">
+        <span className={`shrink-0 text-[10px] ${FRESHNESS_SEVERITY_DOT[authoritative.severity]}`} title={`${FRESHNESS_STATE_LABEL[authoritative.state]} — ${authoritative.reason}`} aria-hidden="true">
           &#9679;
         </span>
       ) : null}
       {quality && (
-        <span className={`shrink-0 text-[7px] ${DATA_QUALITY_DOT[quality.state]}`} title={quality.state} aria-hidden="true">
+        <span className={`shrink-0 text-[10px] ${DATA_QUALITY_DOT[quality.state]}`} title={quality.state} aria-hidden="true">
           &#9679;
         </span>
       )}
@@ -87,7 +87,7 @@ function Row({ kpi, index }: { kpi: Kpi; index: number }) {
       </div>
       <div className="flex w-20 shrink-0 items-baseline justify-end gap-1 font-mono text-sm tabular-nums text-white sm:w-28 light:text-slate-900">
         <span className="font-semibold">{kpi.value}</span>
-        <span className="text-[11px] text-white/40 light:text-slate-400">{kpi.unit}</span>
+        <span className="text-[12px] text-white/40 light:text-slate-400">{kpi.unit}</span>
       </div>
     </div>
   );

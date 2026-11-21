@@ -31,7 +31,7 @@ export default function GoalRecommendationCards({ recommendations }: Props) {
               </Link>
             )}
           </div>
-          <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${IMPACT_STYLE[rec.expectedImpact]}`}>
+          <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide ${IMPACT_STYLE[rec.expectedImpact]}`}>
             {rec.expectedImpact}
           </span>
         </div>

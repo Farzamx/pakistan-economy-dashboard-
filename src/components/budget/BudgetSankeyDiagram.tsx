@@ -55,13 +55,13 @@ function NoData({ years }: { years: PreparedSankeyYear[] }) {
   return (
     <div className="rounded-xl border border-amber-500/30 bg-amber-500/[0.06] p-4 text-sm text-amber-200 light:text-amber-900" role="status" data-testid="budget-sankey-nodata">
       <p className="font-semibold">The budget flow diagram is not shown.</p>
-      <p className="mt-1 text-[13px] leading-relaxed">
+      <p className="mt-1 text-[14px] leading-relaxed">
         {years.length === 0
           ? "No fiscal year has verified revenue, financing and expenditure detail yet, and the diagram only draws figures that reconcile to the Budget in Brief."
           : `The figures for FY${failed?.fiscalYear} did not pass the reconciliation checks, so the diagram is withheld rather than drawn from numbers that do not add up.`}
       </p>
       {(checks.length > 0 || errors.length > 0) && (
-        <ul className="mt-2 list-disc space-y-0.5 pl-5 text-[12px]">
+        <ul className="mt-2 list-disc space-y-0.5 pl-5 text-[13px]">
           {checks.map((c) => (
             <li key={c.id}>
               {c.description}: printed {formatNumber(c.printed, 3)}, parts add to {formatNumber(c.computed, 3)} (difference {formatSigned(c.difference)}, allowed {c.tolerance}).
@@ -79,7 +79,7 @@ function NoData({ years }: { years: PreparedSankeyYear[] }) {
 function DetailPanel({ detail, expandable, expanded, onToggleExpand, onClear }: { detail: NodeDetail | null; expandable: boolean; expanded: boolean; onToggleExpand: () => void; onClear: () => void }) {
   if (!detail) {
     return (
-      <div className="rounded-xl border border-dashed border-[var(--border)] p-4 text-[13px] text-[var(--text-muted)]" data-testid="budget-sankey-detail-empty">
+      <div className="rounded-xl border border-dashed border-[var(--border)] p-4 text-[14px] text-[var(--text-muted)]" data-testid="budget-sankey-detail-empty">
         Select any block to see its amount, its share of the budget, where the money comes from and where it goes, and which Budget in Brief table it was read from.
       </div>
     );
@@ -92,23 +92,23 @@ function DetailPanel({ detail, expandable, expanded, onToggleExpand, onClear }: 
         <div className="flex items-center gap-2">
           <Swatch color={color} hatched={n.kind === "financing"} />
           <h4 className="text-base font-semibold text-[var(--text-primary)]">{n.label}</h4>
-          {n.derived && <span className="rounded border border-[var(--border)] px-1.5 text-[10px] text-[var(--text-muted)]">remainder</span>}
-          {n.kind === "financing" && <span className="rounded border border-[var(--border)] px-1.5 text-[10px] text-[var(--text-muted)]">borrowing, not revenue</span>}
+          {n.derived && <span className="rounded border border-[var(--border)] px-1.5 text-[11px] text-[var(--text-muted)]">remainder</span>}
+          {n.kind === "financing" && <span className="rounded border border-[var(--border)] px-1.5 text-[11px] text-[var(--text-muted)]">borrowing, not revenue</span>}
         </div>
         <div className="flex gap-2">
           {expandable && (
-            <button type="button" onClick={onToggleExpand} aria-expanded={expanded} className="rounded-lg border border-[var(--border)] px-2.5 py-1 text-[11px] font-medium text-[var(--text-muted)] transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]">
+            <button type="button" onClick={onToggleExpand} aria-expanded={expanded} className="rounded-lg border border-[var(--border)] px-2.5 py-1 text-[12px] font-medium text-[var(--text-muted)] transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]">
               {expanded ? "Hide breakdown" : "Show breakdown"}
             </button>
           )}
-          <button type="button" onClick={onClear} className="rounded-lg border border-[var(--border)] px-2.5 py-1 text-[11px] font-medium text-[var(--text-muted)] transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]">
+          <button type="button" onClick={onClear} className="rounded-lg border border-[var(--border)] px-2.5 py-1 text-[12px] font-medium text-[var(--text-muted)] transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]">
             Clear
           </button>
         </div>
       </div>
 
       <p className="mt-2 text-2xl font-semibold tabular-nums text-[var(--text-primary)]">{formatBn(detail.value)}</p>
-      <dl className="mt-2 grid gap-x-6 gap-y-1 text-[12px] sm:grid-cols-3">
+      <dl className="mt-2 grid gap-x-6 gap-y-1 text-[13px] sm:grid-cols-3">
         {detail.parent && detail.parent.id !== IDS.total && (
           <div>
             <dt className="text-[var(--text-muted)]">Share of {detail.parent.label}</dt>
@@ -127,15 +127,15 @@ function DetailPanel({ detail, expandable, expanded, onToggleExpand, onClear }: 
         )}
       </dl>
 
-      <p className="mt-3 text-[13px] leading-relaxed text-[var(--text-secondary)]">{n.description}</p>
+      <p className="mt-3 text-[14px] leading-relaxed text-[var(--text-secondary)]">{n.description}</p>
 
       <div className="mt-3 grid gap-4 sm:grid-cols-2">
         <div>
-          <p className="text-[11px] font-semibold uppercase tracking-widest text-[var(--text-muted)]">Comes from</p>
+          <p className="text-[12px] font-semibold uppercase tracking-widest text-[var(--text-muted)]">Comes from</p>
           {detail.incoming.length === 0 ? (
-            <p className="mt-1 text-[12px] text-[var(--text-muted)]">A starting point of the diagram.</p>
+            <p className="mt-1 text-[13px] text-[var(--text-muted)]">A starting point of the diagram.</p>
           ) : (
-            <ul className="mt-1 space-y-0.5 text-[12px]">
+            <ul className="mt-1 space-y-0.5 text-[13px]">
               {detail.incoming.map((e) => (
                 <li key={e.nodeId} className="flex justify-between gap-3 tabular-nums">
                   <span className="text-[var(--text-secondary)]">{e.label}</span>
@@ -146,11 +146,11 @@ function DetailPanel({ detail, expandable, expanded, onToggleExpand, onClear }: 
           )}
         </div>
         <div>
-          <p className="text-[11px] font-semibold uppercase tracking-widest text-[var(--text-muted)]">Goes to</p>
+          <p className="text-[12px] font-semibold uppercase tracking-widest text-[var(--text-muted)]">Goes to</p>
           {detail.outgoing.length === 0 ? (
-            <p className="mt-1 text-[12px] text-[var(--text-muted)]">An end point: money is spent here.</p>
+            <p className="mt-1 text-[13px] text-[var(--text-muted)]">An end point: money is spent here.</p>
           ) : (
-            <ul className="mt-1 space-y-0.5 text-[12px]">
+            <ul className="mt-1 space-y-0.5 text-[13px]">
               {detail.outgoing.map((e) => (
                 <li key={e.nodeId} className="flex justify-between gap-3 tabular-nums">
                   <span className="text-[var(--text-secondary)]">{e.label}</span>
@@ -166,8 +166,8 @@ function DetailPanel({ detail, expandable, expanded, onToggleExpand, onClear }: 
 
       {n.composition && n.composition.length > 0 && (
         <div className="mt-3">
-          <p className="text-[11px] font-semibold uppercase tracking-widest text-[var(--text-muted)]">Made up of (as printed)</p>
-          <ul className="mt-1 space-y-0.5 text-[12px]">
+          <p className="text-[12px] font-semibold uppercase tracking-widest text-[var(--text-muted)]">Made up of (as printed)</p>
+          <ul className="mt-1 space-y-0.5 text-[13px]">
             {n.composition.map((c) => (
               <li key={c.label} className="flex justify-between gap-3 tabular-nums">
                 <span className="text-[var(--text-secondary)]">
@@ -181,11 +181,11 @@ function DetailPanel({ detail, expandable, expanded, onToggleExpand, onClear }: 
         </div>
       )}
       {n.notes?.map((note) => (
-        <p key={note} className="mt-2 rounded-lg border border-[var(--border-subtle)] p-2 text-[11px] leading-relaxed text-[var(--text-muted)]">
+        <p key={note} className="mt-2 rounded-lg border border-[var(--border-subtle)] p-2 text-[12px] leading-relaxed text-[var(--text-muted)]">
           {note}
         </p>
       ))}
-      <p className="mt-3 text-[11px] text-[var(--text-muted)]">Source: {n.source}</p>
+      <p className="mt-3 text-[12px] text-[var(--text-muted)]">Source: {n.source}</p>
     </div>
   );
 }
@@ -193,7 +193,7 @@ function DetailPanel({ detail, expandable, expanded, onToggleExpand, onClear }: 
 function Fact({ title, children, wide, tone }: { title: string; children: React.ReactNode; wide?: boolean; tone?: "amber" }) {
   return (
     <div className={`rounded-lg p-2.5 ${wide ? "sm:col-span-2 lg:col-span-3" : ""} ${tone === "amber" ? "border border-amber-500/40 bg-amber-500/[0.08]" : "border border-[var(--border-subtle)]"}`}>
-      <dt className={`text-[11px] font-semibold uppercase tracking-widest ${tone === "amber" ? "text-amber-300 light:text-amber-800" : "text-[var(--text-muted)]"}`}>{title}</dt>
+      <dt className={`text-[12px] font-semibold uppercase tracking-widest ${tone === "amber" ? "text-amber-300 light:text-amber-800" : "text-[var(--text-muted)]"}`}>{title}</dt>
       <dd className="mt-1 leading-relaxed text-[var(--text-secondary)]">{children}</dd>
     </div>
   );
@@ -297,7 +297,7 @@ export default function BudgetSankeyDiagram({ years, historicalCoverage }: Budge
       ) : (
         <div className="glass-card rounded-2xl p-4 sm:p-5">
           {/* attribution, always visible */}
-          <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-[var(--text-muted)]">
+          <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-[12px] text-[var(--text-muted)]">
             <span className="rounded border border-[var(--border)] px-1.5 py-0.5 font-semibold text-[var(--text-secondary)]">FY{year.fiscalYear} · Budget Estimates</span>
             <span className="rounded border border-amber-500/40 bg-amber-500/[0.08] px-1.5 py-0.5 font-semibold text-amber-300 light:text-amber-800">Plans, not actual spending</span>
             <span>PKR billion (Rs bn)</span>
@@ -315,7 +315,7 @@ export default function BudgetSankeyDiagram({ years, historicalCoverage }: Budge
           </div>
 
           {/* what you are looking at */}
-          <dl className="mb-3 grid gap-2 text-[12px] sm:grid-cols-2 lg:grid-cols-3" data-testid="budget-sankey-transparency">
+          <dl className="mb-3 grid gap-2 text-[13px] sm:grid-cols-2 lg:grid-cols-3" data-testid="budget-sankey-transparency">
             <Fact title="Estimates, not actual spending" tone="amber" wide>
               Every figure is a <strong className="font-semibold text-[var(--text-primary)]">Budget Estimate</strong>: the plan approved at the start of the fiscal year. It is not what was actually spent. Actual expenditure usually differs, and actuals are not shown in this diagram or anywhere in this workshop.
             </Fact>
@@ -338,7 +338,7 @@ export default function BudgetSankeyDiagram({ years, historicalCoverage }: Budge
           </dl>
 
           {/* legend */}
-          <ul className="mb-3 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-[var(--text-secondary)]" aria-label="Legend" data-testid="budget-sankey-legend">
+          <ul className="mb-3 flex flex-wrap gap-x-4 gap-y-1 text-[12px] text-[var(--text-secondary)]" aria-label="Legend" data-testid="budget-sankey-legend">
             {LEGEND.map((l) => (
               <li key={l.label} className="flex items-center gap-1.5">
                 <Swatch color={l.color} hatched={l.hatched} />
@@ -350,13 +350,13 @@ export default function BudgetSankeyDiagram({ years, historicalCoverage }: Budge
           </ul>
 
           <div className="mb-3 flex flex-wrap items-center gap-2">
-            <button type="button" onClick={() => setExpanded(new Set(expandable))} className="rounded-lg border border-[var(--border)] px-2.5 py-1 text-[11px] font-medium text-[var(--text-muted)] transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]">
+            <button type="button" onClick={() => setExpanded(new Set(expandable))} className="rounded-lg border border-[var(--border)] px-2.5 py-1 text-[12px] font-medium text-[var(--text-muted)] transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]">
               Show all breakdowns
             </button>
-            <button type="button" onClick={() => setExpanded(new Set())} className="rounded-lg border border-[var(--border)] px-2.5 py-1 text-[11px] font-medium text-[var(--text-muted)] transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]">
+            <button type="button" onClick={() => setExpanded(new Set())} className="rounded-lg border border-[var(--border)] px-2.5 py-1 text-[12px] font-medium text-[var(--text-muted)] transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]">
               Overview only
             </button>
-            <span className="text-[11px] text-[var(--text-muted)]">Revised estimates and actuals are not offered: only the Budget Estimate is available for every flow.</span>
+            <span className="text-[12px] text-[var(--text-muted)]">Revised estimates and actuals are not offered: only the Budget Estimate is available for every flow.</span>
           </div>
 
           {/* desktop and tablet: the diagram */}
@@ -365,17 +365,17 @@ export default function BudgetSankeyDiagram({ years, historicalCoverage }: Budge
               <BudgetSankeySvg layout={layout} graph={visible} selectedId={selectedId} hover={hover} totalResources={totalResources} fiscalYear={year.fiscalYear} onSelect={setSelectedRaw} onHover={handleHover} />
             </div>
             {tooltip && (
-              <div role="tooltip" className="pointer-events-none absolute z-20 w-[236px] rounded-xl border border-[var(--border)] px-3 py-2 text-[12px] shadow-xl backdrop-blur-xl" style={{ left: tooltip.left, top: tooltip.top, backgroundColor: "var(--space-700)" }} data-testid="budget-sankey-tooltip">
+              <div role="tooltip" className="pointer-events-none absolute z-20 w-[236px] rounded-xl border border-[var(--border)] px-3 py-2 text-[13px] shadow-xl backdrop-blur-xl" style={{ left: tooltip.left, top: tooltip.top, backgroundColor: "var(--space-700)" }} data-testid="budget-sankey-tooltip">
                 <p className="font-semibold text-[var(--text-primary)]">{tooltip.title}</p>
                 {tooltip.lines.map((line, i) => (
-                  <p key={i} className={i === 0 ? "text-base font-semibold tabular-nums text-[var(--text-primary)]" : "text-[11px] tabular-nums text-[var(--text-secondary)]"}>
+                  <p key={i} className={i === 0 ? "text-base font-semibold tabular-nums text-[var(--text-primary)]" : "text-[12px] tabular-nums text-[var(--text-secondary)]"}>
                     {line}
                   </p>
                 ))}
               </div>
             )}
           </div>
-          <p className="mt-1 hidden text-[11px] text-[var(--text-muted)] md:block xl:hidden">On narrower screens, scroll sideways to see every stage.</p>
+          <p className="mt-1 hidden text-[12px] text-[var(--text-muted)] md:block xl:hidden">On narrower screens, scroll sideways to see every stage.</p>
 
           {/* phone: the same data, stage by stage */}
           <div className="md:hidden">
@@ -384,7 +384,7 @@ export default function BudgetSankeyDiagram({ years, historicalCoverage }: Budge
               type="button"
               aria-expanded={mobileDiagramOpen}
               onClick={() => setMobileDiagramOpen((v) => !v)}
-              className="mt-3 w-full rounded-lg border border-[var(--border)] px-3 py-2 text-[12px] font-medium text-[var(--text-secondary)] transition-colors hover:bg-[var(--surface-hover)]"
+              className="mt-3 w-full rounded-lg border border-[var(--border)] px-3 py-2 text-[13px] font-medium text-[var(--text-secondary)] transition-colors hover:bg-[var(--surface-hover)]"
             >
               {mobileDiagramOpen ? "Hide the full diagram" : "Open the full diagram (scroll sideways)"}
             </button>
@@ -399,7 +399,7 @@ export default function BudgetSankeyDiagram({ years, historicalCoverage }: Budge
             <DetailPanel detail={detail} expandable={!!selectedId && expandable.has(selectedId)} expanded={!!selectedId && expanded.has(selectedId)} onToggleExpand={() => selectedId && toggleExpand(selectedId)} onClear={() => setSelectedRaw(null)} />
           </div>
 
-          <ul className="mt-4 flex flex-col gap-1 text-[11px] leading-relaxed text-[var(--text-muted)]" data-testid="budget-sankey-notes">
+          <ul className="mt-4 flex flex-col gap-1 text-[12px] leading-relaxed text-[var(--text-muted)]" data-testid="budget-sankey-notes">
             <li>
               <span className="font-semibold text-[var(--text-secondary)]">Borrowing is financing, not revenue.</span> Gross federal revenue and borrowing are separate blocks. Borrowing and external loans are shown net of repayments, as Budget in Brief reports them.
             </li>
@@ -407,7 +407,7 @@ export default function BudgetSankeyDiagram({ years, historicalCoverage }: Budge
               <li key={n}>{n}</li>
             ))}
           </ul>
-          <details className="mt-1 text-[11px] text-[var(--text-muted)]" data-testid="budget-sankey-howto">
+          <details className="mt-1 text-[12px] text-[var(--text-muted)]" data-testid="budget-sankey-howto">
             <summary className="cursor-pointer select-none text-[var(--text-secondary)] hover:text-[var(--text-primary)]">How to read the diagram: pooling, the provinces&apos; share, ribbon widths</summary>
             <ul className="mt-1 flex flex-col gap-1 leading-relaxed">
               <li>Money is fungible: every source flows into one pool and every use is paid from it, so the diagram does not say that a particular tax or loan pays for a particular item.</li>
@@ -416,7 +416,7 @@ export default function BudgetSankeyDiagram({ years, historicalCoverage }: Budge
             </ul>
           </details>
 
-          <div className="mt-4 rounded-xl border border-[var(--border-subtle)] p-3 text-[12px] leading-relaxed text-[var(--text-secondary)]" data-testid="budget-sankey-recon-summary">
+          <div className="mt-4 rounded-xl border border-[var(--border-subtle)] p-3 text-[13px] leading-relaxed text-[var(--text-secondary)]" data-testid="budget-sankey-recon-summary">
             <p>
               <span className="font-semibold text-[var(--text-primary)]">
                 Reconciliation, FY{year.fiscalYear}: {recon.passing} of {recon.total} checks pass.
@@ -433,11 +433,11 @@ export default function BudgetSankeyDiagram({ years, historicalCoverage }: Budge
             ))}
           </div>
 
-          <details className="mt-4 text-[12px] text-[var(--text-muted)]" data-testid="budget-sankey-tables">
+          <details className="mt-4 text-[13px] text-[var(--text-muted)]" data-testid="budget-sankey-tables">
             <summary className="cursor-pointer select-none text-[var(--text-secondary)] hover:text-[var(--text-primary)]">View the flows and the reconciliation as tables</summary>
             <div className="mt-3 overflow-x-auto">
               <table className="w-full min-w-[560px] border-collapse text-left tabular-nums">
-                <caption className="pb-2 text-left text-[11px] text-[var(--text-muted)]">
+                <caption className="pb-2 text-left text-[12px] text-[var(--text-muted)]">
                   Every flow in the FY{year.fiscalYear} diagram (Budget Estimates, Rs billion). Shares are of the block the flow leaves and of total resources.
                 </caption>
                 <thead>
@@ -465,7 +465,7 @@ export default function BudgetSankeyDiagram({ years, historicalCoverage }: Budge
 
             <div className="mt-5 overflow-x-auto">
               <table className="w-full min-w-[640px] border-collapse text-left tabular-nums" data-testid="budget-sankey-reconciliation">
-                <caption className="pb-2 text-left text-[11px] text-[var(--text-muted)]">
+                <caption className="pb-2 text-left text-[12px] text-[var(--text-muted)]">
                   Reconciliation: {passing} of {reconciliation.length} checks pass. Each compares the sum of the parts with the total the document prints. Allowed differences: 0.5 for each whole-billion figure in an identity (Tables 1 and 2 print whole billions), 0.01 for Rs-million tables, 0.5 for the Table 10 total (several of its rows are printed rounded) and 4 for the pool (seven whole-billion figures plus that rounding). Differences inside tolerance are shown, not hidden.
                 </caption>
                 <thead>
@@ -484,8 +484,8 @@ export default function BudgetSankeyDiagram({ years, historicalCoverage }: Budge
                     <tr key={r.id} className="border-t border-[var(--border-subtle)] align-top">
                       <th scope="row" className="py-1 pr-3 text-left font-normal">
                         {r.description}
-                        {r.sourceGap && <span className="ml-2 rounded border border-amber-500/40 px-1 text-[10px] text-amber-300 light:text-amber-800">gap in the source</span>}
-                        {r.note && <span className="mt-1 block text-[11px] leading-relaxed text-[var(--text-muted)]">{r.note}</span>}
+                        {r.sourceGap && <span className="ml-2 rounded border border-amber-500/40 px-1 text-[11px] text-amber-300 light:text-amber-800">gap in the source</span>}
+                        {r.note && <span className="mt-1 block text-[12px] leading-relaxed text-[var(--text-muted)]">{r.note}</span>}
                       </th>
                       <td className="px-2 py-1">{r.source}</td>
                       <td className="px-2 py-1 text-right">{formatNumber(r.printed, 3)}</td>

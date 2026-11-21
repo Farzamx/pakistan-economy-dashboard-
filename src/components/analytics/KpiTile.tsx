@@ -37,11 +37,11 @@ export function KpiTile({
   return (
     <div className="flex min-w-0 flex-col rounded-[var(--pe-radius)] border border-pe-border bg-pe-surface p-3.5">
       <div className="flex items-start justify-between gap-2">
-        <span className="text-[12px] font-medium text-pe-text-2">{label}</span>
-        <span className="shrink-0 rounded-[var(--pe-radius-sm)] border border-pe-border bg-pe-surface-2 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-[0.05em] text-pe-text-2">{kind}</span>
+        <span className="text-[13px] font-medium text-pe-text-2">{label}</span>
+        <span className="shrink-0 rounded-[var(--pe-radius-sm)] border border-pe-border bg-pe-surface-2 px-1.5 py-0.5 text-[11px] font-medium uppercase tracking-[0.05em] text-pe-text-2">{kind}</span>
       </div>
       <p className="mt-1.5 text-[30px] font-semibold leading-none tabular-nums tracking-[-0.01em] text-pe-text">{value}</p>
-      <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-[12px]">
+      <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-[13px]">
         <dt className="text-pe-text-3">Period</dt>
         <dd className="tabular-nums text-pe-text-2">{period}</dd>
         {previous && (
@@ -58,13 +58,13 @@ export function KpiTile({
         )}
       </dl>
       {warning && (
-        <p className="mt-2 rounded-[var(--pe-radius-sm)] border px-2 py-1 text-[11px] leading-snug" style={{ background: "var(--pe-warn-bg)", borderColor: "var(--pe-warn-border)", color: "var(--pe-warn-text)" }}>
+        <p className="mt-2 rounded-[var(--pe-radius-sm)] border px-2 py-1 text-[12px] leading-snug" style={{ background: "var(--pe-warn-bg)", borderColor: "var(--pe-warn-border)", color: "var(--pe-warn-text)" }}>
           {warning}
         </p>
       )}
       {badge && <div className="mt-2">{badge}</div>}
-      {note && <p className="mt-2 text-[11px] leading-relaxed text-pe-text-3">{note}</p>}
-      <p className="mt-auto pt-2 font-mono text-[10.5px] leading-snug text-pe-text-3">{source}</p>
+      {note && <p className="mt-2 text-[12px] leading-relaxed text-pe-text-3">{note}</p>}
+      <p className="mt-auto pt-2 font-mono text-[11.5px] leading-snug text-pe-text-3">{source}</p>
     </div>
   );
 }

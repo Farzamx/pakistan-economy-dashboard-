@@ -40,7 +40,7 @@ export default function OverviewNavItem({ labelKey, open, onOpenChange, sections
         href={OVERVIEW_PATH}
         aria-current="page"
         onClick={close}
-        className="relative flex items-center whitespace-nowrap pe-1 ps-3 text-[14px] font-medium text-pe-nav-text"
+        className="relative flex items-center whitespace-nowrap pe-1 ps-3 text-[15px] font-medium text-pe-nav-text"
       >
         {t(labelKey)}
         <span aria-hidden="true" className="absolute bottom-0 end-1 start-3 h-0.5 bg-pe-nav-accent" />
@@ -73,7 +73,7 @@ export default function OverviewNavItem({ labelKey, open, onOpenChange, sections
         onKeyDown={handleMenuArrowKeys}
         className="pe-panel absolute start-0 top-full z-10 mt-px max-h-[calc(100vh-5rem)] w-64 overflow-y-auto rounded-b-[var(--pe-radius)] border border-pe-border bg-pe-surface p-2 text-pe-text shadow-[var(--pe-shadow-pop)]"
       >
-        <p className="mb-1 border-b border-pe-border px-2.5 pb-1.5 pt-1 text-[11px] font-semibold uppercase tracking-[0.06em] text-pe-text-3">
+        <p className="mb-1 border-b border-pe-border px-2.5 pb-1.5 pt-1 text-[12px] font-semibold uppercase tracking-[0.06em] text-pe-text-3">
           {t("appNav.onThisPage")}
         </p>
         <ul className="flex flex-col">
@@ -89,7 +89,7 @@ export default function OverviewNavItem({ labelKey, open, onOpenChange, sections
                     close();
                     goToOverviewSection(s.id);
                   }}
-                  className={`flex items-center gap-2 rounded-[var(--pe-radius-sm)] px-2.5 py-1.5 text-[13px] hover:bg-pe-surface-2 ${
+                  className={`flex items-center gap-2 rounded-[var(--pe-radius-sm)] px-2.5 py-1.5 text-[14px] hover:bg-pe-surface-2 ${
                     current ? "font-medium text-pe-accent" : "text-pe-text-2 hover:text-pe-text"
                   }`}
                 >

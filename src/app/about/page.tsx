@@ -25,7 +25,7 @@ export default function AboutPage() {
       <MarketingNav />
 
       <main className="mx-auto w-full max-w-[760px] px-5 pb-24 pt-32 min-[1024px]:px-10 min-[1024px]:pt-40">
-        <span className="text-[11px] uppercase tracking-[0.14em]" style={{ fontFamily: "var(--font-marketing-data)", color: "var(--muted)" }}>
+        <span className="text-[12px] uppercase tracking-[0.14em]" style={{ fontFamily: "var(--font-marketing-data)", color: "var(--muted)" }}>
           About
         </span>
         <h1 className="mt-3 text-[32px] font-bold leading-tight min-[1024px]:text-[44px]" style={{ fontFamily: "var(--font-marketing-heading)", color: "var(--paper)" }}>
@@ -34,7 +34,7 @@ export default function AboutPage() {
 
         <div className="mt-10 flex flex-col gap-10 text-[16px] leading-relaxed min-[1024px]:text-[17px]" style={{ fontFamily: "var(--font-marketing-body)", color: "var(--paper)" }}>
           <section className="flex flex-col gap-3">
-            <h2 className="text-[13px] font-medium uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-marketing-data)", color: "var(--muted)" }}>
+            <h2 className="text-[14px] font-medium uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-marketing-data)", color: "var(--muted)" }}>
               What it is
             </h2>
             <p>
@@ -52,7 +52,7 @@ export default function AboutPage() {
           </section>
 
           <section className="flex flex-col gap-3">
-            <h2 className="text-[13px] font-medium uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-marketing-data)", color: "var(--muted)" }}>
+            <h2 className="text-[14px] font-medium uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-marketing-data)", color: "var(--muted)" }}>
               Why it exists
             </h2>
             <p>
@@ -65,7 +65,7 @@ export default function AboutPage() {
           </section>
 
           <section className="flex flex-col gap-3">
-            <h2 className="text-[13px] font-medium uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-marketing-data)", color: "var(--muted)" }}>
+            <h2 className="text-[14px] font-medium uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-marketing-data)", color: "var(--muted)" }}>
               Who it&apos;s for
             </h2>
             <p>
@@ -76,7 +76,7 @@ export default function AboutPage() {
           </section>
 
           <section className="flex flex-col gap-3">
-            <h2 className="text-[13px] font-medium uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-marketing-data)", color: "var(--muted)" }}>
+            <h2 className="text-[14px] font-medium uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-marketing-data)", color: "var(--muted)" }}>
               Who&apos;s behind it
             </h2>
             <p>
@@ -95,7 +95,7 @@ export default function AboutPage() {
 
           <Link
             href="/overview"
-            className="mt-4 flex min-h-[44px] w-fit items-center justify-center rounded-lg px-6 py-3 text-[15px] font-semibold"
+            className="mt-4 flex min-h-[44px] w-fit items-center justify-center rounded-lg px-6 py-3 text-[16px] font-semibold"
             style={{ fontFamily: "var(--font-marketing-body)", background: "var(--indigo)", color: "var(--paper)" }}
           >
             Open the platform

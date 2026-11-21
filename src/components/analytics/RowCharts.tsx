@@ -18,7 +18,7 @@ import type { BoxStats } from "@/lib/inflation/analytics";
 import { TipRow, TipTitle, TooltipBox, useChartTooltip, type ChartTooltipApi } from "@/components/analytics/tooltip";
 
 const ROW_H = 28;
-const TOP = 8;
+const TOP = 12; // headroom for the 11px reference-line label above the plot
 const AXIS_H = 28;
 const RIGHT = 56; // room for the value label at the end of a mark
 
@@ -73,7 +73,7 @@ function Axis({ L, unit }: { L: Layout; unit: string }) {
       {L.ticks.map((t) => (
         <g key={t}>
           <line x1={L.x(t)} x2={L.x(t)} y1={TOP} y2={plotBottom} stroke={t === 0 ? "var(--chart-axis)" : "var(--chart-grid)"} strokeWidth={t === 0 ? 1.25 : 1} />
-          <text x={L.x(t)} y={plotBottom + 16} textAnchor="middle" fontSize={11} fill="var(--chart-axis)" className="tabular-nums">
+          <text x={L.x(t)} y={plotBottom + 16} textAnchor="middle" fontSize={12} fill="var(--chart-axis)" className="tabular-nums">
             {formatValue(t, Math.abs(t) < 10 && t % 1 !== 0 ? 1 : 0)}
             {unit}
           </text>
@@ -85,7 +85,7 @@ function Axis({ L, unit }: { L: Layout; unit: string }) {
 
 function RowLabel({ L, i, label }: { L: Layout; i: number; label: string }) {
   return (
-    <text x={L.labelW} y={L.rowY(i)} textAnchor="end" dominantBaseline="central" fontSize={12} fill="var(--pe-text-2)">
+    <text x={L.labelW} y={L.rowY(i)} textAnchor="end" dominantBaseline="central" fontSize={13} fill="var(--pe-text-2)">
       {fit(label, L.labelW)}
       <title>{label}</title>
     </text>
@@ -117,7 +117,7 @@ function HitBand<T>({ L, i, api, data, label }: { L: Layout; i: number; api: Cha
 
 function NoData({ L, i }: { L: Layout; i: number }) {
   return (
-    <text x={L.x0 + 4} y={L.rowY(i)} dominantBaseline="central" fontSize={11} fontStyle="italic" fill="var(--pe-text-3)">
+    <text x={L.x0 + 4} y={L.rowY(i)} dominantBaseline="central" fontSize={12} fontStyle="italic" fill="var(--pe-text-3)">
       no data
     </text>
   );
@@ -168,7 +168,7 @@ export function DotPlot({
       {reference && (
         <g aria-hidden>
           <line x1={L.x(reference.value)} x2={L.x(reference.value)} y1={TOP} y2={L.height - AXIS_H} stroke={c("slate")} strokeWidth={1.5} strokeDasharray="4 3" />
-          <text x={L.x(reference.value)} y={TOP - 1} textAnchor="middle" fontSize={10} fill="var(--pe-text-3)">{reference.label}</text>
+          <text x={L.x(reference.value)} y={TOP - 2} textAnchor="middle" fontSize={11} fill="var(--pe-text-3)">{reference.label}</text>
         </g>
       )}
       {rows.map((r, i) => (
@@ -180,7 +180,7 @@ export function DotPlot({
           ) : (
             <>
               <circle cx={L.x(r.value)} cy={L.rowY(i)} r={6} fill={c(r.color ?? "blue")} stroke="var(--pe-surface)" strokeWidth={1.5} />
-              <text x={L.x(r.value) + 11} y={L.rowY(i)} dominantBaseline="central" fontSize={11} className="tabular-nums" fill="var(--pe-text)">
+              <text x={L.x(r.value) + 11} y={L.rowY(i)} dominantBaseline="central" fontSize={12} className="tabular-nums" fill="var(--pe-text)">
                 {formatValue(r.value, decimals)}
               </text>
             </>
@@ -225,7 +225,7 @@ export function DumbbellPlot({
   const delta = (r: DumbbellRow) => (r.from !== null && r.to !== null ? r.to - r.from : null);
   return (
     <div>
-      <div className="mb-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-[12px] text-pe-text-2" aria-hidden>
+      <div className="mb-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px] text-pe-text-2" aria-hidden>
         <span className="inline-flex items-center gap-1.5"><svg width="14" height="14"><circle cx="7" cy="7" r="5" fill="var(--pe-surface)" stroke={c("slate")} strokeWidth="2.5" /></svg>{fromLabel}</span>
         <span className="inline-flex items-center gap-1.5"><svg width="14" height="14"><circle cx="7" cy="7" r="6" fill={c("blue")} /></svg>{toLabel}</span>
       </div>
@@ -257,7 +257,7 @@ export function DumbbellPlot({
               {dl !== null && <line x1={L.x(r.from as number)} x2={L.x(r.to as number)} y1={L.rowY(i)} y2={L.rowY(i)} stroke="var(--pe-border-strong)" strokeWidth={3} strokeLinecap="round" />}
               {r.from !== null && <circle cx={L.x(r.from)} cy={L.rowY(i)} r={5} fill="var(--pe-surface)" stroke={c("slate")} strokeWidth={2.5} />}
               {r.to !== null && <circle cx={L.x(r.to)} cy={L.rowY(i)} r={6} fill={c("blue")} stroke="var(--pe-surface)" strokeWidth={1.5} />}
-              <text x={L.width - 4} y={L.rowY(i)} textAnchor="end" dominantBaseline="central" fontSize={11} className="tabular-nums" fill="var(--pe-text-2)">
+              <text x={L.width - 4} y={L.rowY(i)} textAnchor="end" dominantBaseline="central" fontSize={12} className="tabular-nums" fill="var(--pe-text-2)">
                 {dl === null ? "—" : formatValue(dl, decimals, { signed: true })}
               </text>
               <HitBand L={L} i={i} api={api} data={r} label={`${r.label}: ${r.from === null ? "no data" : formatValue(r.from, decimals)} to ${r.to === null ? "no data" : formatValue(r.to, decimals)}${unit}`} />
@@ -302,7 +302,7 @@ export function LollipopChart({
             <>
               <line x1={L.x(0)} x2={L.x(r.value)} y1={L.rowY(i)} y2={L.rowY(i)} stroke={c(r.value < 0 ? "orange" : "blue")} strokeWidth={2.5} strokeLinecap="round" />
               <circle cx={L.x(r.value)} cy={L.rowY(i)} r={5.5} fill={c(r.value < 0 ? "orange" : "blue")} stroke="var(--pe-surface)" strokeWidth={1.5} />
-              <text x={L.x(r.value) + (r.value < 0 ? -10 : 10)} y={L.rowY(i)} textAnchor={r.value < 0 ? "end" : "start"} dominantBaseline="central" fontSize={11} className="tabular-nums" fill="var(--pe-text)">
+              <text x={L.x(r.value) + (r.value < 0 ? -10 : 10)} y={L.rowY(i)} textAnchor={r.value < 0 ? "end" : "start"} dominantBaseline="central" fontSize={12} className="tabular-nums" fill="var(--pe-text)">
                 {formatValue(r.value, decimals, { signed })}
               </text>
             </>
@@ -353,7 +353,7 @@ export function WaterfallChart({ rows, unit = "pp", ariaLabel, decimals = 2 }: {
             <RowLabel L={L} i={i} label={b.label} />
             <rect x={x1} y={L.rowY(i) - 8} width={Math.max(2, x2 - x1)} height={16} rx={2} fill={fill} />
             {next && <line x1={L.x(b.to)} x2={L.x(b.to)} y1={L.rowY(i) + 8} y2={L.rowY(i + 1) - 8} stroke="var(--chart-axis)" strokeWidth={1} strokeDasharray="2 2" />}
-            <text x={x2 + 6} y={L.rowY(i)} dominantBaseline="central" fontSize={11} className="tabular-nums" fill="var(--pe-text)">
+            <text x={x2 + 6} y={L.rowY(i)} dominantBaseline="central" fontSize={12} className="tabular-nums" fill="var(--pe-text)">
               {formatValue(b.value, decimals, { signed: b.kind === "delta" })}
             </text>
             <HitBand L={L} i={i} api={api} data={b} label={`${b.label}: ${formatValue(b.value, decimals, { signed: b.kind === "delta" })} ${unit}`} />

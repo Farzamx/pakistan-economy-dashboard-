@@ -86,7 +86,7 @@ export default function GroupsSnapshotSection({ groups, snapshot }: { groups: Gr
     <div className="flex flex-col gap-7">
       <ControlBar>
         <Select id="groups-month" label="Month" value={cur} onChange={setMonth} options={monthOptions(months)} />
-        <p className="max-w-xl text-[12px] leading-relaxed text-pe-text-3">
+        <p className="max-w-xl text-[13px] leading-relaxed text-pe-text-3">
           Every chart and the table below describe <strong className="font-medium text-pe-text-2">{monthLabel(cur)}</strong>. Rates are year on year (vs {monthLabel(shiftMonth(cur, -12))}).
         </p>
       </ControlBar>
@@ -112,7 +112,7 @@ export default function GroupsSnapshotSection({ groups, snapshot }: { groups: Gr
           table={{ caption: `Contribution to the headline YoY change, ${monthLabel(cur)}`, head: ["Group", "Contribution (pp)"], rows: contribRows.map((r) => [groupLabel(Number(r.key)).name, formatValue(r.value, 2)]) }}
         >
           <LollipopChart rows={contribRows} unit="pp" ariaLabel={`Lollipop chart of each CPI group's contribution to the headline, ${monthLabel(cur)}`} />
-          {crow && <p className="mt-1.5 text-[12px] tabular-nums text-pe-text-2">Total of the 12 contributions: <strong className="font-medium text-pe-text">{formatValue(crow.total, 2)} pp</strong> · headline year-on-year from the index: {formatValue(crow.headlinePct, 2)}%</p>}
+          {crow && <p className="mt-1.5 text-[13px] tabular-nums text-pe-text-2">Total of the 12 contributions: <strong className="font-medium text-pe-text">{formatValue(crow.total, 2)} pp</strong> · headline year-on-year from the index: {formatValue(crow.headlinePct, 2)}%</p>}
         </ChartFrame>
       </div>
 
@@ -159,9 +159,9 @@ export default function GroupsSnapshotSection({ groups, snapshot }: { groups: Gr
         source={`Source: PBS CPI group indices and fixed basket weights · ${monthLabel(cur)}${hasPrev ? ` vs ${monthLabel(prev)}` : ""}`}
       >
         <div className="relative overflow-x-auto rounded-[var(--pe-radius)] border border-pe-border" tabIndex={0} role="region" aria-label="Component comparison table (scrolls sideways)">
-          <table className="w-full min-w-[640px] border-collapse text-left text-[13px] tabular-nums">
+          <table className="w-full min-w-[640px] border-collapse text-left text-[14px] tabular-nums">
             <caption className="sr-only">CPI groups: basket weight, year-on-year rate, change from the previous month, and contribution to the headline, {monthLabel(cur)}</caption>
-            <thead className="bg-pe-surface-2 text-[12px] text-pe-text-2">
+            <thead className="bg-pe-surface-2 text-[13px] text-pe-text-2">
               <tr>
                 <th scope="col" className="px-3 py-2 font-medium">Group</th>
                 <th scope="col" className="px-3 py-2 text-right font-medium">Basket weight</th>
@@ -197,7 +197,7 @@ export default function GroupsSnapshotSection({ groups, snapshot }: { groups: Gr
             )}
           </table>
         </div>
-        <p className="mt-2 text-[12px] leading-relaxed text-pe-text-3">
+        <p className="mt-2 text-[13px] leading-relaxed text-pe-text-3">
           Observation period: {monthLabel(cur)} (rates compare with {monthLabel(shiftMonth(cur, -12))}). Weights are PBS&rsquo;s fixed 2015-16 basket shares; they do not change month to month, which is why a group&rsquo;s contribution can differ from its weight × its rate.
         </p>
       </ChartFrame>

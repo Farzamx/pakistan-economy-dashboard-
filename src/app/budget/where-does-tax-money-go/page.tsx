@@ -93,7 +93,7 @@ export default function WhereDoesTaxMoneyGoPage() {
 
           <div className="glass-card mt-8 rounded-2xl p-5">
             <BudgetAllocationChart data={allocation} />
-            <p className="mt-2 text-[11px] text-white/40 light:text-slate-400">
+            <p className="mt-2 text-[12px] text-white/40 light:text-slate-400">
               Source: Budget in Brief, FY{latest.fiscalYear} Budget Estimate.
             </p>
           </div>

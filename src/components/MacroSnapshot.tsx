@@ -74,7 +74,7 @@ function Tier1Cell({ kpi }: { kpi: Kpi }) {
           <span className="text-label text-white/40 light:text-slate-400">{kpi.title}</span>
           <InfoTooltip termKey={kpi.title} size="xs" />
         </div>
-        {kpi.frequency && <span className="text-[9px] uppercase tracking-widest text-white/25 light:text-slate-400">{kpi.frequency}</span>}
+        {kpi.frequency && <span className="text-[10px] uppercase tracking-widest text-white/25 light:text-slate-400">{kpi.frequency}</span>}
       </div>
 
       {/* v4 Phase 3: flashes once (green/red) when this value has changed
@@ -88,9 +88,9 @@ function Tier1Cell({ kpi }: { kpi: Kpi }) {
 
       {kpi.sparkline && kpi.sparkline.length >= 2 && <Sparkline data={kpi.sparkline} trend={kpi.trend} />}
 
-      <div className={`flex items-center gap-1 text-[11px] font-medium ${TREND_TEXT_COLOR[kpi.trend]}`}>
+      <div className={`flex items-center gap-1 text-[12px] font-medium ${TREND_TEXT_COLOR[kpi.trend]}`}>
         <TrendArrowIcon trend={kpi.trend} className="h-2.5 w-2.5" />
-        <span className="truncate">{kpi.change}</span>
+        <span className="min-w-0">{kpi.change}</span>
       </div>
 
       {kpi.latestDate && kpi.freshness && <DataQualityBadge kpi={kpi} freshness={kpi.freshness} />}
@@ -101,16 +101,16 @@ function Tier1Cell({ kpi }: { kpi: Kpi }) {
 function Tier2Cell({ driver }: { driver: MacroDriver }) {
   return (
     <div className="flex flex-col gap-1 px-3 py-3 first:pl-0">
-      <span className="text-[10px] font-medium uppercase tracking-wider text-white/35 light:text-slate-400">{driver.label}</span>
+      <span className="text-[11px] font-medium uppercase tracking-wider text-white/35 light:text-slate-400">{driver.label}</span>
       <span className="text-mono-num text-base font-semibold text-white light:text-slate-900">
         {driver.value}{driver.unit}
       </span>
-      <span className={`flex items-center gap-1 text-[10px] font-medium ${TREND_TEXT_COLOR[driver.trend]}`}>
+      <span className={`flex items-center gap-1 text-[11px] font-medium ${TREND_TEXT_COLOR[driver.trend]}`}>
         <TrendArrowIcon trend={driver.trend} className="h-2 w-2" />
         {driver.change}
       </span>
       {driver.asOf && (
-        <span className="text-[10px] text-white/30 light:text-slate-400">As of {driver.asOf}</span>
+        <span className="text-[11px] text-white/30 light:text-slate-400">As of {driver.asOf}</span>
       )}
     </div>
   );

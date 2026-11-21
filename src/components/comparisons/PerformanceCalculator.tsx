@@ -102,13 +102,13 @@ export default function PerformanceCalculator({ timeline }: PerformanceCalculato
               <p className={`mt-1 text-sm font-medium ${r.returnPct >= 0 ? "text-emerald-400" : "text-red-400"}`}>
                 {r.returnPct >= 0 ? "+" : ""}{r.returnPct.toFixed(1)}%
               </p>
-              <p className="mt-2 text-[11px] leading-relaxed text-[var(--text-muted)]">{r.methodology}</p>
+              <p className="mt-2 text-[12px] leading-relaxed text-[var(--text-muted)]">{r.methodology}</p>
             </div>
           ))}
         </div>
       )}
 
-      <p className="text-[11px] text-[var(--text-muted)]">
+      <p className="text-[12px] text-[var(--text-muted)]">
         {t("comparisons.perfKseNote")}
       </p>
     </div>

@@ -240,7 +240,7 @@ export default function SubscriptionForm() {
             )}
           </form>
 
-          <p className="text-center text-[11px] leading-relaxed text-slate-500">
+          <p className="text-center text-[12px] leading-relaxed text-slate-500">
             {t("subscription.privacyNote")}
           </p>
 

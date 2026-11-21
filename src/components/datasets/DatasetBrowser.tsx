@@ -76,12 +76,12 @@ const BOUND_HINT: Record<BoundInput, string> = { year: "year, e.g. 2020", month:
 const ROW_GRID = "lg:grid lg:grid-cols-[minmax(0,2.6fr)_7.5rem_7.5rem_5.5rem_minmax(0,1.3fr)_auto] lg:items-center lg:gap-x-4";
 
 const inputClass =
-  "h-9 rounded-[var(--pe-radius)] border border-pe-border-strong bg-pe-surface px-2.5 text-[13px] text-pe-text outline-none placeholder:text-pe-text-3 focus:border-pe-accent";
+  "h-9 rounded-[var(--pe-radius)] border border-pe-border-strong bg-pe-surface px-2.5 text-[14px] text-pe-text outline-none placeholder:text-pe-text-3 focus:border-pe-accent";
 const downloadBase =
-  "inline-flex h-9 min-w-[4.5rem] items-center justify-center rounded-[var(--pe-radius)] border px-3 text-[13px] font-medium transition-colors max-sm:h-10";
+  "inline-flex h-9 min-w-[4.5rem] items-center justify-center rounded-[var(--pe-radius)] border px-3 text-[14px] font-medium transition-colors max-sm:h-10";
 const excelButton = `${downloadBase} border-pe-accent text-pe-accent hover:bg-pe-surface-2`;
 const csvButton = `${downloadBase} border-pe-border-strong text-pe-text hover:bg-pe-surface-2`;
-const toggleButton = "inline-flex min-h-7 items-center gap-1 text-[12px] font-medium text-pe-text-2 hover:text-pe-text";
+const toggleButton = "inline-flex min-h-7 items-center gap-1 text-[13px] font-medium text-pe-text-2 hover:text-pe-text";
 
 function Chevron({ open }: { open: boolean }) {
   return (
@@ -126,7 +126,7 @@ export default function DatasetBrowser({ rows }: { rows: DatasetRowView[] }) {
   }
 
   const boundField = (label: string, value: string, set: (v: string) => void) => (
-    <label className="flex items-center gap-1.5 text-[12px] font-medium text-pe-text-2">
+    <label className="flex items-center gap-1.5 text-[13px] font-medium text-pe-text-2">
       <span>{label}</span>
       <input
         type={inputKind === "year" ? "text" : inputKind}
@@ -147,7 +147,7 @@ export default function DatasetBrowser({ rows }: { rows: DatasetRowView[] }) {
       <div className="flex flex-col gap-3 bg-pe-surface-2/40 px-4 py-3.5">
         <div className="flex flex-col gap-2">
           <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-            <span id="frequency-label" className="text-[13px] font-semibold text-pe-text">
+            <span id="frequency-label" className="text-[14px] font-semibold text-pe-text">
               Select data frequency
             </span>
             <div role="group" aria-labelledby="frequency-label" className="flex flex-wrap gap-1.5">
@@ -160,31 +160,31 @@ export default function DatasetBrowser({ rows }: { rows: DatasetRowView[] }) {
                     type="button"
                     aria-pressed={active}
                     onClick={() => chooseFrequency(f)}
-                    className={`inline-flex min-h-9 items-center gap-1.5 rounded-[var(--pe-radius)] border px-3 text-[13px] transition-colors max-sm:min-h-10 ${
+                    className={`inline-flex min-h-9 items-center gap-1.5 rounded-[var(--pe-radius)] border px-3 text-[14px] transition-colors max-sm:min-h-10 ${
                       active
                         ? "border-pe-text bg-pe-text font-semibold text-pe-surface"
                         : "border-pe-border-strong bg-pe-surface text-pe-text hover:bg-pe-surface-2"
                     }`}
                   >
                     {f === "all" ? "All" : FREQUENCY_LABEL[f]}
-                    <span className={`text-[11px] tabular-nums ${active ? "opacity-80" : "text-pe-text-3"}`}>{n}</span>
+                    <span className={`text-[12px] tabular-nums ${active ? "opacity-80" : "text-pe-text-3"}`}>{n}</span>
                   </button>
                 );
               })}
             </div>
           </div>
-          <p className="text-[12px] text-pe-text-3">Only observations published at the selected frequency are shown. No data is converted or interpolated.</p>
+          <p className="text-[13px] text-pe-text-3">Only observations published at the selected frequency are shown. No data is converted or interpolated.</p>
         </div>
 
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
           {boundField("From", from, setFrom)}
           {boundField("To", to, setTo)}
           {(from || to) && (
-            <button type="button" onClick={() => { setFrom(""); setTo(""); }} className="text-[12px] font-medium text-pe-accent underline underline-offset-2">
+            <button type="button" onClick={() => { setFrom(""); setTo(""); }} className="text-[13px] font-medium text-pe-accent underline underline-offset-2">
               Clear dates
             </button>
           )}
-          <p className="text-[12px] text-pe-text-3">
+          <p className="text-[13px] text-pe-text-3">
             {frequency === "all"
               ? "Filtered by the year each observation is labelled with."
               : available
@@ -193,7 +193,7 @@ export default function DatasetBrowser({ rows }: { rows: DatasetRowView[] }) {
           </p>
         </div>
         {!range.ok && (
-          <p role="alert" className="text-[12px] text-[var(--pe-crit-text)]">
+          <p role="alert" className="text-[13px] text-[var(--pe-crit-text)]">
             {range.error}
           </p>
         )}
@@ -212,7 +212,7 @@ export default function DatasetBrowser({ rows }: { rows: DatasetRowView[] }) {
               type="button"
               aria-pressed={category === c}
               onClick={() => setCategory(c)}
-              className={`min-h-8 rounded-[var(--pe-radius)] border px-2.5 text-[12px] transition-colors ${
+              className={`min-h-8 rounded-[var(--pe-radius)] border px-2.5 text-[13px] transition-colors ${
                 category === c
                   ? "border-pe-accent bg-pe-surface-2 font-medium text-pe-accent"
                   : "border-pe-border text-pe-text-2 hover:bg-pe-surface-2 hover:text-pe-text"
@@ -226,12 +226,12 @@ export default function DatasetBrowser({ rows }: { rows: DatasetRowView[] }) {
 
       {/* ── Zone 3: results ──────────────────────────────────────────────────────────────────────────────────────────────────────────── */}
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1.5 border-t border-pe-border px-4 py-2">
-        <p aria-live="polite" className="text-[12px] text-pe-text-2">
+        <p aria-live="polite" className="text-[13px] text-pe-text-2">
           {selected.length} of {frequency === "all" ? rows.length : inFrequency.length} datasets
           {frequency !== "all" ? ` · ${FREQUENCY_LABEL[frequency].toLowerCase()}` : ""}
         </p>
         {frequency !== "all" && withData.length > 0 && (
-          <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-pe-text-2">
+          <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] text-pe-text-2">
             <span>
               All {withData.length} {FREQUENCY_LABEL[frequency].toLowerCase()} dataset{withData.length === 1 ? "" : "s"}
               {rangeApplied ? " in this range" : ""}:
@@ -247,17 +247,17 @@ export default function DatasetBrowser({ rows }: { rows: DatasetRowView[] }) {
       </div>
 
       {frequency !== "all" && inFrequency.length === 0 ? (
-        <p role="status" className="border-t border-pe-border px-4 py-8 text-center text-[13px] text-pe-text-2">
+        <p role="status" className="border-t border-pe-border px-4 py-8 text-center text-[14px] text-pe-text-2">
           {unavailableFrequencyMessage(frequency)}
         </p>
       ) : selected.length === 0 ? (
-        <p role="status" className="border-t border-pe-border px-4 py-8 text-center text-[13px] text-pe-text-3">
+        <p role="status" className="border-t border-pe-border px-4 py-8 text-center text-[14px] text-pe-text-3">
           No datasets match {query ? `“${query}”` : "this filter"}.
         </p>
       ) : (
         <>
           {rangeApplied && withData.length === 0 && (
-            <p role="status" className="border-t border-pe-border px-4 py-3 text-[13px] text-pe-text-2">
+            <p role="status" className="border-t border-pe-border px-4 py-3 text-[14px] text-pe-text-2">
               No observations fall inside the selected date range
               {frequency !== "all" && available ? ` for ${FREQUENCY_LABEL[frequency].toLowerCase()} data (available ${available.first} to ${available.last})` : ""}. Clear
               or widen the dates to download.
@@ -265,7 +265,7 @@ export default function DatasetBrowser({ rows }: { rows: DatasetRowView[] }) {
           )}
 
           {/* Column headings: desktop only. On narrower screens each row labels its own figures. */}
-          <div aria-hidden="true" className={`hidden border-t border-pe-border bg-pe-surface-2/40 px-4 py-1.5 text-[11px] font-medium uppercase tracking-[0.05em] text-pe-text-3 ${ROW_GRID}`}>
+          <div aria-hidden="true" className={`hidden border-t border-pe-border bg-pe-surface-2/40 px-4 py-1.5 text-[12px] font-medium uppercase tracking-[0.05em] text-pe-text-3 ${ROW_GRID}`}>
             <span>Indicator</span>
             <span>Frequency</span>
             <span>Latest</span>
@@ -294,18 +294,18 @@ export default function DatasetBrowser({ rows }: { rows: DatasetRowView[] }) {
                     {/* Indicator */}
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                        <span data-dataset-name className="text-[14px] font-semibold leading-snug text-pe-text">
+                        <span data-dataset-name className="text-[15px] font-semibold leading-snug text-pe-text">
                           {r.name}
                         </span>
-                        <span className="text-[12px] text-pe-text-3">{r.category}</span>
+                        <span className="text-[13px] text-pe-text-3">{r.category}</span>
                         {unavailable && (
-                          <span className="rounded-full border border-[var(--pe-crit-border)] bg-[var(--pe-crit-bg)] px-1.5 py-px text-[11px] font-medium text-[var(--pe-crit-text)]">
+                          <span className="rounded-full border border-[var(--pe-crit-border)] bg-[var(--pe-crit-bg)] px-1.5 py-px text-[12px] font-medium text-[var(--pe-crit-text)]">
                             Unavailable
                           </span>
                         )}
                         {limited && (
                           <span
-                            className="rounded-full border border-[var(--pe-warn-border)] bg-[var(--pe-warn-bg)] px-1.5 py-px text-[11px] font-medium text-[var(--pe-warn-text)]"
+                            className="rounded-full border border-[var(--pe-warn-border)] bg-[var(--pe-warn-bg)] px-1.5 py-px text-[12px] font-medium text-[var(--pe-warn-text)]"
                             title={
                               r.coverageNote ??
                               `This series offers ${r.observations} observation${r.observations === 1 ? "" : "s"} — fewer than most datasets here. See Details for why.`
@@ -331,13 +331,13 @@ export default function DatasetBrowser({ rows }: { rows: DatasetRowView[] }) {
                     </div>
 
                     {/* Frequency, latest period, observations, source: one line on narrow screens, aligned columns on desktop. */}
-                    <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-[12px] text-pe-text-2 lg:contents lg:text-[13px]">
+                    <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-[13px] text-pe-text-2 lg:contents lg:text-[14px]">
                       <span>
                         {r.frequencyId ? FREQUENCY_LABEL[r.frequencyId] : r.frequency}
                         {basis && (
                           <>
                             <span className="lg:hidden"> · </span>
-                            <span className="text-pe-text-3 lg:block lg:text-[11px]">{basis}</span>
+                            <span className="text-pe-text-3 lg:block lg:text-[12px]">{basis}</span>
                           </>
                         )}
                       </span>
@@ -347,7 +347,7 @@ export default function DatasetBrowser({ rows }: { rows: DatasetRowView[] }) {
                         {last?.[2] && (
                           <>
                             <span className="lg:hidden"> · </span>
-                            <span className="text-pe-text-3 lg:block lg:text-[11px]">{last[2]}</span>
+                            <span className="text-pe-text-3 lg:block lg:text-[12px]">{last[2]}</span>
                           </>
                         )}
                       </span>
@@ -363,7 +363,7 @@ export default function DatasetBrowser({ rows }: { rows: DatasetRowView[] }) {
 
                     {/* Downloads */}
                     {unavailable || empty || !range.ok ? (
-                      <span className="text-[12px] text-pe-text-3 lg:w-[10.25rem] lg:text-end">
+                      <span className="text-[13px] text-pe-text-3 lg:w-[10.25rem] lg:text-end">
                         {unavailable ? "No data to download" : empty ? "Nothing in this range" : "Fix the date range"}
                       </span>
                     ) : (
@@ -380,13 +380,13 @@ export default function DatasetBrowser({ rows }: { rows: DatasetRowView[] }) {
                     )}
                   </div>
 
-                  {r.error && <p className="mt-1 text-[12px] text-[var(--pe-crit-text)]">{r.error}</p>}
-                  {empty && <p className="mt-1 text-[12px] text-pe-text-3">No observations fall inside the selected date range. This series covers {r.coverage}.</p>}
+                  {r.error && <p className="mt-1 text-[13px] text-[var(--pe-crit-text)]">{r.error}</p>}
+                  {empty && <p className="mt-1 text-[13px] text-pe-text-3">No observations fall inside the selected date range. This series covers {r.coverage}.</p>}
 
                   {/* Details (collapsed by default): everything that is not needed to choose and download. */}
                   {isDetails && (
                     <div id={detailsId} className="mt-2.5 rounded-[var(--pe-radius)] bg-pe-surface-2/50 px-3.5 py-3">
-                      <dl className="grid grid-cols-1 gap-x-8 gap-y-2 text-[12px] sm:grid-cols-2">
+                      <dl className="grid grid-cols-1 gap-x-8 gap-y-2 text-[13px] sm:grid-cols-2">
                         <div className="sm:col-span-2">
                           <dt className="text-pe-text-3">About</dt>
                           <dd className="text-pe-text-2">{r.description}</dd>
@@ -421,14 +421,14 @@ export default function DatasetBrowser({ rows }: { rows: DatasetRowView[] }) {
                           </div>
                         )}
                       </dl>
-                      {r.frequencyNote && <p className="mt-2 text-[12px] text-pe-text-2">{r.frequencyNote}</p>}
+                      {r.frequencyNote && <p className="mt-2 text-[13px] text-pe-text-2">{r.frequencyNote}</p>}
                       {r.coverageNote && (
                         <div className="mt-2 border-s-2 border-pe-border ps-2">
-                          <LeadMore leadClassName="text-[12px] leading-relaxed text-pe-text-2">{r.coverageNote}</LeadMore>
+                          <LeadMore leadClassName="text-[13px] leading-relaxed text-pe-text-2">{r.coverageNote}</LeadMore>
                         </div>
                       )}
                       {r.contextHref && (
-                        <p className="mt-2 text-[12px]">
+                        <p className="mt-2 text-[13px]">
                           <a href={r.contextHref} className="text-pe-accent underline underline-offset-2">
                             More on this indicator
                           </a>
@@ -440,7 +440,7 @@ export default function DatasetBrowser({ rows }: { rows: DatasetRowView[] }) {
                   {/* Preview (collapsed by default): a compact table, in chronological order. */}
                   {isPreview && inRange.length > 0 && (
                     <div id={previewId} className="mt-2.5 max-h-64 max-w-xl overflow-auto rounded-[var(--pe-radius)] border border-pe-border">
-                      <table className="w-full border-collapse text-[12px]">
+                      <table className="w-full border-collapse text-[13px]">
                         <caption className="sr-only">
                           {r.name}: {inRange.length} observations, {r.frequency.toLowerCase()}
                         </caption>

@@ -40,13 +40,13 @@ export default function InsidePlatformSection({ cpi, policyRate }: { cpi: SbpInd
     <section className="mkt-content-scrim mx-auto w-full max-w-[1200px] px-5 py-16 min-[1024px]:px-10 min-[1024px]:py-24">
       <SectionReveal className="flex flex-col gap-8">
         <div className="flex flex-col gap-3">
-          <span className="text-[11px] uppercase tracking-[0.14em]" style={{ fontFamily: "var(--font-marketing-data)", color: "var(--muted)" }}>
+          <span className="text-[12px] uppercase tracking-[0.14em]" style={{ fontFamily: "var(--font-marketing-data)", color: "var(--muted)" }}>
             Inside the platform
           </span>
           <h2 className="text-[28px] font-bold leading-tight min-[1024px]:text-[36px]" style={{ fontFamily: "var(--font-marketing-heading)", color: "var(--paper)" }}>
             Real components, real data
           </h2>
-          <p className="max-w-[60ch] text-[15px] leading-relaxed min-[1024px]:text-[16px]" style={{ fontFamily: "var(--font-marketing-body)", color: "var(--muted)" }}>
+          <p className="max-w-[60ch] text-[16px] leading-relaxed min-[1024px]:text-[16px]" style={{ fontFamily: "var(--font-marketing-body)", color: "var(--muted)" }}>
             These are the actual indicator card, chart and budget panel from the platform itself — not screenshots — rendered here in a read-only preview.
           </p>
         </div>
@@ -57,7 +57,7 @@ export default function InsidePlatformSection({ cpi, policyRate }: { cpi: SbpInd
             <span className="h-2.5 w-2.5 rounded-full" style={{ background: "var(--ink-raised)" }} />
             <span className="h-2.5 w-2.5 rounded-full" style={{ background: "var(--ink-raised)" }} />
             <span className="h-2.5 w-2.5 rounded-full" style={{ background: "var(--ink-raised)" }} />
-            <span className="ml-3 text-[11px]" style={{ fontFamily: "var(--font-marketing-data)", color: "var(--muted)" }}>
+            <span className="ml-3 text-[12px]" style={{ fontFamily: "var(--font-marketing-data)", color: "var(--muted)" }}>
               pakeconintel.com/overview
             </span>
           </div>

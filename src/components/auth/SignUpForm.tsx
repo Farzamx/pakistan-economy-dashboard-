@@ -43,7 +43,7 @@ export default function SignUpForm({ redirectTo }: { redirectTo: string }) {
         {pending ? t("auth.creatingAccount") : t("auth.createAccountBtn")}
       </button>
 
-      <p className="text-center text-[11px] leading-relaxed text-[var(--text-muted)]">
+      <p className="text-center text-[12px] leading-relaxed text-[var(--text-muted)]">
         {t("auth.termsNote")}
       </p>
     </form>

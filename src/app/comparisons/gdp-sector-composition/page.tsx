@@ -55,7 +55,7 @@ export default async function GdpSectorCompositionPage() {
           >
             <span aria-hidden="true">←</span> {SITE_NAME} Comparisons
           </ProtectedLink>
-          <span className="min-w-0 shrink break-all text-right text-[10px] uppercase tracking-widest text-white/25 light:text-slate-400">
+          <span className="min-w-0 shrink break-all text-right text-[11px] uppercase tracking-widest text-white/25 light:text-slate-400">
             pakeconintel.com/comparisons/{SECTOR_COMPOSITION.slug}
           </span>
         </div>
@@ -76,7 +76,7 @@ export default async function GdpSectorCompositionPage() {
               Sector composition data is currently unavailable.
             </p>
           )}
-          <p className="text-[10px] text-white/25 light:text-slate-400">Source: World Bank</p>
+          <p className="text-[11px] text-white/25 light:text-slate-400">Source: World Bank</p>
         </div>
 
         <section className="glass-card mt-6 p-6 sm:p-8">

@@ -28,7 +28,7 @@ export default function ProvinceCompareTable() {
             type="button"
             onClick={() => setActiveMetric(m)}
             aria-pressed={activeMetric.field === m.field}
-            className={`rounded-full border px-3 py-1 text-[11px] font-medium transition-colors ${
+            className={`rounded-full border px-3 py-1 text-[12px] font-medium transition-colors ${
               activeMetric.field === m.field
                 ? "border-neon-blue/40 bg-neon-blue/15 text-neon-blue"
                 : "border-white/10 light:border-slate-200 text-white/50 light:text-slate-500 hover:text-white light:hover:text-slate-900"
@@ -61,7 +61,7 @@ export default function ProvinceCompareTable() {
               <div className="h-2 w-full overflow-hidden rounded-full bg-white/5 light:bg-slate-100">
                 <div className="h-full rounded-full transition-all" style={{ width: `${widthPct}%`, backgroundColor: entry.color }} />
               </div>
-              <span className="text-[10px] text-white/30 light:text-slate-400">FY{entry.fiscalYear} {t("provincial.budgetEstimate")}</span>
+              <span className="text-[11px] text-white/30 light:text-slate-400">FY{entry.fiscalYear} {t("provincial.budgetEstimate")}</span>
             </Link>
           );
         })}

@@ -46,18 +46,18 @@ function SectorTooltip({ active, payload, label }: TooltipContentProps<ValueType
         minWidth: 190,
       }}
     >
-      <p style={{ color: "var(--chart-tooltip-label)", fontSize: 11, marginBottom: 6 }}>{label}</p>
+      <p style={{ color: "var(--chart-tooltip-label)", fontSize: 12, marginBottom: 6 }}>{label}</p>
       {SERIES.map((s) => (
-        <p key={s.key} style={{ display: "flex", justifyContent: "space-between", gap: 12, fontSize: 12, color: "var(--chart-tooltip-value)" }}>
+        <p key={s.key} style={{ display: "flex", justifyContent: "space-between", gap: 12, fontSize: 13, color: "var(--chart-tooltip-value)" }}>
           <span style={{ color: s.color }}>{s.label}</span>
           <span style={{ fontVariantNumeric: "tabular-nums" }}>{row[s.key].toFixed(1)}%</span>
         </p>
       ))}
-      <p style={{ marginTop: 6, paddingTop: 6, borderTop: "1px solid var(--chart-tooltip-border)", display: "flex", justifyContent: "space-between", gap: 12, fontSize: 11, color: "var(--chart-tooltip-label)" }}>
+      <p style={{ marginTop: 6, paddingTop: 6, borderTop: "1px solid var(--chart-tooltip-border)", display: "flex", justifyContent: "space-between", gap: 12, fontSize: 12, color: "var(--chart-tooltip-label)" }}>
         <span>Three sectors</span>
         <span style={{ fontVariantNumeric: "tabular-nums" }}>{row.total.toFixed(1)}%</span>
       </p>
-      <p style={{ display: "flex", justifyContent: "space-between", gap: 12, fontSize: 11, color: "var(--chart-tooltip-label)" }}>
+      <p style={{ display: "flex", justifyContent: "space-between", gap: 12, fontSize: 12, color: "var(--chart-tooltip-label)" }}>
         <span>Not covered</span>
         <span style={{ fontVariantNumeric: "tabular-nums" }}>{row.residual.toFixed(1)}%</span>
       </p>
@@ -67,27 +67,27 @@ function SectorTooltip({ active, payload, label }: TooltipContentProps<ValueType
 
 export default function SectorShareAreaChart({ data }: { data: SectorSharePoint[] }) {
   if (data.length === 0) {
-    return <p className="px-1 py-8 text-center text-[13px] text-pe-text-3">Sector composition data is unavailable right now.</p>;
+    return <p className="px-1 py-8 text-center text-[14px] text-pe-text-3">Sector composition data is unavailable right now.</p>;
   }
   return (
     <div className="h-[300px] w-full sm:h-[340px]">
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: -12 }}>
           <CartesianGrid stroke="var(--chart-grid)" vertical={false} />
-          <XAxis dataKey="year" tick={{ fill: "var(--chart-axis)", fontSize: 11 }} tickLine={false} axisLine={false} interval="preserveStartEnd" minTickGap={28} />
+          <XAxis dataKey="year" tick={{ fill: "var(--chart-axis)", fontSize: 12 }} tickLine={false} axisLine={false} interval="preserveStartEnd" minTickGap={28} />
           <YAxis
             domain={[0, 100]}
             ticks={[0, 25, 50, 75, 100]}
             tickFormatter={(v) => `${v}%`}
-            tick={{ fill: "var(--chart-axis)", fontSize: 11 }}
+            tick={{ fill: "var(--chart-axis)", fontSize: 12 }}
             tickLine={false}
             axisLine={false}
             width={44}
           />
           {/* The 100% line makes the uncovered remainder visible rather than implied. */}
-          <ReferenceLine y={100} stroke="var(--chart-average)" strokeDasharray="4 4" label={{ value: "100% of GDP", position: "insideTopRight", fill: "var(--chart-average-label)", fontSize: 10 }} />
+          <ReferenceLine y={100} stroke="var(--chart-average)" strokeDasharray="4 4" label={{ value: "100% of GDP", position: "insideTopRight", fill: "var(--chart-average-label)", fontSize: 11 }} />
           <Tooltip content={SectorTooltip} cursor={{ stroke: "var(--chart-cursor)" }} />
-          <Legend wrapperStyle={{ fontSize: 12, color: "var(--chart-axis)", paddingTop: 4 }} iconType="square" iconSize={9} />
+          <Legend wrapperStyle={{ fontSize: 13, color: "var(--chart-axis)", paddingTop: 4 }} iconType="square" iconSize={9} />
           {SERIES.map((s) => (
             <Area
               key={s.key}

@@ -52,7 +52,7 @@ export default function DataQualityBadge({ kpi, freshness, showDetails = true, c
   if (!showDetails) {
     return (
       <span className={`inline-flex items-center gap-1.5 text-xs font-medium ${dotClass} ${className ?? ""}`} title={freshness.reason}>
-        <span className="text-[8px]">&#9679;</span>
+        <span className="text-[10px]">&#9679;</span>
         {label}
       </span>
     );
@@ -62,10 +62,10 @@ export default function DataQualityBadge({ kpi, freshness, showDetails = true, c
     <div className={className}>
       <div
         suppressHydrationWarning
-        className="flex flex-wrap items-center gap-1.5 text-[10px] text-white/40 light:text-slate-400"
+        className="flex flex-wrap items-center gap-1.5 text-[11px] text-white/40 light:text-slate-400"
         title={`${label} · ${freshness.reason}${kpi.source ? ` · ${kpi.source}` : ""} · ${displayDate}${kpi.frequency ? ` · ${kpi.frequency}` : ""}${delivery ? ` · ${delivery}` : ""}${extraTooltip ? ` · ${extraTooltip}` : ""}`}
       >
-        <span className={`text-[8px] ${dotClass}`}>&#9679;</span>
+        <span className={`text-[10px] ${dotClass}`}>&#9679;</span>
         <span className={dotClass}>{label}</span>
         {kpi.source && (
           <>
@@ -83,7 +83,7 @@ export default function DataQualityBadge({ kpi, freshness, showDetails = true, c
         )}
       </div>
       {delivery && (
-        <p suppressHydrationWarning className="mt-1 text-[10px] leading-snug text-white/35 light:text-slate-400">
+        <p suppressHydrationWarning className="mt-1 text-[11px] leading-snug text-white/35 light:text-slate-400">
           {delivery}
         </p>
       )}

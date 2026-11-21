@@ -40,7 +40,7 @@ export default function TermStructureSection({ tbills, pibs, def }: TermStructur
         title="Curve slope over time"
         howToRead={`Basis points: the long yield minus the short yield at each auction. Below zero the curve is inverted. Between ±${SHAPE_THRESHOLD_BP} bp it is called flat.`}
         legend={
-          <ul className="flex flex-wrap gap-x-4 gap-y-1 text-[12px] text-pe-text-2" aria-label="Key">
+          <ul className="flex flex-wrap gap-x-4 gap-y-1 text-[13px] text-pe-text-2" aria-label="Key">
             {series.map((s) => (
               <li key={s.key} className="flex items-center gap-1.5">
                 <span aria-hidden className="inline-block h-0.5 w-5 rounded" style={{ background: `var(--pe-viz-${s.color})` }} />
@@ -61,13 +61,13 @@ export default function TermStructureSection({ tbills, pibs, def }: TermStructur
         source="SBP auction archive · derived by PEIC from the slope above"
       >
         <ShapeStrip regimes={regimes} ariaLabel={`Curve shape at each T-bill auction: ${counts.upward} upward, ${counts.flat} flat, ${counts.inverted} inverted`} />
-        <p className="mt-2 text-[13px] text-pe-text-2">
+        <p className="mt-2 text-[14px] text-pe-text-2">
           Of {tSlopes.length} auctions with a slope: <strong className="font-semibold text-pe-text">{counts.inverted}</strong> inverted, <strong className="font-semibold text-pe-text">{counts.flat}</strong> flat, <strong className="font-semibold text-pe-text">{counts.upward}</strong> upward-sloping.
         </p>
         {longestInverted.length > 0 && (
           <div className="mt-3 overflow-x-auto">
-            <table className="w-full min-w-[420px] border-collapse text-left text-[12px] tabular-nums">
-              <caption className="pb-1 text-left text-[12px] font-medium text-pe-text-2">Longest inverted runs</caption>
+            <table className="w-full min-w-[420px] border-collapse text-left text-[13px] tabular-nums">
+              <caption className="pb-1 text-left text-[13px] font-medium text-pe-text-2">Longest inverted runs</caption>
               <thead>
                 <tr className="text-pe-text-3">
                   <th scope="col" className="py-1 pr-3 font-medium">From</th>

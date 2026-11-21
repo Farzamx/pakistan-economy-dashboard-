@@ -85,10 +85,10 @@ export default function HealthScoreCard({ health, ai, computedAt, nextUpdateAt }
           <span className="text-xs font-semibold uppercase tracking-[0.3em] text-white/40 light:text-slate-400">
             {t("health.title")}
           </span>
-          <span className="rounded-full border border-neon-blue/20 bg-neon-blue/10 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-widest text-neon-blue/70">
+          <span className="rounded-full border border-neon-blue/20 bg-neon-blue/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-widest text-neon-blue/70">
             {t("riskIntel.quant")}
           </span>
-          <span className="rounded-full border border-neon-purple/20 bg-neon-purple/10 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-widest text-neon-purple/70">
+          <span className="rounded-full border border-neon-purple/20 bg-neon-purple/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-widest text-neon-purple/70">
             {modelDisplayName}
           </span>
         </div>
@@ -110,11 +110,11 @@ export default function HealthScoreCard({ health, ai, computedAt, nextUpdateAt }
 
         {computedAt && nextUpdateAt && (
           <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
-            <span className="text-[10px] text-white/25 light:text-slate-400">
+            <span className="text-[11px] text-white/25 light:text-slate-400">
               <span className="text-white/35 light:text-slate-500">{t("riskIntel.lastComputed")}</span> {computedAt}
             </span>
-            <span className="text-[10px] text-white/15 light:text-slate-300">·</span>
-            <span className="text-[10px] text-white/25 light:text-slate-400">
+            <span className="text-[11px] text-white/15 light:text-slate-300">·</span>
+            <span className="text-[11px] text-white/25 light:text-slate-400">
               <span className="text-white/35 light:text-slate-500">{t("riskIntel.nextUpdate")}</span> {nextUpdateAt}
             </span>
           </div>
@@ -124,7 +124,7 @@ export default function HealthScoreCard({ health, ai, computedAt, nextUpdateAt }
           <ul className="mt-3 space-y-1">
             {topDrivers.map((driver, i) => (
               <li key={i} className="flex items-start gap-2 text-xs text-white/45 light:text-slate-500">
-                <span className="mt-0.5 text-[8px] text-neon-blue/60">▶</span>
+                <span className="mt-0.5 text-[10px] text-neon-blue/60">▶</span>
                 {driver}
               </li>
             ))}
@@ -137,27 +137,27 @@ export default function HealthScoreCard({ health, ai, computedAt, nextUpdateAt }
           instead of leaving it empty next to the gauge + narrative column. */}
       <div className="grid w-full grid-cols-2 gap-4 border-t border-white/5 pt-5 text-left min-[1150px]:ml-auto min-[1150px]:w-auto min-[1150px]:min-w-[200px] min-[1150px]:shrink-0 min-[1150px]:border-t-0 min-[1150px]:border-l min-[1150px]:border-white/5 min-[1150px]:pt-0 min-[1150px]:pl-6 light:border-slate-200">
         <div>
-          <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-emerald-400/60 light:text-emerald-700">
+          <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-widest text-emerald-400/60 light:text-emerald-700">
             {t("health.topStrengths")}
           </p>
           <div className="space-y-1.5">
             {topStrengthFactors.map((f, i) => (
               <div key={i} className="flex items-center justify-between gap-3">
-                <span className="text-[10px] text-white/40 light:text-slate-500">{f.label}</span>
-                <span className="font-mono text-[10px] text-emerald-400/70 light:text-emerald-700">{f.formattedValue}</span>
+                <span className="text-[11px] text-white/40 light:text-slate-500">{f.label}</span>
+                <span className="font-mono text-[11px] text-emerald-400/70 light:text-emerald-700">{f.formattedValue}</span>
               </div>
             ))}
           </div>
         </div>
         <div>
-          <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-rose-400/60 light:text-rose-600">
+          <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-widest text-rose-400/60 light:text-rose-600">
             {t("health.topWeaknesses")}
           </p>
           <div className="space-y-1.5">
             {topWeaknessFactors.map((f, i) => (
               <div key={i} className="flex items-center justify-between gap-3">
-                <span className="text-[10px] text-white/40 light:text-slate-500">{f.label}</span>
-                <span className="font-mono text-[10px] text-rose-400/70 light:text-rose-600">{f.formattedValue}</span>
+                <span className="text-[11px] text-white/40 light:text-slate-500">{f.label}</span>
+                <span className="font-mono text-[11px] text-rose-400/70 light:text-rose-600">{f.formattedValue}</span>
               </div>
             ))}
           </div>

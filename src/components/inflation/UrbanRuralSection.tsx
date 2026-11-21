@@ -17,8 +17,8 @@ export default function UrbanRuralSection() {
       </Callout>
       <div className="grid gap-3 md:grid-cols-2">
         <div className="rounded-[var(--pe-radius)] border border-pe-border bg-pe-surface-2 p-3">
-          <p className="text-[13px] font-medium text-pe-text">Available data</p>
-          <ul className="mt-1.5 list-disc space-y-1 pl-4 text-[13px] leading-relaxed text-pe-text-2">
+          <p className="text-[14px] font-medium text-pe-text">Available data</p>
+          <ul className="mt-1.5 list-disc space-y-1 pl-4 text-[14px] leading-relaxed text-pe-text-2">
             <li>National headline CPI (year on year, monthly since July 2016)</li>
             <li>Urban core inflation, NFNE (year on year)</li>
             <li>Urban food inflation (year on year)</li>
@@ -26,13 +26,13 @@ export default function UrbanRuralSection() {
           </ul>
         </div>
         <div className="rounded-[var(--pe-radius)] border border-pe-border bg-pe-surface-2 p-3">
-          <p className="text-[13px] font-medium text-pe-text">Data needed</p>
-          <ul className="mt-1.5 list-disc space-y-1 pl-4 text-[13px] leading-relaxed text-pe-text-2">
+          <p className="text-[14px] font-medium text-pe-text">Data needed</p>
+          <ul className="mt-1.5 list-disc space-y-1 pl-4 text-[14px] leading-relaxed text-pe-text-2">
             <li>Urban and rural headline CPI, year on year</li>
             <li>Rural core (NFNE) and rural food inflation</li>
             <li>Urban and rural expenditure-group series, if wanted</li>
           </ul>
-          <p className="mt-2 text-[12px] leading-relaxed text-pe-text-3">Likely source: SBP EasyData&rsquo;s urban and rural splits (not yet ingested).</p>
+          <p className="mt-2 text-[13px] leading-relaxed text-pe-text-3">Likely source: SBP EasyData&rsquo;s urban and rural splits (not yet ingested).</p>
         </div>
       </div>
     </div>

@@ -51,7 +51,7 @@ export default function ToolCard({ tool, isAuthenticated }: Props) {
           <ToolIcon toolId={tool.id} className="h-5 w-5" />
         </span>
         {!isAvailable && (
-          <span className="rounded-full border border-[var(--border-subtle)] bg-[var(--surface-2)] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-white/40 light:text-slate-400">
+          <span className="rounded-full border border-[var(--border-subtle)] bg-[var(--surface-2)] px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider text-white/40 light:text-slate-400">
             <T tKey="decisionSupportLab.statusComingSoon" />
           </span>
         )}

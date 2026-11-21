@@ -24,12 +24,12 @@ function TreemapCell({ x = 0, y = 0, width = 0, height = 0, name = "", color = "
     <g>
       <rect x={x} y={y} width={width} height={height} fill={color} stroke="rgba(5,7,18,0.5)" strokeWidth={2} rx={4} />
       {canShowLabel && (
-        <text x={x + 8} y={y + 18} fontSize={11} fontWeight={700} fill="#fff" stroke="rgba(0,0,0,0.4)" strokeWidth={2} paintOrder="stroke">
+        <text x={x + 8} y={y + 18} fontSize={12} fontWeight={700} fill="#fff" stroke="rgba(0,0,0,0.4)" strokeWidth={2} paintOrder="stroke">
           {name}
         </text>
       )}
       {canShowLabel && height > 48 && (
-        <text x={x + 8} y={y + 34} fontSize={10} fill="rgba(255,255,255,0.85)" stroke="rgba(0,0,0,0.4)" strokeWidth={2} paintOrder="stroke">
+        <text x={x + 8} y={y + 34} fontSize={11} fill="rgba(255,255,255,0.85)" stroke="rgba(0,0,0,0.4)" strokeWidth={2} paintOrder="stroke">
           {`Rs ${value.toFixed(0)}bn`}
         </text>
       )}

@@ -55,7 +55,7 @@ export default function ProvincialRs100Card({ data, provinceName, fiscalYear, so
         ))}
       </div>
 
-      <p className="text-[11px] text-white/40 light:text-slate-400">
+      <p className="text-[12px] text-white/40 light:text-slate-400">
         {t("budget.sourceNote")}
       </p>
     </div>

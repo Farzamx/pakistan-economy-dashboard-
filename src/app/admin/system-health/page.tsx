@@ -191,10 +191,10 @@ export default async function SystemHealthPage() {
               {snapshot.recommendations.map((r, i) => (
                 <div key={i} className={`rounded-xl border p-3 ${SEVERITY_COLOR[r.severity]}`}>
                   <div className="flex items-start gap-2">
-                    <span className={`mt-0.5 text-[10px] font-semibold uppercase ${SEVERITY_TAG[r.severity]}`}>{r.severity}</span>
+                    <span className={`mt-0.5 text-[11px] font-semibold uppercase ${SEVERITY_TAG[r.severity]}`}>{r.severity}</span>
                     <div>
                       <p className="text-sm text-white">{r.message}</p>
-                      <p className="mt-0.5 text-[11px] text-slate-400">{r.evidence}</p>
+                      <p className="mt-0.5 text-[12px] text-slate-400">{r.evidence}</p>
                     </div>
                   </div>
                 </div>
@@ -486,10 +486,10 @@ export default async function SystemHealthPage() {
                   </div>
                   {t.jobsSummary.length > 0 && (
                     <details className="mt-2">
-                      <summary className="cursor-pointer text-[11px] text-slate-500">Jobs ({t.jobsSummary.length})</summary>
+                      <summary className="cursor-pointer text-[12px] text-slate-500">Jobs ({t.jobsSummary.length})</summary>
                       <div className="mt-1 space-y-0.5">
                         {t.jobsSummary.map((j, i) => (
-                          <div key={i} className="flex items-center gap-2 text-[11px] text-slate-400">
+                          <div key={i} className="flex items-center gap-2 text-[12px] text-slate-400">
                             <span className={`h-1.5 w-1.5 rounded-full flex-shrink-0 ${j.status === "success" ? "bg-emerald-400" : j.status === "skipped" ? "bg-sky-400" : "bg-rose-400"}`} />
                             <span className="font-mono">{j.jobName}</span>
                             <span className="text-slate-600">·</span>
@@ -576,7 +576,7 @@ export default async function SystemHealthPage() {
 
                 <div className="mt-3 grid gap-3 sm:grid-cols-2">
                   <div className="rounded-lg bg-white/[0.02] p-3">
-                    <p className="text-[10px] uppercase tracking-wide text-slate-500">
+                    <p className="text-[11px] uppercase tracking-wide text-slate-500">
                       Last Success{job.lastSuccess && hasReportedFailures(job.lastSuccess.detail) && (
                         <span className="ml-1.5 rounded-full bg-amber-500/20 px-1.5 py-0.5 text-amber-400 normal-case tracking-normal">partial failures</span>
                       )}
@@ -584,18 +584,18 @@ export default async function SystemHealthPage() {
                     {job.lastSuccess ? (
                       <>
                         <p className={`mt-1 text-xs ${hasReportedFailures(job.lastSuccess.detail) ? "text-amber-300" : "text-slate-300"}`}>{fmt(job.lastSuccess.startedAt)} · {job.lastSuccess.durationMs}ms</p>
-                        <p className="text-[11px] text-slate-500">{job.lastSuccess.jobName}{job.lastSuccess.detail ? ` — ${job.lastSuccess.detail}` : ""}</p>
+                        <p className="text-[12px] text-slate-500">{job.lastSuccess.jobName}{job.lastSuccess.detail ? ` — ${job.lastSuccess.detail}` : ""}</p>
                       </>
                     ) : (
                       <p className="mt-1 text-xs text-slate-500">No successful run recorded yet</p>
                     )}
                   </div>
                   <div className="rounded-lg bg-white/[0.02] p-3">
-                    <p className="text-[10px] uppercase tracking-wide text-slate-500">Last Failure</p>
+                    <p className="text-[11px] uppercase tracking-wide text-slate-500">Last Failure</p>
                     {job.lastFailure ? (
                       <>
                         <p className="mt-1 text-xs text-rose-400">{fmt(job.lastFailure.startedAt)} · {job.lastFailure.durationMs}ms</p>
-                        <p className="text-[11px] text-slate-500">{job.lastFailure.jobName}{job.lastFailure.detail ? ` — ${job.lastFailure.detail}` : ""}</p>
+                        <p className="text-[12px] text-slate-500">{job.lastFailure.jobName}{job.lastFailure.detail ? ` — ${job.lastFailure.detail}` : ""}</p>
                       </>
                     ) : (
                       <p className="mt-1 text-xs text-emerald-400">None recorded</p>
@@ -605,10 +605,10 @@ export default async function SystemHealthPage() {
 
                 {job.recentRuns.length > 0 && (
                   <details className="mt-3">
-                    <summary className="cursor-pointer text-[11px] text-slate-500">Recent runs ({job.recentRuns.length})</summary>
+                    <summary className="cursor-pointer text-[12px] text-slate-500">Recent runs ({job.recentRuns.length})</summary>
                     <div className="mt-2 space-y-1">
                       {job.recentRuns.slice(0, 10).map((run, i) => (
-                        <div key={i} className="flex items-center gap-2 text-[11px] text-slate-400">
+                        <div key={i} className="flex items-center gap-2 text-[12px] text-slate-400">
                           <span className={`h-1.5 w-1.5 rounded-full ${run.status !== "success" ? (run.status === "skipped" ? "bg-sky-400" : "bg-rose-400") : hasReportedFailures(run.detail) ? "bg-amber-400" : "bg-emerald-400"}`} />
                           <span>{fmt(run.startedAt)}</span>
                           <span className="text-slate-600">·</span>

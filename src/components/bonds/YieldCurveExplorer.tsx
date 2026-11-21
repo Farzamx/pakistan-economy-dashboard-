@@ -203,7 +203,7 @@ export default function YieldCurveExplorer({ tbills, pibs, def }: YieldCurveExpl
       {/* auction slider */}
       <div className="flex flex-wrap items-center gap-2.5 rounded-[var(--pe-radius)] border border-pe-border bg-pe-surface-2 px-3 py-2">
         <div className="flex items-center gap-1">
-          <button type="button" onClick={() => step(-1)} disabled={idx <= 0} aria-label="Previous auction" className="rounded-[var(--pe-radius-sm)] border border-pe-border px-2 py-1 text-[12px] text-pe-text-2 hover:bg-pe-surface disabled:opacity-40">
+          <button type="button" onClick={() => step(-1)} disabled={idx <= 0} aria-label="Previous auction" className="rounded-[var(--pe-radius-sm)] border border-pe-border px-2 py-1 text-[13px] text-pe-text-2 hover:bg-pe-surface disabled:opacity-40">
             {"◀"}
           </button>
           <button
@@ -212,15 +212,15 @@ export default function YieldCurveExplorer({ tbills, pibs, def }: YieldCurveExpl
             disabled={reduced || idx >= dates.length - 1}
             aria-pressed={playing}
             title={reduced ? "Playback is off because reduced motion is on" : "Step through the auctions one by one"}
-            className="rounded-[var(--pe-radius-sm)] border border-pe-border px-2.5 py-1 text-[12px] font-medium text-pe-text hover:bg-pe-surface disabled:opacity-40"
+            className="rounded-[var(--pe-radius-sm)] border border-pe-border px-2.5 py-1 text-[13px] font-medium text-pe-text hover:bg-pe-surface disabled:opacity-40"
           >
             {playing ? "Pause" : "Play"}
           </button>
-          <button type="button" onClick={() => step(1)} disabled={idx >= dates.length - 1} aria-label="Next auction" className="rounded-[var(--pe-radius-sm)] border border-pe-border px-2 py-1 text-[12px] text-pe-text-2 hover:bg-pe-surface disabled:opacity-40">
+          <button type="button" onClick={() => step(1)} disabled={idx >= dates.length - 1} aria-label="Next auction" className="rounded-[var(--pe-radius-sm)] border border-pe-border px-2 py-1 text-[13px] text-pe-text-2 hover:bg-pe-surface disabled:opacity-40">
             {"▶"}
           </button>
         </div>
-        <label className="flex min-w-[180px] flex-1 items-center gap-2 text-[12px] text-pe-text-2">
+        <label className="flex min-w-[180px] flex-1 items-center gap-2 text-[13px] text-pe-text-2">
           <span className="sr-only">Auction date</span>
           <input
             type="range"
@@ -233,22 +233,22 @@ export default function YieldCurveExplorer({ tbills, pibs, def }: YieldCurveExpl
             className="h-1.5 w-full cursor-pointer accent-[var(--pe-accent)]"
           />
         </label>
-        <p className="min-w-[120px] text-right text-[13px] font-semibold tabular-nums text-pe-text" aria-live="polite">
+        <p className="min-w-[120px] text-right text-[14px] font-semibold tabular-nums text-pe-text" aria-live="polite">
           {formatDate(selDate)}
         </p>
         {idx < dates.length - 1 && (
-          <button type="button" onClick={() => step(dates.length - 1 - idx)} className="rounded-[var(--pe-radius-sm)] px-1.5 py-1 text-[12px] text-pe-accent hover:underline">
+          <button type="button" onClick={() => step(dates.length - 1 - idx)} className="rounded-[var(--pe-radius-sm)] px-1.5 py-1 text-[13px] text-pe-accent hover:underline">
             Latest
           </button>
         )}
       </div>
 
-      {showGap && bRes.tbill && <p className="text-[12px] text-pe-text-2">{describePairing(bRes.tbill.auctionDate, bRes.pib)}</p>}
+      {showGap && bRes.tbill && <p className="text-[13px] text-pe-text-2">{describePairing(bRes.tbill.auctionDate, bRes.pib)}</p>}
 
       {/* chart */}
       <div ref={attach} className="relative" data-testid="curve-chart">
         {noData ? (
-          <p className="px-1 py-12 text-center text-[13px] text-pe-text-3">No auction data for this selection.</p>
+          <p className="px-1 py-12 text-center text-[14px] text-pe-text-3">No auction data for this selection.</p>
         ) : (
           <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} role="group" aria-label={`Auction yield by maturity, ${YIELD_DEFINITION_LABEL[def]}, percent per annum`} className="block max-w-full" onPointerDown={onBlankPointerDown}>
             <defs>
@@ -261,12 +261,12 @@ export default function YieldCurveExplorer({ tbills, pibs, def }: YieldCurveExpl
             {layout.yTicks.map((t) => (
               <g key={t}>
                 <line x1={layout.margin.left} x2={layout.margin.left + layout.innerWidth} y1={layout.yOf(t)} y2={layout.yOf(t)} stroke="var(--chart-grid)" />
-                <text x={layout.margin.left - 6} y={layout.yOf(t)} textAnchor="end" dominantBaseline="central" fontSize={11} fill="var(--chart-axis)" className="tabular-nums">
+                <text x={layout.margin.left - 6} y={layout.yOf(t)} textAnchor="end" dominantBaseline="central" fontSize={12} fill="var(--chart-axis)" className="tabular-nums">
                   {Number.isInteger(t) ? t.toFixed(0) : t.toFixed(1)}
                 </text>
               </g>
             ))}
-            <text x={layout.margin.left - 6} y={layout.margin.top - 6} textAnchor="end" fontSize={10} fill="var(--chart-axis)">
+            <text x={layout.margin.left - 6} y={layout.margin.top - 9} textAnchor="end" fontSize={11} fill="var(--chart-axis)">
               % p.a.
             </text>
 
@@ -275,7 +275,7 @@ export default function YieldCurveExplorer({ tbills, pibs, def }: YieldCurveExpl
               <g aria-hidden="true">
                 <rect x={layout.gap.x0} y={layout.margin.top} width={layout.gap.x1 - layout.gap.x0} height={layout.innerHeight} fill={`url(#gap-${uid})`} opacity={0.5} />
                 {layout.gap.x1 - layout.gap.x0 > 28 && (
-                  <text x={(layout.gap.x0 + layout.gap.x1) / 2} y={layout.margin.top + 12} textAnchor="middle" fontSize={10} fill="var(--chart-axis)">
+                  <text x={(layout.gap.x0 + layout.gap.x1) / 2} y={layout.margin.top + 12} textAnchor="middle" fontSize={11} fill="var(--chart-axis)">
                     no auction
                   </text>
                 )}
@@ -293,7 +293,7 @@ export default function YieldCurveExplorer({ tbills, pibs, def }: YieldCurveExpl
             ))}
             <line x1={layout.margin.left} x2={layout.margin.left + layout.innerWidth} y1={layout.margin.top + layout.innerHeight} y2={layout.margin.top + layout.innerHeight} stroke="var(--chart-axis)" />
             {showGap && (
-              <g fontSize={10} fill="var(--chart-axis)" aria-hidden="true">
+              <g fontSize={11} fill="var(--chart-axis)" aria-hidden="true">
                 <text x={(layout.xOf(1 / 12) + layout.xOf(1)) / 2} y={layout.height - 6} textAnchor="middle">
                   T-bills
                 </text>
@@ -379,14 +379,14 @@ export default function YieldCurveExplorer({ tbills, pibs, def }: YieldCurveExpl
               <TipRow swatch={B_COLOR} label={shortDate(d.bDate)} value={d.b ? (d.b.yield !== null ? `${fmtY(d.b.yield)}%` : (STATUS_TEXT[d.b.status] ?? "—")) : "—"} />
               {d.a && d.aDate && <TipRow swatch={A_COLOR} label={shortDate(d.aDate)} value={d.a.yield !== null ? `${fmtY(d.a.yield)}%` : (STATUS_TEXT[d.a.status] ?? "—")} />}
               {d.b?.yield !== null && d.b?.yield !== undefined && d.a?.yield !== null && d.a?.yield !== undefined && <TipRow label="Change" value={`${fmtBp((Math.round((d.b.yield - d.a.yield) * 1000) / 10))} bp`} />}
-              {d.b && d.b.offered !== null && <p className="mt-1 text-[11px]" style={{ color: "var(--chart-tooltip-label)" }}>Offered Rs {Math.round(d.b.offered / 1000).toLocaleString("en-US")}bn{d.b.accepted !== null ? ` · accepted Rs ${Math.round(d.b.accepted / 1000).toLocaleString("en-US")}bn` : ""}</p>}
+              {d.b && d.b.offered !== null && <p className="mt-1 text-[12px]" style={{ color: "var(--chart-tooltip-label)" }}>Offered Rs {Math.round(d.b.offered / 1000).toLocaleString("en-US")}bn{d.b.accepted !== null ? ` · accepted Rs ${Math.round(d.b.accepted / 1000).toLocaleString("en-US")}bn` : ""}</p>}
             </>
           )}
         </TooltipBox>
       </div>
 
       {/* key */}
-      <ul className="flex flex-wrap gap-x-5 gap-y-1 text-[12px] text-pe-text-2" aria-label="Key">
+      <ul className="flex flex-wrap gap-x-5 gap-y-1 text-[13px] text-pe-text-2" aria-label="Key">
         <li className="flex items-center gap-1.5">
           <span aria-hidden className="inline-block h-0.5 w-5 rounded" style={{ background: B_COLOR }} />
           Selected auction ({formatDate(selDate)})
@@ -405,16 +405,16 @@ export default function YieldCurveExplorer({ tbills, pibs, def }: YieldCurveExpl
       {/* reading panels */}
       <div className="grid gap-3 lg:grid-cols-2">
         <div className="rounded-[var(--pe-radius)] border border-pe-border bg-pe-surface p-3.5" data-testid="curve-shape-panel">
-          <h4 className="text-[12px] font-semibold uppercase tracking-[0.05em] text-pe-text-3">This curve</h4>
+          <h4 className="text-[13px] font-semibold uppercase tracking-[0.05em] text-pe-text-3">This curve</h4>
           {instruments.map((ins) => {
             const b = of("B", ins);
-            if (!b) return ins === "pib" && view === "pib" ? <p key={ins} className="mt-2 text-[13px] text-pe-text-2">No PIB auction on this date.</p> : null;
+            if (!b) return ins === "pib" && view === "pib" ? <p key={ins} className="mt-2 text-[14px] text-pe-text-2">No PIB auction on this date.</p> : null;
             const slope = slopeOf(b.auction, def);
             const sentence = describeShape(slope);
             return (
               <div key={ins} className="mt-2">
-                <p className="flex flex-wrap items-center gap-2 text-[13px] text-pe-text">
-                  <span className="rounded-[var(--pe-radius-sm)] border border-pe-border px-1.5 py-0.5 text-[11px] font-semibold uppercase tracking-[0.05em] text-pe-text-2">{ins === "tbill" ? "T-bills" : "PIBs"}</span>
+                <p className="flex flex-wrap items-center gap-2 text-[14px] text-pe-text">
+                  <span className="rounded-[var(--pe-radius-sm)] border border-pe-border px-1.5 py-0.5 text-[12px] font-semibold uppercase tracking-[0.05em] text-pe-text-2">{ins === "tbill" ? "T-bills" : "PIBs"}</span>
                   {slope ? (
                     <span className="inline-flex items-center gap-1 font-semibold" style={{ color: SHAPE_COLOR[slope.shape] }}>
                       <span aria-hidden>{SHAPE_GLYPH[slope.shape]}</span>
@@ -425,24 +425,24 @@ export default function YieldCurveExplorer({ tbills, pibs, def }: YieldCurveExpl
                   )}
                   <span className="text-pe-text-3">auction {formatDate(b.auction.auctionDate)} · settled {formatDate(b.auction.settlementDate)}</span>
                 </p>
-                <p className="mt-1 text-[13px] text-pe-text-2">{sentence ?? "A tenor at one end of the slope had no yield at this auction, so the shape is not stated."}</p>
+                <p className="mt-1 text-[14px] text-pe-text-2">{sentence ?? "A tenor at one end of the slope had no yield at this auction, so the shape is not stated."}</p>
               </div>
             );
           })}
         </div>
 
         <div className="rounded-[var(--pe-radius)] border border-pe-border bg-pe-surface p-3.5" data-testid="curve-change-panel">
-          <h4 className="text-[12px] font-semibold uppercase tracking-[0.05em] text-pe-text-3">{aDate ? `Change since ${formatDate(aDate)}` : "Change"}</h4>
-          {view === "both" && aRes && !aRes.pib && bRes.pib && aDate && <p className="mt-2 text-[13px] text-pe-text-2">No PIB auction within 14 days of {formatDate(aDate)}, so there is no PIB comparison for that date (SBP&apos;s detailed PIB archive starts in July 2024).</p>}
+          <h4 className="text-[13px] font-semibold uppercase tracking-[0.05em] text-pe-text-3">{aDate ? `Change since ${formatDate(aDate)}` : "Change"}</h4>
+          {view === "both" && aRes && !aRes.pib && bRes.pib && aDate && <p className="mt-2 text-[14px] text-pe-text-2">No PIB auction within 14 days of {formatDate(aDate)}, so there is no PIB comparison for that date (SBP&apos;s detailed PIB archive starts in July 2024).</p>}
           {comparisons.length === 0 ? (
-            <p className="mt-2 text-[13px] text-pe-text-2">{choice === "none" ? "Choose a date to compare with." : "No earlier auction to compare with for this selection."}</p>
+            <p className="mt-2 text-[14px] text-pe-text-2">{choice === "none" ? "Choose a date to compare with." : "No earlier auction to compare with for this selection."}</p>
           ) : (
             comparisons.map(({ instrument, cmp, a, b }) => {
               const max = Math.max(...cmp.changes.map((c) => Math.abs(c.deltaBp ?? 0)), 1);
               return (
                 <div key={instrument} className="mt-2">
-                  <p className="text-[13px] text-pe-text-2">{describeComparison(cmp, a.auctionDate, b.auctionDate)}</p>
-                  <table className="mt-2 w-full border-collapse text-[12px] tabular-nums">
+                  <p className="text-[14px] text-pe-text-2">{describeComparison(cmp, a.auctionDate, b.auctionDate)}</p>
+                  <table className="mt-2 w-full border-collapse text-[13px] tabular-nums">
                     <caption className="sr-only">{`${instrument === "tbill" ? "T-bill" : "PIB"} yields on ${formatDate(a.auctionDate)} and ${formatDate(b.auctionDate)}, and the change in basis points`}</caption>
                     <thead>
                       <tr className="text-pe-text-3">

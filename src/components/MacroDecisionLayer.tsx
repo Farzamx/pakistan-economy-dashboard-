@@ -94,7 +94,7 @@ function Bullets({ items }: { items: readonly string[] }) {
   return (
     <ul className="mt-2 flex flex-col gap-1.5">
       {items.map((text, i) => (
-        <li key={i} className="flex gap-2 text-[13px] leading-relaxed text-white/65 light:text-slate-600">
+        <li key={i} className="flex gap-2 text-[14px] leading-relaxed text-white/65 light:text-slate-600">
           <span aria-hidden="true" className="mt-[2px] shrink-0 text-white/25 light:text-slate-300">
             ·
           </span>
@@ -112,7 +112,7 @@ function PostureBlock({ report }: { report: MacroDecisionReport }) {
       <div aria-hidden="true" className={`absolute inset-x-0 top-0 h-[2px] ${POSTURE_ACCENT[posture]}`} />
       <span className="text-label text-white/45 light:text-slate-400">Current Macro Posture</span>
       <p className={`mt-2.5 text-3xl font-semibold leading-tight ${POSTURE_TEXT[posture]}`}>{posture}</p>
-      <p className="mt-2.5 text-[13px] leading-relaxed text-white/65 light:text-slate-600">{POSTURE_EXPLANATION[posture]}</p>
+      <p className="mt-2.5 text-[14px] leading-relaxed text-white/65 light:text-slate-600">{POSTURE_EXPLANATION[posture]}</p>
 
       <div className="mt-4 grid grid-cols-3 gap-x-3 border-t border-white/5 pt-3 light:border-black/5">
         {[
@@ -127,7 +127,7 @@ function PostureBlock({ report }: { report: MacroDecisionReport }) {
         ))}
       </div>
 
-      <p className="mt-3 text-[11px] leading-relaxed text-white/35 light:text-slate-400">
+      <p className="mt-3 text-[12px] leading-relaxed text-white/35 light:text-slate-400">
         Counted across {counts.ratedWithData} of {report.dimensions.length} dimensions. {counts.notRated > 0 && <>{counts.notRated} carry no evidenced polarity and are reported without one. </>}
         {counts.insufficientData > 0 && <>{counts.insufficientData} could not be classified this run.</>}
       </p>
@@ -141,15 +141,15 @@ function BreadthBlock({ report }: { report: MacroDecisionReport }) {
       <span className="text-label text-white/45 light:text-slate-400">Breadth of Movement</span>
       <dl className="mt-3 flex flex-col gap-2.5">
         <div className="flex items-baseline justify-between gap-3 border-b border-white/5 pb-2.5 light:border-black/5">
-          <dt className="text-[13px] text-white/55 light:text-slate-500">Deterioration</dt>
+          <dt className="text-[14px] text-white/55 light:text-slate-500">Deterioration</dt>
           <dd className="text-sm font-semibold text-white light:text-slate-900">{BREADTH_LABEL[report.deteriorationBreadth]}</dd>
         </div>
         <div className="flex items-baseline justify-between gap-3">
-          <dt className="text-[13px] text-white/55 light:text-slate-500">Improvement</dt>
+          <dt className="text-[14px] text-white/55 light:text-slate-500">Improvement</dt>
           <dd className="text-sm font-semibold text-white light:text-slate-900">{BREADTH_LABEL[report.improvementBreadth]}</dd>
         </div>
       </dl>
-      <p className="mt-3 border-t border-white/5 pt-3 text-[11px] leading-relaxed text-white/35 light:border-black/5 light:text-slate-400">
+      <p className="mt-3 border-t border-white/5 pt-3 text-[12px] leading-relaxed text-white/35 light:border-black/5 light:text-slate-400">
         Broad-based means at least half of the rated dimensions with usable data are moving that way; moderate, at least a third. Breadth is not assessed below three rated dimensions.
       </p>
     </div>
@@ -160,9 +160,9 @@ function ListSection({ title, caption, empty, items }: { title: string; caption:
   return (
     <div className="rounded-lg border border-white/10 bg-white/[0.025] p-5 light:border-black/10 light:bg-black/[0.015]">
       <span className="text-label text-white/45 light:text-slate-400">{title}</span>
-      <p className="mt-1 text-[11px] text-white/35 light:text-slate-400">{caption}</p>
+      <p className="mt-1 text-[12px] text-white/35 light:text-slate-400">{caption}</p>
       {items.length === 0 ? (
-        <p className="mt-3 text-[13px] text-white/40 light:text-slate-500">{empty}</p>
+        <p className="mt-3 text-[14px] text-white/40 light:text-slate-500">{empty}</p>
       ) : (
         <Bullets items={items.map((i) => i.text)} />
       )}
@@ -174,7 +174,7 @@ function DimensionTable({ dimensions }: { dimensions: readonly DimensionDecision
   return (
     <div className="rounded-lg border border-white/10 bg-white/[0.025] p-5 light:border-black/10 light:bg-black/[0.015]">
       <span className="text-label text-white/45 light:text-slate-400">Dimension Changes</span>
-      <p className="mt-1 text-[11px] text-white/35 light:text-slate-400">
+      <p className="mt-1 text-[12px] text-white/35 light:text-slate-400">
         Current condition, the state it followed, and how many consecutive stored snapshots share it. A dash means no earlier state has been recorded yet.
       </p>
       <div className="mt-3 overflow-x-auto">
@@ -191,13 +191,13 @@ function DimensionTable({ dimensions }: { dimensions: readonly DimensionDecision
           <tbody>
             {dimensions.map((d) => (
               <tr key={d.dimension} className="border-b border-white/5 last:border-b-0 light:border-black/5">
-                <td className="whitespace-nowrap py-2.5 pr-4 text-[13px] text-white/75 light:text-slate-700">{d.label}</td>
-                <td className="py-2.5 pr-4 text-[13px] font-medium text-white light:text-slate-900">{tidy(d.currentState)}</td>
-                <td className="py-2.5 pr-4 text-[13px] text-white/45 light:text-slate-500">
+                <td className="whitespace-nowrap py-2.5 pr-4 text-[14px] text-white/75 light:text-slate-700">{d.label}</td>
+                <td className="py-2.5 pr-4 text-[14px] font-medium text-white light:text-slate-900">{tidy(d.currentState)}</td>
+                <td className="py-2.5 pr-4 text-[14px] text-white/45 light:text-slate-500">
                   {d.previousState ? tidy(d.previousState) : <span aria-hidden="true">—</span>}
                 </td>
-                <td className="text-mono-num whitespace-nowrap py-2.5 pr-4 text-[13px] tabular-nums text-white/45 light:text-slate-500">{runText(d)}</td>
-                <td className={`whitespace-nowrap py-2.5 text-[13px] font-medium ${ASSESSMENT_CLASS[d.assessment]}`}>{ASSESSMENT_LABEL[d.assessment]}</td>
+                <td className="text-mono-num whitespace-nowrap py-2.5 pr-4 text-[14px] tabular-nums text-white/45 light:text-slate-500">{runText(d)}</td>
+                <td className={`whitespace-nowrap py-2.5 text-[14px] font-medium ${ASSESSMENT_CLASS[d.assessment]}`}>{ASSESSMENT_LABEL[d.assessment]}</td>
               </tr>
             ))}
           </tbody>
@@ -216,12 +216,12 @@ function KnowledgeBlock({ report }: { report: MacroDecisionReport }) {
   return (
     <div className="rounded-lg border border-white/10 bg-white/[0.025] p-5 light:border-black/10 light:bg-black/[0.015]">
       <span className="text-label text-white/45 light:text-slate-400">What This Layer Knows</span>
-      <p className="mt-1 text-[11px] text-white/35 light:text-slate-400">Observation, interpretation and limitation are kept separate rather than blended into one narrative.</p>
+      <p className="mt-1 text-[12px] text-white/35 light:text-slate-400">Observation, interpretation and limitation are kept separate rather than blended into one narrative.</p>
       <div className="mt-4 grid grid-cols-1 gap-5 lg:grid-cols-3">
         {groups.map((g) => (
           <div key={g.title}>
             <p className="text-label text-white/45 light:text-slate-400">{g.title}</p>
-            <p className="mt-1 text-[11px] text-white/30 light:text-slate-400">{g.caption}</p>
+            <p className="mt-1 text-[12px] text-white/30 light:text-slate-400">{g.caption}</p>
             <Bullets items={g.items} />
           </div>
         ))}
@@ -248,7 +248,7 @@ export default function MacroDecisionLayer({ report }: { report: MacroDecisionRe
       </p>
 
       {historyNote && (
-        <p className="mt-4 rounded-lg border border-white/10 bg-white/[0.02] px-4 py-3 text-[13px] leading-relaxed text-white/55 light:border-black/10 light:bg-black/[0.015] light:text-slate-500">
+        <p className="mt-4 rounded-lg border border-white/10 bg-white/[0.02] px-4 py-3 text-[14px] leading-relaxed text-white/55 light:border-black/10 light:bg-black/[0.015] light:text-slate-500">
           {historyNote}
         </p>
       )}
@@ -278,7 +278,7 @@ export default function MacroDecisionLayer({ report }: { report: MacroDecisionRe
         <KnowledgeBlock report={report} />
       </div>
 
-      <p className="mt-4 text-[11px] leading-relaxed text-white/30 light:text-slate-400">
+      <p className="mt-4 text-[12px] leading-relaxed text-white/30 light:text-slate-400">
         Built from {report.snapshotCount} stored snapshot{report.snapshotCount === 1 ? "" : "s"} (most recent {report.historyWindow} requested). Persistence is counted in snapshots, never in days, because a
         missed scheduled run must never become a claimed calendar duration.
       </p>

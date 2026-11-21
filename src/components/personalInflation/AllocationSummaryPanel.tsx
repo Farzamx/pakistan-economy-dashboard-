@@ -92,13 +92,13 @@ export default function AllocationSummaryPanel({ mode, onModeChange, totalAlloca
 
       <div className="grid grid-cols-3 gap-2 sm:gap-3">
         <div className="rounded-lg bg-[var(--surface-2)] px-3 py-2.5">
-          <p className="text-[10px] font-medium uppercase tracking-wider text-white/40 light:text-slate-400">{t("personalInflation.totalAllocated")}</p>
+          <p className="text-[11px] font-medium uppercase tracking-wider text-white/40 light:text-slate-400">{t("personalInflation.totalAllocated")}</p>
           <p className="text-mono-num mt-0.5 text-sm font-semibold tabular-nums text-white light:text-slate-900">
             {isPercent ? `${totalAllocated.toFixed(1)}%` : `Rs ${Math.round(totalAllocated).toLocaleString("en-US")}`}
           </p>
         </div>
         <div className="rounded-lg bg-[var(--surface-2)] px-3 py-2.5">
-          <p className="text-[10px] font-medium uppercase tracking-wider text-white/40 light:text-slate-400">{t("personalInflation.remaining")}</p>
+          <p className="text-[11px] font-medium uppercase tracking-wider text-white/40 light:text-slate-400">{t("personalInflation.remaining")}</p>
           <p className="text-mono-num mt-0.5 text-sm font-semibold tabular-nums text-white light:text-slate-900">
             {isPercent ? `${remainingPct.toFixed(1)}%` : `Rs ${Math.round(remainingAmount).toLocaleString("en-US")}`}
           </p>

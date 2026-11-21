@@ -58,14 +58,14 @@ export default function ComparisonCard({
             <button
               type="button"
               onClick={() => chartContainerRef.current && exportChartAsPng(chartContainerRef.current, `${def.slug}.png`, "#05060f")}
-              className="rounded-lg border border-[var(--border)] px-2.5 py-1 text-[11px] font-medium text-[var(--text-muted)] transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]"
+              className="rounded-lg border border-[var(--border)] px-2.5 py-1 text-[12px] font-medium text-[var(--text-muted)] transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]"
             >
               {t("budget.exportPng")}
             </button>
             <button
               type="button"
               onClick={() => exportChartAsCsv(chartData, def.seriesA, def.seriesB, `${def.slug}.csv`)}
-              className="rounded-lg border border-[var(--border)] px-2.5 py-1 text-[11px] font-medium text-[var(--text-muted)] transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]"
+              className="rounded-lg border border-[var(--border)] px-2.5 py-1 text-[12px] font-medium text-[var(--text-muted)] transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]"
             >
               {t("budget.exportCsv")}
             </button>
@@ -114,7 +114,7 @@ export default function ComparisonCard({
             </div>
           )}
 
-          <p className="text-[11px] text-[var(--text-muted)]">
+          <p className="text-[12px] text-[var(--text-muted)]">
             {t("comparisons.sourcesLabel")}: {sourceA}
             {sourceB !== sourceA ? ` & ${sourceB}` : ""}
           </p>

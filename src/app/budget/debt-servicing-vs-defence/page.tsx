@@ -93,7 +93,7 @@ export default function DebtServicingVsDefencePage() {
 
           <div className="glass-card mt-8 flex flex-col gap-4 rounded-2xl p-5">
             <BudgetTrendChart points={trendPoints} fields={["debtServicing", "defence"]} mode="nominal" />
-            <p className="text-[11px] text-white/40 light:text-slate-400">Source: Budget in Brief, each fiscal year&apos;s own Budget Estimate.</p>
+            <p className="text-[12px] text-white/40 light:text-slate-400">Source: Budget in Brief, each fiscal year&apos;s own Budget Estimate.</p>
           </div>
 
           <div className="mt-6">

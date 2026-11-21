@@ -26,7 +26,7 @@ export default function HistoricalContext({ events }: { events: EventRecord[] })
                 <span className="text-xs text-white/40 light:text-slate-400">
                   {t("calendar.actualCol")} <span className="font-semibold text-neon-blue">{event.actualValue}</span>
                 </span>
-                <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide ${SURPRISE_BADGE_CLASS[surprise.direction]}`}>
+                <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${SURPRISE_BADGE_CLASS[surprise.direction]}`}>
                   {SURPRISE_LABELS[surprise.direction]}
                 </span>
               </div>

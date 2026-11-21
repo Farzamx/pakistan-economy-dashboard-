@@ -31,10 +31,10 @@ export default function AssetComparisonLabChartsInner({ results }: Props) {
         <ResponsiveContainer width="100%" height={Math.max(240, data.length * 44)}>
           <BarChart data={data} layout="vertical" margin={{ top: 4, right: 24, left: 8, bottom: 4 }}>
             <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} horizontal={false} />
-            <XAxis type="number" tickFormatter={(v) => `${v}%`} stroke="transparent" tick={{ fill: axisTickFill, fontSize: 11 }} tickLine={false} axisLine={false} />
-            <YAxis type="category" dataKey="name" stroke="transparent" tick={{ fill: axisTickFill, fontSize: 12 }} tickLine={false} axisLine={false} width={130} />
+            <XAxis type="number" tickFormatter={(v) => `${v}%`} stroke="transparent" tick={{ fill: axisTickFill, fontSize: 12 }} tickLine={false} axisLine={false} />
+            <YAxis type="category" dataKey="name" stroke="transparent" tick={{ fill: axisTickFill, fontSize: 13 }} tickLine={false} axisLine={false} width={130} />
             <Tooltip contentStyle={tooltipStyle} formatter={(v) => [`${typeof v === "number" ? v.toFixed(1) : v}%`, ""]} />
-            <Legend wrapperStyle={{ fontSize: 12, color: axisTickFill }} />
+            <Legend wrapperStyle={{ fontSize: 13, color: axisTickFill }} />
             <Bar dataKey="nominal" name="Nominal Return" fill="#4d8df7" radius={[0, 4, 4, 0]} isAnimationActive={!prefersReducedMotion} animationDuration={700} />
             <Bar dataKey="real" name="Real Return" fill="#34d399" radius={[0, 4, 4, 0]} isAnimationActive={!prefersReducedMotion} animationDuration={700} />
           </BarChart>

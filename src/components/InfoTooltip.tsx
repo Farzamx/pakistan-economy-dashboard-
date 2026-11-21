@@ -215,7 +215,7 @@ export default function InfoTooltip({ termKey, size = "sm" }: Props) {
   const entry = TERMINOLOGY[termKey];
   if (!entry) return null;
 
-  const btnSize = size === "xs" ? "h-3.5 w-3.5 text-[9px]" : "h-4 w-4 text-[10px]";
+  const btnSize = size === "xs" ? "h-3.5 w-3.5 text-[10px]" : "h-4 w-4 text-[11px]";
 
   const panel =
     open && placement && mounted
@@ -261,32 +261,32 @@ export default function InfoTooltip({ termKey, size = "sm" }: Props) {
                 <button
                   onClick={doClose}
                   aria-label="Close tooltip"
-                  className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] text-white/30 light:text-slate-400 transition-colors hover:text-white/70 light:hover:text-slate-700"
+                  className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] text-white/30 light:text-slate-400 transition-colors hover:text-white/70 light:hover:text-slate-700"
                 >
                   ✕
                 </button>
               </div>
 
               {/* WHAT */}
-              <p className="mb-1 text-[9px] font-semibold uppercase tracking-wider text-white/30 light:text-slate-400">
+              <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-white/30 light:text-slate-400">
                 {t("tooltip.whatIs")}
               </p>
               <p className="mb-3 text-xs leading-relaxed text-white/75 light:text-slate-700">{entry.what}</p>
 
               {/* WHY */}
-              <p className="mb-1 text-[9px] font-semibold uppercase tracking-wider text-white/30 light:text-slate-400">
+              <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-white/30 light:text-slate-400">
                 {t("tooltip.whyMatters")}
               </p>
               <p className="mb-3 text-xs leading-relaxed text-white/65 light:text-slate-600">{entry.why}</p>
 
               {/* HOW */}
-              <p className="mb-1.5 text-[9px] font-semibold uppercase tracking-wider text-white/30 light:text-slate-400">
+              <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-white/30 light:text-slate-400">
                 {t("tooltip.howToRead")}
               </p>
               <ul className="mb-3 space-y-1">
                 {entry.how.map((bullet, i) => (
                   <li key={i} className="flex items-start gap-1.5 text-xs text-white/65 light:text-slate-600">
-                    <span className="mt-0.5 shrink-0 text-[8px] text-neon-blue/50">•</span>
+                    <span className="mt-0.5 shrink-0 text-[10px] text-neon-blue/50">•</span>
                     <span>{bullet}</span>
                   </li>
                 ))}
@@ -298,7 +298,7 @@ export default function InfoTooltip({ termKey, size = "sm" }: Props) {
               <button
                 onClick={handleTranslate}
                 disabled={translating}
-                className="flex items-center gap-1.5 text-[10px] text-white/35 light:text-slate-400 transition-colors hover:text-neon-blue/70 light:hover:text-neon-blue disabled:pointer-events-none disabled:opacity-50"
+                className="flex items-center gap-1.5 text-[11px] text-white/35 light:text-slate-400 transition-colors hover:text-neon-blue/70 light:hover:text-neon-blue disabled:pointer-events-none disabled:opacity-50"
               >
                 {translating ? (
                   <>
@@ -316,7 +316,7 @@ export default function InfoTooltip({ termKey, size = "sm" }: Props) {
               {/* Roman Urdu block — only this sub-block scrolls if long */}
               {urduVisible && urduCache.has(termKey) && (
                 <div className="mt-2.5 rounded-lg border border-white/5 light:border-blue-100 bg-[#071420] light:bg-blue-50 p-3" style={{ maxHeight: 160, overflowY: "auto" }}>
-                  <p className="mb-1.5 text-[9px] font-semibold uppercase tracking-wider text-neon-blue/40 light:text-blue-500">
+                  <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-neon-blue/40 light:text-blue-500">
                     {t("tooltip.romanUrdu")}
                   </p>
                   <p className="whitespace-pre-wrap text-xs leading-relaxed text-white/60 light:text-slate-700">

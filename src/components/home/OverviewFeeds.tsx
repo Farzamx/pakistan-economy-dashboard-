@@ -12,7 +12,7 @@ function CardHeader({ id, title, href, linkLabel }: { id: string; title: string;
     <div className="flex min-h-11 items-center justify-between gap-3 px-4 pb-2 pt-4 lg:px-5 lg:pt-5">
       <h2 id={id} className="text-[17px] font-semibold text-pe-text">{title}</h2>
       {href && linkLabel && (
-        <Link href={href} className="-my-2 inline-flex min-h-11 items-center text-[13px] font-medium text-pe-accent hover:underline">{linkLabel}</Link>
+        <Link href={href} className="-my-2 inline-flex min-h-11 items-center text-[14px] font-medium text-pe-accent hover:underline">{linkLabel}</Link>
       )}
     </div>
   );
@@ -23,9 +23,9 @@ function CardHeader({ id, title, href, linkLabel }: { id: string; title: string;
 /** Only "High" is a filled pill. Medium and Low are plain text: three coloured pills in every row made nothing stand out. */
 function Importance({ level }: { level: string }) {
   if (level === "High") {
-    return <span className="shrink-0 rounded-full bg-pe-text px-2.5 py-0.5 text-[12px] font-semibold text-pe-surface">High</span>;
+    return <span className="shrink-0 rounded-full bg-pe-text px-2.5 py-0.5 text-[13px] font-semibold text-pe-surface">High</span>;
   }
-  return <span className="shrink-0 text-[12px] text-pe-text-3">{level}</span>;
+  return <span className="shrink-0 text-[13px] text-pe-text-3">{level}</span>;
 }
 
 function ReleaseList({ rows }: { rows: ReleaseRow[] }) {
@@ -34,8 +34,8 @@ function ReleaseList({ rows }: { rows: ReleaseRow[] }) {
       {rows.map((row) => (
         <li key={row.key} className="flex min-h-11 items-center justify-between gap-4 px-4 py-2.5 lg:px-5">
           <span className="min-w-0">
-            <span className="block text-[14px] font-medium leading-snug text-pe-text">{row.title}</span>
-            {row.subtitle && <span className="block text-[12px] leading-snug text-pe-text-3">{row.subtitle}</span>}
+            <span className="block text-[15px] font-medium leading-snug text-pe-text">{row.title}</span>
+            {row.subtitle && <span className="block text-[13px] leading-snug text-pe-text-3">{row.subtitle}</span>}
           </span>
           <Importance level={row.importance} />
         </li>
@@ -47,7 +47,7 @@ function ReleaseList({ rows }: { rows: ReleaseRow[] }) {
 function GroupLabel({ children, today = false }: { children: React.ReactNode; today?: boolean }) {
   return (
     <h3
-      className={`border-y border-pe-border px-4 py-2 font-mono text-[11px] font-medium uppercase tracking-[0.12em] lg:px-5 ${today ? "bg-pe-surface-2 text-pe-accent" : "text-pe-text-3"}`}
+      className={`border-y border-pe-border px-4 py-2 font-mono text-[12px] font-medium uppercase tracking-[0.12em] lg:px-5 ${today ? "bg-pe-surface-2 text-pe-accent" : "text-pe-text-3"}`}
     >
       {children}
     </h3>
@@ -60,9 +60,9 @@ export function ReleaseCalendar({ id, groups, todayIso }: { id: string; groups: 
     <section id={id} aria-labelledby={`${id}-heading`} className={`${CARD} flex h-full flex-col overflow-hidden`}>
       <CardHeader id={`${id}-heading`} title="Release calendar" href="/economic-calendar" linkLabel="All releases →" />
       {groups === null ? (
-        <p className="px-5 py-6 text-[13px] text-pe-text-3">The release calendar is unavailable right now.</p>
+        <p className="px-5 py-6 text-[14px] text-pe-text-3">The release calendar is unavailable right now.</p>
       ) : empty ? (
-        <p className="px-5 py-6 text-[13px] text-pe-text-3">No upcoming releases are scheduled.</p>
+        <p className="px-5 py-6 text-[14px] text-pe-text-3">No upcoming releases are scheduled.</p>
       ) : (
         <>
           {groups.today.length > 0 && (
@@ -102,7 +102,7 @@ export function OverviewHeadlines({ id, items, todayIso, sourceCount }: { id: st
       {/* No news page exists yet, so this card has no "All news" link: a link to nowhere would be worse than none. */}
       <CardHeader id={`${id}-heading`} title="Headlines" />
       {items.length === 0 ? (
-        <p className="px-5 py-6 text-[13px] text-pe-text-3">Headlines are unavailable right now. The news feeds are retried automatically.</p>
+        <p className="px-5 py-6 text-[14px] text-pe-text-3">Headlines are unavailable right now. The news feeds are retried automatically.</p>
       ) : (
         <ul className="divide-y divide-pe-border border-t border-pe-border">
           {items.slice(0, 6).map((item, i) => {
@@ -116,15 +116,15 @@ export function OverviewHeadlines({ id, items, todayIso, sourceCount }: { id: st
                   rel="noopener noreferrer"
                   className="group flex min-h-11 flex-col gap-1 px-4 py-3 hover:bg-pe-surface-2 lg:flex-row lg:items-baseline lg:justify-between lg:gap-6 lg:px-5"
                 >
-                  <span className="min-w-0 text-[14px] font-medium leading-snug text-pe-text group-hover:text-pe-accent">
+                  <span className="min-w-0 text-[15px] font-medium leading-snug text-pe-text group-hover:text-pe-accent">
                     {item.title}
                     {isOfficial(item) && (
-                      <span className="ms-2 inline-block whitespace-nowrap rounded-full border border-pe-border-strong px-2 py-px align-middle text-[11px] font-medium text-pe-text-2">
+                      <span className="ms-2 inline-block whitespace-nowrap rounded-full border border-pe-border-strong px-2 py-px align-middle text-[12px] font-medium text-pe-text-2">
                         Official release
                       </span>
                     )}
                   </span>
-                  <span className="shrink-0 whitespace-nowrap text-[12px] text-pe-text-3">
+                  <span className="shrink-0 whitespace-nowrap text-[13px] text-pe-text-3">
                     {cleanSourceName(item.source)}
                     {time && (
                       <>
@@ -140,7 +140,7 @@ export function OverviewHeadlines({ id, items, todayIso, sourceCount }: { id: st
         </ul>
       )}
       {items.length > 0 && (
-        <p className="mt-auto border-t border-pe-border px-4 py-3 text-[12px] text-pe-text-3 lg:px-5">
+        <p className="mt-auto border-t border-pe-border px-4 py-3 text-[13px] text-pe-text-3 lg:px-5">
           From {sourceCount} sources. Official PBS releases are labelled.
         </p>
       )}

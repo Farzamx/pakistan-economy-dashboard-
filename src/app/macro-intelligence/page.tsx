@@ -346,7 +346,7 @@ export default async function MacroIntelligencePage() {
               </section>
             </>
           ) : (
-            <p className="rounded-[var(--pe-radius)] border border-pe-border bg-pe-surface p-4 text-[13px] text-pe-text-2">
+            <p className="rounded-[var(--pe-radius)] border border-pe-border bg-pe-surface p-4 text-[14px] text-pe-text-2">
               The weekly intelligence snapshot is not available yet. Health score and risk analysis will appear once the next weekly run completes.
             </p>
           )}

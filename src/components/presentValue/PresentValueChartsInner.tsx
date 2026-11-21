@@ -44,8 +44,8 @@ export default function PresentValueChartsInner({ presentValueAmount, discountRa
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} vertical={false} />
-            <XAxis dataKey="period" stroke="transparent" tick={{ fill: axisTickFill, fontSize: 11 }} tickLine={false} axisLine={false} minTickGap={40} />
-            <YAxis tickFormatter={(v) => `Rs ${(v / 1000).toFixed(0)}k`} stroke="transparent" tick={{ fill: axisTickFill, fontSize: 11 }} tickLine={false} axisLine={false} width={64} />
+            <XAxis dataKey="period" stroke="transparent" tick={{ fill: axisTickFill, fontSize: 12 }} tickLine={false} axisLine={false} minTickGap={40} />
+            <YAxis tickFormatter={(v) => `Rs ${(v / 1000).toFixed(0)}k`} stroke="transparent" tick={{ fill: axisTickFill, fontSize: 12 }} tickLine={false} axisLine={false} width={64} />
             <Tooltip contentStyle={tooltipStyle} formatter={(v) => [`Rs ${typeof v === "number" ? Math.round(v).toLocaleString("en-US") : v}`, ""]} labelFormatter={(l) => `Year ${l}`} />
             <Area type="monotone" dataKey="value" stroke="#4d8df7" strokeWidth={2} fill="url(#pv-fill)" isAnimationActive={!prefersReducedMotion} animationDuration={700} />
             {data.length > 0 && <ReferenceDot x={data[0].period} y={data[0].value} r={5} fill="#34d399" stroke="none" />}

@@ -48,10 +48,10 @@ export default function InvestmentGrowthExplorerChartsInner({ results, startingA
           <ResponsiveContainer width="100%" height={260}>
             <LineChart data={nominalData} margin={{ top: 4, right: 16, left: 8, bottom: 4 }}>
               <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} vertical={false} />
-              <XAxis dataKey="year" stroke="transparent" tick={{ fill: axisTickFill, fontSize: 11 }} tickLine={false} axisLine={false} />
-              <YAxis tickFormatter={(v) => `Rs ${(v / 1000).toFixed(0)}k`} stroke="transparent" tick={{ fill: axisTickFill, fontSize: 11 }} tickLine={false} axisLine={false} width={64} />
+              <XAxis dataKey="year" stroke="transparent" tick={{ fill: axisTickFill, fontSize: 12 }} tickLine={false} axisLine={false} />
+              <YAxis tickFormatter={(v) => `Rs ${(v / 1000).toFixed(0)}k`} stroke="transparent" tick={{ fill: axisTickFill, fontSize: 12 }} tickLine={false} axisLine={false} width={64} />
               <Tooltip contentStyle={tooltipStyle} formatter={(v) => [`Rs ${typeof v === "number" ? Math.round(v).toLocaleString("en-US") : v}`, ""]} />
-              <Legend wrapperStyle={{ fontSize: 12, color: axisTickFill }} />
+              <Legend wrapperStyle={{ fontSize: 13, color: axisTickFill }} />
               {perInvestmentSeries.map((inv) => (
                 <Line key={inv.id} type="monotone" dataKey={inv.id} name={inv.name} stroke={inv.color} strokeWidth={2} dot={false} isAnimationActive={!prefersReducedMotion} animationDuration={700} />
               ))}
@@ -66,10 +66,10 @@ export default function InvestmentGrowthExplorerChartsInner({ results, startingA
           <ResponsiveContainer width="100%" height={260}>
             <LineChart data={realData} margin={{ top: 4, right: 16, left: 8, bottom: 4 }}>
               <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} vertical={false} />
-              <XAxis dataKey="year" stroke="transparent" tick={{ fill: axisTickFill, fontSize: 11 }} tickLine={false} axisLine={false} />
-              <YAxis tickFormatter={(v) => `Rs ${(v / 1000).toFixed(0)}k`} stroke="transparent" tick={{ fill: axisTickFill, fontSize: 11 }} tickLine={false} axisLine={false} width={64} />
+              <XAxis dataKey="year" stroke="transparent" tick={{ fill: axisTickFill, fontSize: 12 }} tickLine={false} axisLine={false} />
+              <YAxis tickFormatter={(v) => `Rs ${(v / 1000).toFixed(0)}k`} stroke="transparent" tick={{ fill: axisTickFill, fontSize: 12 }} tickLine={false} axisLine={false} width={64} />
               <Tooltip contentStyle={tooltipStyle} formatter={(v) => [`Rs ${typeof v === "number" ? Math.round(v).toLocaleString("en-US") : v}`, ""]} />
-              <Legend wrapperStyle={{ fontSize: 12, color: axisTickFill }} />
+              <Legend wrapperStyle={{ fontSize: 13, color: axisTickFill }} />
               {perInvestmentSeries.map((inv) => (
                 <Line key={inv.id} type="monotone" dataKey={inv.id} name={inv.name} stroke={inv.color} strokeWidth={2} strokeDasharray="5 3" dot={false} isAnimationActive={!prefersReducedMotion} animationDuration={700} />
               ))}
@@ -84,8 +84,8 @@ export default function InvestmentGrowthExplorerChartsInner({ results, startingA
           <ResponsiveContainer width="100%" height={160}>
             <BarChart data={inflationEatenData} layout="vertical" margin={{ top: 4, right: 32, left: 8, bottom: 4 }}>
               <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} horizontal={false} />
-              <XAxis type="number" tickFormatter={(v) => `Rs ${(v / 1000).toFixed(0)}k`} stroke="transparent" tick={{ fill: axisTickFill, fontSize: 11 }} tickLine={false} axisLine={false} />
-              <YAxis type="category" dataKey="name" stroke="transparent" tick={{ fill: axisTickFill, fontSize: 12 }} tickLine={false} axisLine={false} width={110} />
+              <XAxis type="number" tickFormatter={(v) => `Rs ${(v / 1000).toFixed(0)}k`} stroke="transparent" tick={{ fill: axisTickFill, fontSize: 12 }} tickLine={false} axisLine={false} />
+              <YAxis type="category" dataKey="name" stroke="transparent" tick={{ fill: axisTickFill, fontSize: 13 }} tickLine={false} axisLine={false} width={110} />
               <Tooltip contentStyle={tooltipStyle} formatter={(v) => [`Rs ${typeof v === "number" ? Math.round(v).toLocaleString("en-US") : v}`, ""]} />
               <Bar dataKey="value" radius={[0, 6, 6, 0]} isAnimationActive={!prefersReducedMotion} animationDuration={700}>
                 {inflationEatenData.map((d) => (

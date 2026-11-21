@@ -46,7 +46,7 @@ export default function BondWorkshop({ tbills, pibs, policy, snapshot, freshness
               <KpiTile key={t.key} label={t.label} kind={t.kind} value={<AnimatedFigure value={t.value} />} period={t.period} previous={t.previous} change={t.change} source="SBP auction archive" note={t.note} warning={t.warning} />
             ))}
           </div>
-          <p className="text-[12px] text-pe-text-3" data-testid="bond-definition-note">
+          <p className="text-[13px] text-pe-text-3" data-testid="bond-definition-note">
             {YIELD_DEFINITION_LABEL[def]}: {YIELD_DEFINITION_NOTE[def]} Auction (primary-market) yields, percent per annum. T-bills: {freshness.latestTBillAuction ? formatDate(freshness.latestTBillAuction) : "n/a"}. PIBs: {freshness.latestPibAuction ? formatDate(freshness.latestPibAuction) : "n/a"}.
           </p>
           {freshness.stale && (

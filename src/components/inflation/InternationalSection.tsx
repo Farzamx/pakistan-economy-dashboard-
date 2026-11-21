@@ -124,7 +124,7 @@ export default function InternationalSection({ intl, monthlyHeadline }: { intl: 
       ) : (
         <Callout tone="limit" title="No common year">The selected countries do not share a year with data, so no like-for-like comparison is drawn.</Callout>
       )}
-      <p className="text-[12px] leading-relaxed text-pe-text-3">
+      <p className="text-[13px] leading-relaxed text-pe-text-3">
         Annual averages of each country&rsquo;s own CPI (different baskets and methods): this compares inflation rates, not price levels. Sri Lanka&rsquo;s negative values are real: its prices fell on average. Countries: {Object.keys(NAME).filter((k) => intl.series[k]).map((k) => NAME[k]).join(", ")}.
       </p>
     </div>

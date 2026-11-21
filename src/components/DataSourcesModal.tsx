@@ -57,12 +57,12 @@ export default function DataSourcesModal({ kpis, appearance = "default" }: Props
         onClick={() => setOpen(true)}
         className={
           appearance === "footer"
-            ? "inline-flex min-h-11 items-center text-[12px] font-medium text-pe-accent hover:underline"
-            : "flex items-center gap-1.5 rounded-lg border border-[#38bdf8]/20 px-3 py-1.5 text-[11px] font-medium text-[#38bdf8]/55 transition-all hover:border-[#38bdf8]/45 hover:text-[#38bdf8]/90 hover:bg-[#38bdf8]/5"
+            ? "inline-flex min-h-11 items-center text-[13px] font-medium text-pe-accent hover:underline"
+            : "flex items-center gap-1.5 rounded-lg border border-[#38bdf8]/20 px-3 py-1.5 text-[12px] font-medium text-[#38bdf8]/55 transition-all hover:border-[#38bdf8]/45 hover:text-[#38bdf8]/90 hover:bg-[#38bdf8]/5"
         }
         aria-label="Open data sources audit table"
       >
-        {appearance !== "footer" && <span className="text-[9px] opacity-70">⬡</span>}
+        {appearance !== "footer" && <span className="text-[10px] opacity-70">⬡</span>}
         {t("modal.dsTitle")}
       </button>
 
@@ -104,23 +104,23 @@ export default function DataSourcesModal({ kpis, appearance = "default" }: Props
 
             {/* Legend — the same 5-state Data Quality vocabulary used everywhere else on the dashboard (KpiCard, SEO pages, MarketTicker) */}
             <div className="flex shrink-0 flex-wrap items-center gap-4 border-b border-white/5 light:border-slate-200 px-6 py-2.5">
-              <span className="text-[10px] font-medium uppercase tracking-wider text-white/30 light:text-slate-400">{t("modal.dsLegend")}</span>
+              <span className="text-[11px] font-medium uppercase tracking-wider text-white/30 light:text-slate-400">{t("modal.dsLegend")}</span>
               <span className="flex items-center gap-1 text-xs text-emerald-400 light:text-emerald-700">
-                <span className="text-[8px]">●</span> {t("modal.dsVerified")}
+                <span className="text-[10px]">●</span> {t("modal.dsVerified")}
               </span>
               <span className="flex items-center gap-1 text-xs text-amber-400 light:text-amber-600">
-                <span className="text-[8px]">●</span> {t("modal.dsDelayed")}
+                <span className="text-[10px]">●</span> {t("modal.dsDelayed")}
               </span>
               <span className="flex items-center gap-1 text-xs text-sky-400 light:text-sky-700">
-                <span className="text-[8px]">●</span> {t("modal.dsCached")}
+                <span className="text-[10px]">●</span> {t("modal.dsCached")}
               </span>
               <span className="flex items-center gap-1 text-xs text-orange-400 light:text-orange-600">
-                <span className="text-[8px]">●</span> {t("modal.dsFallback")}
+                <span className="text-[10px]">●</span> {t("modal.dsFallback")}
               </span>
               <span className="flex items-center gap-1 text-xs text-slate-400">
-                <span className="text-[8px]">●</span> {t("modal.dsUnavailable")}
+                <span className="text-[10px]">●</span> {t("modal.dsUnavailable")}
               </span>
-              <span className="ml-auto text-[10px] text-white/25 light:text-slate-400">
+              <span className="ml-auto text-[11px] text-white/25 light:text-slate-400">
                 {t("modal.dsHoverNote")}
               </span>
             </div>
@@ -132,7 +132,7 @@ export default function DataSourcesModal({ kpis, appearance = "default" }: Props
                   className="sticky top-0 border-b border-white/5 light:border-slate-200"
                   style={{ background: isLight ? "#F8FAFC" : "rgba(8, 10, 26, 0.98)" }}
                 >
-                  <tr className="text-left text-[10px] font-medium uppercase tracking-wider text-white/30 light:text-slate-600">
+                  <tr className="text-left text-[11px] font-medium uppercase tracking-wider text-white/30 light:text-slate-600">
                     <th className="px-6 py-3">{t("modal.dsColIndicator")}</th>
                     <th className="px-4 py-3">{t("modal.dsColSource")}</th>
                     <th className="px-4 py-3">{t("modal.dsColMethod")}</th>
@@ -195,7 +195,7 @@ export default function DataSourcesModal({ kpis, appearance = "default" }: Props
                         <td className="px-4 py-3" title={quality.description}>
                           {kpi.latestDate ? (
                             <span className={`flex items-center gap-1 whitespace-nowrap ${dotClass}`}>
-                              <span className="text-[8px]">●</span>
+                              <span className="text-[10px]">●</span>
                               {quality.state}
                             </span>
                           ) : (

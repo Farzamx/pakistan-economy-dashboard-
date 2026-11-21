@@ -44,8 +44,8 @@ export default function PurchasingPowerChartsInner({ result, timeline }: Props) 
           <ResponsiveContainer width="100%" height={140}>
             <BarChart data={comparisonData} layout="vertical" margin={{ top: 4, right: 32, left: 8, bottom: 4 }}>
               <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} horizontal={false} />
-              <XAxis type="number" tickFormatter={(v) => `Rs ${(v / 1000).toFixed(0)}k`} stroke="transparent" tick={{ fill: axisTickFill, fontSize: 11 }} tickLine={false} axisLine={false} />
-              <YAxis type="category" dataKey="name" stroke="transparent" tick={{ fill: axisTickFill, fontSize: 12 }} tickLine={false} axisLine={false} width={130} />
+              <XAxis type="number" tickFormatter={(v) => `Rs ${(v / 1000).toFixed(0)}k`} stroke="transparent" tick={{ fill: axisTickFill, fontSize: 12 }} tickLine={false} axisLine={false} />
+              <YAxis type="category" dataKey="name" stroke="transparent" tick={{ fill: axisTickFill, fontSize: 13 }} tickLine={false} axisLine={false} width={130} />
               <Tooltip contentStyle={tooltipStyle} formatter={(v) => [`Rs ${typeof v === "number" ? Math.round(v).toLocaleString("en-US") : v}`, ""]} />
               <Bar dataKey="value" radius={[0, 6, 6, 0]} isAnimationActive={!prefersReducedMotion} animationDuration={700}>
                 {comparisonData.map((d) => (
@@ -63,8 +63,8 @@ export default function PurchasingPowerChartsInner({ result, timeline }: Props) 
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={waterfallData} margin={{ top: 4, right: 16, left: 8, bottom: 4 }}>
               <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} vertical={false} />
-              <XAxis dataKey="name" stroke="transparent" tick={{ fill: axisTickFill, fontSize: 11 }} tickLine={false} axisLine={false} />
-              <YAxis tickFormatter={(v) => `Rs ${(v / 1000).toFixed(0)}k`} stroke="transparent" tick={{ fill: axisTickFill, fontSize: 11 }} tickLine={false} axisLine={false} width={64} />
+              <XAxis dataKey="name" stroke="transparent" tick={{ fill: axisTickFill, fontSize: 12 }} tickLine={false} axisLine={false} />
+              <YAxis tickFormatter={(v) => `Rs ${(v / 1000).toFixed(0)}k`} stroke="transparent" tick={{ fill: axisTickFill, fontSize: 12 }} tickLine={false} axisLine={false} width={64} />
               <Tooltip contentStyle={tooltipStyle} formatter={(v, name) => (name === "value" ? [`Rs ${typeof v === "number" ? Math.round(v).toLocaleString("en-US") : v}`, ""] : [null, null])} />
               <Bar dataKey="base" stackId="waterfall" fill="transparent" isAnimationActive={false} />
               <Bar dataKey="value" stackId="waterfall" radius={[4, 4, 0, 0]} isAnimationActive={!prefersReducedMotion} animationDuration={700}>
@@ -89,8 +89,8 @@ export default function PurchasingPowerChartsInner({ result, timeline }: Props) 
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} vertical={false} />
-              <XAxis dataKey="date" stroke="transparent" tick={{ fill: axisTickFill, fontSize: 11 }} tickLine={false} axisLine={false} minTickGap={40} />
-              <YAxis tickFormatter={(v) => `Rs ${(v / 1000).toFixed(0)}k`} stroke="transparent" tick={{ fill: axisTickFill, fontSize: 11 }} tickLine={false} axisLine={false} width={64} />
+              <XAxis dataKey="date" stroke="transparent" tick={{ fill: axisTickFill, fontSize: 12 }} tickLine={false} axisLine={false} minTickGap={40} />
+              <YAxis tickFormatter={(v) => `Rs ${(v / 1000).toFixed(0)}k`} stroke="transparent" tick={{ fill: axisTickFill, fontSize: 12 }} tickLine={false} axisLine={false} width={64} />
               <ReferenceLine y={result.amount} stroke={axisTickFill} strokeDasharray="4 4" />
               <Tooltip contentStyle={tooltipStyle} formatter={(v) => [`Rs ${typeof v === "number" ? Math.round(v).toLocaleString("en-US") : v}`, ""]} />
               <Area type="monotone" dataKey="realValue" stroke="#4d8df7" strokeWidth={2} fill="url(#pp-real-value-fill)" isAnimationActive={!prefersReducedMotion} animationDuration={700} />

@@ -121,7 +121,7 @@ export default function SnapshotDashboard() {
         <div key={g.toolId} className="glass-card flex flex-col gap-3 rounded-xl p-4 sm:p-5">
           <div className="flex items-center justify-between gap-2">
             <p className="text-sm font-semibold text-white light:text-slate-900">{g.titleKey ? t(g.titleKey) : g.toolId.replace(/-/g, " ")}</p>
-            <span className="text-[11px] text-white/40 light:text-slate-400">{formatDate(g.latest.createdAt)}</span>
+            <span className="text-[12px] text-white/40 light:text-slate-400">{formatDate(g.latest.createdAt)}</span>
           </div>
           <div className="flex flex-col gap-1.5">
             {Object.entries(g.latest.outputs)

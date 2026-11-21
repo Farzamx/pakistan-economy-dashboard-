@@ -36,20 +36,20 @@ function TickerChip({ item }: { item: TickerItem }) {
 
   return (
     <span className="inline-flex items-center gap-2 px-5 border-r border-white/[0.06] light:border-slate-200">
-      <span className="text-[11px] font-medium tracking-wide text-white/45 light:text-slate-400">
+      <span className="text-[12px] font-medium tracking-wide text-white/45 light:text-slate-400">
         {item.label}
       </span>
 
-      <span className="text-[13px] font-semibold text-white light:text-slate-800 tabular-nums">
+      <span className="text-[14px] font-semibold text-white light:text-slate-800 tabular-nums">
         {item.value}
         {item.unit && (
-          <span className="ml-0.5 text-[10px] font-normal text-white/30 light:text-slate-400">
+          <span className="ml-0.5 text-[11px] font-normal text-white/30 light:text-slate-400">
             {item.unit}
           </span>
         )}
       </span>
 
-      <span className={`inline-flex items-center gap-1 text-[11px] font-medium tabular-nums ${trendClass}`}>
+      <span className={`inline-flex items-center gap-1 text-[12px] font-medium tabular-nums ${trendClass}`}>
         {arrow}
         {item.changeDisplay && (
           <span>{item.changeDisplay}</span>
@@ -58,7 +58,7 @@ function TickerChip({ item }: { item: TickerItem }) {
 
       {/* Only shown when degraded — Verified is the normal case and would just be visual noise repeated on every chip. */}
       {item.quality && item.quality !== "Verified" && (
-        <span className={`text-[9px] ${DATA_QUALITY_DOT[item.quality]}`} title={item.quality} aria-label={item.quality}>
+        <span className={`text-[10px] ${DATA_QUALITY_DOT[item.quality]}`} title={item.quality} aria-label={item.quality}>
           &#9679;
         </span>
       )}

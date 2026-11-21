@@ -27,11 +27,11 @@ export default function ShapeStrip({ regimes, height = 26, ariaLabel }: { regime
           );
         })}
       </svg>
-      <div className="mt-1 flex justify-between text-[11px] text-pe-text-3" aria-hidden="true">
+      <div className="mt-1 flex justify-between text-[12px] text-pe-text-3" aria-hidden="true">
         <span>{years[0]}</span>
         <span>{years[years.length - 1]}</span>
       </div>
-      <ul className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-[12px] text-pe-text-2" aria-label="Key">
+      <ul className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-[13px] text-pe-text-2" aria-label="Key">
         {(["upward", "flat", "inverted"] as CurveShape[]).map((s) => (
           <li key={s} className="flex items-center gap-1.5">
             <span aria-hidden className="inline-block h-2.5 w-2.5 rounded-[2px]" style={{ background: COLOR[s] }} />

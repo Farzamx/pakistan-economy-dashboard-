@@ -169,7 +169,7 @@ export default function ProvincialWorkspace({ province }: ProvincialWorkspacePro
           {allocationView === "donut" && <ProvincialAllocationChart data={allocation} />}
           {allocationView === "treemap" && <ProvincialTreemap data={allocation} />}
           {allocationView === "table" && <ProvincialAllocationTable data={allocation} />}
-          <p className="mt-2 text-[11px] text-[var(--text-muted)]">{t("budget.sourceNote")}</p>
+          <p className="mt-2 text-[12px] text-[var(--text-muted)]">{t("budget.sourceNote")}</p>
           <OtherSpendingNote residualNote={year.otherResidualNote} />
         </div>
       </section>

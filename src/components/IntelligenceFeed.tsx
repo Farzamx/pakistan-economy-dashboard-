@@ -57,7 +57,7 @@ export default function IntelligenceFeed({ items }: Props) {
             <span className="text-data w-[5.5rem] shrink-0 text-white/40 light:text-slate-400">
               {item.date ? formatFeedDate(item.date) : "—"}
               <span
-                className={`ml-1.5 text-[9px] font-semibold tracking-wider ${
+                className={`ml-1.5 text-[10px] font-semibold tracking-wider ${
                   item.kind === "release" ? "text-neon-blue" : "text-white/35 light:text-slate-400"
                 }`}
               >

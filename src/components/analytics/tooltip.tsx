@@ -87,7 +87,7 @@ export function TooltipBox<T>({ api, children }: { api: ChartTooltipApi<T>; chil
   return (
     <div
       role="status"
-      className="pointer-events-none absolute z-20 max-w-[240px] rounded-[var(--pe-radius)] border px-2.5 py-2 text-[12px] leading-snug shadow-[var(--pe-shadow-pop)]"
+      className="pointer-events-none absolute z-20 max-w-[240px] rounded-[var(--pe-radius)] border px-2.5 py-2 text-[13px] leading-snug shadow-[var(--pe-shadow-pop)]"
       style={{
         left: tip.x,
         top: Math.max(4, tip.y),
@@ -117,7 +117,7 @@ export function TipRow({ label, value, swatch }: { label: ReactNode; value: Reac
 
 export function TipTitle({ children }: { children: ReactNode }) {
   return (
-    <p className="mb-1 text-[11px] font-medium" style={{ color: "var(--chart-tooltip-label)" }}>
+    <p className="mb-1 text-[12px] font-medium" style={{ color: "var(--chart-tooltip-label)" }}>
       {children}
     </p>
   );

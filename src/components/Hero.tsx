@@ -202,7 +202,7 @@ export default function Hero({
             {/* Left — analyst prose, top risks, drivers, CTA */}
             <div>
               {body && (
-                <p className="max-w-2xl text-[0.9375rem] leading-relaxed text-white/80 light:text-slate-600">
+                <p className="max-w-2xl text-[1rem] leading-relaxed text-white/80 light:text-slate-600">
                   {body}
                 </p>
               )}
