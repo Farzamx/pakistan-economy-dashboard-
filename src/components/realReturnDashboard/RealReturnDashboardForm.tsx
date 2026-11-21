@@ -1,6 +1,7 @@
 "use client";
 
 import { useLanguage } from "@/components/LanguageProvider";
+import NumericInput from "@/components/inputs/NumericInput";
 
 interface Props {
   nominalReturnPct: number;
@@ -21,17 +22,14 @@ export default function RealReturnDashboardForm({ nominalReturnPct, onNominalRet
           Nominal Return (% per year)
         </label>
         <div className="mt-1.5 flex items-center gap-2 rounded-lg border border-[var(--border-subtle)] px-3 py-2.5">
-          <input
+          <NumericInput
             id="rrd-return"
-            type="number"
-            inputMode="decimal"
             step={0.1}
-            value={nominalReturnPct === 0 ? "" : nominalReturnPct}
+            value={nominalReturnPct}
             placeholder={t("decisionSupportLab.placeholderInterestRate")}
-            onChange={(e) => {
-              const parsed = parseFloat(e.target.value);
-              onNominalReturnPctChange(isNaN(parsed) ? 0 : parsed);
-            }}
+            min={-99}
+            max={1000}
+            onValueChange={onNominalReturnPctChange}
             className="text-mono-num w-full bg-transparent text-lg font-semibold tabular-nums text-white outline-none light:text-slate-900"
           />
           <span className="text-sm text-white/40 light:text-slate-400">%</span>
@@ -43,19 +41,14 @@ export default function RealReturnDashboardForm({ nominalReturnPct, onNominalRet
           Tax Rate (%, optional)
         </label>
         <div className="mt-1.5 flex items-center gap-2 rounded-lg border border-[var(--border-subtle)] px-3 py-2.5">
-          <input
+          <NumericInput
             id="rrd-tax"
-            type="number"
-            inputMode="decimal"
             min={0}
             max={100}
             step={0.5}
-            value={taxRatePct === 0 ? "" : taxRatePct}
+            value={taxRatePct}
             placeholder="0"
-            onChange={(e) => {
-              const parsed = parseFloat(e.target.value);
-              onTaxRatePctChange(isNaN(parsed) ? 0 : Math.max(0, parsed));
-            }}
+            onValueChange={onTaxRatePctChange}
             className="text-mono-num w-full bg-transparent text-lg font-semibold tabular-nums text-white outline-none light:text-slate-900"
           />
           <span className="text-sm text-white/40 light:text-slate-400">%</span>
@@ -67,18 +60,15 @@ export default function RealReturnDashboardForm({ nominalReturnPct, onNominalRet
           Years
         </label>
         <div className="mt-1.5 flex items-center gap-2 rounded-lg border border-[var(--border-subtle)] px-3 py-2.5">
-          <input
+          <NumericInput
             id="rrd-years"
-            type="number"
-            inputMode="numeric"
             min={1}
             max={40}
             step={1}
             value={years}
-            onChange={(e) => {
-              const parsed = parseInt(e.target.value, 10);
-              onYearsChange(isNaN(parsed) ? 1 : Math.min(40, Math.max(1, parsed)));
-            }}
+            integer
+            emptyBehavior="keep"
+            onValueChange={onYearsChange}
             className="text-mono-num w-full bg-transparent text-lg font-semibold tabular-nums text-white outline-none light:text-slate-900"
           />
         </div>

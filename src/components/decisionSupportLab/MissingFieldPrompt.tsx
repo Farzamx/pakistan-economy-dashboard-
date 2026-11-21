@@ -11,6 +11,7 @@
 import { useState } from "react";
 import { getMissingFields } from "@/lib/decisionSupportLab/toolFieldRegistry";
 import type { EconomicProfile } from "@/lib/decisionSupportLab/economicProfile";
+import NumericInput from "@/components/inputs/NumericInput";
 
 export interface MissingFieldDescriptor {
   field: keyof EconomicProfile;
@@ -59,17 +60,14 @@ export default function MissingFieldPrompt({ toolId, profile, fieldDescriptors, 
             </label>
             <div className="mt-1.5 flex items-center gap-2 rounded-lg border border-[var(--border-subtle)] px-3 py-2.5">
               {d.prefix && <span className="text-sm text-white/40 light:text-slate-400">{d.prefix}</span>}
-              <input
+              <NumericInput
                 id={`mfp-${d.field as string}`}
-                type="number"
-                inputMode="decimal"
                 step={d.step ?? 1}
                 placeholder={d.placeholder}
-                value={values[d.field as string] === undefined || values[d.field as string] === 0 ? "" : values[d.field as string]}
-                onChange={(e) => {
-                  const parsed = parseFloat(e.target.value);
-                  setValues((prev) => ({ ...prev, [d.field as string]: isNaN(parsed) ? 0 : parsed }));
-                }}
+                value={values[d.field as string] ?? 0}
+                min={0}
+                max={d.suffix === "%" ? 1000 : undefined}
+                onValueChange={(v) => setValues((prev) => ({ ...prev, [d.field as string]: v }))}
                 className="text-mono-num w-full bg-transparent text-sm font-semibold tabular-nums text-white outline-none light:text-slate-900"
               />
               {d.suffix && <span className="text-sm text-white/40 light:text-slate-400">{d.suffix}</span>}

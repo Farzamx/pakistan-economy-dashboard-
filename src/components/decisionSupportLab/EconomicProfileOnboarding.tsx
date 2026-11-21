@@ -18,10 +18,7 @@ import { getAffectedTools } from "@/lib/decisionSupportLab/toolFieldRegistry";
 import CityCombobox from "@/components/decisionSupportLab/CityCombobox";
 import type { PakistanCity } from "@/data/pakistanCities";
 import type { EconomicProfile } from "@/lib/supabase/economicProfile";
-
-function numberField(value: number): string {
-  return value === 0 ? "" : String(value);
-}
+import NumericInput from "@/components/inputs/NumericInput";
 
 /** Section B2: every field gets this, not just three — a quiet "affects N tools" micro-label that expands (hover or tap) into the actual tool names as links, instead of a static count nobody can act on. */
 function AffectsHint({ field }: { field: keyof EconomicProfile }) {
@@ -79,9 +76,12 @@ interface NumberInputProps {
   suffix?: string;
   step?: number;
   placeholder?: string;
+  /** Whole numbers that must always have a value (household size): emptying the box keeps the last value. */
+  min?: number;
+  integer?: boolean;
 }
 
-function NumberInput({ id, label, field, value, onChange, prefix, suffix, step = 1, placeholder = "0" }: NumberInputProps) {
+function NumberInput({ id, label, field, value, onChange, prefix, suffix, step = 1, placeholder = "0", min = 0, integer }: NumberInputProps) {
   return (
     <div>
       <label htmlFor={id} className="text-label text-white/40 light:text-slate-400">
@@ -90,18 +90,16 @@ function NumberInput({ id, label, field, value, onChange, prefix, suffix, step =
       </label>
       <div className="mt-1.5 flex items-center gap-2 rounded-lg border border-[var(--border-subtle)] px-3 py-2.5">
         {prefix && <span className="text-sm text-white/40 light:text-slate-400">{prefix}</span>}
-        <input
+        <NumericInput
           id={id}
-          type="number"
-          inputMode="decimal"
-          min={0}
+          min={min}
+          max={suffix === "%" ? 1000 : undefined}
           step={step}
-          value={numberField(value)}
+          integer={integer}
+          emptyBehavior={integer ? "keep" : undefined}
+          value={value}
           placeholder={placeholder}
-          onChange={(e) => {
-            const parsed = parseFloat(e.target.value);
-            onChange(isNaN(parsed) ? 0 : Math.max(0, parsed));
-          }}
+          onValueChange={onChange}
           className="text-mono-num w-full bg-transparent text-sm tabular-nums text-white outline-none light:text-slate-900"
         />
         {suffix && <span className="text-sm text-white/40 light:text-slate-400">{suffix}</span>}
@@ -233,7 +231,11 @@ export default function EconomicProfileOnboarding() {
             </label>
           </div>
           {!salarySameAsIncome && (
-            <NumberInput id="ep-salary" label="Current Salary" field="currentSalary" value={profile.currentSalary} onChange={(v) => setEconomicProfile({ currentSalary: v })} prefix="Rs" step={1000} placeholder="Enter current salary" />
+            <NumberInput id="ep-salary" label="Current Salary" field="currentSalary" value={profile.currentSalary} onChange={(v) => {
+              // typing here is an explicit "my salary is its own number": keep the field on screen even while it momentarily holds 0 (cleared, or "0" on the way to "0.5")
+              setSalaryOverride(false);
+              setEconomicProfile({ currentSalary: v });
+            }} prefix="Rs" step={1000} placeholder="Enter current salary" />
           )}
           <NumberInput id="ep-last-raise" label="Last Raise" field="lastRaisePct" value={profile.lastRaisePct} onChange={(v) => setEconomicProfile({ lastRaisePct: v })} suffix="%" step={0.5} placeholder="Enter percentage" />
           <NumberInput id="ep-expected-raise" label="Expected Annual Raise" field="expectedAnnualRaisePct" value={profile.expectedAnnualRaisePct} onChange={(v) => setEconomicProfile({ expectedAnnualRaisePct: v })} suffix="%" step={0.5} placeholder="Enter percentage" />
@@ -245,7 +247,7 @@ export default function EconomicProfileOnboarding() {
       title: "Household",
       content: (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <NumberInput id="ep-household-size" label="Household Size" field="householdSize" value={profile.householdSize} onChange={(v) => setEconomicProfile({ householdSize: Math.max(1, v) })} step={1} placeholder="1" />
+          <NumberInput id="ep-household-size" label="Household Size" field="householdSize" value={profile.householdSize} onChange={(v) => setEconomicProfile({ householdSize: Math.max(1, v) })} step={1} placeholder="1" min={1} integer />
           <NumberInput id="ep-spending" label="Monthly Spending" field="monthlySpending" value={profile.monthlySpending} onChange={(v) => setEconomicProfile({ monthlySpending: v })} prefix="Rs" step={1000} placeholder="Enter monthly spending" />
         </div>
       ),

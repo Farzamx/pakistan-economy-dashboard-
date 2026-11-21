@@ -1,6 +1,7 @@
 "use client";
 
 import InflationRateField from "@/components/decisionSupportLab/InflationRateField";
+import NumericInput from "@/components/inputs/NumericInput";
 
 interface Props {
   officialInflationPct: number;
@@ -58,18 +59,13 @@ export default function GoalAssumptionsPanel({
           </label>
           <div className="mt-1.5 flex items-center gap-2 rounded-lg border border-[var(--border-subtle)] px-3 py-2.5">
             <span className="text-sm text-white/40 light:text-slate-400">Rs</span>
-            <input
+            <NumericInput
               id="goal-monthly-contribution"
-              type="number"
-              inputMode="decimal"
               min={0}
               step={500}
-              value={monthlyContribution === 0 ? "" : monthlyContribution}
+              value={monthlyContribution}
               placeholder="0"
-              onChange={(e) => {
-                const parsed = parseFloat(e.target.value);
-                onMonthlyContributionChange(isNaN(parsed) ? 0 : Math.max(0, parsed));
-              }}
+              onValueChange={onMonthlyContributionChange}
               className="text-mono-num w-full bg-transparent text-lg font-semibold tabular-nums text-white outline-none light:text-slate-900"
             />
           </div>
@@ -80,17 +76,14 @@ export default function GoalAssumptionsPanel({
             Expected Annual Return
           </label>
           <div className="mt-1.5 flex items-center gap-2 rounded-lg border border-[var(--border-subtle)] px-3 py-2.5">
-            <input
+            <NumericInput
               id="goal-expected-return"
-              type="number"
-              inputMode="decimal"
               step={0.5}
-              value={expectedReturnPct === 0 ? "" : expectedReturnPct}
+              value={expectedReturnPct}
               placeholder="0.0"
-              onChange={(e) => {
-                const parsed = parseFloat(e.target.value);
-                onExpectedReturnPctChange(isNaN(parsed) ? 0 : parsed);
-              }}
+              min={-99}
+              max={1000}
+              onValueChange={onExpectedReturnPctChange}
               className="text-mono-num w-full bg-transparent text-lg font-semibold tabular-nums text-white outline-none light:text-slate-900"
             />
             <span className="text-sm text-white/40 light:text-slate-400">%</span>
@@ -112,18 +105,13 @@ export default function GoalAssumptionsPanel({
             </span>
           </div>
           <div className="mt-1.5 flex items-center gap-2 rounded-lg border border-[var(--border-subtle)] px-3 py-2.5">
-            <input
+            <NumericInput
               id="goal-volatility"
-              type="number"
-              inputMode="decimal"
               min={0}
               step={0.5}
-              value={volatilityPct === 0 ? "" : volatilityPct}
+              value={volatilityPct}
               placeholder="0.0"
-              onChange={(e) => {
-                const parsed = parseFloat(e.target.value);
-                onVolatilityPctChange(isNaN(parsed) ? 0 : Math.max(0, parsed));
-              }}
+              onValueChange={onVolatilityPctChange}
               className="text-mono-num w-full bg-transparent text-lg font-semibold tabular-nums text-white outline-none light:text-slate-900"
             />
             <span className="text-sm text-white/40 light:text-slate-400">%</span>

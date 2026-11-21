@@ -2,6 +2,7 @@
 
 import { useLanguage } from "@/components/LanguageProvider";
 import type { YearOption } from "@/lib/decisionSupportLab/purchasingPowerEngine";
+import NumericInput from "@/components/inputs/NumericInput";
 
 interface Props {
   amount: number;
@@ -24,18 +25,13 @@ export default function PurchasingPowerForm({ amount, onAmountChange, years, bas
         </label>
         <div className="mt-1.5 flex items-center gap-2 rounded-lg border border-[var(--border-subtle)] px-3 py-2.5">
           <span className="text-sm text-white/40 light:text-slate-400">Rs</span>
-          <input
+          <NumericInput
             id="pp-amount"
-            type="number"
-            inputMode="decimal"
             min={0}
             step={1000}
-            value={amount === 0 ? "" : amount}
+            value={amount}
             placeholder={t("decisionSupportLab.placeholderInvestmentAmount")}
-            onChange={(e) => {
-              const parsed = parseFloat(e.target.value);
-              onAmountChange(isNaN(parsed) ? 0 : Math.max(0, parsed));
-            }}
+            onValueChange={onAmountChange}
             className="text-mono-num w-full bg-transparent text-lg font-semibold tabular-nums text-white outline-none light:text-slate-900"
           />
         </div>

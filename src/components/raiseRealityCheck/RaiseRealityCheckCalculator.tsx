@@ -23,6 +23,7 @@ import { useEconomicProfile, setEconomicProfile, getEffectiveSalary } from "@/li
 import type { ReportDefinition } from "@/lib/decisionSupportLab/reportFramework";
 import type { CalculationSnapshotPayload } from "@/lib/supabase/calculationSnapshots";
 import type { CpiCategoryBreakdown } from "@/lib/data/cpiCategoryBreakdown";
+import NumericInput from "@/components/inputs/NumericInput";
 
 interface Props {
   breakdown: CpiCategoryBreakdown | null;
@@ -134,13 +135,15 @@ export default function RaiseRealityCheckCalculator({ breakdown }: Props) {
   return (
     <div id="calculator-input" className="flex flex-col gap-6">
       <WhatIfToggle
-        label="Current Salary"
+        currentLabel="Current Salary"
+        customizeLabel="Customize Salary"
         currentValue={salaryFromProfile}
         whatIfValue={whatIfSalary}
         onWhatIfValueChange={setWhatIfSalary}
         isWhatIf={isWhatIfSalary}
         onToggle={setIsWhatIfSalary}
         formatValue={(v) => `Rs ${Math.round(v).toLocaleString("en-US")}`}
+        prefix="Rs"
         step={1000}
       />
 
@@ -149,17 +152,14 @@ export default function RaiseRealityCheckCalculator({ breakdown }: Props) {
           Nominal Raise
         </label>
         <div className="mt-1.5 flex items-center gap-2 rounded-lg border border-[var(--border-subtle)] px-3 py-2.5">
-          <input
+          <NumericInput
             id="rrc-raise"
-            type="number"
-            inputMode="decimal"
             step={0.5}
-            value={nominalRaisePct === 0 ? "" : nominalRaisePct}
+            value={nominalRaisePct}
             placeholder="Enter percentage"
-            onChange={(e) => {
-              const parsed = parseFloat(e.target.value);
-              setNominalRaisePct(isNaN(parsed) ? 0 : parsed);
-            }}
+            min={-99}
+            max={1000}
+            onValueChange={setNominalRaisePct}
             className="text-mono-num w-full bg-transparent text-lg font-semibold tabular-nums text-white outline-none light:text-slate-900"
           />
           <span className="text-sm text-white/40 light:text-slate-400">%</span>

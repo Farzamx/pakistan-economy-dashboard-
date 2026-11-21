@@ -2,6 +2,7 @@
 
 import { useLanguage } from "@/components/LanguageProvider";
 import type { AnnuityType } from "@/lib/decisionSupportLab/timeValueEngine";
+import NumericInput from "@/components/inputs/NumericInput";
 
 export type AnnuityMode = "contribution" | "target";
 
@@ -65,18 +66,13 @@ export default function AnnuityForm({ type, onTypeChange, mode, onModeChange, pa
             </label>
             <div className="mt-1.5 flex items-center gap-2 rounded-lg border border-[var(--border-subtle)] px-3 py-2.5">
               <span className="text-sm text-white/40 light:text-slate-400">Rs</span>
-              <input
+              <NumericInput
                 id="an-payment"
-                type="number"
-                inputMode="decimal"
                 min={0}
                 step={500}
-                value={payment === 0 ? "" : payment}
+                value={payment}
                 placeholder={t("decisionSupportLab.placeholderPayment")}
-                onChange={(e) => {
-                  const parsed = parseFloat(e.target.value);
-                  onPaymentChange(isNaN(parsed) ? 0 : Math.max(0, parsed));
-                }}
+                onValueChange={onPaymentChange}
                 className="text-mono-num w-full bg-transparent text-lg font-semibold tabular-nums text-white outline-none light:text-slate-900"
               />
             </div>
@@ -88,18 +84,13 @@ export default function AnnuityForm({ type, onTypeChange, mode, onModeChange, pa
             </label>
             <div className="mt-1.5 flex items-center gap-2 rounded-lg border border-[var(--border-subtle)] px-3 py-2.5">
               <span className="text-sm text-white/40 light:text-slate-400">Rs</span>
-              <input
+              <NumericInput
                 id="an-target"
-                type="number"
-                inputMode="decimal"
                 min={0}
                 step={10000}
-                value={targetValue === 0 ? "" : targetValue}
+                value={targetValue}
                 placeholder={t("decisionSupportLab.placeholderTargetAmount")}
-                onChange={(e) => {
-                  const parsed = parseFloat(e.target.value);
-                  onTargetValueChange(isNaN(parsed) ? 0 : Math.max(0, parsed));
-                }}
+                onValueChange={onTargetValueChange}
                 className="text-mono-num w-full bg-transparent text-lg font-semibold tabular-nums text-white outline-none light:text-slate-900"
               />
             </div>
@@ -111,17 +102,14 @@ export default function AnnuityForm({ type, onTypeChange, mode, onModeChange, pa
             {t("annuity.rateLabel")}
           </label>
           <div className="mt-1.5 flex items-center gap-2 rounded-lg border border-[var(--border-subtle)] px-3 py-2.5">
-            <input
+            <NumericInput
               id="an-rate"
-              type="number"
-              inputMode="decimal"
               step={0.1}
-              value={ratePct === 0 ? "" : ratePct}
+              value={ratePct}
               placeholder={t("decisionSupportLab.placeholderInterestRate")}
-              onChange={(e) => {
-                const parsed = parseFloat(e.target.value);
-                onRatePctChange(isNaN(parsed) ? 0 : parsed);
-              }}
+              min={-99}
+              max={1000}
+              onValueChange={onRatePctChange}
               className="text-mono-num w-full bg-transparent text-lg font-semibold tabular-nums text-white outline-none light:text-slate-900"
             />
             <span className="text-sm text-white/40 light:text-slate-400">%</span>
@@ -133,18 +121,15 @@ export default function AnnuityForm({ type, onTypeChange, mode, onModeChange, pa
             {t("annuity.yearsLabel")}
           </label>
           <div className="mt-1.5 flex items-center gap-2 rounded-lg border border-[var(--border-subtle)] px-3 py-2.5">
-            <input
+            <NumericInput
               id="an-periods"
-              type="number"
-              inputMode="numeric"
               min={1}
               max={600}
               step={1}
               value={periods}
-              onChange={(e) => {
-                const parsed = parseInt(e.target.value, 10);
-                onPeriodsChange(isNaN(parsed) ? 1 : Math.min(600, Math.max(1, parsed)));
-              }}
+              integer
+              emptyBehavior="keep"
+              onValueChange={onPeriodsChange}
               className="text-mono-num w-full bg-transparent text-lg font-semibold tabular-nums text-white outline-none light:text-slate-900"
             />
           </div>

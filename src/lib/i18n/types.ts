@@ -490,7 +490,10 @@ export interface Translations {
     assetCash: string; assetEquities: string; assetGovtSecurities: string; assetForeignCurrency: string;
     estimateBadge: string;
     customInflationLabel: string; placeholderInflationRate: string;
-    advancedOptions: string; useCustomInflation: string;
+    // The shared "Current / Customize" control (WhatIfToggle, InflationRateField): every customizable value says what it is.
+    currentInflationRate: string; customizeInflationRate: string;
+    customizeHint: string; customizeBackToCurrent: string; customizeNotSet: string;
+    customizeSameAsCurrent: string; customizeVsCurrent: string;
     // Shared placeholder wording for monetary inputs — used across every
     // tool in the Lab so "Enter investment amount" etc. never drifts
     // between tools that ask for the same kind of figure.

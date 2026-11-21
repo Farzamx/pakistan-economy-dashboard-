@@ -3,6 +3,7 @@
 import { useLanguage } from "@/components/LanguageProvider";
 import CompoundingFrequencySelect from "@/components/decisionSupportLab/CompoundingFrequencySelect";
 import type { CompoundingFrequency } from "@/lib/decisionSupportLab/timeValueEngine";
+import NumericInput from "@/components/inputs/NumericInput";
 
 interface Props {
   presentValueAmount: number;
@@ -35,18 +36,13 @@ export default function FutureValueForm({
         </label>
         <div className="mt-1.5 flex items-center gap-2 rounded-lg border border-[var(--border-subtle)] px-3 py-2.5">
           <span className="text-sm text-white/40 light:text-slate-400">Rs</span>
-          <input
+          <NumericInput
             id="fv-pv"
-            type="number"
-            inputMode="decimal"
             min={0}
             step={1000}
-            value={presentValueAmount === 0 ? "" : presentValueAmount}
+            value={presentValueAmount}
             placeholder={t("decisionSupportLab.placeholderPresentValue")}
-            onChange={(e) => {
-              const parsed = parseFloat(e.target.value);
-              onPresentValueChange(isNaN(parsed) ? 0 : Math.max(0, parsed));
-            }}
+            onValueChange={onPresentValueChange}
             className="text-mono-num w-full bg-transparent text-lg font-semibold tabular-nums text-white outline-none light:text-slate-900"
           />
         </div>
@@ -57,17 +53,14 @@ export default function FutureValueForm({
           {t("futureValue.annualReturnLabel")}
         </label>
         <div className="mt-1.5 flex items-center gap-2 rounded-lg border border-[var(--border-subtle)] px-3 py-2.5">
-          <input
+          <NumericInput
             id="fv-return"
-            type="number"
-            inputMode="decimal"
             step={0.1}
-            value={annualReturnPct === 0 ? "" : annualReturnPct}
+            value={annualReturnPct}
             placeholder={t("decisionSupportLab.placeholderInterestRate")}
-            onChange={(e) => {
-              const parsed = parseFloat(e.target.value);
-              onAnnualReturnPctChange(isNaN(parsed) ? 0 : parsed);
-            }}
+            min={-99}
+            max={1000}
+            onValueChange={onAnnualReturnPctChange}
             className="text-mono-num w-full bg-transparent text-lg font-semibold tabular-nums text-white outline-none light:text-slate-900"
           />
           <span className="text-sm text-white/40 light:text-slate-400">%</span>
@@ -79,18 +72,15 @@ export default function FutureValueForm({
           {t("futureValue.yearsLabel")}
         </label>
         <div className="mt-1.5 flex items-center gap-2 rounded-lg border border-[var(--border-subtle)] px-3 py-2.5">
-          <input
+          <NumericInput
             id="fv-years"
-            type="number"
-            inputMode="numeric"
             min={1}
             max={50}
             step={1}
             value={years}
-            onChange={(e) => {
-              const parsed = parseInt(e.target.value, 10);
-              onYearsChange(isNaN(parsed) ? 1 : Math.min(50, Math.max(1, parsed)));
-            }}
+            integer
+            emptyBehavior="keep"
+            onValueChange={onYearsChange}
             className="text-mono-num w-full bg-transparent text-lg font-semibold tabular-nums text-white outline-none light:text-slate-900"
           />
         </div>

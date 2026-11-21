@@ -3,6 +3,7 @@
 import { useLanguage } from "@/components/LanguageProvider";
 import type { ComparisonAssetRow } from "@/components/assetComparisonLab/AssetComparisonLabCalculator";
 import type { AssetComparisonResult } from "@/lib/decisionSupportLab/investmentEngine";
+import NumericInput from "@/components/inputs/NumericInput";
 
 interface Props {
   rows: ComparisonAssetRow[];
@@ -46,17 +47,14 @@ export default function AssetComparisonLabTable({ rows, results, onNominalReturn
                   <td className="py-2 pr-4">
                     {row.isEstimate ? (
                       <div className="flex items-center gap-1 rounded-lg border border-[var(--border-subtle)] px-2 py-1.5">
-                        <input
-                          type="number"
-                          inputMode="decimal"
+                        <NumericInput
                           step={0.1}
-                          value={row.nominalReturnPct === 0 ? "" : row.nominalReturnPct}
+                          value={row.nominalReturnPct}
                           placeholder="Enter return"
                           aria-label={`${row.name} nominal return`}
-                          onChange={(e) => {
-                            const parsed = parseFloat(e.target.value);
-                            onNominalReturnChange(row.id, isNaN(parsed) ? 0 : parsed);
-                          }}
+                          min={-99}
+                          max={1000}
+                          onValueChange={(v) => onNominalReturnChange(row.id, v)}
                           className="w-16 bg-transparent text-sm font-semibold text-white outline-none light:text-slate-900"
                         />
                         <span className="text-xs text-white/40 light:text-slate-400">%</span>

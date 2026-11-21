@@ -3,6 +3,7 @@
 import { useLanguage } from "@/components/LanguageProvider";
 import type { PortfolioAssetRow } from "@/components/portfolioPurchasingPower/PortfolioPurchasingPowerCalculator";
 import type { PortfolioContribution } from "@/lib/decisionSupportLab/investmentEngine";
+import NumericInput from "@/components/inputs/NumericInput";
 
 interface Props {
   rows: PortfolioAssetRow[];
@@ -49,19 +50,14 @@ export default function PortfolioPurchasingPowerTable({ rows, contributions, onW
                 </td>
                 <td className="py-2 pr-4">
                   <div className="flex items-center gap-1 rounded-lg border border-[var(--border-subtle)] px-2 py-1.5">
-                    <input
-                      type="number"
-                      inputMode="decimal"
+                    <NumericInput
                       min={0}
                       max={100}
                       step={1}
-                      value={row.weightPct === 0 ? "" : row.weightPct}
+                      value={row.weightPct}
                       placeholder="0"
                       aria-label={`${row.name} allocation`}
-                      onChange={(e) => {
-                        const parsed = parseFloat(e.target.value);
-                        onWeightChange(row.id, isNaN(parsed) ? 0 : Math.max(0, parsed));
-                      }}
+                      onValueChange={(v) => onWeightChange(row.id, v)}
                       className="w-14 bg-transparent text-sm font-semibold text-white outline-none light:text-slate-900"
                     />
                     <span className="text-xs text-white/40 light:text-slate-400">%</span>
@@ -70,17 +66,14 @@ export default function PortfolioPurchasingPowerTable({ rows, contributions, onW
                 <td className="py-2 pr-4">
                   {row.isEstimate ? (
                     <div className="flex items-center gap-1 rounded-lg border border-[var(--border-subtle)] px-2 py-1.5">
-                      <input
-                        type="number"
-                        inputMode="decimal"
+                      <NumericInput
                         step={0.1}
-                        value={row.nominalReturnPct === 0 ? "" : row.nominalReturnPct}
+                        value={row.nominalReturnPct}
                         placeholder="Enter return"
                         aria-label={`${row.name} nominal return`}
-                        onChange={(e) => {
-                          const parsed = parseFloat(e.target.value);
-                          onNominalReturnChange(row.id, isNaN(parsed) ? 0 : parsed);
-                        }}
+                        min={-99}
+                        max={1000}
+                        onValueChange={(v) => onNominalReturnChange(row.id, v)}
                         className="w-16 bg-transparent text-sm font-semibold text-white outline-none light:text-slate-900"
                       />
                       <span className="text-xs text-white/40 light:text-slate-400">%</span>

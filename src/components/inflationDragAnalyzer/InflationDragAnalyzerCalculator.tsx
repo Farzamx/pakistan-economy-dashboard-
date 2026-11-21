@@ -133,13 +133,15 @@ export default function InflationDragAnalyzerCalculator({ breakdown }: Props) {
   return (
     <div id="calculator-input" className="flex flex-col gap-6">
       <WhatIfToggle
-        label={t("inflationDragAnalyzer.startingWealthLabel")}
+        currentLabel="Current Investment"
+        customizeLabel="Customize Investment Amount"
         currentValue={profile.currentInvestmentAmount}
         whatIfValue={whatIfWealth}
         onWhatIfValueChange={setWhatIfWealth}
         isWhatIf={isWhatIfWealth}
         onToggle={setIsWhatIfWealth}
         formatValue={(v) => `Rs ${Math.round(v).toLocaleString("en-US")}`}
+        prefix="Rs"
         step={1000}
       />
 

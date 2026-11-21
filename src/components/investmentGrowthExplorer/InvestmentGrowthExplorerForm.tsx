@@ -1,6 +1,7 @@
 "use client";
 
 import { useLanguage } from "@/components/LanguageProvider";
+import NumericInput from "@/components/inputs/NumericInput";
 
 export interface GrowthInvestmentSlot {
   id: string;
@@ -26,18 +27,15 @@ export default function InvestmentGrowthExplorerForm({ years, onYearsChange, inv
           {t("investmentGrowthExplorer.yearsLabel")}
         </label>
         <div className="mt-1.5 flex max-w-xs items-center gap-2 rounded-lg border border-[var(--border-subtle)] px-3 py-2.5">
-          <input
+          <NumericInput
             id="ige-years"
-            type="number"
-            inputMode="numeric"
             min={1}
             max={40}
             step={1}
             value={years}
-            onChange={(e) => {
-              const parsed = parseInt(e.target.value, 10);
-              onYearsChange(isNaN(parsed) ? 1 : Math.min(40, Math.max(1, parsed)));
-            }}
+            integer
+            emptyBehavior="keep"
+            onValueChange={onYearsChange}
             className="text-mono-num w-full bg-transparent text-lg font-semibold tabular-nums text-white outline-none light:text-slate-900"
           />
         </div>
@@ -57,17 +55,14 @@ export default function InvestmentGrowthExplorerForm({ years, onYearsChange, inv
               />
             </div>
             <div className="flex items-center gap-2 rounded-lg border border-[var(--border-subtle)] px-3 py-2">
-              <input
-                type="number"
-                inputMode="decimal"
+              <NumericInput
                 step={0.1}
-                value={inv.nominalReturnPct === 0 ? "" : inv.nominalReturnPct}
+                value={inv.nominalReturnPct}
                 placeholder="0"
                 aria-label={`${inv.name} nominal return`}
-                onChange={(e) => {
-                  const parsed = parseFloat(e.target.value);
-                  onInvestmentChange(inv.id, { nominalReturnPct: isNaN(parsed) ? 0 : parsed });
-                }}
+                min={-99}
+                max={1000}
+                onValueChange={(v) => onInvestmentChange(inv.id, { nominalReturnPct: v })}
                 className="text-mono-num w-full bg-transparent text-sm font-semibold tabular-nums text-white outline-none light:text-slate-900"
               />
               <span className="text-xs text-white/40 light:text-slate-400">% return</span>

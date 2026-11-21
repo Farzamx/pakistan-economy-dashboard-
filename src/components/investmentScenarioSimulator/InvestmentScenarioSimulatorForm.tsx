@@ -2,6 +2,7 @@
 
 import { useLanguage } from "@/components/LanguageProvider";
 import { SCENARIOS, type ScenarioId } from "@/components/investmentScenarioSimulator/scenarios";
+import NumericInput from "@/components/inputs/NumericInput";
 
 interface Props {
   portfolioValue: number;
@@ -21,18 +22,13 @@ export default function InvestmentScenarioSimulatorForm({ portfolioValue, onPort
         </label>
         <div className="mt-1.5 flex items-center gap-2 rounded-lg border border-[var(--border-subtle)] px-3 py-2.5">
           <span className="text-sm text-white/40 light:text-slate-400">Rs</span>
-          <input
+          <NumericInput
             id="iss-value"
-            type="number"
-            inputMode="decimal"
             min={0}
             step={10000}
-            value={portfolioValue === 0 ? "" : portfolioValue}
+            value={portfolioValue}
             placeholder={t("decisionSupportLab.placeholderPortfolioValue")}
-            onChange={(e) => {
-              const parsed = parseFloat(e.target.value);
-              onPortfolioValueChange(isNaN(parsed) ? 0 : Math.max(0, parsed));
-            }}
+            onValueChange={onPortfolioValueChange}
             className="text-mono-num w-full bg-transparent text-lg font-semibold tabular-nums text-white outline-none light:text-slate-900"
           />
         </div>

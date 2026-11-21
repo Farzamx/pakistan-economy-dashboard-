@@ -1,6 +1,7 @@
 "use client";
 
 import { useLanguage } from "@/components/LanguageProvider";
+import NumericInput from "@/components/inputs/NumericInput";
 
 interface Props {
   entryYear: number;
@@ -21,16 +22,14 @@ export default function RealReturnCalculatorForm({ entryYear, onEntryYearChange,
           {t("realReturnCalculator.entryYearLabel")}
         </label>
         <div className="mt-1.5 flex items-center gap-2 rounded-lg border border-[var(--border-subtle)] px-3 py-2.5">
-          <input
+          <NumericInput
             id="rrc-entry"
-            type="number"
-            inputMode="numeric"
             step={1}
             value={entryYear}
-            onChange={(e) => {
-              const parsed = parseInt(e.target.value, 10);
-              if (!isNaN(parsed)) onEntryYearChange(parsed);
-            }}
+            integer
+            allowNegative={false}
+            emptyBehavior="keep"
+            onValueChange={onEntryYearChange}
             className="text-mono-num w-full bg-transparent text-lg font-semibold tabular-nums text-white outline-none light:text-slate-900"
           />
         </div>
@@ -41,16 +40,14 @@ export default function RealReturnCalculatorForm({ entryYear, onEntryYearChange,
           {t("realReturnCalculator.exitYearLabel")}
         </label>
         <div className="mt-1.5 flex items-center gap-2 rounded-lg border border-[var(--border-subtle)] px-3 py-2.5">
-          <input
+          <NumericInput
             id="rrc-exit"
-            type="number"
-            inputMode="numeric"
             step={1}
             value={exitYear}
-            onChange={(e) => {
-              const parsed = parseInt(e.target.value, 10);
-              if (!isNaN(parsed)) onExitYearChange(parsed);
-            }}
+            integer
+            allowNegative={false}
+            emptyBehavior="keep"
+            onValueChange={onExitYearChange}
             className="text-mono-num w-full bg-transparent text-lg font-semibold tabular-nums text-white outline-none light:text-slate-900"
           />
         </div>
@@ -61,17 +58,14 @@ export default function RealReturnCalculatorForm({ entryYear, onEntryYearChange,
           {t("realReturnCalculator.nominalReturnLabel")}
         </label>
         <div className="mt-1.5 flex items-center gap-2 rounded-lg border border-[var(--border-subtle)] px-3 py-2.5">
-          <input
+          <NumericInput
             id="rrc-nominal"
-            type="number"
-            inputMode="decimal"
             step={0.1}
-            value={nominalReturnPct === 0 ? "" : nominalReturnPct}
+            value={nominalReturnPct}
             placeholder={t("decisionSupportLab.placeholderInterestRate")}
-            onChange={(e) => {
-              const parsed = parseFloat(e.target.value);
-              onNominalReturnPctChange(isNaN(parsed) ? 0 : parsed);
-            }}
+            min={-99}
+            max={1000}
+            onValueChange={onNominalReturnPctChange}
             className="text-mono-num w-full bg-transparent text-lg font-semibold tabular-nums text-white outline-none light:text-slate-900"
           />
           <span className="text-sm text-white/40 light:text-slate-400">%</span>

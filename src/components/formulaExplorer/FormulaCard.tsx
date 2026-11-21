@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useLanguage } from "@/components/LanguageProvider";
 import ExplainTheMath from "@/components/decisionSupportLab/ExplainTheMath";
+import NumericInput from "@/components/inputs/NumericInput";
 
 export interface FormulaExampleInput {
   label: string;
@@ -66,16 +67,12 @@ export default function FormulaCard({ definition }: Props) {
                 {input.label}
               </label>
               <div className="mt-1.5 flex items-center gap-2 rounded-lg border border-[var(--border-subtle)] px-3 py-2">
-                <input
+                <NumericInput
                   id={`${definition.id}-input-${i}`}
-                  type="number"
-                  inputMode="decimal"
                   step={input.step ?? 1}
                   value={values[i]}
-                  onChange={(e) => {
-                    const parsed = parseFloat(e.target.value);
-                    setValues((prev) => prev.map((v, idx) => (idx === i ? (isNaN(parsed) ? 0 : parsed) : v)));
-                  }}
+                  showZero
+                  onValueChange={(next) => setValues((prev) => prev.map((v, idx) => (idx === i ? next : v)))}
                   className="text-mono-num w-full bg-transparent text-sm font-semibold tabular-nums text-white outline-none light:text-slate-900"
                 />
                 {input.suffix && <span className="text-xs text-white/40 light:text-slate-400">{input.suffix}</span>}

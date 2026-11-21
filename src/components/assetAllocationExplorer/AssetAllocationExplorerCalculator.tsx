@@ -225,11 +225,11 @@ export default function AssetAllocationExplorerCalculator({ breakdown, liveData 
           <div>
             <h3 className="text-sm font-semibold text-white light:text-slate-900">Recommended Allocation</h3>
             <p className="mt-1 text-xs text-white/50 light:text-slate-500">
-              Based on your {profile.riskTolerance ?? "moderate (default)"} risk tolerance. Staged into What-If below — never applied automatically.
+              Based on your {profile.riskTolerance ?? "moderate (default)"} risk tolerance. Shown below as a customized allocation — never applied automatically.
             </p>
           </div>
           <button type="button" onClick={handleStageRecommended} className="rounded-lg border border-neon-blue/40 px-3 py-1.5 text-xs font-semibold text-neon-blue transition-colors hover:bg-neon-blue/10">
-            Stage as What-If
+            Customize Allocation
           </button>
         </div>
         <div className="mt-3 flex flex-wrap gap-2 text-xs">
@@ -244,7 +244,7 @@ export default function AssetAllocationExplorerCalculator({ breakdown, liveData 
       {whatIf && whatIfBuckets && (
         <div className="glass-card rounded-xl border border-neon-blue/20 p-4 sm:p-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <h3 className="text-sm font-semibold text-white light:text-slate-900">What-If Comparison</h3>
+            <h3 className="text-sm font-semibold text-white light:text-slate-900">Customized Allocation vs. Current Allocation</h3>
             <div className="flex gap-2">
               <button type="button" onClick={handleAdoptWhatIf} className="rounded-lg bg-neon-blue px-3 py-1.5 text-xs font-semibold text-black">
                 Apply to my profile

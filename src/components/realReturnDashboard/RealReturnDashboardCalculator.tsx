@@ -150,13 +150,15 @@ export default function RealReturnDashboardCalculator({ breakdown }: Props) {
   return (
     <div id="calculator-input" className="flex flex-col gap-6">
       <WhatIfToggle
-        label="Nominal Wealth Today"
+        currentLabel="Current Wealth"
+        customizeLabel="Customize Wealth"
         currentValue={profile.currentInvestmentAmount}
         whatIfValue={whatIfWealth}
         onWhatIfValueChange={setWhatIfWealth}
         isWhatIf={isWhatIfWealth}
         onToggle={setIsWhatIfWealth}
         formatValue={(v) => `Rs ${Math.round(v).toLocaleString("en-US")}`}
+        prefix="Rs"
         step={10000}
       />
 

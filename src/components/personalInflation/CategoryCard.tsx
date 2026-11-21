@@ -2,6 +2,7 @@
 
 import { CategoryIcon } from "@/components/personalInflation/categoryIcons";
 import type { InputMode } from "@/components/personalInflation/CategoryAllocationInput";
+import NumericInput from "@/components/inputs/NumericInput";
 
 interface Props {
   groupNo: number;
@@ -60,18 +61,13 @@ export default function CategoryCard({ groupNo, name, color, mode, value, monthl
         </button>
         <div className="flex h-11 min-w-0 flex-1 items-center gap-1 rounded-lg border border-[var(--border-subtle)] px-2">
           {!isPercent && <span className="shrink-0 text-xs text-white/40 light:text-slate-400">Rs</span>}
-          <input
-            type="number"
-            inputMode="decimal"
+          <NumericInput
             min={0}
             max={isPercent ? 100 : undefined}
             step={isPercent ? 0.5 : 100}
-            value={value === 0 ? "" : value}
+            value={value}
             placeholder="0"
-            onChange={(e) => {
-              const parsed = parseFloat(e.target.value);
-              onChange(clamp(isNaN(parsed) ? 0 : parsed));
-            }}
+            onValueChange={(v) => onChange(clamp(v))}
             aria-label={`${name} — ${isPercent ? "percentage" : "amount in PKR"}`}
             className="text-mono-num min-w-0 flex-1 bg-transparent py-2 text-center text-sm tabular-nums text-white outline-none light:text-slate-900"
           />

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import NumericInput from "@/components/inputs/NumericInput";
 
 export interface WealthAccumulationFormValues {
   goalName: string;
@@ -47,18 +48,15 @@ export default function WealthAccumulationPlannerForm({ defaultCurrentSavings, o
             Years to Target
           </label>
           <div className="mt-1.5 flex items-center gap-2 rounded-lg border border-[var(--border-subtle)] px-3 py-2.5">
-            <input
+            <NumericInput
               id="wa-years"
-              type="number"
-              inputMode="numeric"
               min={1}
               max={50}
               step={1}
               value={targetYears}
-              onChange={(e) => {
-                const parsed = parseInt(e.target.value, 10);
-                setTargetYears(isNaN(parsed) ? 1 : Math.min(50, Math.max(1, parsed)));
-              }}
+              integer
+              emptyBehavior="keep"
+              onValueChange={setTargetYears}
               className="text-mono-num w-full bg-transparent text-lg font-semibold tabular-nums text-white outline-none light:text-slate-900"
             />
             <span className="text-sm text-white/40 light:text-slate-400">years</span>
@@ -71,18 +69,13 @@ export default function WealthAccumulationPlannerForm({ defaultCurrentSavings, o
           </label>
           <div className="mt-1.5 flex items-center gap-2 rounded-lg border border-[var(--border-subtle)] px-3 py-2.5">
             <span className="text-sm text-white/40 light:text-slate-400">Rs</span>
-            <input
+            <NumericInput
               id="wa-target"
-              type="number"
-              inputMode="decimal"
               min={0}
               step={10000}
-              value={targetAmountToday === 0 ? "" : targetAmountToday}
+              value={targetAmountToday}
               placeholder="0"
-              onChange={(e) => {
-                const parsed = parseFloat(e.target.value);
-                setTargetAmountToday(isNaN(parsed) ? 0 : Math.max(0, parsed));
-              }}
+              onValueChange={setTargetAmountToday}
               className="text-mono-num w-full bg-transparent text-lg font-semibold tabular-nums text-white outline-none light:text-slate-900"
             />
           </div>
@@ -94,18 +87,13 @@ export default function WealthAccumulationPlannerForm({ defaultCurrentSavings, o
           </label>
           <div className="mt-1.5 flex items-center gap-2 rounded-lg border border-[var(--border-subtle)] px-3 py-2.5">
             <span className="text-sm text-white/40 light:text-slate-400">Rs</span>
-            <input
+            <NumericInput
               id="wa-savings"
-              type="number"
-              inputMode="decimal"
               min={0}
               step={1000}
-              value={currentSavingsForGoal === 0 ? "" : currentSavingsForGoal}
+              value={currentSavingsForGoal}
               placeholder="0"
-              onChange={(e) => {
-                const parsed = parseFloat(e.target.value);
-                setCurrentSavingsForGoal(isNaN(parsed) ? 0 : Math.max(0, parsed));
-              }}
+              onValueChange={setCurrentSavingsForGoal}
               className="text-mono-num w-full bg-transparent text-lg font-semibold tabular-nums text-white outline-none light:text-slate-900"
             />
           </div>
@@ -117,18 +105,13 @@ export default function WealthAccumulationPlannerForm({ defaultCurrentSavings, o
           </label>
           <div className="mt-1.5 flex items-center gap-2 rounded-lg border border-[var(--border-subtle)] px-3 py-2.5">
             <span className="text-sm text-white/40 light:text-slate-400">Rs</span>
-            <input
+            <NumericInput
               id="wa-contribution"
-              type="number"
-              inputMode="decimal"
               min={0}
               step={500}
-              value={monthlyContribution === 0 ? "" : monthlyContribution}
+              value={monthlyContribution}
               placeholder="0"
-              onChange={(e) => {
-                const parsed = parseFloat(e.target.value);
-                setMonthlyContribution(isNaN(parsed) ? 0 : Math.max(0, parsed));
-              }}
+              onValueChange={setMonthlyContribution}
               className="text-mono-num w-full bg-transparent text-lg font-semibold tabular-nums text-white outline-none light:text-slate-900"
             />
           </div>

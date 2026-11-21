@@ -2,6 +2,7 @@
 
 import { useLanguage } from "@/components/LanguageProvider";
 import type { InflationSource } from "@/lib/decisionSupportLab/salaryEngine";
+import NumericInput from "@/components/inputs/NumericInput";
 
 interface Props {
   years: number;
@@ -23,18 +24,15 @@ export default function SalaryRequiredForm({ years, onYearsChange, assumedRaiseP
           {t("salaryRequired.yearsLabel")}
         </label>
         <div className="mt-1.5 flex items-center gap-2 rounded-lg border border-[var(--border-subtle)] px-3 py-2.5">
-          <input
+          <NumericInput
             id="sr-years"
-            type="number"
-            inputMode="numeric"
             min={1}
             max={10}
             step={1}
             value={years}
-            onChange={(e) => {
-              const parsed = parseInt(e.target.value, 10);
-              onYearsChange(isNaN(parsed) ? 1 : Math.min(10, Math.max(1, parsed)));
-            }}
+            integer
+            emptyBehavior="keep"
+            onValueChange={onYearsChange}
             className="text-mono-num w-full bg-transparent text-lg font-semibold tabular-nums text-white outline-none light:text-slate-900"
           />
         </div>
@@ -45,17 +43,14 @@ export default function SalaryRequiredForm({ years, onYearsChange, assumedRaiseP
           {t("salaryRequired.assumedRaiseLabel")}
         </label>
         <div className="mt-1.5 flex items-center gap-2 rounded-lg border border-[var(--border-subtle)] px-3 py-2.5">
-          <input
+          <NumericInput
             id="sr-raise"
-            type="number"
-            inputMode="decimal"
             step={0.5}
-            value={assumedRaisePct === 0 ? "" : assumedRaisePct}
+            value={assumedRaisePct}
             placeholder={t("decisionSupportLab.placeholderPercentage")}
-            onChange={(e) => {
-              const parsed = parseFloat(e.target.value);
-              onAssumedRaisePctChange(isNaN(parsed) ? 0 : parsed);
-            }}
+            min={-99}
+            max={1000}
+            onValueChange={onAssumedRaisePctChange}
             className="text-mono-num w-full bg-transparent text-lg font-semibold tabular-nums text-white outline-none light:text-slate-900"
           />
           <span className="text-sm text-white/40 light:text-slate-400">%</span>

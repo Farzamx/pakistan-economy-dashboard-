@@ -137,13 +137,15 @@ export default function SalaryRequiredCalculator({ breakdown }: Props) {
   return (
     <div id="calculator-input" className="flex flex-col gap-6">
       <WhatIfToggle
-        label="Current Salary"
+        currentLabel="Current Salary"
+        customizeLabel="Customize Salary"
         currentValue={salaryFromProfile}
         whatIfValue={whatIfSalary}
         onWhatIfValueChange={setWhatIfSalary}
         isWhatIf={isWhatIfSalary}
         onToggle={setIsWhatIfSalary}
         formatValue={(v) => `Rs ${Math.round(v).toLocaleString("en-US")}`}
+        prefix="Rs"
         step={1000}
       />
 

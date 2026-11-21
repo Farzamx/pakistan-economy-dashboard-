@@ -164,13 +164,15 @@ export default function RealReturnCalculatorCalculator({ breakdown, cpiSeries }:
   return (
     <div id="calculator-input" className="flex flex-col gap-6">
       <WhatIfToggle
-        label="Investment Amount"
+        currentLabel="Current Investment"
+        customizeLabel="Customize Investment Amount"
         currentValue={profile.currentInvestmentAmount}
         whatIfValue={whatIfAmount}
         onWhatIfValueChange={setWhatIfAmount}
         isWhatIf={isWhatIfAmount}
         onToggle={setIsWhatIfAmount}
         formatValue={(v) => `Rs ${Math.round(v).toLocaleString("en-US")}`}
+        prefix="Rs"
         step={1000}
       />
 

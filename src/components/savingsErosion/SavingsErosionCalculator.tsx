@@ -24,6 +24,7 @@ import { useEconomicProfile, setEconomicProfile } from "@/lib/decisionSupportLab
 import type { ReportDefinition } from "@/lib/decisionSupportLab/reportFramework";
 import type { CalculationSnapshotPayload } from "@/lib/supabase/calculationSnapshots";
 import type { CpiCategoryBreakdown } from "@/lib/data/cpiCategoryBreakdown";
+import NumericInput from "@/components/inputs/NumericInput";
 
 export interface SavingsErosionResult {
   savingsAmount: number;
@@ -130,13 +131,15 @@ export default function SavingsErosionCalculator({ breakdown }: Props) {
   return (
     <div id="calculator-input" className="flex flex-col gap-6">
       <WhatIfToggle
-        label="Current Savings"
+        currentLabel="Current Savings"
+        customizeLabel="Customize Savings"
         currentValue={profile.currentSavings}
         whatIfValue={whatIfSavings}
         onWhatIfValueChange={setWhatIfSavings}
         isWhatIf={isWhatIfSavings}
         onToggle={setIsWhatIfSavings}
         formatValue={(v) => `Rs ${Math.round(v).toLocaleString("en-US")}`}
+        prefix="Rs"
         step={1000}
       />
 
@@ -145,18 +148,15 @@ export default function SavingsErosionCalculator({ breakdown }: Props) {
           Years
         </label>
         <div className="mt-1.5 flex items-center gap-2 rounded-lg border border-[var(--border-subtle)] px-3 py-2.5">
-          <input
+          <NumericInput
             id="se-years"
-            type="number"
-            inputMode="numeric"
             min={1}
             max={40}
             step={1}
             value={years}
-            onChange={(e) => {
-              const parsed = parseInt(e.target.value, 10);
-              setYears(isNaN(parsed) ? 1 : Math.min(40, Math.max(1, parsed)));
-            }}
+            integer
+            emptyBehavior="keep"
+            onValueChange={setYears}
             className="text-mono-num w-full bg-transparent text-lg font-semibold tabular-nums text-white outline-none light:text-slate-900"
           />
         </div>
