@@ -1,2 +1,5 @@
 # Research dataset deliverables are published byte-for-byte: no line-ending or text conversion (the CSV and SPSS syntax use CRLF by design).
 public/research-datasets/** -text
+
+# Official source files behind the Interest Rates dashboard are fingerprinted (SHA-256 in their manifest): stored byte-for-byte, never line-ending converted.
+data/sources/** -text

@@ -687,13 +687,13 @@ export const SERIES_PUBLICATION_META: Record<string, SeriesPublicationMeta> = {
     publicationSchedule:
       "SBP DMMD holds MTB auctions approximately fortnightly (bi-weekly, typically Wednesdays). " +
       "Official auction target calendar published at sbp.org.pk/ecodata/auction-treasurybills.pdf. " +
-      "Cut-off yield recorded in SBP EasyData (TS_GP_BAM_SIRTBIL_AH.TB0040) on auction date. " +
+      "Weighted-average yield recorded in SBP EasyData (TS_GP_BAM_SIRTBIL_AH.TB0040) on auction date. " +
       "maxDaysVariance=3 covers EasyData recording the result 1–2 days after the auction date.",
     officialSource: "State Bank of Pakistan",
     advanceCalendarAvailable: true,
     sourceHierarchy: [
       {
-        name: "SBP EasyData — 3M T-Bill Cut-Off Yield (TB0040)",
+        name: "SBP EasyData — 3M T-Bill Weighted-Average Yield (TB0040)",
         type: "sbp-easydata",
         indicatorKey: "tbillYield3m",
         implemented: true,
@@ -774,7 +774,7 @@ export const SERIES_PUBLICATION_META: Record<string, SeriesPublicationMeta> = {
     advanceCalendarAvailable: true,
     sourceHierarchy: [
       {
-        name: "SBP EasyData — 3M T-Bill Cut-Off Yield (TB0040)",
+        name: "SBP EasyData — 3M T-Bill Weighted-Average Yield (TB0040)",
         type: "sbp-easydata",
         indicatorKey: "tbillYield3m",
         implemented: true,
@@ -789,14 +789,14 @@ export const SERIES_PUBLICATION_META: Record<string, SeriesPublicationMeta> = {
     periodValidation: { cadence: "as-needed", maxDaysVariance: 3 },
     publicationSchedule:
       "SBP holds Fixed-Rate PIB auctions approximately monthly. Official calendar at " +
-      "sbp.org.pk/ecodata/auction-bond.pdf. 3Y cut-off yield from SBP EasyData " +
+      "sbp.org.pk/ecodata/auction-bond.pdf. 3Y weighted-average yield from SBP EasyData " +
       "(TS_GP_BAM_SIRPIBS_AH.PIB0080) on auction date. maxDaysVariance=3 covers " +
       "result recording timing.",
     officialSource: "State Bank of Pakistan",
     advanceCalendarAvailable: true,
     sourceHierarchy: [
       {
-        name: "SBP EasyData — PIB 3Y Cut-Off Yield (PIB0080)",
+        name: "SBP EasyData — PIB 3Y Weighted-Average Yield (PIB0080)",
         type: "sbp-easydata",
         indicatorKey: "pibYield3y",
         implemented: true,

@@ -1,0 +1,128 @@
+{
+  "purpose": "Official source files behind the Interest Rates & Monetary Policy dashboard. Verified by scripts/buildInterestRates.ts before any parsing.",
+  "files": [
+    {
+      "path": "easydata/TS_GP_BAM_SIRKIBOR_D.csv",
+      "institution": "State Bank of Pakistan",
+      "url": "https://easydata.sbp.org.pk/api/v1/series/TS_GP_BAM_SIRKIBOR_D.{1KIBOR1W,2KIBOR2W,KIBOR0010,KIBOR0020,KIBOR0030,6KIBOR9M,7KIBOR12M,8KIBOR2Y,9KIBOR3Y}/data?start_date=1990-01-01&format=json (API key omitted)",
+      "description": "SBP EasyData dataset TS_GP_BAM_SIRKIBOR_D, series 1KIBOR1W, 2KIBOR2W, KIBOR0010, KIBOR0020, KIBOR0030, 6KIBOR9M, 7KIBOR12M, 8KIBOR2Y, 9KIBOR3Y, verbatim",
+      "retrievedOn": "2026-11-26",
+      "sha256": "64a61c2014acd7cd0512da09a0f875c124590f515b25011396bb2671c087b8ad",
+      "bytes": 4807765,
+      "rows": 46849
+    },
+    {
+      "path": "easydata/TS_GP_BAM_SIRPIBS_AH.csv",
+      "institution": "State Bank of Pakistan",
+      "url": "https://easydata.sbp.org.pk/api/v1/series/TS_GP_BAM_SIRPIBS_AH.{PIB0010,PIB0020,PIB0030,PIB0040,PIB0050,PIB0060,PIB0070,PIB0080,PIB0090,PIB0100,PIB0110,PIB0120,PIB0130,PIB0140,PIB0150,PIB0160}/data?start_date=1990-01-01&format=json (API key omitted)",
+      "description": "SBP EasyData dataset TS_GP_BAM_SIRPIBS_AH, series PIB0010, PIB0020, PIB0030, PIB0040, PIB0050, PIB0060, PIB0070, PIB0080, PIB0090, PIB0100, PIB0110, PIB0120, PIB0130, PIB0140, PIB0150, PIB0160, verbatim",
+      "retrievedOn": "2026-11-26",
+      "sha256": "0c5a9b841d324c956018da03c096f6cf1f33ee674b6eaf6bf8c2599e52fc9c23",
+      "bytes": 407207,
+      "rows": 3478
+    },
+    {
+      "path": "easydata/TS_GP_BAM_SIRTBIL_AH.csv",
+      "institution": "State Bank of Pakistan",
+      "url": "https://easydata.sbp.org.pk/api/v1/series/TS_GP_BAM_SIRTBIL_AH.{TB0010,TB0020,TB0030,TB0040,TB0050,TB0060}/data?start_date=1990-01-01&format=json (API key omitted)",
+      "description": "SBP EasyData dataset TS_GP_BAM_SIRTBIL_AH, series TB0010, TB0020, TB0030, TB0040, TB0050, TB0060, verbatim",
+      "retrievedOn": "2026-11-26",
+      "sha256": "efedb75546ad8d47dc7211f682b91079c94d9e6596bd962d40373dcd9e0246d7",
+      "bytes": 371915,
+      "rows": 3516
+    },
+    {
+      "path": "easydata/TS_GP_IR_REPOMR_D.csv",
+      "institution": "State Bank of Pakistan",
+      "url": "https://easydata.sbp.org.pk/api/v1/series/TS_GP_IR_REPOMR_D.{ORR}/data?start_date=1990-01-01&format=json (API key omitted)",
+      "description": "SBP EasyData dataset TS_GP_IR_REPOMR_D, series ORR, verbatim",
+      "retrievedOn": "2026-11-26",
+      "sha256": "752dfa2ea498e2ea7b720e9d5fffceee9c547d033a1f89d6875900194531e6b7",
+      "bytes": 255684,
+      "rows": 2797
+    },
+    {
+      "path": "easydata/TS_GP_IR_SIRPR_AH.csv",
+      "institution": "State Bank of Pakistan",
+      "url": "https://easydata.sbp.org.pk/api/v1/series/TS_GP_IR_SIRPR_AH.{SBPOL0010,SBPOL0020,SBPOL0030}/data?start_date=1990-01-01&format=json (API key omitted)",
+      "description": "SBP EasyData dataset TS_GP_IR_SIRPR_AH, series SBPOL0010, SBPOL0020, SBPOL0030, verbatim",
+      "retrievedOn": "2026-11-26",
+      "sha256": "5fe829d2bc7792009326a53274964f66d0e454eed04a13ef275daf2ba87e9cc1",
+      "bytes": 18776,
+      "rows": 187
+    },
+    {
+      "path": "easydata/TS_GP_PT_CPI_M.csv",
+      "institution": "State Bank of Pakistan",
+      "url": "https://easydata.sbp.org.pk/api/v1/series/TS_GP_PT_CPI_M.{P00011516}/data?start_date=1990-01-01&format=json (API key omitted)",
+      "description": "SBP EasyData dataset TS_GP_PT_CPI_M, series P00011516, verbatim",
+      "retrievedOn": "2026-11-26",
+      "sha256": "26872d9b111c03c13ec9fb6cb4d95e3b8f46178e6376dc50ce1d3c220efbe1f4",
+      "bytes": 14146,
+      "rows": 124
+    },
+    {
+      "path": "sbp/Lendingdepositrates_Arch.xls",
+      "institution": "State Bank of Pakistan",
+      "url": "https://www.sbp.org.pk/assets/document/Lendingdepositrates_Arch.xls",
+      "description": "Weighted-average lending and deposit rates, full history (half-yearly 1997-2003, monthly from Jan 2004)",
+      "retrievedOn": "2026-11-26",
+      "sha256": "8431f3c6accf6a773abad7359cae04b5e4249270a43eb4aed29529f364fdc5ac",
+      "bytes": 506368
+    },
+    {
+      "path": "sbp/Lendingdepositrates.pdf",
+      "institution": "State Bank of Pakistan",
+      "url": "https://www.sbp.org.pk/assets/document/Lendingdepositrates.pdf",
+      "description": "Weighted-average lending and deposit rates, latest month (independent check)",
+      "retrievedOn": "2026-11-26",
+      "sha256": "15a51362effca0b4276778208ebef4bcdf2f56d59a60107bc5e1b1c04e3e6280",
+      "bytes": 585304
+    },
+    {
+      "path": "sbp/OMO-Inject-Hist.xlsx",
+      "institution": "State Bank of Pakistan",
+      "url": "https://www.sbp.org.pk/assets/document/OMO-Inject-Hist.xlsx",
+      "description": "SBP open market operations: reverse repo (injection) history",
+      "retrievedOn": "2026-11-26",
+      "sha256": "71d115b9113a40c4acb4038df163dc7989d754c3b2e980cf185cce3ecb8f8978",
+      "bytes": 145065
+    },
+    {
+      "path": "sbp/OMO-MopUp-Hist.xlsx",
+      "institution": "State Bank of Pakistan",
+      "url": "https://www.sbp.org.pk/assets/document/OMO-MopUp-Hist.xlsx",
+      "description": "SBP open market operations: repo (mop-up) history",
+      "retrievedOn": "2026-11-26",
+      "sha256": "db770b0dded59c20c13bcdc7bae1addd9c671efe74cd59f64fb9f91c20858da2",
+      "bytes": 53523
+    },
+    {
+      "path": "sbp/Pakinvestbonds.xlsx",
+      "institution": "State Bank of Pakistan",
+      "url": "https://www.sbp.org.pk/assets/document/Pakinvestbonds.xlsx",
+      "description": "PIB auction results (input of scripts/buildGovSecAuctions.ts)",
+      "retrievedOn": "2026-11-26",
+      "sha256": "1af701dda7a2724f067ebb184ab7796f56efd9d77e5b34ab221787d2ceba0216",
+      "bytes": 140373
+    },
+    {
+      "path": "sbp/sir.pdf",
+      "institution": "State Bank of Pakistan",
+      "url": "https://www.sbp.org.pk/assets/document/sir.pdf",
+      "description": "Structure of Interest Rates (independent check of policy rates, KIBOR, auctions, lending and deposit rates)",
+      "retrievedOn": "2026-11-26",
+      "sha256": "03ee65b711d658e4125a89c0256919a3dc7b5d9471197681e92a5efe4e4c50f7",
+      "bytes": 696287
+    },
+    {
+      "path": "sbp/tb.xlsx",
+      "institution": "State Bank of Pakistan",
+      "url": "https://www.sbp.org.pk/assets/document/tb.xlsx",
+      "description": "T-bill auction results (input of scripts/buildGovSecAuctions.ts)",
+      "retrievedOn": "2026-11-26",
+      "sha256": "3d6aaa5014943f9c0a92b68adb421d1bbdeed85164b74b44db49f650ef0f9e47",
+      "bytes": 836098
+    }
+  ]
+}
