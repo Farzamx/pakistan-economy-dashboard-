@@ -15,7 +15,7 @@ const DEFS: [string, string][] = [
   ["The policy rate", "The State Bank of Pakistan's benchmark interest rate, decided by its Monetary Policy Committee. PEIC uses SBP's own series, the policy (target) rate, in percent. It changes on decision dates and holds its level in between."],
   ["Percent and percentage points", "A move from 11.5% to 12% is +0.5 percentage points (pp). It is not 0.5%, and it is not a 4.3% rise in the rate. Changes in this page are always in percentage points."],
   ["Increase, cut, tightening, easing", "An increase raises the policy rate and a cut lowers it. A tightening cycle is a run of increases and an easing cycle is a run of cuts, as defined below."],
-  ["Policy rate, market yields and bank rates", "The policy rate is set by committee. Treasury-bill and PIB yields are set at government auctions and move at every auction. KIBOR, deposit rates and lending rates are set in the market and by banks. They are different rates; PEIC holds the first two only, and compares them with the policy rate without treating them as the same thing."],
+  ["Policy rate, market yields and bank rates", "The policy rate is set by committee. Treasury-bill and PIB yields are set at government auctions and move at every auction. KIBOR is quoted by banks, and deposit and lending rates are set by banks. They are different rates; this page shows each separately and compares them with the policy rate without treating them as the same thing."],
   ["Real policy rate", "The policy rate set against inflation that has already happened. It is an ex-post, backward-looking measure, not a market real rate and not an expected one: no inflation forecast is used. It is not what a saver earns or a borrower pays."],
 ];
 
@@ -89,7 +89,13 @@ export default function MethodologySection({ model, generatedAt, relatedLinks }:
         </dl>
       </Disclosure>
 
-      <Disclosure summary="Data coverage on this page, and what is not held" className="text-[15px]">
+      <p className="max-w-3xl text-[14px] leading-relaxed text-pe-text-2">
+        The sections on the corridor, OMO, KIBOR, government securities, bank rates, real rates and transmission are built from official SBP files kept with
+        the site; their sources, coverage and formulas are in the <a href="#coverage" className="text-pe-accent underline underline-offset-2">data coverage and quality</a> section. The
+        notes below cover the policy-rate history, inflation and US sections, which read the PEIC data ledger.
+      </p>
+
+      <Disclosure summary="Data coverage of the policy-rate history sections, and what is not held" className="text-[15px]">
         <div className="relative mt-1 overflow-x-auto rounded-[var(--pe-radius)] border border-pe-border" tabIndex={0} role="region" aria-label="Series used on this page (scrolls sideways)">
           <table className="w-full min-w-[720px] border-collapse text-left text-[13.5px]">
             <caption className="sr-only">Series used on this page: frequency, coverage, unit and source</caption>
@@ -116,9 +122,9 @@ export default function MethodologySection({ model, generatedAt, relatedLinks }:
         <p className="mt-3 text-[14px] font-medium text-pe-text">Not held by PEIC, so not shown:</p>
         <ul className="mt-1 list-disc space-y-0.5 pl-5 text-[14px] leading-relaxed text-pe-text-2">
           <li>Meetings at which the policy rate was held, and any record of how members voted</li>
-          <li>KIBOR, bank deposit rates, lending rates and mortgage rates</li>
+          <li>Mortgage rates</li>
           <li>Policy rates of any country other than the United States</li>
-          <li>Government-security maturities other than the 3-month T-bill and the 3-year PIB, so no yield curve</li>
+          <li>Secondary-market (PKRV) government-security yields: the yield curve on this page uses SBP auction results only</li>
           <li>Inflation expectations or forecasts, so no expected (ex-ante) real rate</li>
           <li>Policy-rate history before {first ? formatDate(first.date) : "the start of the series"}</li>
         </ul>

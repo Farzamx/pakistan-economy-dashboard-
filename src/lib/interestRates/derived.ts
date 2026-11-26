@@ -8,9 +8,15 @@ import { cpiYoy, kiborDaily, kiborMonthly, ldSeries, overnightRepoRate, pibSerie
 import { daysBetween, rateAtMonthEnd, rateInForce } from "./series";
 import type { DateValue, KiborTenor } from "./types";
 
+/**
+ * The real rate uses the exact (Fisher) relation, as the rest of the Interest Rate page does: ((1 + i/100) ÷ (1 + π/100) − 1) × 100. The simple
+ * difference i − π is only an approximation and is poor when inflation is high (in May 2023: 21% policy rate, 38% inflation → −12.3 exact vs −17 simple).
+ */
+export const realRate = (nominal: number, inflation: number) => ((1 + nominal / 100) / (1 + inflation / 100) - 1) * 100;
+
 export const FORMULAS = {
-  realPolicy: "Real policy rate (ex post) for month m = policy rate in force on the last day of m − national CPI inflation (year on year) for m.",
-  realKibor: "Real KIBOR for month m = mean of the daily KIBOR fixings published in m − national CPI inflation (year on year) for m.",
+  realPolicy: "Real policy rate (ex post) for month m = ((1 + policy rate in force on the last day of m) ÷ (1 + national CPI inflation, year on year, for m) − 1) × 100.",
+  realKibor: "Real KIBOR for month m = ((1 + mean of the daily KIBOR fixings published in m) ÷ (1 + national CPI inflation, year on year, for m) − 1) × 100.",
   policyMinusKibor: "Policy minus KIBOR on day d = policy rate in force on d − KIBOR fixing on d. Negative = KIBOR above the policy rate.",
   policyMinusTbill: "Policy minus T-bill at auction a = policy rate in force on the auction date − that auction's cut-off yield for the tenor. Negative = yield above the policy rate.",
   lendingDepositSpread: "Lending-deposit spread for month m = weighted-average lending rate − weighted-average deposit rate, both on the same basis (new: gross disbursements vs fresh deposits; outstanding: loans vs deposits), entity, zero-mark-up and inter-bank treatment.",
@@ -42,7 +48,7 @@ export function realPolicyRate(): RealRow[] {
     const nominal = rateAtMonthEnd(steps, month);
     if (nominal === null) return [];
     const last = [...records].reverse().find((r) => r.date.slice(0, 7) <= month)!;
-    return [{ month, nominal, inflation, real: nominal - inflation, instrument: last.instrument }];
+    return [{ month, nominal, inflation, real: realRate(nominal, inflation), instrument: last.instrument }];
   });
 }
 
@@ -50,7 +56,7 @@ export function realKibor(tenor: KiborTenor): RealRow[] {
   const means = new Map(kiborMonthly(tenor).map((m) => [m.month, m]));
   return cpiYoy().flatMap(({ month, value: inflation }) => {
     const m = means.get(month);
-    return m ? [{ month, nominal: m.mean, inflation, real: m.mean - inflation, days: m.days }] : [];
+    return m ? [{ month, nominal: m.mean, inflation, real: realRate(m.mean, inflation), days: m.days }] : [];
   });
 }
 

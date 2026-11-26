@@ -17,7 +17,7 @@ import {
   policyRateRecords,
   tbillSeries,
 } from "./dataset";
-import { corridor, lendingDepositSpread, orrMinusPolicy, policyMinusKibor, policyMinusTbill, realKibor, realPolicyRate, termSpread } from "./derived";
+import { corridor, lendingDepositSpread, orrMinusPolicy, policyMinusKibor, policyMinusTbill, realKibor, realPolicyRate, realRate, termSpread } from "./derived";
 import { monthRange, monthlyMeans, rateAtMonthEnd, rateInForce, round } from "./series";
 import { KIBOR_TENORS } from "./types";
 
@@ -136,12 +136,17 @@ describe("OMO", () => {
 });
 
 describe("derived indicators", () => {
-  it("real policy rate for Oct 2026 = 12 - 9.6 = 2.4; it starts with CPI in Jul 2016", () => {
+  it("the real rate is the exact (Fisher) relation used across the page, not the simple difference", () => {
+    expect(realRate(12, 9.6)).toBeCloseTo((1.12 / 1.096 - 1) * 100, 12);
+    expect(round(realRate(12, 9.6), 2)).toBe(2.19);
+    expect(round(realRate(21, 38), 2)).toBe(-12.32);
+  });
+  it("real policy rate for Oct 2026: policy 12%, CPI 9.6% -> 2.19; it starts with CPI in Jul 2016", () => {
     const r = realPolicyRate();
     expect(r[0].month).toBe("2016-07");
     const oct = r.find((x) => x.month === "2026-10")!;
     expect([oct.nominal, oct.inflation]).toEqual([12, 9.6]);
-    expect(oct.real).toBeCloseTo(2.4, 10);
+    expect(round(oct.real, 2)).toBe(2.19);
     expect(r.length).toBe(cpiYoy().length);
   });
   it("real KIBOR uses the month's mean fixing and reports the day count", () => {
@@ -149,7 +154,7 @@ describe("derived indicators", () => {
     const m = kiborMonthly("6M").find((x) => x.month === "2026-10")!;
     expect(k.nominal).toBe(m.mean);
     expect(k.days).toBe(m.days);
-    expect(k.real).toBeCloseTo(m.mean - 9.6, 10);
+    expect(k.real).toBeCloseTo(realRate(m.mean, 9.6), 10);
   });
   it("policy minus 6M KIBOR on 25 Nov 2026 = 12 - fixing", () => {
     const last = policyMinusKibor("6M").at(-1)!;

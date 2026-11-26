@@ -10,17 +10,16 @@
 //                                 one row per series and date, sorted by series then date
 //   manifest.json                 for every file: institution, URL (never the API key), retrieval date, SHA-256, size and row count
 //
-// The EasyData API key is read from .env.local into memory (only that one variable; nothing else from the file is loaded) and travels only inside sbpTransport's
-// private curl --config file. It is never printed, never written and never part of a recorded URL.
+// The EasyData API key comes from the environment the project's guarded loader provides (enterScript: refuses under any test harness, then loads
+// .env.local). It travels only inside sbpTransport's private curl --config file: never printed, never written, never part of a recorded URL.
 //
-// Importing this module does nothing: main() runs only when the file is the entry point.
+// Importing this module does nothing: main() runs only through runIfEntryPoint() (src/lib/providers/scriptEntry.ts), like every credential script.
 
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
-import { pathToFileURL } from "node:url";
-import { parse as parseDotenv } from "dotenv";
 import { sbpTransportGet, sbpTransportGetBinary } from "@/lib/data/sbpTransport";
+import { enterScript, runIfEntryPoint } from "@/lib/providers/scriptEntry";
 
 export const SBP_FILES = [
   { file: "Lendingdepositrates_Arch.xls", url: "https://www.sbp.org.pk/assets/document/Lendingdepositrates_Arch.xls", kind: "xls", description: "Weighted-average lending and deposit rates, full history (half-yearly 1997-2003, monthly from Jan 2004)" },
@@ -111,9 +110,8 @@ export function toCsv(rows: string[][]): string {
 const sha256 = (b: Buffer | string) => createHash("sha256").update(b).digest("hex");
 
 function readApiKey(): string {
-  const env = parseDotenv(readFileSync(path.resolve(".env.local")));
-  const key = env.SBP_EASYDATA_API_KEY;
-  if (!key) throw new Error("SBP_EASYDATA_API_KEY is not in .env.local");
+  const key = process.env.SBP_EASYDATA_API_KEY;
+  if (!key) throw new Error("SBP_EASYDATA_API_KEY is not set (expected in .env.local)");
   return key;
 }
 
@@ -176,7 +174,8 @@ async function main(argv: string[]): Promise<number> {
   return 0;
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
+runIfEntryPoint({ filename: __filename, requireMain: typeof require !== "undefined" && require.main === module }, () => {
+  enterScript("fetch:interest-rate-sources");
   main(process.argv.slice(2)).then(
     (code) => process.exit(code),
     (err: unknown) => {
@@ -184,4 +183,4 @@ if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.ar
       process.exit(1);
     },
   );
-}
+});

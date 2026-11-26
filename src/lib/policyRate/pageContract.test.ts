@@ -209,7 +209,9 @@ describe("honest limits are stated on the page", () => {
 
   it("keeps the policy rate, T-bill/PIB yields and bank rates apart, and says what is not held", () => {
     expect(all).toContain("Three different rates");
-    expect(all).toContain("KIBOR, bank deposit rates, lending rates and mortgage rates");
+    // KIBOR and bank lending/deposit rates are now shown (official SBP files, src/components/interestRates); mortgage rates are still not held.
+    expect(all).toContain("this page shows each separately and compares them with the policy rate without treating them as the same thing");
+    expect(all).toContain("<li>Mortgage rates</li>");
   });
 
   it("says only the US is comparable internationally", () => {
@@ -217,10 +219,10 @@ describe("honest limits are stated on the page", () => {
     expect(all).toContain("Policy rates for India, Bangladesh, Sri Lanka or other peers are not held");
   });
 
-  it("holds two government-security maturities and draws no yield curve, and says so", () => {
+  it("the ledger's two maturities draw no curve; the page's only curve is the auction curve, and secondary-market yields are stated as not held", () => {
     expect(all).toContain("Two maturities, not a yield curve");
     expect(all).toContain("so no curve is drawn and no line between the two is implied");
-    expect(all).toContain("Government-security maturities other than the 3-month T-bill and the 3-year PIB, so no yield curve");
+    expect(all).toContain("Secondary-market (PKRV) government-security yields: the yield curve on this page uses SBP auction results only");
   });
 
   it("states that yields are compared with the policy rate in effect on the auction day, not resampled to months", () => {

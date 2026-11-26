@@ -6,13 +6,20 @@ import OverviewSection from "@/components/policyRate/OverviewSection";
 import HistorySection from "@/components/policyRate/HistorySection";
 import DecisionsSection from "@/components/policyRate/DecisionsSection";
 import CyclesSection from "@/components/policyRate/CyclesSection";
-import RealRateSection from "@/components/policyRate/RealRateSection";
 import InflationCompareSection from "@/components/policyRate/InflationCompareSection";
-import MarketRatesSection from "@/components/policyRate/MarketRatesSection";
 import InternationalSection from "@/components/policyRate/InternationalSection";
 import FindingsSection from "@/components/policyRate/FindingsSection";
 import MethodologySection from "@/components/policyRate/MethodologySection";
+import RateOverview from "@/components/interestRates/RateOverview";
+import { CorridorChart, OmoPanel } from "@/components/interestRates/MonetaryOperations";
+import { KiborTenorChart, PolicyKiborSpread } from "@/components/interestRates/KiborCharts";
+import { AuctionSpreads, AuctionYieldCurve } from "@/components/interestRates/GovSecurities";
+import BankRatesChart from "@/components/interestRates/BankRatesChart";
+import { RealRates, Transmission } from "@/components/interestRates/RealAndTransmission";
+import { Changes, Coverage, Periods, SpreadStats, Tiles } from "@/components/interestRates/DashboardTables";
+import { Callout } from "@/components/analytics/ChartFrame";
 import { loadPolicyRatePageData } from "@/lib/data/policyRatePageData";
+import { buildDashboard } from "@/lib/interestRates/viewModel";
 import { monthLabel } from "@/lib/inflation/periods";
 import { formatDate, pct } from "@/lib/policyRate/format";
 import { indicatorJsonLd, serializeJsonLd } from "@/lib/seoStructuredData";
@@ -45,19 +52,84 @@ export const metadata: Metadata = {
 // figure and the freshness verdict current without re-fetching on every request.
 export const revalidate = 3600;
 
-const NAV = [
-  ["overview", "Overview"],
-  ["history", "History"],
-  ["changes", "Rate changes"],
-  ["cycles", "Cycles"],
-  ["real", "Real rate"],
-  ["inflation", "Inflation"],
-  ["market", "Market yields"],
-  ["international", "US comparison"],
-  ["findings", "Findings"],
-  ["methodology", "Methodology"],
-  ["faq", "FAQ"],
+// The page is grouped into the parts of the interest-rate landscape. Each group's items are sections below.
+const NAV: { group: string; items: string[][] }[] = [
+  {
+    group: "Overview",
+    items: [
+      ["overview", "Overview"],
+      ["rates-overview", "All rates"],
+    ],
+  },
+  {
+    group: "SBP monetary policy",
+    items: [
+      ["history", "History"],
+      ["changes", "Rate changes"],
+      ["cycles", "Cycles"],
+      ["corridor", "Corridor"],
+      ["omo", "Open market operations"],
+    ],
+  },
+  {
+    group: "KIBOR",
+    items: [
+      ["kibor", "Tenors"],
+      ["kibor-spread", "Policy vs KIBOR"],
+    ],
+  },
+  {
+    group: "Government securities",
+    items: [
+      ["auction-curve", "Auction yield curve"],
+      ["auction-spreads", "Spreads"],
+    ],
+  },
+  {
+    group: "Banking rates",
+    items: [
+      ["banking", "Lending and deposit rates"],
+    ],
+  },
+  {
+    group: "Real interest rates",
+    items: [
+      ["real", "Real rates"],
+      ["inflation", "Inflation"],
+    ],
+  },
+  {
+    group: "Analysis",
+    items: [
+      ["transmission", "Transmission"],
+      ["analytics", "Spreads and comparisons"],
+      ["international", "US comparison"],
+      ["findings", "Findings"],
+    ],
+  },
+  {
+    group: "Data",
+    items: [
+      ["coverage", "Coverage and quality"],
+      ["methodology", "Methodology"],
+      ["faq", "FAQ"],
+    ],
+  },
 ];
+
+// The fixed official-source datasets (no database): built once per server instance.
+const dashboard = buildDashboard();
+const NEW_TILES = new Set(["corridor", "orr", "k6", "tb3", "walr", "wadr"]);
+
+function Part({ id, title, intro }: { id: string; title: string; intro: string }) {
+  return (
+    <div id={id} className="mt-4 scroll-mt-20 border-t-2 border-pe-border-strong pt-3">
+      <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-pe-text-3">Part</p>
+      <p className="text-[20px] font-semibold leading-tight text-pe-text">{title}</p>
+      <p className="mt-1 max-w-3xl text-[14px] leading-relaxed text-pe-text-2">{intro}</p>
+    </div>
+  );
+}
 
 // The page's original explanatory copy, kept (the meeting-frequency wording is made general: the series cannot show how many meetings held).
 const EXPLANATION = [
@@ -132,10 +204,17 @@ export default async function InterestRatePage() {
             The State Bank of Pakistan&rsquo;s (SBP) policy interest rate — the benchmark that all bank lending and deposit rates in Pakistan follow.
           </p>
           <nav aria-label="On this page" className="mt-3">
-            <ul className="flex flex-wrap gap-x-4 gap-y-1.5 text-[14px]">
-              {NAV.map(([id, label]) => (
-                <li key={id}>
-                  <a href={`#${id}`} className="text-pe-accent hover:underline">{label}</a>
+            <ul className="grid gap-x-6 gap-y-2 text-[14px] sm:grid-cols-2 lg:grid-cols-4">
+              {NAV.map((g) => (
+                <li key={g.group} className="min-w-0">
+                  <span className="block text-[12px] font-semibold uppercase tracking-[0.05em] text-pe-text-3">{g.group}</span>
+                  <ul className="mt-0.5 flex flex-wrap gap-x-3 gap-y-0.5">
+                    {g.items.map(([id, label]) => (
+                      <li key={id}>
+                        <a href={`#${id}`} className="text-pe-accent hover:underline">{label}</a>
+                      </li>
+                    ))}
+                  </ul>
                 </li>
               ))}
             </ul>
@@ -144,7 +223,17 @@ export default async function InterestRatePage() {
 
         <Section id="overview" title="Policy rate overview" description="The current rate, the latest change, the real rate and a market yield.">
           <OverviewSection kpi={kpi} model={model} />
+          <div className="mt-4">
+            <p className="mb-2 text-[13px] font-medium text-pe-text-2">Across the rate landscape (latest official observations, each with its own date)</p>
+            <Tiles tiles={dashboard.tiles.filter((t) => NEW_TILES.has(t.id))} />
+          </div>
         </Section>
+
+        <Section id="rates-overview" title="Pakistan's interest rates at a glance" description="The policy rate, the interbank rate (KIBOR) and the government's 3-month borrowing cost on one axis.">
+          <RateOverview data={dashboard.overview} retrievedOn={dashboard.retrievedOn} instrumentSwitch={dashboard.instrumentSwitch} />
+        </Section>
+
+        <Part id="part-policy" title="SBP monetary policy" intro="The rates the State Bank of Pakistan sets and how it steers the overnight market toward them. Which rate counted as 'the policy rate' has changed over time: the reverse repo rate until 24 May 2015, the policy (target) rate since." />
 
         <Section id="history" title="Historical policy-rate trend" description="Where the rate has been, and how large each move was.">
           <HistorySection model={model} />
@@ -158,16 +247,62 @@ export default async function InterestRatePage() {
           <CyclesSection model={model} />
         </Section>
 
-        <Section id="real" title="Nominal and real policy rate" description="Policy rate minus inflation that has already happened (ex-post, not an expected real rate).">
-          <RealRateSection model={model} />
+        <Section id="corridor" title="The interest-rate corridor" description="Ceiling, target and floor set by SBP, and the overnight rate banks actually paid.">
+          <CorridorChart data={dashboard.corridor} retrievedOn={dashboard.retrievedOn} />
+        </Section>
+
+        <Section id="omo" title="Open market operations" description="SBP's liquidity injections and mop-ups, with their cut-off rates.">
+          <OmoPanel data={dashboard.omo} corridor={dashboard.corridor} retrievedOn={dashboard.retrievedOn} />
+        </Section>
+
+        <Part id="part-kibor" title="KIBOR" intro="The Karachi Interbank Offered Rate: what contributing banks quote for lending to each other, from one week to one year. Most variable-rate bank loans in Pakistan are priced as KIBOR plus a margin. KIBOR follows the policy rate closely but is quoted by banks, not set by SBP." />
+
+        <Section id="kibor" title="KIBOR by tenor" description="Compare loan lengths on chosen dates, or follow tenors over time.">
+          <KiborTenorChart data={dashboard.kibor} retrievedOn={dashboard.retrievedOn} />
+        </Section>
+
+        <Section id="kibor-spread" title="Policy rate versus KIBOR" description="The gap between the policy rate and the interbank rate, in percentage points.">
+          <PolicyKiborSpread data={dashboard.kibor} retrievedOn={dashboard.retrievedOn} />
+        </Section>
+
+        <Part id="part-securities" title="Government securities" intro="What the government pays to borrow, as set at SBP's auctions of Treasury bills (up to 12 months) and Pakistan Investment Bonds (2 to 30 years)." />
+
+        <Section id="auction-curve" title="Government Securities Auction Yield Curve" description="Auction yields by maturity on a chosen date, compared with another date.">
+          <AuctionYieldCurve data={dashboard.auctions} retrievedOn={dashboard.retrievedOn} />
+        </Section>
+
+        <Section id="auction-spreads" title="Auction yield spreads" description="The 3-month T-bill against the policy rate, and long against short yields.">
+          <AuctionSpreads data={dashboard.auctions} retrievedOn={dashboard.retrievedOn} />
+        </Section>
+
+        <Part id="part-banking" title="Banking rates" intro="What banks charge borrowers and pay depositors, as weighted averages reported to SBP each month." />
+
+        <Section id="banking" title="Lending rates, deposit rates and the spread" description="Weighted-average rates of scheduled banks, new business or outstanding.">
+          <BankRatesChart data={dashboard.bank} retrievedOn={dashboard.retrievedOn} />
+        </Section>
+
+        <Part id="part-real" title="Real interest rates" intro="Interest rates set against inflation that has already happened. A positive real rate means the rate is above inflation." />
+
+        <Section id="real" title="Nominal and real rates" description="The policy rate, inflation and the real policy rate; real 6-month KIBOR.">
+          <RealRates data={dashboard.real} formula={{ policy: dashboard.formulas.realPolicy, kibor: dashboard.formulas.realKibor }} retrievedOn={dashboard.retrievedOn} />
         </Section>
 
         <Section id="inflation" title="Policy rate and inflation" description="Both on one time axis, with inflation around each cycle (shown together, not modelled).">
           <InflationCompareSection model={model} />
         </Section>
 
-        <Section id="market" title="Policy rate and market yields" description="The policy rate beside T-bill and PIB auction yields (different instruments).">
-          <MarketRatesSection model={model} />
+        <Part id="part-analysis" title="Analysis" intro="How the rates move together, how far apart they are, and how periods compare. Every figure states its sample; none is a forecast or a causal estimate." />
+
+        <Section id="transmission" title="Monetary policy transmission" description="From the policy rate to market and bank rates: timing and co-movement.">
+          <Transmission data={dashboard.transmission} retrievedOn={dashboard.retrievedOn} />
+        </Section>
+
+        <Section id="analytics" title="Spreads, changes and period comparisons" description="Summary statistics with dates and sample sizes.">
+          <div className="flex flex-col gap-6">
+            <SpreadStats rows={dashboard.stats} />
+            <Changes rows={dashboard.changes} />
+            <Periods rows={dashboard.periods} />
+          </div>
         </Section>
 
         <Section id="international" title="Pakistan and the United States" description="Compared with the US effective federal funds rate.">
@@ -176,6 +311,23 @@ export default async function InterestRatePage() {
 
         <Section id="findings" title="What the data shows" description="Facts from the figures above, each with its period and source.">
           <FindingsSection model={model} />
+        </Section>
+
+        <Part id="part-data" title="Data" intro="Where every number comes from, how much of it exists and what it cannot show." />
+
+        <Section id="coverage" title="Data coverage and quality" description="Every series on this page, observed or derived, with its source and coverage.">
+          <div className="flex flex-col gap-4">
+            <Coverage rows={dashboard.coverage} retrievedOn={dashboard.retrievedOn} />
+            <Callout tone="limit" title="What the data cannot show">
+              <ul className="list-disc space-y-1 pl-5">
+                <li>Daily secondary-market government bond yields (PKRV) are not official SBP data and are not used; the yield curve is built from auction results only.</li>
+                <li>Real rates start in July 2016, when national CPI on its current (2015-16) base begins; the older index is not joined on.</li>
+                <li>SBP&rsquo;s EasyData lacks some KIBOR fixing days that SBP&rsquo;s own bulletin prints; they are left missing, and monthly averages show how many days they use.</li>
+                <li>Bank lending and deposit rates changed definition in January 2011 and July 2022 (marked on the charts); the all-institutions series starts in July 2022. The newest month is provisional.</li>
+                <li>Where SBP&rsquo;s sources disagree (for example EasyData and the auction files, or the dates of the October 2026 decision), the page follows a stated order of sources and the difference is recorded, not hidden.</li>
+              </ul>
+            </Callout>
+          </div>
         </Section>
 
         <Section id="meaning" title="About the policy rate">

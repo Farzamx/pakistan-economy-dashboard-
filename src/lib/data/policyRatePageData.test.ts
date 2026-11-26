@@ -44,7 +44,9 @@ vi.mock("@/lib/data/fred", () => ({ getFedFundsHistory: () => scenario.fed() }))
 import InterestRatePage from "@/app/pakistan-interest-rate/page";
 import { loadPolicyRatePageData, sourceInfoFrom } from "./policyRatePageData";
 
-const SECTION_IDS = ["overview", "history", "changes", "cycles", "real", "inflation", "market", "international", "findings", "meaning", "methodology", "faq"];
+// The ledger-based sections plus the fixed-dataset dashboard sections (src/components/interestRates), in page order. The ledger "market" and real-rate
+// sections were superseded by #auction-curve/#auction-spreads and the fixed-dataset #real (same Fisher formula).
+const SECTION_IDS = ["overview", "rates-overview", "history", "changes", "cycles", "corridor", "omo", "kibor", "kibor-spread", "auction-curve", "auction-spreads", "banking", "real", "inflation", "transmission", "analytics", "international", "findings", "coverage", "meaning", "methodology", "faq"];
 const sectionsIn = (html: string) => SECTION_IDS.filter((id) => html.includes(`id="${id}"`));
 const text = (html: string) => html.replace(/<script[\s\S]*?<\/script>/g, " ").replace(/<style[\s\S]*?<\/style>/g, " ").replace(/<[^>]+>/g, " ").replace(/&#x27;/g, "'").replace(/&amp;/g, "&").replace(/&rsquo;/g, "’").replace(/\s+/g, " ");
 const render = async () => renderToStaticMarkup(await InterestRatePage());
@@ -83,14 +85,14 @@ describe("healthy: the ledger supplies the history", () => {
     expect(model.source).toEqual({ status: "ledger", seriesKey: SERIES_KEY, seriesName: "SBP Policy (Target) Rate", latestObservation: "2026-10-26", lastStoredAt: "2026-10-29T03:22:25+00:00", observations: 38 });
   });
 
-  it("the page renders all 12 sections and the facts the data supports", async () => {
+  it("the page renders every section and the facts the data supports", async () => {
     const html = await render();
     expect(sectionsIn(html)).toEqual(SECTION_IDS);
     const t = text(html);
     expect(t).toContain("12.00%");
     expect(t).toContain("35 changes since 23 May 2016 (22 increases, 13 cuts)");
     expect(t).toContain("highest rate is 22.00%, from 27 Jun 2023 until 11 Jun 2024");
-    expect(t).toContain("(1 + 12.00%) ÷ (1 + 9.6%) − 1 = 2.19%");
+    expect(t).toContain("Real policy rate Ex-post, derived 2.19%"); // (1 + 12%) ÷ (1 + 9.6%) − 1, the same Fisher value the fixed-dataset #real section uses
     expect(t).toContain("The PEIC observation ledger (SBP EasyData series, ingested)");
     expect(t).toContain(SERIES_KEY);
     expect(t).toContain("11 Nov 2026, 08:00 UTC");
@@ -164,8 +166,9 @@ describe("optional sources fail without taking the page down", () => {
     const html = await render();
     expect(sectionsIn(html)).toEqual(SECTION_IDS);
     const t = text(html);
-    expect(t).toContain("The real policy rate is unavailable right now");
     expect(t).toContain("The comparison is unavailable right now");
+    // the fixed-dataset real-rate section does not depend on the ledger and still renders
+    expect(t).toContain("Policy rate, inflation and the real policy rate");
     expect(t).toContain("35 changes since 23 May 2016"); // history, changes and cycles are unaffected
   });
 
@@ -174,7 +177,8 @@ describe("optional sources fail without taking the page down", () => {
     scenario.hist.pibYield3y = async () => history([]);
     scenario.fed = async () => null;
     const t = text(await render());
-    expect(t).toContain("Market yields are unavailable right now");
+    expect(t).not.toContain("3-month T-bill weighted-average yield"); // the ledger tile is left out, not estimated
+    expect(t).toContain("Government Securities Auction Yield Curve"); // the fixed-dataset auction sections still render
     expect(t).toContain("The US comparison is unavailable right now");
     expect(t).toContain("35 changes since 23 May 2016");
   });

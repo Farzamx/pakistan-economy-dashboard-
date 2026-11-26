@@ -141,8 +141,8 @@ Derived indicators are computed in `src/lib/interestRates/derived.ts` and stored
 
 | Indicator | Formula | Frequency |
 |---|---|---|
-| Real policy rate (ex post) | policy rate in force on the last day of month m − CPI YoY for m | monthly, Jul 2016 – |
-| Real KIBOR | mean of the daily KIBOR fixings published in month m − CPI YoY for m (the number of fixings is shown) | monthly |
+| Real policy rate (ex post) | ((1 + policy rate in force on the last day of month m) ÷ (1 + CPI YoY for m) − 1) × 100 — the exact (Fisher) relation used throughout the page; the simple difference is only an approximation and is poor when inflation is high | monthly, Jul 2016 – |
+| Real KIBOR | ((1 + mean of the daily KIBOR fixings published in month m) ÷ (1 + CPI YoY for m) − 1) × 100 (the number of fixings is shown) | monthly |
 | Policy − KIBOR | policy rate in force on day d − KIBOR fixing on d | daily |
 | Policy − 3M T-bill | policy rate in force on the auction date − that auction's 3M cut-off yield | per auction |
 | Lending − deposit spread | WALR − WADR on the same basis (new vs new, outstanding vs outstanding), entity, zero-mark-up and inter-bank treatment, same month | monthly |
@@ -160,7 +160,37 @@ Derived indicators are computed in `src/lib/interestRates/derived.ts` and stored
 
 A correlation describes co-movement in this sample. It does not show that one rate causes another.
 
-## 4. Updating the data
+## 4. The dashboard (`/pakistan-interest-rate`)
+
+The page is grouped into parts. Sections marked *ledger* are the earlier policy-rate sections; they still read the PEIC data ledger and are unchanged. All other sections read the fixed datasets described above.
+
+| Part | Section | Content |
+|---|---|---|
+| Overview | `#overview` | The existing headline KPIs (*ledger*), plus new tiles: corridor, overnight repo rate, 6M KIBOR, 3M T-bill cut-off, lending rate on new loans, deposit rate on fresh deposits. Each tile shows its own date. |
+| | `#rates-overview` | **Chart 1**: policy rate, 3M and 6M KIBOR, and 3M T-bill cut-off. Has series toggles and range controls. The 2-year view shows daily fixings; longer views show monthly averages. |
+| SBP monetary policy | `#history`, `#changes`, `#cycles` | *Ledger*, unchanged. |
+| | `#corridor` | Ceiling, target and floor, plus the overnight repo rate. |
+| | `#omo` | OMO cut-offs against the corridor (last 3 years), the 25 latest operations, and operations per year. |
+| KIBOR | `#kibor` | **Chart 2**: tenor comparison, either across tenors on chosen dates or chosen tenors over time. |
+| | `#kibor-spread` | **Chart 3**: policy − KIBOR, 6M and 3M. |
+| Government securities | `#auction-curve` | **Chart 4**: the "Government Securities Auction Yield Curve". It reuses the Bond Yields curve explorer, which offers date-versus-date comparison and a cut-off or weighted-average switch. It is fed from this dataset's SBP auction files, which run to 25 Nov 2026. |
+| | `#auction-spreads` | Policy − 3M T-bill, and 10Y − 3M. |
+| Banking rates | `#banking` | **Chart 6**: WALR, WADR and the spread. Options: new or outstanding business, zero mark-up included or excluded, and an optional all-FI line. Regime breaks are marked. The 1997–2003 table is kept separate. |
+| Real interest rates | `#real` | **Chart 5**: policy rate, inflation and the real policy rate, plus real policy rate against real 6M KIBOR. |
+| | `#inflation` | *Ledger*, unchanged. |
+| Analysis | `#transmission` | **Chart 7**: monthly policy rate, 6M KIBOR, WALR new and WADR new. Includes a lag-correlation table (lags 0, 1, 3, 6 and 12 months, with n) and a statement that correlation is not causation. |
+| | `#analytics` | Spread statistics (latest, mean, min and max with dates, and n); changes in pp and bp over 1 and 3 years; and period comparisons over defined calendar windows. |
+| | `#international`, `#findings` | *Ledger*, unchanged. |
+| Data | `#coverage` | Coverage matrix (observed and derived), plus limitations. |
+| | `#methodology`, `#faq` | Existing sections, with their wording corrected where it would now be false. |
+
+Every chart has a "Download CSV" button. The file begins with comment lines giving the source, retrieval date and definitions. The page reads no database for these datasets, so a Vercel Preview shows the same figures Production would. The *ledger* sections behave as before: on a Preview connected to an empty database, they show their existing fallbacks.
+
+Two earlier sections are no longer on the page; their components are kept in the repository:
+- **"Policy rate and market yields"** (two ledger maturities) is superseded by the Government Securities part.
+- **"Nominal and real policy rate"** is superseded by `#real`, which uses the same Fisher formula.
+
+## 5. Updating the data
 
 1. `npx tsx scripts/fetchInterestRateSources.ts --retrieved <today>`
    - This downloads the SBP files and the EasyData series and rewrites `manifest.json`.
@@ -176,7 +206,7 @@ A correlation describes co-movement in this sample. It does not show that one ra
 
 The existing Bond Yields workshop (`src/data/govSecAuctions.ts`) has its own generator and hand-checked tests. Refreshing it is a separate decision.
 
-## 5. Known limitations and unavailable indicators
+## 6. Known limitations and unavailable indicators
 
 - **Secondary-market yields (PKRV):** not used, by decision. No daily market yield curve exists from an official SBP source.
 - **CPI before Jul 2016** (2015-16 base): not available, so real rates start in Jul 2016.

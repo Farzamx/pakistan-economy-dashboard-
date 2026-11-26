@@ -51,7 +51,12 @@ export interface DateLineSeries {
   dash?: string;
   /** Mark every observation with a dot (for sparse series). A stretch of one observation is always dotted. */
   dots?: boolean;
+  /** A monthly figure plotted at mid-month: the tooltip names the MONTH it belongs to instead of a day. */
+  monthly?: boolean;
 }
+
+const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const monthOf = (iso: string) => `${MONTH_NAMES[Number(iso.slice(5, 7)) - 1]} ${iso.slice(0, 4)}`;
 
 export function DateLines({
   series,
@@ -65,8 +70,11 @@ export function DateLines({
   maxGapDays = 75,
   animate = false,
   zeroLine = true,
+  markers = [],
 }: {
   series: DateLineSeries[];
+  /** Vertical reference lines for events or definition changes (e.g. a methodology break). Optional; drawn only inside the visible range. */
+  markers?: { date: string; label: string }[];
   /** First day shown (ISO), or null for the earliest observation. */
   from: string | null;
   /** Last day shown (ISO); step series are carried out to it. */
@@ -103,7 +111,9 @@ export function DateLines({
           const stale = s.kind === "observed" && o !== null && gap > maxGapDays;
           const detail = !o
             ? "not yet recorded"
-            : s.kind === "step"
+            : s.monthly
+              ? `${stale ? "no figure for " + gap + " days; last was for" : "figure for"} ${monthOf(o.date)}`
+              : s.kind === "step"
               ? sameDay ? "new on this day" : `in effect since ${formatDate(o.date)}`
               : sameDay ? "observed this day" : `${stale ? "no observation for " + gap + " days; last was" : "latest observation"} ${formatDate(o.date)}`;
           return (
@@ -142,6 +152,11 @@ export function DateLines({
           />
           <YAxis tickFormatter={yTick(unit, axisDecimals)} tick={AXIS} tickLine={false} axisLine={false} width={unit.trim().length > 1 ? 62 : 46} />
           {zeroLine && <ReferenceLine y={0} stroke="var(--chart-axis)" strokeWidth={1} />}
+          {markers
+            .filter((m) => toTs(m.date) >= built.fromTs && toTs(m.date) <= built.toTs)
+            .map((m) => (
+              <ReferenceLine key={m.date} x={toTs(m.date)} stroke="var(--chart-axis)" strokeDasharray="2 3" label={{ value: m.label, position: "insideTopLeft", fill: "var(--chart-axis)", fontSize: 11 }} />
+            ))}
           <Tooltip content={tip} cursor={{ stroke: "var(--chart-axis)", strokeDasharray: "3 3" }} />
           {built.segments.map((seg) => {
             const spec = specs.get(seg.base);

@@ -91,6 +91,7 @@ describe("isolation policy (static scan of every test file)", () => {
         "scripts/ingestYahooGold.ts",
         "scripts/reconcileInflationLedger.ts", // Phase F.2e-Prep: read-only verification harness
         "scripts/checkCpiLedgerStatus.ts", // Phase F.2f: read-only ingestion/currency status
+        "scripts/fetchInterestRateSources.ts", // Interest Rates dashboard: read-only SBP/EasyData source acquisition (no database)
       ].sort(),
     );
     for (const f of credentialScripts) {

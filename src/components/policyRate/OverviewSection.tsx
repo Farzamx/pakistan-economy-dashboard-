@@ -71,7 +71,7 @@ export default function OverviewSection({ kpi, model }: { kpi: SbpIndicatorResul
         )}
         {tb && (
           <KpiTile
-            label="3-month T-bill yield"
+            label="3-month T-bill weighted-average yield"
             kind="Market yield"
             value={<AnimatedFigure value={pct(tb.value)} />}
             period={`Auction of ${formatDate(tb.date)}`}

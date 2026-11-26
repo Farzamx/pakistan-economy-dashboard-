@@ -132,13 +132,12 @@ describe("the scripts are safe", () => {
     expect(build).toMatch(/import\.meta\.url === pathToFileURL\(path\.resolve\(process\.argv\[1\]\)\)\.href/);
   });
 
-  it("the fetcher reads only the EasyData key from .env.local, never logs it, and writes no database", () => {
-    expect(fetcher).toMatch(/parseDotenv\(readFileSync\(path\.resolve\("\.env\.local"\)\)\)/);
-    expect(fetcher).toMatch(/env\.SBP_EASYDATA_API_KEY/);
-    expect(fetcher).not.toMatch(/process\.env/);
+  it("the fetcher starts only through the guarded entry (refuses under tests), reads only the EasyData key, never logs it, and writes no database", () => {
+    expect(fetcher).toMatch(/runIfEntryPoint\(\{ filename: __filename, requireMain: typeof require !== "undefined" && require\.main === module \}, \(\) => \{\s+enterScript\(/);
+    expect(fetcher).not.toMatch(/from "dotenv"/);
+    expect([...new Set(fetcher.match(/process\.env\.[A-Z_]+/g) ?? [])]).toEqual(["process.env.SBP_EASYDATA_API_KEY"]);
     expect(fetcher).not.toMatch(/supabase/i);
     expect(fetcher).not.toMatch(/console\.(log|error)\([^)]*\bkey\b/);
-    expect(fetcher).toMatch(/import\.meta\.url === pathToFileURL\(path\.resolve\(process\.argv\[1\]\)\)\.href/);
   });
 
   it("fetcher helpers: argument parsing, file-type sniffing, verbatim CSV", () => {
