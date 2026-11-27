@@ -13,10 +13,30 @@
 // freshness improvement on top of the static fallback, not a new
 // dependency the KPI fetchers can fail on.
 
+//
+// WRITE CONTROL (Stage 2 remediation, 27 Nov 2026; docs/market-snapshot-writes.md): writing used to happen on every successful live fetch, i.e. during
+// page rendering, builds and ISR revalidation, so any visitor or crawler could trigger it. Writes are now OPT-IN: savePersistedSnapshot() only writes
+// inside withSnapshotWrites(), and the only caller of withSnapshotWrites() is the CRON_SECRET-authenticated /api/cron/global-markets-freshness job, which
+// already re-fetches every market symbol live once an hour. Rendering still READS the persisted snapshots as a fallback, exactly as before.
+
+import { AsyncLocalStorage } from "node:async_hooks";
 import { createPublicDataClient } from "@/lib/supabase/publicDataClient";
 import type { Kpi } from "@/data/kpiData";
 
+const snapshotWrites = new AsyncLocalStorage<true>();
+
+/** Runs `fn` with snapshot writes enabled for everything it awaits. Only the authenticated scheduled job may call this. */
+export function withSnapshotWrites<T>(fn: () => Promise<T>): Promise<T> {
+  return snapshotWrites.run(true, fn);
+}
+
+/** True only inside withSnapshotWrites(): never during page rendering, builds or ISR revalidation. */
+export function snapshotWritesEnabled(): boolean {
+  return snapshotWrites.getStore() === true;
+}
+
 export async function savePersistedSnapshot(symbolKey: string, kpi: Kpi, source: string): Promise<void> {
+  if (!snapshotWritesEnabled()) return; // a render, build or revalidation: read-only
   try {
     const supabase = createPublicDataClient();
     const { error } = await supabase.rpc("upsert_market_fallback_snapshot", {

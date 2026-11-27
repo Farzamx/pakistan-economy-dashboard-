@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { auditGlobalMarketsFreshness } from "@/lib/data/globalMarketsFreshnessAudit";
 import { logCronRun } from "@/lib/cronLogging";
+import { withSnapshotWrites } from "@/lib/marketFallbackSnapshot";
+import { getPakEtfKpi } from "@/lib/data/yfinance";
 
 // Global Markets Freshness Audit cron — Phase XX (Global Markets Data
 // Freshness Audit & Permanent Fix).
@@ -28,7 +30,14 @@ export async function GET(request: Request) {
   }
 
   const startedAt = new Date();
-  const entries = await auditGlobalMarketsFreshness();
+  // The ONLY place market fallback snapshots are written (src/lib/marketFallbackSnapshot.ts, docs/market-snapshot-writes.md): the audit already
+  // re-fetches every market symbol and the 4 FX pairs live, and inside withSnapshotWrites() each successful live value is upserted (one row per
+  // symbol, as before). The Pakistan ETF is not part of the audit, so it is refreshed here too. Page rendering, builds and revalidation never write.
+  const entries = await withSnapshotWrites(async () => {
+    const audited = await auditGlobalMarketsFreshness();
+    await getPakEtfKpi().catch(() => null);
+    return audited;
+  });
 
   const summary = {
     checked: entries.length,

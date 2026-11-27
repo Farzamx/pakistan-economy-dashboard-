@@ -33,7 +33,11 @@ if (mode === "nav-json") {
 }
 if (mode !== "build" && mode !== "start") throw new Error("usage: build | start | nav-json  [--copy] [--port N]");
 
-const env = isolatedChildEnv(REPO, process.env, { NEXT_TELEMETRY_DISABLED: "1", NEXT_PUBLIC_GA_MEASUREMENT_ID: "", NEXT_PUBLIC_SUPABASE_URL: MOCK, ADMIN_USER_ID: ADMIN_TEST_USER_ID });
+// GA is off by default. PEIC_E2E_GA_ID (a GA4 measurement ID, which is public by design: it is in every page's HTML) turns it on in the isolated build so
+// the analytics privacy check can inspect what gtag.js would send; that check aborts every request to Google's collection endpoints.
+const GA_ID = process.env.PEIC_E2E_GA_ID ?? "";
+if (GA_ID && !/^G-[A-Z0-9]{4,16}$/.test(GA_ID)) throw new Error("PEIC_E2E_GA_ID must be a GA4 measurement ID (G-...)");
+const env = isolatedChildEnv(REPO, process.env, { NEXT_TELEMETRY_DISABLED: "1", NEXT_PUBLIC_GA_MEASUREMENT_ID: GA_ID, NEXT_PUBLIC_SUPABASE_URL: MOCK, ADMIN_USER_ID: ADMIN_TEST_USER_ID });
 const fp = loadProductionFingerprints(REPO);
 assertEnvIsolated(env as Record<string, string | undefined>, fp);
 const uncovered = [...fp.names].filter((n) => env[n] === undefined);
