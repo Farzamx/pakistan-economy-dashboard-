@@ -156,7 +156,7 @@ const LINKS: DrawerLink[] = [
   },
   {
     navKey: "indicators",
-    href: "/pakistan-economic-indicators",
+    href: "/overview#home-indicators",
     group: "explore",
     icon: (
       <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">

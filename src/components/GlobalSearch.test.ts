@@ -95,8 +95,9 @@ describe("the search index is complete", () => {
 describe("a guest sees protected destinations in search, and only as labels", () => {
   it("protected destinations are in the index (the guest dialog, not hiding, is the protection)", () => {
     const protectedEntries = SITE_SEARCH_INDEX.filter((e) => requiresLogin(e.href));
-    expect(protectedEntries.length).toBeGreaterThan(100);
-    for (const href of ["/pakistan-bond-yields", "/budget", "/download-datasets", "/macro-intelligence", "/fed-funds-rate", "/budget/where-does-tax-money-go"]) {
+    // SEO Stage 2 opened the indicator pages; tools, budget, research, calendar and account destinations stay protected (and searchable).
+    expect(protectedEntries.length).toBeGreaterThan(60);
+    for (const href of ["/comparisons", "/budget", "/download-datasets", "/macro-intelligence", "/decision-support-lab", "/budget/where-does-tax-money-go"]) {
       expect(protectedEntries.some((e) => hrefPath(e.href) === href), href).toBe(true);
     }
   });
@@ -138,7 +139,7 @@ describe("the search index is well formed", () => {
 describe("searches lead where they should", () => {
   it.each([
     ["core inflation", "/pakistan-core-inflation"], ["nfne", "/pakistan-core-inflation"], ["food inflation", "/pakistan-food-inflation"], ["inflation rate", "/inflation-rate-pakistan"],
-    ["wholesale", "/pakistan-wholesale-inflation"], ["wpi", "/pakistan-wholesale-inflation"], ["weekly inflation", "/weekly-inflation-pakistan"], ["spi index", "/spi-index-pakistan"],
+    ["wholesale", "/pakistan-wholesale-inflation"], ["wpi", "/pakistan-wholesale-inflation"], ["weekly inflation", "/weekly-inflation-pakistan"], ["spi index", "/weekly-inflation-pakistan"], ["kibor", "/pakistan-kibor-rates"], ["public debt", "/pakistan-government-debt"],
     ["fed funds", "/fed-funds-rate"], ["federal funds rate", "/fed-funds-rate"], ["us policy rate", "/fed-funds-rate"], ["interest", "/pakistan-interest-rate"],
     ["t-bills", "/pakistan-bond-yields"], ["treasury bills", "/pakistan-bond-yields"], ["pib", "/pakistan-bond-yields"], ["yield curve", "/pakistan-bond-yields"],
     ["federal budget", "/budget"], ["gold", "/gold-price-pakistan"], ["glossary", "/academy/glossary"], ["emergency fund", "/decision-support-lab/emergency-fund-planner"],

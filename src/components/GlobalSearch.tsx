@@ -85,6 +85,11 @@ export const SEARCH_INDEX: SearchEntry[] = [
     ...(p.slug === "pakistan-core-inflation" || p.slug === "pakistan-food-inflation" ? { keywords: CORE_INFLATION_SEARCH_ALIASES } : {}),
     ...(p.slug === "pakistan-bond-yields" ? { keywords: BOND_YIELDS_SEARCH_ALIASES } : {}),
     ...(p.slug === "pakistan-interest-rate" ? { keywords: ["Policy Rate", "SBP Rate"] } : {}),
+    // SEO Stage 2: the SPI index page was consolidated into the weekly page (src/lib/seoRedirects.ts); the new pages carry their common query terms.
+    ...(p.slug === "weekly-inflation-pakistan" ? { keywords: ["SPI Index", "Sensitive Price Indicator", "SPI"] } : {}),
+    ...(p.slug === "pakistan-kibor-rates" ? { keywords: ["KIBOR", "Karachi Interbank Offered Rate", "KIBOR Today"] } : {}),
+    ...(p.slug === "pakistan-t-bill-rates" ? { keywords: ["T-Bill Rates", "Treasury Bill Rates", "MTB Auction"] } : {}),
+    ...(p.slug === "pakistan-government-debt" ? { keywords: ["Public Debt", "Debt to GDP", "Government Debt", "FRDLA"] } : {}),
   })),
 ];
 

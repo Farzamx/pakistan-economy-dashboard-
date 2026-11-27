@@ -38,7 +38,7 @@ export default async function WeeklyInflationPage() {
   const yoyPpChange = latest && previous ? latest.yoyPct - previous.yoyPct : null;
 
   // Primary chart is the YoY inflation RATE over time, not the raw index
-  // level — the index itself has its own dedicated page (see relatedLinks).
+  // level. The index level, formerly on /spi-index-pakistan (now a 301 to this page, src/lib/seoRedirects.ts), is shown in the stats and explained below.
   const chartData: TrendPoint[] | null = points.length > 0
     ? points.map((p) => ({ month: formatDateLabel(p.date), value: p.yoyPct }))
     : null;
@@ -79,7 +79,10 @@ export default async function WeeklyInflationPage() {
         latest
           ? `As of the week ended ${formatDateLabel(latest.date)}, weekly SPI inflation is running at ${latest.yoyPct >= 0 ? "+" : ""}${latest.yoyPct.toFixed(1)}% year-over-year, compared to monthly CPI inflation of ${cpi.kpi.value}%. The two measures track each other closely over time but can diverge week-to-week and month-to-month because SPI's basket is narrower (51 essential items vs. CPI's much broader consumption basket) and far more exposed to short-term swings in perishables and fuel.`
           : "SPI and CPI track similar underlying price trends over time, but SPI's narrower, more volatile basket (51 essential items, dominated by food and fuel) means it can diverge from the broader monthly CPI figure week to week.",
-        "Methodologically, SPI is a Laspeyres-type fixed-basket index, recalculated weekly from freshly collected retail prices — it does not extrapolate or estimate; every weekly reading is a fresh, independent survey result from PBS field staff. The underlying index level (rather than the inflation rate shown here) has its own dedicated page — see Related Pages below.",
+        "Methodologically, SPI is a Laspeyres-type fixed-basket index, recalculated weekly from freshly collected retail prices — it does not extrapolate or estimate; every weekly reading is a fresh, independent survey result from PBS field staff.",
+        latest
+          ? `The index level itself is set to 100 for the 2015-16 base year. At ${latest.value.toFixed(2)} for the week ended ${formatDateLabel(latest.date)}, the SPI basket costs about ${(latest.value / 100).toFixed(2)} times what it cost in 2015-16. The level matters mainly through its changes: the week-over-week move for short-term pressure and the year-over-year change, the inflation rate at the top of this page.`
+          : "The index level itself is set to 100 for the 2015-16 base year, so a reading of 357 would mean the SPI basket costs 3.57 times what it cost in 2015-16. The level matters mainly through its changes: week over week for short-term pressure, and year over year for the inflation rate.",
       ]}
       whyItMatters={[
         "Because food and fuel dominate the SPI basket, it disproportionately reflects the cost pressure felt by lower-income households — the same households CPI's 'lowest quintile' sub-index is designed to track, but available a full month sooner.",
@@ -97,8 +100,10 @@ export default async function WeeklyInflationPage() {
           answer: "SPI is a weekly survey of 51 essential items, published every Friday by PBS. CPI is the broader, official monthly inflation measure covering the full consumption basket. SPI is faster but narrower; CPI is the standard headline inflation figure used for policy decisions.",
         },
         {
-          question: "What's the difference between this page and the SPI Index page?",
-          answer: "This page shows the SPI year-over-year inflation RATE (%) — how fast prices are rising. The separate SPI Index page shows the raw index level itself (base 2015-16=100), which is the underlying number the inflation rate is calculated from.",
+          question: "What is Pakistan's current SPI index level, and what does base 2015-16=100 mean?",
+          answer: latest
+            ? `The Weekly Sensitive Price Indicator (Combined group) stood at ${latest.value.toFixed(2)} for the week ended ${formatDateLabel(latest.date)}. PBS sets the average price of the SPI basket in 2015-16 equal to 100, so ${latest.value.toFixed(2)} means the basket costs about ${(latest.value / 100).toFixed(2)} times its 2015-16 price. The year-over-year inflation rate on this page is the percentage change in this index from the same week a year earlier.`
+            : "PBS sets the average price of the SPI basket in 2015-16 equal to 100, so an index of 357 means the basket costs about 3.57 times its 2015-16 price. The year-over-year inflation rate on this page is the percentage change in the index from the same week a year earlier.",
         },
         {
           question: "Where does this data come from?",

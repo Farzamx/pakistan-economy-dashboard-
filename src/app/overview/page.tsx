@@ -10,6 +10,8 @@ import HashScrollRestore from "@/components/HashScrollRestore";
 import { KeyFigureTiles, MacroSummaryCard, MarketsStrip, OverviewHeader, SecondaryStrip, type KeyFigure, type MarketCell, type SecondaryFigure } from "@/components/home/OverviewSummary";
 import { OverviewHeadlines, ReleaseCalendar } from "@/components/home/OverviewFeeds";
 import { ExplorePlatform, OverviewFooter } from "@/components/home/ExplorePlatform";
+import { OVERVIEW_FAQ, OverviewAbout } from "@/components/home/OverviewAbout";
+import { indicatorJsonLd, serializeJsonLd } from "@/lib/seoStructuredData";
 import IndicatorsTable from "@/components/home/IndicatorsTable";
 import { buildIndicatorRows, INDICATOR_CALENDAR_SERIES, slugForKpi } from "@/components/home/buildHomeData";
 import { toNumericValue } from "@/components/home/indicatorRows";
@@ -693,6 +695,9 @@ export default async function Home() {
           </section>
 
           <ExplorePlatform />
+
+          <OverviewAbout />
+          <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(indicatorJsonLd({ title: "Pakistan Economy Dashboard", canonicalPath: "/overview", faq: OVERVIEW_FAQ })) }} />
 
           <OverviewFooter sources={<DataSourcesModal kpis={allKpis} appearance="footer" />} />
         </div>

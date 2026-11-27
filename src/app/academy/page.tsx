@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
+import { SITE_URL } from "@/lib/seoConfig";
 import Link from "next/link";
 import { T } from "@/components/T";
 import { CATEGORY_META, ALL_LESSONS, getCategoryColors } from "@/lib/academy/registry";
 import { LEARNING_PATHS } from "@/lib/academy/paths";
 
 export const metadata: Metadata = {
+  alternates: { canonical: `${SITE_URL}/academy` },
   title: "Economic Academy — Learn Pakistan Economics | Pakistan Economy Dashboard",
   description:
     "Free multilingual economics education — beginner to advanced, Pakistan-focused. Inflation, GDP, monetary policy, fiscal policy, Islamic finance, and 30+ categories.",

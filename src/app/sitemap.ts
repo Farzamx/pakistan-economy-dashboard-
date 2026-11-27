@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { isPublicUrl } from "@/lib/accessPolicy";
+import { SEO_REDIRECTS } from "@/lib/seoRedirects";
 import { SITE_URL, SEO_PAGES } from "@/lib/seoConfig";
 import { COMPARISONS, SECTOR_COMPOSITION } from "@/lib/comparisons/comparisonRegistry";
 import { BUDGET_CATEGORIES, BUDGET_EXTRA_SEO_SLUGS } from "@/lib/budget/budgetRegistry";
@@ -9,30 +10,24 @@ import { PROVINCIAL_SEO_SLUGS } from "@/lib/provincial/provincialBudgetRegistry"
 // export at the bottom). The complete list is kept in fullSitemap() so a section can be opened to the public later; it is never served. A sitemap that
 // advertised a protected URL would only point crawlers at the sign-in page.
 export async function fullSitemap(): Promise<MetadataRoute.Sitemap> {
-  const now = new Date();
-
   return [
     {
       url: `${SITE_URL}/overview`,
-      lastModified: now,
       changeFrequency: "daily",
       priority: 1.0,
     },
     {
       url: SITE_URL,
-      lastModified: now,
       changeFrequency: "daily",
       priority: 0.9,
     },
     {
       url: `${SITE_URL}/site-map`,
-      lastModified: now,
       changeFrequency: "monthly" as const,
       priority: 0.5,
     },
     ...SEO_PAGES.map((page) => ({
       url: `${SITE_URL}/${page.slug}`,
-      lastModified: now,
       changeFrequency: "daily" as const,
       priority: 0.8,
     })),
@@ -46,13 +41,11 @@ export async function fullSitemap(): Promise<MetadataRoute.Sitemap> {
     // are public, so the hub has no sitemap entry of its own.
     ...COMPARISONS.map((c) => ({
       url: `${SITE_URL}/comparisons/${c.slug}`,
-      lastModified: now,
       changeFrequency: "daily" as const,
       priority: 0.7,
     })),
     {
       url: `${SITE_URL}/comparisons/${SECTOR_COMPOSITION.slug}`,
-      lastModified: now,
       changeFrequency: "daily" as const,
       priority: 0.7,
     },
@@ -60,13 +53,11 @@ export async function fullSitemap(): Promise<MetadataRoute.Sitemap> {
     // category + extra pages below are public.
     ...BUDGET_CATEGORIES.map((c) => ({
       url: `${SITE_URL}/budget/${c.slug}`,
-      lastModified: now,
       changeFrequency: "yearly" as const,
       priority: 0.7,
     })),
     ...BUDGET_EXTRA_SEO_SLUGS.map((slug) => ({
       url: `${SITE_URL}/budget/${slug}`,
-      lastModified: now,
       changeFrequency: "yearly" as const,
       priority: 0.7,
     })),
@@ -79,14 +70,17 @@ export async function fullSitemap(): Promise<MetadataRoute.Sitemap> {
     // exact problem this sitemap exists to avoid.
     ...PROVINCIAL_SEO_SLUGS.filter((slug) => slug !== "rankings").map((slug) => ({
       url: `${SITE_URL}/provincial-budget/${slug}`,
-      lastModified: now,
       changeFrequency: "yearly" as const,
       priority: 0.7,
     })),
   ];
 }
 
-/** What is published at /sitemap.xml: the complete list, reduced to the pages open to everyone (the Overview and the landing page). */
+/**
+ * What is published at /sitemap.xml: the complete list, reduced to the pages open to everyone (src/lib/accessPolicy.ts), never a redirected URL, and
+ * without a lastModified date: the build time is not when a page changed, so no date is claimed (SEO Stage 2).
+ */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  return (await fullSitemap()).filter((entry) => isPublicUrl(entry.url));
+  const redirected = new Set(Object.keys(SEO_REDIRECTS).map((p) => `${SITE_URL}${p}`));
+  return (await fullSitemap()).filter((entry) => isPublicUrl(entry.url) && !redirected.has(entry.url));
 }

@@ -341,7 +341,7 @@ describe("the supporting page sections (How downloads work, Not available)", () 
       expect(html).toContain(x.name);
       expect(html).toContain(x.shortReason.replace(/'/g, "&#x27;"));
     }
-    expect(html).toContain('href="/pakistan-economic-indicators"');
+    expect(html).toContain('href="/overview"'); // the indicators hub was consolidated into /overview (SEO Stage 2)
     expect(html).toContain("Browse all indicators");
   });
 });

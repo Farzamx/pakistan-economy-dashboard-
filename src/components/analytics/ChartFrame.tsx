@@ -35,7 +35,7 @@ export function ChartFrame({
   className?: string;
 }) {
   return (
-    <figure className={`min-w-0 ${className}`}>
+    <figure className={`min-w-0 ${className}`} data-chart={title}>
       <figcaption className="mb-2">
         <h3 className="text-[15px] font-semibold text-pe-text">{title}</h3>
         {howToRead && <HowToRead>{howToRead}</HowToRead>}

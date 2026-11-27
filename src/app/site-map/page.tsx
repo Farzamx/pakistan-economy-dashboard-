@@ -5,6 +5,7 @@ import { COMPARISONS, SECTOR_COMPOSITION } from "@/lib/comparisons/comparisonReg
 import { BUDGET_CATEGORIES, BUDGET_EXTRA_SEO_SLUGS } from "@/lib/budget/budgetRegistry";
 import { PROVINCIAL_SEO_SLUGS } from "@/lib/provincial/provincialBudgetRegistry";
 import { T } from "@/components/T";
+import { requiresLogin } from "@/lib/accessPolicy";
 
 export const metadata: Metadata = {
   title: `Site Map | ${SITE_NAME}`,
@@ -73,16 +74,21 @@ function Section({ title, links }: { title: React.ReactNode; links: { href: stri
         {title}
       </h2>
       <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-        {links.map((link) => (
-          <li key={link.href}>
-            <Link
-              href={link.href}
-              className="block text-sm text-white/65 light:text-slate-600 hover:text-neon-blue transition-colors"
-            >
-              {link.label} →
-            </Link>
-          </li>
-        ))}
+        {links.map((link) => {
+          // A destination that needs an account is labelled and not followed by crawlers (it would only lead them to the sign-in page).
+          const members = requiresLogin(link.href);
+          return (
+            <li key={link.href}>
+              <Link
+                href={link.href}
+                rel={members ? "nofollow" : undefined}
+                className="block text-sm text-white/65 light:text-slate-600 hover:text-neon-blue transition-colors"
+              >
+                {link.label} →{members && <span className="ms-1.5 text-xs text-white/40 light:text-slate-400">members</span>}
+              </Link>
+            </li>
+          );
+        })}
       </ul>
     </section>
   );

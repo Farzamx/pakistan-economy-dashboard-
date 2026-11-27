@@ -1,0 +1,33 @@
+{
+  "purpose": "Official source files behind the Pakistan Government Debt dataset. Verified by scripts/buildGovernmentDebt.ts before any parsing.",
+  "files": [
+    {
+      "path": "easydata/TS_GP_BAM_PKDLP_Q.csv",
+      "institution": "State Bank of Pakistan",
+      "url": "https://easydata.sbp.org.pk/api/v1/series/TS_GP_BAM_PKDLP_Q.{PDLS00010,PDLS00020,PDLS00030,PDLS00040,PDLS00050,PDLS00060,PDLS00070,PDLS00080,PDLS00090,PDLS00100,PDLS00110,PDLS00120,PDLS00130,PDLS00140,PDLS00150,PDLS00160,PDLS00170,PDLS00180,PDLS00190,PDLS00200,PDLS00210,PDLS00220,PDLS00230,PDLS00240,PDLS00250,PDLS00260,PDLS00280}/data?start_date=1990-01-01&format=json (API key omitted)",
+      "description": "SBP EasyData dataset TS_GP_BAM_PKDLP_Q (Pakistan Debt and Liabilities Summary), every series, verbatim",
+      "retrievedOn": "2026-11-27",
+      "sha256": "1435387d1f4885c8eccf547d39d4738fa6a2df1a83561607a3dfccd9ee439801",
+      "bytes": 176170,
+      "rows": 1809
+    },
+    {
+      "path": "mof/Annual_Debt_Review_FY26.pdf",
+      "institution": "Ministry of Finance",
+      "url": "https://finance.gov.pk/dpco/Annual_Debt_Review_FY26.pdf",
+      "description": "Annual Debt Review FY-26 (Debt Policy Coordination Office)",
+      "retrievedOn": "2026-11-27",
+      "sha256": "74bb4fae336c16c7aa4c2539ef8c8af53610b32fc40e35ed733aaddebb283566",
+      "bytes": 4062587
+    },
+    {
+      "path": "sbp/Summary.pdf",
+      "institution": "State Bank of Pakistan",
+      "url": "https://www.sbp.org.pk/assets/document/Summary.pdf",
+      "description": "Pakistan's Debt and Liabilities - Summary (latest five quarters, definitions, P/R flags)",
+      "retrievedOn": "2026-11-27",
+      "sha256": "08c8026df1f67167a518d7f47b493a55a17d42b35b10829b867e68b7ea189ee0",
+      "bytes": 378892
+    }
+  ]
+}

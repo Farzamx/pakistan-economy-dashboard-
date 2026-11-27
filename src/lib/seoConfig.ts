@@ -2,6 +2,8 @@
 // Kept separate from layout.tsx's own copies to avoid touching the existing
 // root layout — these are additive, standalone pages.
 
+import { resolveSeoRedirect } from "@/lib/seoRedirects";
+
 export const SITE_URL = "https://www.pakeconintel.com";
 export const SITE_NAME = "Pakistan Economic Intelligence Center";
 
@@ -20,9 +22,11 @@ export const SEO_PAGES: SeoPageMeta[] = [
   { slug: "foreign-exchange-reserves-pakistan", label: "Pakistan Foreign Exchange Reserves" },
   { slug: "current-account-deficit-pakistan", label: "Pakistan Current Account Deficit" },
   { slug: "pakistan-stock-market", label: "Pakistan Stock Market (PSX)" },
-  { slug: "pakistan-economic-indicators", label: "Pakistan Economic Indicators" },
   { slug: "pakistan-bond-yields", label: "Pakistan Bond Yields" },
-  { slug: "pakistan-economic-dashboard", label: "Pakistan Economic Dashboard" },
+  // SEO Stage 2 (27 Nov 2026): market-data pages built on the validated interest-rate datasets, and the government debt page.
+  { slug: "pakistan-kibor-rates", label: "KIBOR Rates in Pakistan" },
+  { slug: "pakistan-t-bill-rates", label: "Pakistan T-Bill Rates" },
+  { slug: "pakistan-government-debt", label: "Pakistan Government Debt" },
   // SEO Phase 1 (added once each had verified, real data behind it)
   { slug: "pakistan-remittances", label: "Pakistan Remittances" },
   { slug: "gold-price-pakistan", label: "Gold Price in Pakistan" },
@@ -35,7 +39,6 @@ export const SEO_PAGES: SeoPageMeta[] = [
   { slug: "eur-to-pkr-exchange-rate", label: "EUR to PKR Exchange Rate" },
   { slug: "gbp-to-pkr-exchange-rate", label: "GBP to PKR Exchange Rate" },
   { slug: "weekly-inflation-pakistan", label: "Pakistan Weekly Inflation (SPI)" },
-  { slug: "spi-index-pakistan", label: "Pakistan SPI Index" },
   // Complete Indicator Coverage & SEO Expansion — every KPI shown anywhere
   // in PEIC that previously had no detail page (see KPI_SEO_SLUG's comment).
   { slug: "pakistan-core-inflation", label: "Pakistan Core Inflation (NFNE)" },
@@ -105,10 +108,28 @@ export const KPI_SEO_SLUG: Record<string, string> = {
 };
 
 export function relatedSeoLinks(excludeSlug: string, slugs: string[]): { href: string; label: string }[] {
-  return SEO_PAGES.filter((p) => slugs.includes(p.slug) && p.slug !== excludeSlug).map((p) => ({
-    href: `/${p.slug}`,
-    label: p.label,
-  }));
+  return toLinks(excludeSlug, slugs);
+}
+
+/** Label of a link destination that is not an SEO indicator page. */
+const OTHER_LABELS: Record<string, string> = { overview: "Pakistan Economy Dashboard (Overview)" };
+
+/**
+ * Slugs -> links: each slug is first followed through the SEO consolidations (src/lib/seoRedirects.ts) so no link points at a redirected URL, then
+ * duplicates and the page itself are dropped, and only known destinations are kept.
+ */
+function toLinks(selfSlug: string, slugs: readonly string[]): { href: string; label: string }[] {
+  const seen = new Set<string>();
+  const out: { href: string; label: string }[] = [];
+  for (const raw of slugs) {
+    const slug = resolveSeoRedirect(`/${raw}`).slice(1);
+    if (slug === selfSlug || seen.has(slug)) continue;
+    const label = SEO_PAGES.find((p) => p.slug === slug)?.label ?? OTHER_LABELS[slug];
+    if (!label) continue;
+    seen.add(slug);
+    out.push({ href: `/${slug}`, label });
+  }
+  return out;
 }
 
 // Comprehensive bidirectional relationship graph — defines which indicator
@@ -120,9 +141,34 @@ export function relatedSeoLinks(excludeSlug: string, slugs: string[]): { href: s
 //   - Max 8 related slugs per page (enough to be useful, not overwhelming)
 //   - Order by thematic proximity, not alphabetically
 //   - If A lists B, B should list A (bidirectional consistency)
-//   - Hub pages (economic-indicators, economic-dashboard) appear on most pages
-//     because they are the natural "see all" destination
+//   - The Overview dashboard ("overview") appears on most pages because it is the natural "see all" destination (the two former hub pages
+//     were consolidated into it, see src/lib/seoRedirects.ts)
 export const RELATED_INDICATORS: Record<string, string[]> = {
+  "pakistan-kibor-rates": [
+    "pakistan-interest-rate",
+    "pakistan-t-bill-rates",
+    "pakistan-bond-yields",
+    "inflation-rate-pakistan",
+    "pakistan-private-credit-growth",
+    "pakistan-money-supply",
+  ],
+  "pakistan-t-bill-rates": [
+    "pakistan-interest-rate",
+    "pakistan-kibor-rates",
+    "pakistan-bond-yields",
+    "pakistan-government-debt",
+    "pakistan-fiscal-deficit",
+    "inflation-rate-pakistan",
+  ],
+  "pakistan-government-debt": [
+    "pakistan-fiscal-deficit",
+    "pakistan-external-debt",
+    "pakistan-t-bill-rates",
+    "pakistan-bond-yields",
+    "gdp-growth-pakistan",
+    "pakistan-interest-rate",
+    "foreign-exchange-reserves-pakistan",
+  ],
   "gdp-growth-pakistan": [
     "inflation-rate-pakistan",
     "pakistan-fiscal-deficit",
@@ -130,8 +176,7 @@ export const RELATED_INDICATORS: Record<string, string[]> = {
     "pakistan-stock-market",
     "fdi-in-pakistan",
     "pakistan-lsm-growth",
-    "pakistan-economic-indicators",
-    "pakistan-economic-dashboard",
+    "overview",
   ],
   "inflation-rate-pakistan": [
     "pakistan-interest-rate",
@@ -139,12 +184,13 @@ export const RELATED_INDICATORS: Record<string, string[]> = {
     "pakistan-food-inflation",
     "pakistan-core-inflation",
     "pakistan-wholesale-inflation",
-    "spi-index-pakistan",
     "usd-pkr-exchange-rate",
     "gdp-growth-pakistan",
-    "pakistan-economic-indicators",
+    "overview",
   ],
   "pakistan-interest-rate": [
+    "pakistan-kibor-rates",
+    "pakistan-t-bill-rates",
     "inflation-rate-pakistan",
     "pakistan-bond-yields",
     "usd-pkr-exchange-rate",
@@ -153,7 +199,7 @@ export const RELATED_INDICATORS: Record<string, string[]> = {
     "gold-price-pakistan",
     "pakistan-money-supply",
     "pakistan-private-credit-growth",
-    "pakistan-economic-indicators",
+    "overview",
   ],
   "usd-pkr-exchange-rate": [
     "foreign-exchange-reserves-pakistan",
@@ -164,7 +210,7 @@ export const RELATED_INDICATORS: Record<string, string[]> = {
     "gbp-to-pkr-exchange-rate",
     "sar-to-pkr-exchange-rate",
     "pakistan-real-effective-exchange-rate",
-    "pakistan-economic-indicators",
+    "overview",
   ],
   "foreign-exchange-reserves-pakistan": [
     "usd-pkr-exchange-rate",
@@ -173,7 +219,7 @@ export const RELATED_INDICATORS: Record<string, string[]> = {
     "pakistan-remittances",
     "pakistan-trade-deficit",
     "pakistan-bank-reserves",
-    "pakistan-economic-indicators",
+    "overview",
   ],
   "current-account-deficit-pakistan": [
     "pakistan-trade-deficit",
@@ -183,9 +229,11 @@ export const RELATED_INDICATORS: Record<string, string[]> = {
     "fdi-in-pakistan",
     "pakistan-external-debt",
     "pakistan-real-effective-exchange-rate",
-    "pakistan-economic-indicators",
+    "overview",
   ],
   "pakistan-bond-yields": [
+    "pakistan-t-bill-rates",
+    "pakistan-kibor-rates",
     "pakistan-interest-rate",
     "pakistan-fiscal-deficit",
     "pakistan-stock-market",
@@ -193,7 +241,7 @@ export const RELATED_INDICATORS: Record<string, string[]> = {
     "usd-pkr-exchange-rate",
     "us-10-year-treasury-yield",
     "fed-funds-rate",
-    "pakistan-economic-indicators",
+    "overview",
   ],
   "pakistan-stock-market": [
     "pakistan-bond-yields",
@@ -201,27 +249,7 @@ export const RELATED_INDICATORS: Record<string, string[]> = {
     "fdi-in-pakistan",
     "usd-pkr-exchange-rate",
     "pakistan-interest-rate",
-    "pakistan-economic-indicators",
-    "pakistan-economic-dashboard",
-  ],
-  "pakistan-economic-indicators": [
-    "gdp-growth-pakistan",
-    "inflation-rate-pakistan",
-    "pakistan-interest-rate",
-    "foreign-exchange-reserves-pakistan",
-    "usd-pkr-exchange-rate",
-    "pakistan-trade-deficit",
-    "pakistan-external-debt",
-    "pakistan-economic-dashboard",
-  ],
-  "pakistan-economic-dashboard": [
-    "pakistan-economic-indicators",
-    "gdp-growth-pakistan",
-    "inflation-rate-pakistan",
-    "usd-pkr-exchange-rate",
-    "foreign-exchange-reserves-pakistan",
-    "pakistan-interest-rate",
-    "pakistan-stock-market",
+    "overview",
   ],
   "pakistan-remittances": [
     "current-account-deficit-pakistan",
@@ -229,7 +257,7 @@ export const RELATED_INDICATORS: Record<string, string[]> = {
     "foreign-exchange-reserves-pakistan",
     "gbp-to-pkr-exchange-rate",
     "sar-to-pkr-exchange-rate",
-    "pakistan-economic-indicators",
+    "overview",
   ],
   "gold-price-pakistan": [
     "usd-pkr-exchange-rate",
@@ -238,15 +266,16 @@ export const RELATED_INDICATORS: Record<string, string[]> = {
     "pakistan-bond-yields",
     "silver-price-pakistan",
     "us-dollar-index",
-    "pakistan-economic-indicators",
+    "overview",
   ],
   "pakistan-external-debt": [
+    "pakistan-government-debt",
     "foreign-exchange-reserves-pakistan",
     "current-account-deficit-pakistan",
     "pakistan-fiscal-deficit",
     "usd-pkr-exchange-rate",
     "gdp-growth-pakistan",
-    "pakistan-economic-indicators",
+    "overview",
   ],
   "pakistan-trade-deficit": [
     "current-account-deficit-pakistan",
@@ -256,7 +285,7 @@ export const RELATED_INDICATORS: Record<string, string[]> = {
     "foreign-exchange-reserves-pakistan",
     "pakistan-exports",
     "pakistan-imports",
-    "pakistan-economic-indicators",
+    "overview",
   ],
   "sar-to-pkr-exchange-rate": [
     "usd-pkr-exchange-rate",
@@ -264,24 +293,24 @@ export const RELATED_INDICATORS: Record<string, string[]> = {
     "gbp-to-pkr-exchange-rate",
     "pakistan-remittances",
     "foreign-exchange-reserves-pakistan",
-    "pakistan-economic-indicators",
+    "overview",
   ],
   "pakistan-fiscal-deficit": [
+    "pakistan-government-debt",
     "pakistan-bond-yields",
     "current-account-deficit-pakistan",
     "pakistan-external-debt",
     "gdp-growth-pakistan",
     "pakistan-interest-rate",
     "pakistan-private-credit-growth",
-    "pakistan-economic-indicators",
+    "overview",
   ],
   "pakistan-food-inflation": [
     "inflation-rate-pakistan",
     "weekly-inflation-pakistan",
-    "spi-index-pakistan",
     "pakistan-interest-rate",
     "pakistan-core-inflation",
-    "pakistan-economic-indicators",
+    "overview",
   ],
   "fdi-in-pakistan": [
     "pakistan-trade-deficit",
@@ -289,7 +318,7 @@ export const RELATED_INDICATORS: Record<string, string[]> = {
     "gdp-growth-pakistan",
     "pakistan-stock-market",
     "usd-pkr-exchange-rate",
-    "pakistan-economic-indicators",
+    "overview",
   ],
   "eur-to-pkr-exchange-rate": [
     "usd-pkr-exchange-rate",
@@ -297,7 +326,7 @@ export const RELATED_INDICATORS: Record<string, string[]> = {
     "sar-to-pkr-exchange-rate",
     "pakistan-trade-deficit",
     "pakistan-remittances",
-    "pakistan-economic-indicators",
+    "overview",
   ],
   "gbp-to-pkr-exchange-rate": [
     "usd-pkr-exchange-rate",
@@ -305,21 +334,13 @@ export const RELATED_INDICATORS: Record<string, string[]> = {
     "pakistan-remittances",
     "sar-to-pkr-exchange-rate",
     "foreign-exchange-reserves-pakistan",
-    "pakistan-economic-indicators",
+    "overview",
   ],
   "weekly-inflation-pakistan": [
     "inflation-rate-pakistan",
-    "spi-index-pakistan",
     "pakistan-food-inflation",
     "pakistan-interest-rate",
-    "pakistan-economic-indicators",
-  ],
-  "spi-index-pakistan": [
-    "weekly-inflation-pakistan",
-    "inflation-rate-pakistan",
-    "pakistan-food-inflation",
-    "pakistan-interest-rate",
-    "pakistan-economic-indicators",
+    "overview",
   ],
   // Complete Indicator Coverage & SEO Expansion — the 16 pages added to
   // close every remaining gap in KPI_SEO_SLUG.
@@ -329,73 +350,73 @@ export const RELATED_INDICATORS: Record<string, string[]> = {
     "pakistan-interest-rate",
     "weekly-inflation-pakistan",
     "pakistan-food-inflation",
-    "pakistan-economic-indicators",
+    "overview",
   ],
   "pakistan-wholesale-inflation": [
     "inflation-rate-pakistan",
     "pakistan-core-inflation",
     "pakistan-food-inflation",
     "usd-pkr-exchange-rate",
-    "pakistan-economic-indicators",
+    "overview",
   ],
   "pakistan-bank-reserves": [
     "foreign-exchange-reserves-pakistan",
     "usd-pkr-exchange-rate",
     "current-account-deficit-pakistan",
-    "pakistan-economic-indicators",
+    "overview",
   ],
   "pakistan-money-supply": [
     "inflation-rate-pakistan",
     "pakistan-private-credit-growth",
     "pakistan-interest-rate",
-    "pakistan-economic-indicators",
+    "overview",
   ],
   "pakistan-exports": [
     "pakistan-imports",
     "pakistan-trade-deficit",
     "current-account-deficit-pakistan",
     "gdp-growth-pakistan",
-    "pakistan-economic-indicators",
+    "overview",
   ],
   "pakistan-imports": [
     "pakistan-exports",
     "pakistan-trade-deficit",
     "usd-pkr-exchange-rate",
     "wti-crude-oil-price",
-    "pakistan-economic-indicators",
+    "overview",
   ],
   "pakistan-real-effective-exchange-rate": [
     "usd-pkr-exchange-rate",
     "current-account-deficit-pakistan",
     "pakistan-trade-deficit",
     "foreign-exchange-reserves-pakistan",
-    "pakistan-economic-indicators",
+    "overview",
   ],
   "pakistan-lsm-growth": [
     "gdp-growth-pakistan",
     "pakistan-private-credit-growth",
     "pakistan-interest-rate",
-    "pakistan-economic-indicators",
+    "overview",
   ],
   "pakistan-private-credit-growth": [
     "pakistan-interest-rate",
     "pakistan-money-supply",
     "gdp-growth-pakistan",
     "pakistan-fiscal-deficit",
-    "pakistan-economic-indicators",
+    "overview",
   ],
   "silver-price-pakistan": [
     "gold-price-pakistan",
     "usd-pkr-exchange-rate",
     "pakistan-interest-rate",
-    "pakistan-economic-indicators",
+    "overview",
   ],
   "us-dollar-index": [
     "usd-pkr-exchange-rate",
     "gold-price-pakistan",
     "us-10-year-treasury-yield",
     "fed-funds-rate",
-    "pakistan-economic-indicators",
+    "overview",
   ],
   "wti-crude-oil-price": [
     "brent-crude-oil-price",
@@ -403,7 +424,7 @@ export const RELATED_INDICATORS: Record<string, string[]> = {
     "pakistan-imports",
     "pakistan-trade-deficit",
     "inflation-rate-pakistan",
-    "pakistan-economic-indicators",
+    "overview",
   ],
   "brent-crude-oil-price": [
     "wti-crude-oil-price",
@@ -411,26 +432,26 @@ export const RELATED_INDICATORS: Record<string, string[]> = {
     "pakistan-imports",
     "pakistan-trade-deficit",
     "inflation-rate-pakistan",
-    "pakistan-economic-indicators",
+    "overview",
   ],
   "natural-gas-price": [
     "wti-crude-oil-price",
     "brent-crude-oil-price",
     "pakistan-imports",
     "pakistan-trade-deficit",
-    "pakistan-economic-indicators",
+    "overview",
   ],
   "us-10-year-treasury-yield": [
     "fed-funds-rate",
     "us-dollar-index",
     "pakistan-bond-yields",
-    "pakistan-economic-indicators",
+    "overview",
   ],
   "fed-funds-rate": [
     "us-10-year-treasury-yield",
     "us-dollar-index",
     "pakistan-interest-rate",
-    "pakistan-economic-indicators",
+    "overview",
   ],
 };
 
@@ -438,12 +459,5 @@ export const RELATED_INDICATORS: Record<string, string[]> = {
 // comprehensive RELATED_INDICATORS graph. Zero manual lists in page files —
 // adding a new entry to RELATED_INDICATORS is the only maintenance step.
 export function getRelatedLinks(slug: string): { href: string; label: string }[] {
-  const related = RELATED_INDICATORS[slug] ?? [];
-  return related
-    .filter((s) => s !== slug)
-    .map((s) => {
-      const page = SEO_PAGES.find((p) => p.slug === s);
-      return page ? { href: `/${s}`, label: page.label } : null;
-    })
-    .filter((link): link is { href: string; label: string } => link !== null);
+  return toLinks(slug, RELATED_INDICATORS[slug] ?? []);
 }

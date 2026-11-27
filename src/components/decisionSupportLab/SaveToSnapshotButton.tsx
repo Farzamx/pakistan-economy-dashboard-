@@ -39,6 +39,8 @@ export default function SaveToSnapshotButton({ snapshotPayload }: Props) {
     <button
       type="button"
       onClick={handleClick}
+      data-track="calculator-complete"
+      data-track-action="snapshot"
       disabled={status === "saving"}
       className="self-start rounded-lg border border-[var(--border-subtle)] px-4 py-2.5 text-sm font-medium text-white/80 transition-colors hover:border-neon-blue disabled:opacity-50 light:text-slate-700"
     >

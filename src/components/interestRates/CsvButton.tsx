@@ -3,6 +3,8 @@
 // "Download CSV" for one chart's numbers. The file starts with comment lines naming the source, the retrieval date and how the values were derived, so a
 // downloaded file is never separated from its provenance. Cells that a spreadsheet could read as a formula are prefixed with an apostrophe.
 
+import { track } from "@/lib/analytics/events";
+
 export interface CsvSpec {
   filename: string;
   head: string[];
@@ -23,6 +25,7 @@ export function csvText({ head, rows, notes }: Omit<CsvSpec, "filename">): strin
 
 export function CsvButton({ spec, label = "Download CSV" }: { spec: CsvSpec; label?: string }) {
   const download = () => {
+    track("csv_download", { file: spec.filename, page_path: window.location.pathname });
     const blob = new Blob(["﻿" + csvText(spec)], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");

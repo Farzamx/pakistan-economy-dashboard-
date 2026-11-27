@@ -28,6 +28,7 @@ import {
   LOGIN_PATH,
   PRIMARY_PUBLIC_PATH,
   PUBLIC_PAGE_PATHS,
+  PUBLIC_CONTENT_PATHS,
   decideAccess,
   isExternalHref,
   isPublicUrl,
@@ -74,7 +75,17 @@ const MEMBERS_PAGE: AccessDecision = { action: "members", surface: "page" };
 const MEMBERS_API: AccessDecision = { action: "members", surface: "api" };
 
 /** Pages a guest may open: the Overview, the landing page (and its alias), and the sign-in pages. Everything else needs a session. */
-const EXPECTED_OPEN_PAGES = ["/", "/forgot-password", "/home", "/login", "/overview", "/reset-password", "/signup"];
+// The public economic-information pages (SEO Stage 2, owner decision 27 Nov 2026), typed out here on purpose: adding a page to the policy without adding it
+// here fails the "exactly the documented pages are open" test below.
+const EXPECTED_PUBLIC_CONTENT = [
+  "/brent-crude-oil-price", "/current-account-deficit-pakistan", "/eur-to-pkr-exchange-rate", "/fdi-in-pakistan", "/fed-funds-rate", "/foreign-exchange-reserves-pakistan",
+  "/gbp-to-pkr-exchange-rate", "/gdp-growth-pakistan", "/gold-price-pakistan", "/inflation-rate-pakistan", "/natural-gas-price", "/pakistan-bank-reserves", "/pakistan-bond-yields",
+  "/pakistan-core-inflation", "/pakistan-exports", "/pakistan-external-debt", "/pakistan-fiscal-deficit", "/pakistan-food-inflation", "/pakistan-government-debt", "/pakistan-imports",
+  "/pakistan-interest-rate", "/pakistan-kibor-rates", "/pakistan-lsm-growth", "/pakistan-money-supply", "/pakistan-private-credit-growth", "/pakistan-real-effective-exchange-rate",
+  "/pakistan-remittances", "/pakistan-stock-market", "/pakistan-t-bill-rates", "/pakistan-trade-deficit", "/pakistan-wholesale-inflation", "/sar-to-pkr-exchange-rate",
+  "/silver-price-pakistan", "/site-map", "/us-10-year-treasury-yield", "/us-dollar-index", "/usd-pkr-exchange-rate", "/weekly-inflation-pakistan", "/wti-crude-oil-price",
+];
+const EXPECTED_OPEN_PAGES = ["/", "/forgot-password", "/home", "/login", "/overview", "/reset-password", "/signup", ...EXPECTED_PUBLIC_CONTENT].sort();
 
 // Route handlers that need no session, by design. Each authenticates itself (secret, signature, token) or is the guarded assistant or the auth callback.
 const EXPECTED_OPEN_HANDLERS = [
@@ -101,6 +112,7 @@ describe("the pages open to everyone", () => {
   it("are the Overview, the landing page (and its alias) and the sign-in pages", () => {
     expect(PRIMARY_PUBLIC_PATH).toBe("/overview");
     expect([...PUBLIC_PAGE_PATHS].sort()).toEqual(["/", "/home", "/overview"]);
+    expect([...PUBLIC_CONTENT_PATHS].sort()).toEqual(EXPECTED_PUBLIC_CONTENT);
     expect([...AUTH_PAGE_PATHS].sort()).toEqual(["/forgot-password", "/login", "/reset-password", "/signup"]);
     expect(decide("/overview")).toEqual({ action: "allow", kind: "public-page", session: "refresh" });
     expect(decide("/")).toEqual({ action: "allow", kind: "public-page", session: "refresh" });
@@ -135,11 +147,11 @@ describe("every page that exists needs a session, except the open ones", () => {
 
   it("covers the destinations the owner named, including every one of the workshops and tools", () => {
     for (const p of [
-      "/pakistan-bond-yields", "/pakistan-interest-rate", "/inflation-rate-pakistan", "/budget", "/budget/where-does-tax-money-go", "/budget/debt-servicing-vs-defence",
-      "/budget/psdp", "/budget/defence-spending", "/gdp-breakdown-workshop", "/gdp-growth-pakistan", "/pakistan-fiscal-deficit", "/pakistan-wholesale-inflation",
-      "/weekly-inflation-pakistan", "/spi-index-pakistan", "/usd-pkr-exchange-rate", "/macro-intelligence", "/download-datasets", "/comparisons", "/comparisons/x",
+      "/budget", "/budget/where-does-tax-money-go", "/budget/debt-servicing-vs-defence",
+      "/budget/psdp", "/budget/defence-spending", "/gdp-breakdown-workshop",
+      "/spi-index-pakistan", "/macro-intelligence", "/download-datasets", "/comparisons", "/comparisons/x",
       "/provincial-budget", "/provincial-budget/punjab", "/economic-calendar", "/economic-calendar/archive/x", "/decision-support-lab", "/decision-support-lab/loan-emi",
-      "/academy", "/workshop", "/fed-funds-rate", "/site-map", "/about", "/contact", "/methodology", "/pakistan-economic-indicators", "/settings", "/settings/preferences",
+      "/academy", "/academy/glossary", "/workshop", "/about", "/contact", "/methodology", "/pakistan-economic-indicators", "/pakistan-economic-dashboard", "/settings", "/settings/preferences",
       "/subscriptions", "/subscriptions/manage", "/admin", "/admin/system-health",
     ]) {
       expect(decide(p), p).toEqual(MEMBERS_PAGE);
@@ -328,7 +340,7 @@ describe("where to go after signing in (open-redirect guard)", () => {
 
 describe("links and the sitemap follow the same policy", () => {
   it("requiresLogin: hash and query are ignored, external links and fragments never ask", () => {
-    expect(requiresLogin("/pakistan-bond-yields#curve")).toBe(true);
+    expect(requiresLogin("/comparisons#curve")).toBe(true);
     expect(requiresLogin("/economic-calendar#email-alerts")).toBe(true);
     expect(requiresLogin("/overview#home-markets")).toBe(false);
     expect(requiresLogin("/overview?x=1")).toBe(false);
@@ -344,6 +356,8 @@ describe("links and the sitemap follow the same policy", () => {
     expect(isPublicUrl("https://www.pakeconintel.com/overview")).toBe(true);
     expect(isPublicUrl("https://www.pakeconintel.com/")).toBe(true);
     expect(isPublicUrl("https://www.pakeconintel.com/budget/psdp")).toBe(false);
+    expect(isPublicUrl("https://www.pakeconintel.com/pakistan-kibor-rates")).toBe(true);
+    expect(isPublicUrl("https://www.pakeconintel.com/decision-support-lab/loan-emi")).toBe(false);
     expect(isPublicUrl("https://www.pakeconintel.com/login")).toBe(false);
     expect(isPublicUrl("not a url")).toBe(false);
   });
@@ -373,7 +387,7 @@ describe("proxy() behaviour", () => {
     });
 
     it("is sent from any protected page to /login?redirect=<that page> with a 307, no-store (any method)", async () => {
-      for (const [p, method] of [["/budget", "GET"], ["/pakistan-bond-yields", "GET"], ["/macro-intelligence", "GET"], ["/budget", "POST"], ["/inflation-rate-pakistan", "HEAD"]] as const) {
+      for (const [p, method] of [["/budget", "GET"], ["/comparisons", "GET"], ["/macro-intelligence", "GET"], ["/budget", "POST"], ["/decision-support-lab", "HEAD"]] as const) {
         const r = await call(p, { method });
         expect(r.status, `${method} ${p}`).toBe(307);
         const loc = new URL(r.headers.get("location")!);
@@ -384,8 +398,8 @@ describe("proxy() behaviour", () => {
     });
 
     it("keeps the query string of the page asked for, so the return trip lands on exactly that view", async () => {
-      const r = await call("/pakistan-bond-yields?tab=curve&date=2026-11-01");
-      expect(new URL(r.headers.get("location")!).searchParams.get("redirect")).toBe("/pakistan-bond-yields?tab=curve&date=2026-11-01");
+      const r = await call("/comparisons?tab=curve&date=2026-11-01");
+      expect(new URL(r.headers.get("location")!).searchParams.get("redirect")).toBe("/comparisons?tab=curve&date=2026-11-01");
     });
 
     it("gets 401 JSON (not a redirect, not data) from a protected data route, calendar feed or file", async () => {
@@ -419,7 +433,7 @@ describe("proxy() behaviour", () => {
   describe("a member (a session Supabase accepts)", () => {
     it("opens protected pages and data routes", async () => {
       auth.user = { id: "u1", email: "member@example.test" };
-      for (const p of ["/budget", "/pakistan-bond-yields", "/macro-intelligence", "/download-datasets", "/economic-calendar", "/decision-support-lab/loan-emi", "/api/datasets/sbp-policy-rate", "/api/comparisons/series", "/economic-calendar/feed.ics"]) {
+      for (const p of ["/budget", "/comparisons", "/macro-intelligence", "/download-datasets", "/economic-calendar", "/decision-support-lab/loan-emi", "/api/datasets/sbp-policy-rate", "/api/comparisons/series", "/economic-calendar/feed.ics"]) {
         const r = await call(p, { headers: asMember });
         expect(isPassThrough(r), p).toBe(true);
       }
@@ -443,7 +457,7 @@ describe("proxy() behaviour", () => {
   describe("an invalid session gets nothing (the gate fails closed)", () => {
     it("a cookie that Supabase does not accept (forged, expired, revoked) is a guest", async () => {
       auth.user = null;
-      for (const p of ["/budget", "/pakistan-bond-yields", "/download-datasets"]) {
+      for (const p of ["/budget", "/comparisons", "/download-datasets"]) {
         const r = await call(p, { headers: asMember });
         expect(r.status, p).toBe(307);
         expect(new URL(r.headers.get("location")!).pathname).toBe("/login");
@@ -474,7 +488,7 @@ describe("proxy() behaviour", () => {
   });
 
   describe("credentials and framework headers grant nothing to a guest", () => {
-    const protectedPages = ["/budget", "/pakistan-bond-yields", "/macro-intelligence", "/download-datasets", "/inflation-rate-pakistan", "/settings/preferences", "/economic-calendar", "/decision-support-lab/loan-emi"];
+    const protectedPages = ["/budget", "/comparisons", "/macro-intelligence", "/download-datasets", "/decision-support-lab", "/settings/preferences", "/economic-calendar", "/decision-support-lab/loan-emi"];
 
     it("an Authorization header, an API key, the cron secret or a Vercel-cron user agent does not open a page or a data route", async () => {
       const credentialHeaders: Record<string, string>[] = [{ authorization: "Bearer anything" }, { "x-api-key": "k" }, { authorization: "Bearer cron-secret-value" }, { "x-vercel-cron": "1", "user-agent": "vercel-cron/1.0" }];
@@ -497,7 +511,7 @@ describe("proxy() behaviour", () => {
         { "x-original-url": "/overview", "x-rewrite-url": "/overview" },
       ];
       for (const headers of variants) {
-        for (const p of ["/budget", "/pakistan-bond-yields?_rsc=abc123", "/budget.rsc"]) {
+        for (const p of ["/budget", "/comparisons?_rsc=abc123", "/budget.rsc"]) {
           const r = await call(p, { headers });
           expect(r.status, `${JSON.stringify(headers)} ${p}`).toBeGreaterThanOrEqual(307);
           expect(r.headers.get("x-middleware-next"), `${JSON.stringify(headers)} ${p}`).not.toBe("1");
@@ -532,5 +546,40 @@ describe("the reviewed route inventory", () => {
     expect(PAGES.length).toBe(107);
     expect(HANDLERS.length).toBe(22);
     expect(ROUTES.length).toBe(129);
+  });
+});
+
+// ── SEO Stage 2 (Option A): the public economic-information pages ──
+describe("the public economic-information allow-list", () => {
+  it("every listed path is a real page (no dead entry can open a future route by accident)", () => {
+    const pages = new Set(PAGES.map((p) => p.url));
+    for (const p of PUBLIC_CONTENT_PATHS) expect(pages.has(p), p).toBe(true);
+  });
+
+  it("contains exact paths only, none of which belongs to a members-only family", () => {
+    const MEMBER_FAMILIES = ["/api", "/admin", "/settings", "/subscriptions", "/decision-support-lab", "/download-datasets", "/research-datasets", "/academy", "/workshop",
+      "/macro-intelligence", "/comparisons", "/budget", "/provincial-budget", "/economic-calendar", "/gdp-breakdown-workshop", "/tools", "/auth"];
+    for (const p of PUBLIC_CONTENT_PATHS) {
+      expect(p, p).toMatch(/^\/[a-z0-9-]+$/);
+      for (const fam of MEMBER_FAMILIES) expect(p === fam || p.startsWith(`${fam}/`), `${p} vs ${fam}`).toBe(false);
+    }
+  });
+
+  it("a page below a public page is still members-only (no prefix opening)", () => {
+    expect(decide("/pakistan-interest-rate/x")).toEqual(MEMBERS_PAGE);
+    expect(decide("/pakistan-government-debt/export")).toEqual(MEMBERS_PAGE);
+  });
+
+  it("data, download and research-file routes stay members-only (401 for a guest, not a page)", () => {
+    for (const p of ["/api/datasets/sbp-policy-rate", "/api/datasets/x", "/research-datasets/pakistan-30-year/x.csv", "/research-datasets/pakistan-m2-interest-rates/x.xlsx"]) {
+      expect(decide(p), p).toEqual({ action: "members", surface: "api" });
+    }
+  });
+
+  it("there is no crawler-specific rule: neither the policy nor the proxy looks at the user agent", () => {
+    for (const f of ["src/lib/accessPolicy.ts", "src/proxy.ts", "src/lib/supabase/proxy.ts"]) {
+      const src = fs.readFileSync(path.resolve(f), "utf8");
+      expect(src, f).not.toMatch(/user-agent|userAgent|isBot|headers\.get\(["']user/i);
+    }
   });
 });

@@ -15,6 +15,7 @@
 import type { ReactNode } from "react";
 import { Geist, Geist_Mono, Noto_Nastaliq_Urdu, Source_Serif_4 } from "next/font/google";
 import { GoogleAnalytics } from "@next/third-parties/google";
+import AnalyticsListener from "@/components/AnalyticsListener";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { AuthProvider } from "@/components/AuthProvider";
 import { PreferencesProvider } from "@/components/PreferencesProvider";
@@ -85,6 +86,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
     // every app route, exactly as the old root-layout <html> className did.
     <div className={`${fontVariables} contents`}>
       {GA_MEASUREMENT_ID && <GoogleAnalytics gaId={GA_MEASUREMENT_ID} />}
+      {GA_MEASUREMENT_ID && <AnalyticsListener />}
       <ThemeProvider>
         <LanguageProvider>
           <AuthProvider>

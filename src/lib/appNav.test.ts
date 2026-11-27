@@ -20,6 +20,7 @@ import {
   shortIndicatorLabel,
 } from "./appNav";
 import { SEO_PAGES } from "./seoConfig";
+import { PUBLIC_CONTENT_PATHS } from "./accessPolicy";
 import { isProtectedPath } from "./protectedSections";
 
 const SRC = path.resolve(__dirname, "..");
@@ -102,14 +103,15 @@ describe("nothing is missing from the navigation (G.21)", () => {
   const all = allNavLinks().map((l) => hrefPath(l.href));
   const group = (id: string) => (INDICATOR_GROUPS.find((g) => g.id === id)?.items ?? []).filter((i) => i.kind === "link").map((i) => (i.kind === "link" ? i.href : ""));
 
-  it("the Prices menu lists Inflation Rate, Core Inflation, Food Inflation, Wholesale (WPI), Weekly (SPI) and the SPI Index, in that order", () => {
+  // SEO Stage 2: the SPI Index page was consolidated into Weekly (SPI) with a 301 (src/lib/seoRedirects.ts); its content lives on that page now.
+  it("the Prices menu lists Inflation Rate, Core Inflation, Food Inflation, Wholesale (WPI) and Weekly (SPI), in that order", () => {
     expect(group("prices")).toEqual([
-      "/inflation-rate-pakistan", "/pakistan-core-inflation", "/pakistan-food-inflation", "/pakistan-wholesale-inflation", "/weekly-inflation-pakistan", "/spi-index-pakistan",
+      "/inflation-rate-pakistan", "/pakistan-core-inflation", "/pakistan-food-inflation", "/pakistan-wholesale-inflation", "/weekly-inflation-pakistan",
     ]);
   });
 
-  it("the Fiscal menu lists Fiscal Deficit, Where Does the Tax Money Go? and Debt Servicing vs Defence", () => {
-    expect(group("fiscal")).toEqual(["/pakistan-fiscal-deficit", "/budget/where-does-tax-money-go", "/budget/debt-servicing-vs-defence"]);
+  it("the Fiscal menu lists Fiscal Deficit, Government Debt, Where Does the Tax Money Go? and Debt Servicing vs Defence", () => {
+    expect(group("fiscal")).toEqual(["/pakistan-fiscal-deficit", "/pakistan-government-debt", "/budget/where-does-tax-money-go", "/budget/debt-servicing-vs-defence"]);
   });
 
   it("the Global Markets menu ends with the Fed Funds Rate", () => {
@@ -190,14 +192,15 @@ describe("access rules come from isProtectedPath, not the registry", () => {
     for (const id of ["calendar", "comparisons", "budget", "provincial-budget", "email-alerts"]) expect(isProtected(id), id).toBe(true);
   });
 
-  it("the Overview is the only navigation destination open to guests; every dashboard, workshop and tool needs a sign-in (G.20)", () => {
+  it("the Overview, the landing page and the public indicator pages are open; every workshop, tool and research destination needs a sign-in (G.20 + SEO Stage 2)", () => {
     expect(isProtected("overview")).toBe(false);
-    for (const id of ["ind-inflation-rate-pakistan", "decision-lab", "academy", "macro-intelligence", "gdp-sector-composition"]) {
+    expect(isProtected("ind-inflation-rate-pakistan")).toBe(false);
+    for (const id of ["decision-lab", "academy", "macro-intelligence", "gdp-sector-composition"]) {
       expect(isProtected(id), id).toBe(true);
     }
     const open = allNavLinks().filter((l) => !isProtectedPath(hrefPath(l.href))).map((l) => hrefPath(l.href));
-    // the other open destination is "Back to site" (/home), the public landing page
-    expect([...new Set(open)].sort()).toEqual(["/home", "/overview"]);
+    // open: the landing page (/home), the Overview and the public economic-information pages, nothing else
+    for (const p of open) expect(["/home", "/overview", ...PUBLIC_CONTENT_PATHS], p).toContain(p);
   });
 });
 
@@ -227,7 +230,7 @@ describe("resolveActiveNav", () => {
   const cases: [string, string | null, string | null, "page" | "section" | null][] = [
     ["/overview", "overview", "overview", "page"],
     ["/inflation-rate-pakistan", "indicators", "ind-inflation-rate-pakistan", "page"],
-    ["/pakistan-economic-indicators", "indicators", "all-indicators", "page"],
+    ["/pakistan-kibor-rates", "indicators", "ind-pakistan-kibor-rates", "page"],
     ["/economic-calendar", "calendar", "calendar", "page"],
     ["/economic-calendar/archive", "calendar", "calendar", "section"],
     ["/macro-intelligence", "research", "macro-intelligence", "page"],

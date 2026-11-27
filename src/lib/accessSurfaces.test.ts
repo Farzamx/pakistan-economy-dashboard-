@@ -13,7 +13,7 @@ import sitemap, { fullSitemap } from "@/app/sitemap";
 import { SEARCH_INDEX, SITE_SEARCH_INDEX, matches } from "@/components/GlobalSearch";
 import IndicatorsTable from "@/components/home/IndicatorsTable";
 import type { IndicatorRow } from "@/components/home/indicatorRows";
-import { isPublicUrl, requiresLogin } from "@/lib/accessPolicy";
+import { isPublicUrl, PUBLIC_CONTENT_PATHS, requiresLogin } from "@/lib/accessPolicy";
 import { APP_NAV, allNavLinks, hrefPath, navLinkForPath, resolveActiveNav } from "@/lib/appNav";
 import { SITE_URL } from "@/lib/seoConfig";
 
@@ -29,7 +29,7 @@ describe("navigation: complete for everyone", () => {
     expect(links.length).toBeGreaterThan(50);
     for (const href of [
       "/overview", "/pakistan-bond-yields", "/budget", "/pakistan-interest-rate", "/inflation-rate-pakistan", "/download-datasets", "/macro-intelligence", "/comparisons",
-      "/decision-support-lab", "/economic-calendar", "/pakistan-economic-indicators", "/gdp-breakdown-workshop", "/provincial-budget",
+      "/decision-support-lab", "/economic-calendar", "/pakistan-kibor-rates", "/pakistan-government-debt", "/gdp-breakdown-workshop", "/provincial-budget",
     ]) {
       expect(hrefs, href).toContain(href);
     }
@@ -52,7 +52,8 @@ describe("navigation: complete for everyone", () => {
 
   it("every link to a protected page is intercepted for guests by the shared gate (the sign-in dialog), and the Overview never is", () => {
     const protectedLinks = links.filter((l) => requiresLogin(l.href));
-    expect(protectedLinks.length).toBeGreaterThan(40);
+    // SEO Stage 2 opened the indicator pages; tools, workshops, budget, calendar, research and account destinations stay protected.
+    expect(protectedLinks.length).toBeGreaterThan(10);
     expect(requiresLogin("/overview")).toBe(false);
     expect(links.filter((l) => !requiresLogin(l.href)).map((l) => hrefPath(l.href))).toEqual(expect.arrayContaining(["/overview"]));
     // both shells route every click through the same hook, which asks the central policy
@@ -129,7 +130,8 @@ describe("search", () => {
 describe("sitemap and robots", () => {
   it("the published sitemap lists the pages open to everyone and nothing protected", async () => {
     const entries = (await sitemap()).map((e) => e.url).sort();
-    expect(entries).toEqual([SITE_URL, `${SITE_URL}/overview`].sort());
+    // SEO Stage 2: the Overview, the landing page and the public economic-information pages (PUBLIC_CONTENT_PATHS), nothing else.
+    expect(entries).toEqual([SITE_URL, `${SITE_URL}/overview`, ...PUBLIC_CONTENT_PATHS.map((p) => `${SITE_URL}${p}`)].sort());
   });
 
   it("the complete sitemap is preserved, and every entry that needs a sign-in is filtered out", async () => {

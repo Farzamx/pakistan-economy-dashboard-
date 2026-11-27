@@ -2,7 +2,9 @@
 //
 // Owner policy (G.20, replacing the G.14 Overview-only policy):
 //   - The navigation is complete for everyone. Nothing is hidden from a visitor because they are signed out.
-//   - A small set of pages is open to guests: the Overview, the marketing landing page, and the sign-in pages themselves.
+//   - A small set of pages is open to guests: the Overview, the marketing landing page, and the sign-in pages themselves; and (SEO Stage 2, 27 Nov 2026)
+//     the explicit list of public economic-information pages in PUBLIC_CONTENT_PATHS. Tools, workshops, downloads, the Decision Support Lab, the
+//     AI assistant's pages, account and admin pages stay members-only.
 //   - EVERY other page, workshop, indicator, tool and dataset needs a signed-in account. A guest who asks for one (a click or a typed URL) gets the sign-in
 //     experience, and after signing in is returned to the page they asked for.
 //   - Being signed in is the only entitlement the product has. There is no paid tier, plan or role in the database or the code (admin pages additionally
@@ -32,6 +34,66 @@ export const LOGIN_PATH = "/login";
  * These are also the only pages the sitemap lists.
  */
 export const PUBLIC_PAGE_PATHS: readonly string[] = [PRIMARY_PUBLIC_PATH, "/", "/home"];
+
+/**
+ * Public economic-information pages (owner decision, SEO Stage 2 "Option A", 27 Nov 2026; inventory: docs/seo-stage1-audit.md section 4 and
+ * docs/seo-implementation.md). An EXPLICIT allow-list of exact paths: indicator, market-data, government-debt and the HTML site map. Each page renders only
+ * public economic data and explanations: no account, profile, saved calculation, AI assistant or download is reachable from it without a session
+ * (downloads and data APIs stay members-only below). Everything not listed here keeps the default: login required. Googlebot and any signed-out visitor
+ * are treated identically (there is no crawler-specific rule anywhere in this file).
+ */
+export const PUBLIC_CONTENT_PATHS: readonly string[] = [
+  "/site-map",
+  // Markets and interest rates
+  "/pakistan-interest-rate",
+  "/pakistan-kibor-rates",
+  "/pakistan-t-bill-rates",
+  "/pakistan-bond-yields",
+  // Public finance
+  "/pakistan-government-debt",
+  "/pakistan-fiscal-deficit",
+  "/pakistan-external-debt",
+  // Prices
+  "/inflation-rate-pakistan",
+  "/pakistan-core-inflation",
+  "/pakistan-food-inflation",
+  "/pakistan-wholesale-inflation",
+  "/weekly-inflation-pakistan",
+  // Growth, money and credit
+  "/gdp-growth-pakistan",
+  "/pakistan-lsm-growth",
+  "/pakistan-money-supply",
+  "/pakistan-private-credit-growth",
+  "/pakistan-bank-reserves",
+  // External sector
+  "/foreign-exchange-reserves-pakistan",
+  "/current-account-deficit-pakistan",
+  "/pakistan-trade-deficit",
+  "/pakistan-exports",
+  "/pakistan-imports",
+  "/pakistan-remittances",
+  "/fdi-in-pakistan",
+  // Exchange rates
+  "/usd-pkr-exchange-rate",
+  "/eur-to-pkr-exchange-rate",
+  "/gbp-to-pkr-exchange-rate",
+  "/sar-to-pkr-exchange-rate",
+  "/pakistan-real-effective-exchange-rate",
+  // Markets and commodities
+  "/pakistan-stock-market",
+  "/gold-price-pakistan",
+  "/silver-price-pakistan",
+  "/wti-crude-oil-price",
+  "/brent-crude-oil-price",
+  "/natural-gas-price",
+  // Global benchmarks
+  "/us-dollar-index",
+  "/us-10-year-treasury-yield",
+  "/fed-funds-rate",
+];
+
+/** True for a path (already normalised) that any visitor may open. */
+const isOpenPage = (p: string) => PUBLIC_PAGE_PATHS.includes(p) || PUBLIC_CONTENT_PATHS.includes(p);
 
 /** The account pages. They must be open to guests (they are how a guest becomes a member) and each redirects a signed-in visitor away by itself. */
 export const AUTH_PAGE_PATHS: readonly string[] = ["/login", "/signup", "/forgot-password", "/reset-password"];
@@ -96,7 +158,7 @@ export function decideAccess(pathname: string): AccessDecision {
   const p = normalizePathname(pathname);
   if (p === null) return { action: "not-found" };
 
-  if (PUBLIC_PAGE_PATHS.includes(p)) return { action: "allow", kind: "public-page", session: "refresh" };
+  if (isOpenPage(p)) return { action: "allow", kind: "public-page", session: "refresh" };
   if (AUTH_PAGE_PATHS.includes(p)) return { action: "allow", kind: "auth", session: "refresh" };
   if (AUTH_ROUTE_EXACT.includes(p)) return { action: "allow", kind: "auth", session: "skip" };
   if (SYSTEM_EXACT.includes(p) || SYSTEM_PREFIXES.some((x) => p.startsWith(x))) return { action: "allow", kind: "system", session: "skip" };
@@ -126,7 +188,7 @@ export function requiresLogin(href: string): boolean {
 export function isPublicUrl(url: string): boolean {
   try {
     const p = normalizePathname(new URL(url).pathname);
-    return p !== null && PUBLIC_PAGE_PATHS.includes(p);
+    return p !== null && isOpenPage(p);
   } catch {
     return false;
   }

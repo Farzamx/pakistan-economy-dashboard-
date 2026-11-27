@@ -42,7 +42,7 @@ const COMPARISON_INDICATOR_LINKS: Record<string, string[]> = {
   "inflation-vs-policy-rate": ["inflation-rate-pakistan", "pakistan-interest-rate"],
   "inflation-vs-core-inflation": ["inflation-rate-pakistan"],
   "inflation-vs-money-supply": ["inflation-rate-pakistan"],
-  "inflation-vs-urban-food-inflation": ["inflation-rate-pakistan", "pakistan-food-inflation", "spi-index-pakistan", "weekly-inflation-pakistan"],
+  "inflation-vs-urban-food-inflation": ["inflation-rate-pakistan", "pakistan-food-inflation", "weekly-inflation-pakistan"],
   "pakistan-vs-us-inflation": ["inflation-rate-pakistan"],
   "pakistan-vs-fed-funds-rate": ["pakistan-interest-rate"],
   "pakistan-vs-india-gdp-growth": ["gdp-growth-pakistan"],
@@ -231,7 +231,7 @@ export function getProvincialSeoPageRelatedContent(page: ProvincialSeoPageDef): 
 // series/event, since every event in a category (e.g. every CPI and SPI
 // release, both "Inflation") points at the same handful of indicator pages.
 const EVENT_CATEGORY_INDICATOR_LINKS: Record<EventCategory, string[]> = {
-  Inflation: ["inflation-rate-pakistan", "weekly-inflation-pakistan", "pakistan-food-inflation", "spi-index-pakistan"],
+  Inflation: ["inflation-rate-pakistan", "weekly-inflation-pakistan", "pakistan-food-inflation"],
   "Monetary Policy": ["pakistan-interest-rate", "pakistan-bond-yields"],
   "External Sector": ["foreign-exchange-reserves-pakistan", "current-account-deficit-pakistan", "pakistan-trade-deficit", "pakistan-remittances", "pakistan-external-debt"],
   "Fiscal Sector": ["pakistan-fiscal-deficit"],

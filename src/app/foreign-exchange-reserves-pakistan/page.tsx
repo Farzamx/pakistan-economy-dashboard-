@@ -2,6 +2,7 @@
 import { getSbpIndicator } from "@/lib/data/sbpServer";
 import { getNetLiquidReserves, getFxReservesWeeklySnapshot } from "@/lib/data/fxReserves";
 import SeoPageLayout from "@/components/seo/SeoPageLayout";
+import { trendAnalysis } from "@/lib/seoAnalysis";
 import { SITE_URL, SITE_NAME, getRelatedLinks } from "@/lib/seoConfig";
 
 const SLUG = "foreign-exchange-reserves-pakistan";
@@ -90,6 +91,18 @@ export default async function ForeignReservesPage() {
           answer: "Low reserves limit the central bank's ability to defend the currency and pay for essential imports, often forcing import restrictions, sharp currency depreciation, and an IMF program to secure bridge financing.",
         },
       ]}
+      dataNotes={[
+        { label: "Unit", value: "US dollars, billions; stock at the end of the reporting week" },
+        { label: "Measure shown", value: "Net liquid foreign exchange reserves held by the State Bank (commercial banks' holdings and the monthly total including gold are shown separately, never added in)" },
+      ]}
+      methodology={[
+        "SBP publishes its weekly reserves position in its foreign exchange reserves file (Forex_Arch.xlsx); the headline value and the 24-week chart are that series exactly as released. The commercial-bank and total liquid figures come from the same weekly release; the total including gold and SDR holdings is a separate monthly SBP series.",
+      ]}
+      limitations={[
+        "Reserves are a stock, not a flow: they rise with official loans, deposits from friendly countries and IMF disbursements as well as with export earnings and remittances, so a rise does not by itself mean the external position has strengthened.",
+        "The chart shows the most recent 24 weeks only; SBP occasionally revises recent weeks.",
+      ]}
+      analysis={trendAnalysis(netLiquid.trend, { format: (v) => `$${v.toFixed(2)} billion`, subject: "SBP's net liquid reserves" })}
       relatedLinks={getRelatedLinks(SLUG)}
     />
   );

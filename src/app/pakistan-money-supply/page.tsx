@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { getSbpIndicator } from "@/lib/data/sbpServer";
 import SeoPageLayout from "@/components/seo/SeoPageLayout";
+import { trendAnalysis } from "@/lib/seoAnalysis";
 import { SITE_URL, SITE_NAME, getRelatedLinks } from "@/lib/seoConfig";
 
 const SLUG = "pakistan-money-supply";
@@ -63,6 +64,18 @@ export default async function MoneySupplyPage() {
           answer: "SBP EasyData publishes M2 on a weekly basis, making it one of the most frequently updated indicators in Pakistan's monetary dataset.",
         },
       ]}
+      dataNotes={[
+        { label: "Unit", value: "Pakistani rupees, trillions; stock at the end of the reporting week" },
+        { label: "Measure", value: "Broad money (M2): currency in circulation plus deposits held with banks" },
+      ]}
+      methodology={[
+        "The State Bank compiles M2 from its monetary survey (the balance sheets of SBP and the scheduled banks) and publishes it weekly on SBP EasyData. The value and chart here are that series as published; growth rates elsewhere on the site are computed from it.",
+      ]}
+      limitations={[
+        "Weekly M2 moves with seasonal demand for cash, for example around Eid and at the end of the fiscal year, so week-to-week changes say little about the trend; year-on-year growth is the more useful comparison.",
+        "The chart shows the most recent 24 weeks only, as a level in rupees (not adjusted for inflation).",
+      ]}
+      analysis={trendAnalysis(m2.trend, { format: (v) => `Rs ${v.toFixed(2)} trillion`, subject: "broad money (M2)" })}
       relatedLinks={[
         ...getRelatedLinks(SLUG),
         { href: "/comparisons/inflation-vs-money-supply", label: "Inflation vs Money Supply" },

@@ -1,6 +1,7 @@
 ﻿import type { Metadata } from "next";
 import { getSbpIndicator } from "@/lib/data/sbpServer";
 import SeoPageLayout from "@/components/seo/SeoPageLayout";
+import { trendAnalysis } from "@/lib/seoAnalysis";
 import { SITE_URL, SITE_NAME, getRelatedLinks } from "@/lib/seoConfig";
 
 const SLUG = "pakistan-fiscal-deficit";
@@ -72,6 +73,18 @@ export default async function FiscalDeficitPage() {
           answer: "The fiscal deficit measures the government's own spending versus revenue gap. The current account deficit measures the whole country's international transactions. The two are related — a large fiscal deficit can spill over into a wider current account deficit — but they are measured and financed differently.",
         },
       ]}
+      dataNotes={[
+        { label: "Unit", value: "Pakistani rupees, trillions, for the fiscal year (July to June); a negative balance is a deficit" },
+        { label: "Coverage", value: "Consolidated federal and provincial governments" },
+      ]}
+      methodology={[
+        "The figure is the consolidated overall fiscal balance (revenue minus expenditure, including interest) as published by SBP from the Ministry of Finance's fiscal operations data. It is a full-year total, so it changes once a year.",
+      ]}
+      limitations={[
+        "Annual data only: the latest value is normally many months old, and in-year (quarterly) fiscal operations are not shown here.",
+        "Shown in rupees, not as a share of GDP; a larger rupee deficit can be a smaller share of a larger economy. The deficit is financed by borrowing, which adds to government debt.",
+      ]}
+      analysis={trendAnalysis(fiscalBalance.trend, { format: (v) => `Rs ${v.toFixed(2)} trillion`, subject: "the consolidated fiscal balance" })}
       relatedLinks={getRelatedLinks(SLUG)}
     />
   );

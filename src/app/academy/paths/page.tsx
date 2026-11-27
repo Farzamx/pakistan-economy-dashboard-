@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
+import { SITE_URL } from "@/lib/seoConfig";
 import Link from "next/link";
 import { T } from "@/components/T";
 import { LEARNING_PATHS } from "@/lib/academy/paths";
 import { getLessonByCategoryAndSlug } from "@/lib/academy/registry";
 
 export const metadata: Metadata = {
+  alternates: { canonical: `${SITE_URL}/academy/paths` },
   title: "Learning Paths | Economic Academy",
   description: "Structured sequences to build economics expertise step by step — Pakistan-focused.",
 };

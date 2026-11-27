@@ -2,6 +2,7 @@
 import { getFxRates } from "@/lib/data/fxRates";
 import { getSbpIndicator } from "@/lib/data/sbpServer";
 import SeoPageLayout from "@/components/seo/SeoPageLayout";
+import { trendAnalysis } from "@/lib/seoAnalysis";
 import { SITE_URL, SITE_NAME, getRelatedLinks } from "@/lib/seoConfig";
 
 const SLUG = "usd-pkr-exchange-rate";
@@ -74,6 +75,18 @@ export default async function UsdPkrPage() {
           answer: "SBP officially operates a market-determined exchange rate regime, though it can intervene periodically to smooth excessive volatility using its foreign reserves.",
         },
       ]}
+      dataNotes={[
+        { label: "Unit", value: "Pakistani rupees per US dollar" },
+        { label: "Two different series", value: "The headline is an intraday market quote; the chart is SBP's monthly average interbank rate. They are never mixed." },
+      ]}
+      methodology={[
+        "The headline quote comes from a market data provider and refreshes during the trading day. The 24-month chart is the State Bank of Pakistan's monthly average of the interbank rate (SBP EasyData), the official reference for the period averages.",
+      ]}
+      limitations={[
+        "The open-market rate at exchange companies can differ from the interbank rate, especially in periods of pressure on the rupee; it is not shown here.",
+        "A monthly average smooths out moves within the month, so the chart lags the headline quote.",
+      ]}
+      analysis={trendAnalysis(usdPkrHistory.trend, { format: (v) => `Rs ${v.toFixed(2)}`, subject: "the monthly average interbank rate" })}
       relatedLinks={getRelatedLinks(SLUG)}
     />
   );

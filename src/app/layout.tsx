@@ -41,8 +41,9 @@ export const metadata: Metadata = {
     "Pakistan financial markets",
     "economic indicators Pakistan",
   ],
+  // No default canonical here: a page that inherited one would declare itself a duplicate of the home page. Every indexable page sets its own
+  // (src/app/page.tsx sets the home page's; seoCanonical.test.ts checks every public page).
   alternates: {
-    canonical: SITE_URL,
     types: {
       "application/xml": `${SITE_URL}/sitemap.xml`,
     },

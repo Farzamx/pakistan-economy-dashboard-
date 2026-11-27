@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { getGdpKpi } from "@/lib/data/worldBank";
 import { getQuarterlyGdpKpi } from "@/lib/data/quarterlyGdp";
 import SeoPageLayout from "@/components/seo/SeoPageLayout";
+import { trendAnalysis } from "@/lib/seoAnalysis";
 import { SITE_URL, SITE_NAME, getRelatedLinks } from "@/lib/seoConfig";
 
 const SLUG = "gdp-growth-pakistan";
@@ -79,6 +80,19 @@ export default async function GdpGrowthPage() {
           answer: "Annual GDP growth covers a full fiscal year (July-June in Pakistan). Quarterly GDP growth (YoY) compares a single quarter to the same quarter a year earlier, revealing momentum faster than the annual figure.",
         },
       ]}
+      dataNotes={[
+        { label: "Unit", value: "Percent, real growth (after inflation)" },
+        { label: "Two series", value: "Headline: the World Bank's annual GDP growth for Pakistan. Chart: SBP's quarterly real GVA growth (from PBS national accounts), year on year." },
+      ]}
+      methodology={[
+        "PBS compiles Pakistan's national accounts by fiscal year (July to June) and publishes provisional estimates that are later revised. The quarterly chart is SBP's compilation of PBS quarterly real gross value added, compared with the same quarter a year earlier.",
+        "The headline annual figure is the World Bank's series, which follows the official estimates with a lag; it can differ from PBS's latest provisional estimate for the most recent year.",
+      ]}
+      limitations={[
+        "No long official annual series is shown here: the annual figure is the latest World Bank value, and the quarterly chart covers recent quarters only.",
+        "Recent quarters are provisional and are revised as PBS updates its estimates; quarterly growth is volatile, especially in agriculture.",
+      ]}
+      analysis={trendAnalysis(quarterlyGdp.trend, { format: (v) => `${v.toFixed(2)}%`, subject: "quarterly real GVA growth", differenceUnit: "percentage points" })}
       relatedLinks={getRelatedLinks(SLUG)}
     />
   );

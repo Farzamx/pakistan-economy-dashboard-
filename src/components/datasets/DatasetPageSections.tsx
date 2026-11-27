@@ -85,7 +85,7 @@ export function UnavailableSeries() {
       </div>
       <p className="mt-1 text-[14px] text-pe-text-2">
         Looking for a specific indicator?{" "}
-        <Link href="/pakistan-economic-indicators" className="text-pe-accent hover:underline">
+        <Link href="/overview" className="text-pe-accent hover:underline">
           Browse all indicators
         </Link>
         .

@@ -76,7 +76,9 @@ function indicator(slug: string): NavLinkItem {
 }
 
 /** Indicator pages that are hubs rather than single indicators — linked from the menu footer, not listed as items. */
-export const INDICATOR_HUB_SLUGS = ["pakistan-economic-indicators", "pakistan-economic-dashboard"] as const;
+// The former hub pages (/pakistan-economic-indicators, /pakistan-economic-dashboard) were consolidated into /overview (SEO Stage 2,
+// src/lib/seoRedirects.ts); the menu footer links to /overview. Kept as an (empty) list so the nav tests still state the rule.
+export const INDICATOR_HUB_SLUGS: readonly string[] = [];
 
 export const INDICATOR_GROUPS: NavGroup[] = [
   {
@@ -88,7 +90,6 @@ export const INDICATOR_GROUPS: NavGroup[] = [
       indicator("pakistan-food-inflation"),
       indicator("pakistan-wholesale-inflation"),
       indicator("weekly-inflation-pakistan"),
-      indicator("spi-index-pakistan"),
     ],
   },
   {
@@ -96,6 +97,8 @@ export const INDICATOR_GROUPS: NavGroup[] = [
     labelKey: "appNav.moneyRates",
     items: [
       indicator("pakistan-interest-rate"),
+      indicator("pakistan-kibor-rates"),
+      indicator("pakistan-t-bill-rates"),
       indicator("pakistan-bond-yields"),
       indicator("pakistan-money-supply"),
       indicator("pakistan-private-credit-growth"),
@@ -126,6 +129,7 @@ export const INDICATOR_GROUPS: NavGroup[] = [
     labelKey: "appNav.fiscal",
     items: [
       indicator("pakistan-fiscal-deficit"),
+      indicator("pakistan-government-debt"),
       // Federal-budget explainer pages. Fixed English labels are shortened from their page titles ("Where Does Pakistan's Tax Money Actually Go?", "Debt
       // Servicing vs Defence Spending — Pakistan's Federal Budget"); not in SEO_PAGES because they are budget-workspace content, not indicator-template pages.
       { kind: "link", id: "budget-tax-money", href: "/budget/where-does-tax-money-go", label: "Where Does the Tax Money Go?" },
@@ -168,7 +172,7 @@ export const APP_NAV: TopNavEntry[] = [
     id: "indicators",
     labelKey: "nav.indicators",
     groups: INDICATOR_GROUPS,
-    footer: { kind: "link", id: "all-indicators", href: "/pakistan-economic-indicators", labelKey: "appNav.allIndicators" },
+    footer: { kind: "link", id: "all-indicators", href: "/overview#home-indicators", labelKey: "appNav.allIndicators" },
   },
   // No /markets or /news route exists yet (later phase) — these point at the
   // redesigned homepage's own Markets and Headlines sections (Phase 5: the

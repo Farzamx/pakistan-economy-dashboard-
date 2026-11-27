@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { SEO_REDIRECTS } from "./src/lib/seoRedirects";
 
 const nextConfig: NextConfig = {
   // The homepage's Server Component (src/app/page.tsx) does extensive
@@ -33,6 +34,9 @@ const nextConfig: NextConfig = {
         destination: "/decision-support-lab/personal-inflation",
         permanent: true,
       },
+      // SEO Stage 2 consolidations: 301 (statusCode, not `permanent`, which Next answers with 308). Redirects run before the proxy, so guests and
+      // members get the same single hop; the query string is passed through unchanged.
+      ...Object.entries(SEO_REDIRECTS).map(([source, destination]) => ({ source, destination, statusCode: 301 as const })),
     ];
   },
 };
